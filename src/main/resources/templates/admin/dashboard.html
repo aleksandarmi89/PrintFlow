@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout/base :: head}">
+    <title>Admin Dashboard - PrintFlow</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+    
+    <main class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-600 mt-2">Welcome back, <span sec:authentication="name"></span>! Here's what's happening with your business.</p>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Clients -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Total Clients</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1" th:text="${stats.totalClients}">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a th:href="@{/admin/clients}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        View all clients →
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Active Orders -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Active Orders</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1" th:text="${stats.activeOrders}">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a th:href="@{/admin/orders}" class="text-sm text-green-600 hover:text-green-800 font-medium">
+                        View all orders →
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Overdue Orders -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Overdue Orders</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1" th:text="${stats.overdueOrders}">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a th:href="@{/admin/orders?status=OVERDUE}" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                        View overdue →
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Monthly Revenue -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Monthly Revenue</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">
+                            €<span th:text="${#numbers.formatDecimal(stats.monthlyRevenue, 1, 2)}">0.00</span>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-sm text-gray-600">Pending: €<span th:text="${#numbers.formatDecimal(stats.pendingRevenue, 1, 2)}">0.00</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent Orders -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Orders</h2>
+                    <p class="text-sm text-gray-600">Latest work orders in the system</p>
+                </div>
+                <div class="p-6">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr th:each="order : ${recentOrders}">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" 
+                                           class="text-sm font-medium text-primary-600 hover:text-primary-800">
+                                            <span th:text="${order.orderNumber}">ORD-001</span>
+                                        </a>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" th:text="${order.clientName}">Client Name</div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
+                                            (order.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
+                                             order.status == 'IN_DESIGN' ? 'bg-yellow-100 text-yellow-800' :
+                                             order.status == 'IN_PRINT' ? 'bg-purple-100 text-purple-800' :
+                                             order.status == 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                             'bg-gray-100 text-gray-800')}">
+                                            <span th:text="${order.status}">Status</span>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" 
+                                             th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : 'N/A'}">
+                                            01.01.2024
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${recentOrders.empty}">
+                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                        No recent orders found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <a th:href="@{/admin/orders}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                            View all orders →
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Overdue Orders -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Overdue Orders</h2>
+                    <p class="text-sm text-gray-600">Orders that need immediate attention</p>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div th:each="order : ${overdueOrders}" 
+                             class="p-4 border border-red-200 rounded-lg bg-red-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <a th:href="@{/admin/orders/{id}(id=${order.id})}" 
+                                       class="font-medium text-red-700 hover:text-red-900">
+                                        <span th:text="${order.orderNumber}">ORD-001</span>
+                                    </a>
+                                    <p class="text-sm text-red-600 mt-1" th:text="${order.title}">Order Title</p>
+                                    <p class="text-xs text-red-500 mt-2">
+                                        Deadline: 
+                                        <span th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : 'N/A'}">
+                                            01.01.2024
+                                        </span>
+                                    </p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                    Overdue
+                                </span>
+                            </div>
+                        </div>
+                        <div th:if="${overdueOrders.empty}" class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2m0 0l7-7 7 7m-7-7v13m0-13h-2m2 0h2m-2 0v13m0 0l-2 2m2-2l2 2m-2-2h2m-2 0h-2m0 0v5m0-5h2m-2 0h-2"/>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500">No overdue orders. Great job!</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <a th:href="@{/admin/orders/create}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                            <svg class="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            Create New Order
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a th:href="@{/admin/clients/create}" 
+               class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Add New Client</h3>
+                        <p class="text-sm text-gray-600 mt-1">Register a new client to the system</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a th:href="@{/admin/orders/create}" 
+               class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Create New Order</h3>
+                        <p class="text-sm text-gray-600 mt-1">Start a new work order for a client</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a th:href="@{/admin/users/create}" 
+               class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Add New User</h3>
+                        <p class="text-sm text-gray-600 mt-1">Create a new worker or admin account</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </main>
+    
+    <div th:replace="~{layout/footer :: footer}"></div>
+</body>
+</html>

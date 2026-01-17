@@ -1,0 +1,167 @@
+spring:
+  application:
+    name: printflow
+    cache:
+    type: simple
+    cache-names: clients, users, orders
+    main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+  
+  # MySQL Configuration
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/printflow_db?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: root
+    password: 
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+       
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+    open-in-view: false
+  
+  # File Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+  
+  # Thymeleaf Configuration
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    check-template-location: true
+    servlet:
+      content-type: text/html
+  
+  # Messages Configuration for i18n
+  messages:
+    basename: messages/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  
+  # SQL logging
+  sql:
+    init:
+      mode: always
+
+  # Security - dodaj ovo za smanjenje debug logova
+  security:
+    filter:
+      order: 0
+
+  # MVC Configuration - DODATO za rešavanje WARN poruka
+  mvc:
+    throw-exception-if-no-handler-found: false
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+      date: yyyy-MM-dd
+      time: HH:mm:ss
+
+# Server Configuration
+server:
+  port: 8088
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        secure: false
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+  error:
+    include-stacktrace: never
+    include-message: always
+    include-binding-errors: always
+
+# Application Configuration
+app:
+  upload:
+    dir: ./uploads/
+    max-file-size: 104857600  # 100MB in bytes
+  allowed-file-types: .ai,.psd,.pdf,.jpg,.jpeg,.png,.svg,.cdr,.eps
+  notification:
+    email:
+      enabled: false
+    sms:
+      enabled: false
+  
+  # Security
+  security:
+    token:
+      validity: 86400000  # 24 hours in milliseconds
+
+# Logging Configuration - DODATO za smanjenje nepotrebnih WARN poruka
+logging:
+  level:
+    com.printflow: INFO
+    org.springframework.security: INFO
+    org.springframework.web: WARN
+    org.springframework.web.servlet.handler.HandlerMappingIntrospector: ERROR
+    org.springframework.web.servlet.handler.AbstractHandlerMethodMapping: ERROR
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.boot.autoconfigure: WARN
+    org.thymeleaf: WARN
+   
+  file:
+    name: logs/printflow.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+
+# Spring Boot Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /management
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+# Dodato: Konfiguracija za devtools (ako koristiš)
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: false
+
+# Dodato: Konfiguracija za caching (opcionalno)
+
+  

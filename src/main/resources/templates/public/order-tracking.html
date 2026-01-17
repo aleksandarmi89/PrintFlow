@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="'Order ' + ${order.orderNumber} + ' - PrintFlow'"></title>
+</head>
+<body>
+    <!-- Simple header for public pages -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a th:href="@{/}" class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold">PF</span>
+                    </div>
+                    <span class="text-xl font-bold text-gray-800">PrintFlow</span>
+                </a>
+                <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 font-medium">
+                    ← Back to home
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Order Header -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900" th:text="${order.title}">Order Title</h1>
+                        <p class="text-gray-600 mt-1" th:text="${order.description}">Order description</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-500">Order Number</div>
+                        <div class="text-lg font-bold text-gray-900" th:text="${order.orderNumber}">ORD-001</div>
+                    </div>
+                </div>
+                
+                <!-- Client Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Client</h3>
+                        <p class="text-gray-900 font-medium" th:text="${order.clientName}">Client Name</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Order Date</h3>
+                        <p class="text-gray-900" th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy')}">01.01.2024</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Timeline -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-6">Order Status</h2>
+                
+                <div class="relative">
+                    <!-- Timeline Line -->
+                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                    
+                    <!-- Timeline Steps -->
+                    <div class="space-y-8">
+                        <!-- Step 1: Order Created -->
+                        <div class="relative flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).NEW.ordinal() ? 
+                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-6">
+                                <h3 class="text-lg font-medium text-gray-900">Order Created</h3>
+                                <p class="text-gray-600">Your order has been received and is being processed.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 2: Design -->
+                        <div class="relative flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_DESIGN.ordinal() ? 
+                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-6">
+                                <h3 class="text-lg font-medium text-gray-900">Design Phase</h3>
+                                <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_DESIGN}">
+                                    Currently being designed. You'll receive a preview for approval soon.
+                                </p>
+                                <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}">
+                                    Design is ready for your approval. Please review the preview below.
+                                </p>
+                                <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL.ordinal()}">
+                                    Design has been approved and is ready for production.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Production -->
+                        <div class="relative flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal() ? 
+                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-6">
+                                <h3 class="text-lg font-medium text-gray-900">Production</h3>
+                                <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_PRINT}">
+                                    Currently in production. Your items are being printed/manufactured.
+                                </p>
+                                <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal()}">
+                                    Production has been completed.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 4: Ready for Delivery -->
+                        <div class="relative flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).READY_FOR_DELIVERY.ordinal() ? 
+                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-6">
+                                <h3 class="text-lg font-medium text-gray-900">Ready for Delivery</h3>
+                                <div th:if="${order.deliveryType == T(com.printflow.entity.enums.DeliveryType).PICKUP}">
+                                    <p class="text-gray-600">Your order is ready for pickup.</p>
+                                    <p class="text-sm text-gray-500 mt-1">Please contact the printing company for pickup details.</p>
+                                </div>
+                                <div th:if="${order.deliveryType == T(com.printflow.entity.enums.DeliveryType).EXPRESS_POST}">
+                                    <p class="text-gray-600">Your order has been shipped.</p>
+                                    <div class="mt-2 space-y-1">
+                                        <p class="text-sm" th:if="${order.courierName}">
+                                            Courier: <span class="font-medium" th:text="${order.courierName}"></span>
+                                        </p>
+                                        <p class="text-sm" th:if="${order.trackingNumber}">
+                                            Tracking Number: 
+                                            <a th:href="'https://tracking.' + ${order.courierName?.toLowerCase()} + '.com/' + ${order.trackingNumber}"
+                                               class="font-medium text-blue-600 hover:text-blue-800"
+                                               th:text="${order.trackingNumber}">
+                                                TRACK123456
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Design Approval Section -->
+            <div th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}" 
+                 class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Design Approval Required</h2>
+                <p class="text-gray-600 mb-6">Please review the design preview and approve or request changes.</p>
+                
+                <!-- Design Previews -->
+                <div class="space-y-4 mb-8">
+                    <div th:each="attachment : ${previewAttachments}" 
+                         class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-medium text-gray-900" th:text="${attachment.originalFileName}">design-preview.jpg</h4>
+                                <p class="text-sm text-gray-500 mt-1" th:text="${attachment.description}">Design preview for approval</p>
+                                <p class="text-sm text-gray-500" th:text="${attachment.formattedSize}">1.5 MB</p>
+                            </div>
+                            <a th:href="@{/api/files/download/{id}(id=${attachment.id})}"
+                               class="text-blue-600 hover:text-blue-800 font-medium">
+                                Download
+                            </a>
+                        </div>
+                        <div class="mt-4">
+                            <img th:if="${attachment.mimeType.startsWith('image/')}"
+                                 th:src="@{/api/files/thumbnail/{id}(id=${attachment.id})}"
+                                 alt="Design preview"
+                                 class="max-w-full h-auto rounded border border-gray-200">
+                            <div th:unless="${attachment.mimeType.startsWith('image/')}"
+                                 class="bg-gray-100 p-8 text-center rounded">
+                                <svg class="w-12 h-12 text-gray-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="mt-2 text-gray-600" th:text="${attachment.originalFileName}">File preview not available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Approval Form -->
+                <form th:action="@{/public/order/{token}/approve-design(token=${token})}" 
+                      method="post" 
+                      class="space-y-4">
+                    <div>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="approved" value="true" class="h-4 w-4 text-blue-600">
+                            <span class="text-gray-900 font-medium">✅ Approve Design</span>
+                        </label>
+                        <p class="text-gray-600 text-sm ml-7">The design looks good, proceed with production.</p>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-start space-x-3 cursor-pointer">
+                            <input type="radio" name="approved" value="false" class="h-4 w-4 text-blue-600 mt-1">
+                            <div>
+                                <span class="text-gray-900 font-medium">❌ Request Changes</span>
+                                <textarea name="comment" 
+                                          rows="3"
+                                          class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Please describe what changes you would like..."></textarea>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit"
+                                class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700">
+                            Submit Feedback
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">Need Help?</h3>
+                <p class="text-blue-800 mb-4">
+                    If you have any questions about your order, please contact the printing company directly.
+                </p>
+                <div class="space-y-2">
+                    <p class="text-blue-800">
+                        <span class="font-medium">Phone:</span> Contact the number provided by the printing company
+                    </p>
+                    <p class="text-blue-800">
+                        <span class="font-medium">Email:</span> Contact the email address provided by the printing company
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Simple footer for public pages -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">&copy; 2024 PrintFlow SaaS. Order tracking system.</p>
+        </div>
+    </footer>
+</body>
+</html>

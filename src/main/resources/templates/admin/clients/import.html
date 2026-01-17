@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Import Clients - PrintFlow Admin</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+    
+    <main class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Import Clients</h1>
+                    <p class="text-gray-600 mt-2">Import multiple clients from Excel/CSV file</p>
+                </div>
+                <a th:href="@{/admin/clients}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    ← Back to Clients
+                </a>
+            </div>
+        </div>
+        
+        <div class="max-w-4xl mx-auto">
+            <!-- Import Instructions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">How to Import</h2>
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <span class="text-blue-600 font-bold">1</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Prepare Your Excel File</h3>
+                            <p class="text-gray-600 text-sm">
+                                Create an Excel file (.xlsx or .xls) with the following columns in the first row:
+                            </p>
+                            <ul class="mt-2 text-sm text-gray-600 list-disc list-inside">
+                                <li>Company Name</li>
+                                <li>Contact Person</li>
+                                <li>Phone</li>
+                                <li>Email</li>
+                                <li>Address</li>
+                                <li>City</li>
+                                <li>Country</li>
+                                <li>Tax ID (optional)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <span class="text-blue-600 font-bold">2</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Download Template</h3>
+                            <p class="text-gray-600 text-sm">
+                                Download our template to ensure correct formatting:
+                            </p>
+                            <a th:href="@{/admin/clients/import-template}" 
+                               class="inline-flex items-center px-4 py-2 mt-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                Download Template
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <span class="text-blue-600 font-bold">3</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Upload Your File</h3>
+                            <p class="text-gray-600 text-sm">
+                                Upload your prepared Excel file below. The system will process it and show you a preview before importing.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Import Form -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Upload File</h2>
+                
+                <form th:action="@{/admin/clients/import}" 
+                      method="post" 
+                      enctype="multipart/form-data"
+                      class="space-y-6">
+                  
+                    
+                    <div>
+                        <label for="file" class="block text-sm font-medium text-gray-700 mb-2">
+                            Select Excel File
+                        </label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload a file</span>
+                                        <input id="file" name="file" type="file" class="sr-only" accept=".xlsx,.xls,.csv">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">
+                                    Excel files up to 10MB (.xlsx, .xls, .csv)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Import Results -->
+                    <div th:if="${importResult}" class="mt-4">
+                        <div th:if="${importResult.success}" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex">
+                                <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-green-800">Import Successful!</h3>
+                                    <div class="mt-2 text-sm text-green-700">
+                                        <p>Total records: <span th:text="${importResult.totalRecords}"></span></p>
+                                        <p>Imported: <span th:text="${importResult.importedRecords}"></span></p>
+                                        <p>Skipped: <span th:text="${importResult.skippedRecords}"></span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div th:unless="${importResult.success}" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex">
+                                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">Import Failed</h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <p th:text="${importResult.errorMessage}"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <div class="flex justify-end space-x-3">
+                            <a th:href="@{/admin/clients}" 
+                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                Start Import
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Import Tips -->
+            <div class="mt-6 bg-blue-50 rounded-xl border border-blue-200 p-6">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">📝 Import Tips</h3>
+                <ul class="space-y-3 text-blue-800">
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Required columns:</strong> Company Name, Contact Person, and Phone must be filled for each row.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Email uniqueness:</strong> If an email already exists in the system, that row will be skipped.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Large files:</strong> For files with more than 1000 rows, consider splitting them into smaller batches.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><strong>Data validation:</strong> Phone numbers should be in international format (e.g., +381 11 123 4567).</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+    
+    <div th:replace="~{layout/footer :: footer}"></div>
+    
+    <script>
+        // Drag and drop file upload
+        const dropArea = document.querySelector('.border-dashed');
+        const fileInput = document.getElementById('file');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('border-blue-500', 'bg-blue-50');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-blue-500', 'bg-blue-50');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            
+            // Update label text
+            const label = dropArea.querySelector('span');
+            if (files.length > 0) {
+                label.textContent = files[0].name;
+            }
+        }
+    </script>
+</body>
+</html>

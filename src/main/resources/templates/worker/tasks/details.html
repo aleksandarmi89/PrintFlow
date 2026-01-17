@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="'Task: ' + ${task.orderNumber} + ' - PrintFlow Worker'"></title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+    
+    <main class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="'Task: ' + ${task.orderNumber}"></h1>
+                    <p class="text-gray-600 mt-2" th:text="${task.title}"></p>
+                </div>
+                <div class="flex space-x-3">
+                    <a th:href="@{/worker/tasks}" 
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        ← Back to Tasks
+                    </a>
+                    <button onclick="printTask()" 
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
+                        </svg>
+                        Print
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Task Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Status and Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Task Status</h2>
+                            <div class="mt-2">
+                                <span th:class="${'px-3 py-2 text-sm font-medium rounded-full ' + 
+                                    (task.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
+                                     task.status == 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
+                                     task.status == 'WAITING_APPROVAL' ? 'bg-orange-100 text-orange-800' :
+                                     task.status == 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                     'bg-gray-100 text-gray-800')}">
+                                    <span th:text="${task.status}"></span>
+                                </span>
+                                <span class="ml-3 px-3 py-2 text-sm font-medium rounded-full" 
+                                      th:class="${task.priority == 'HIGH' ? 'bg-red-100 text-red-800' :
+                                               task.priority == 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                               'bg-blue-100 text-blue-800'}">
+                                    <span th:text="${task.priority}"></span> Priority
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Actions -->
+                        <div class="flex space-x-3">
+                            <form th:action="@{/worker/tasks/{id}/status(id=${task.id})}" 
+                                  method="post"
+                                  class="flex items-center space-x-2">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <select name="status" 
+                                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="IN_PROGRESS" th:selected="${task.status == 'IN_PROGRESS'}">In Progress</option>
+                                    <option value="WAITING_APPROVAL" th:selected="${task.status == 'WAITING_APPROVAL'}">Waiting Approval</option>
+                                    <option value="BLOCKED" th:selected="${task.status == 'BLOCKED'}">Blocked</option>
+                                    <option value="COMPLETED" th:selected="${task.status == 'COMPLETED'}">Completed</option>
+                                </select>
+                                <button type="submit" 
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                    Update
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Section -->
+                    <div class="mb-6">
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Progress</span>
+                            <span th:text="${task.progress} + '%'">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 mb-4">
+                            <div class="bg-blue-600 h-3 rounded-full" th:style="'width:' + ${task.progress} + '%'"></div>
+                        </div>
+                        <input type="range" 
+                               min="0" 
+                               max="100" 
+                               th:value="${task.progress}"
+                               onchange="updateProgress(this.value)"
+                               class="w-full">
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button th:if="${task.status != 'IN_PROGRESS' && task.status != 'COMPLETED'}"
+                                onclick="startWork()"
+                                class="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 text-center">
+                            <div class="text-green-600 font-medium">Start Work</div>
+                            <div class="text-xs text-green-500 mt-1">Begin working on this task</div>
+                        </button>
+                        
+                        <button onclick="openTimeTracker()"
+                                class="p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-center">
+                            <div class="text-blue-600 font-medium">Track Time</div>
+                            <div class="text-xs text-blue-500 mt-1">Log working hours</div>
+                        </button>
+                        
+                        <a th:href="@{/worker/tasks/{id}/upload(id=${task.id})}" 
+                           class="p-4 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 text-center">
+                            <div class="text-purple-600 font-medium">Upload File</div>
+                            <div class="text-xs text-purple-500 mt-1">Add work files</div>
+                        </a>
+                        
+                        <button th:if="${task.status == 'IN_PROGRESS'}"
+                                onclick="markComplete()"
+                                class="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 text-center">
+                            <div class="text-green-600 font-medium">Mark Complete</div>
+                            <div class="text-xs text-green-500 mt-1">Finish this task</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Task Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Task Information</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Client</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${task.clientName}"></p>
+                            <p class="text-xs text-gray-500" th:text="${task.clientPhone}"></p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Deadline</h3>
+                            <p class="mt-1 text-sm" th:class="${task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-900'}">
+                                <span th:text="${#temporals.format(task.deadline, 'dd.MM.yyyy HH:mm')}"></span>
+                                <span th:if="${task.isOverdue}" class="ml-2">⚠️ Overdue</span>
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Created</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${#temporals.format(task.createdAt, 'dd.MM.yyyy')}"></p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Estimated Time</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${task.estimatedHours ? task.estimatedHours + ' hours' : 'Not estimated'}"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Description</h3>
+                        <div class="prose prose-sm max-w-none">
+                            <p class="text-gray-900 whitespace-pre-line" th:text="${task.description}"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Specifications -->
+                    <div th:if="${task.specifications}" class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Specifications</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p class="text-gray-900 whitespace-pre-line" th:text="${task.specifications}"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Internal Notes -->
+                    <div th:if="${task.internalNotes}" class="mb-6">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Internal Notes</h3>
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <p class="text-yellow-800 whitespace-pre-line" th:text="${task.internalNotes}"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attachments -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Attachments</h2>
+                        <a th:href="@{/worker/tasks/{id}/upload(id=${task.id})}" 
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center text-sm">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Upload File
+                        </a>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div th:each="attachment : ${attachments}" 
+                             class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center space-x-4">
+                                <div th:class="${'w-10 h-10 rounded-lg flex items-center justify-center ' + 
+                                    (attachment.attachmentType == 'DESIGN_SOURCE' ? 'bg-purple-100' :
+                                     attachment.attachmentType == 'DESIGN_PREVIEW' ? 'bg-blue-100' :
+                                     attachment.attachmentType == 'INSTRUCTION' ? 'bg-yellow-100' :
+                                     'bg-gray-100')}">
+                                    <svg class="w-6 h-6" th:class="${attachment.attachmentType == 'DESIGN_SOURCE' ? 'text-purple-600' :
+                                                                  attachment.attachmentType == 'DESIGN_PREVIEW' ? 'text-blue-600' :
+                                                                  attachment.attachmentType == 'INSTRUCTION' ? 'text-yellow-600' :
+                                                                  'text-gray-600'}" 
+                                         fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900" th:text="${attachment.originalFileName}"></p>
+                                    <p class="text-xs text-gray-500">
+                                        <span th:text="${attachment.attachmentType}"></span> • 
+                                        <span th:text="${attachment.formattedSize}"></span> • 
+                                        <span th:text="${#temporals.format(attachment.uploadedAt, 'dd.MM.yyyy HH:mm')}"></span>
+                                    </p>
+                                    <p th:if="${attachment.description}" class="text-xs text-gray-600 mt-1" th:text="${attachment.description}"></p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a th:href="@{/api/files/download/{id}(id=${attachment.id})}" 
+                                   class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                                    Download
+                                </a>
+                                <button onclick="previewAttachment([[${attachment.id}]])" 
+                                        th:if="${attachment.isImage}"
+                                        class="px-3 py-1 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50">
+                                    Preview
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div th:if="${attachments.empty}" class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500">No attachments yet.</p>
+                            <p class="text-sm text-gray-400">Upload your work files, designs, or proofs.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Sidebar -->
+            <div class="space-y-8">
+                <!-- Time Tracking -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Time Tracking</h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Current Session -->
+                        <div th:if="${currentSession}" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm font-medium text-blue-900">Currently Working</p>
+                                    <p class="text-2xl font-bold text-blue-900" id="currentTimer">00:00:00</p>
+                                </div>
+                                <form th:action="@{/worker/tasks/{id}/stop-timer(id=${task.id})}" 
+                                      method="post">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit" 
+                                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                                        Stop
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Start Timer Button -->
+                        <div th:unless="${currentSession}">
+                            <form th:action="@{/worker/tasks/{id}/start-timer(id=${task.id})}" 
+                                  method="post">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" 
+                                        class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center">
+                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Start Timer
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Time Summary -->
+                        <div class="pt-4 border-t border-gray-200">
+                            <h3 class="text-sm font-medium text-gray-900 mb-2">Time Summary</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Today</span>
+                                    <span class="font-medium" th:text="${timeSummary.todayHours + 'h'}">0h</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">This Week</span>
+                                    <span class="font-medium" th:text="${timeSummary.weekHours + 'h'}">0h</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Total</span>
+                                    <span class="font-medium" th:text="${timeSummary.totalHours + 'h'}">0h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+                    
+                    <div class="space-y-4">
+                        <div th:each="activity : ${recentActivities}" 
+                             class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div th:class="${'w-8 h-8 rounded-full flex items-center justify-center ' + 
+                                    (activity.type == 'STATUS_CHANGE' ? 'bg-blue-100' :
+                                     activity.type == 'FILE_UPLOAD' ? 'bg-green-100' :
+                                     activity.type == 'COMMENT' ? 'bg-purple-100' :
+                                     'bg-gray-100')}">
+                                    <svg class="w-5 h-5" th:class="${activity.type == 'STATUS_CHANGE' ? 'text-blue-600' :
+                                                                  activity.type == 'FILE_UPLOAD' ? 'text-green-600' :
+                                                                  activity.type == 'COMMENT' ? 'text-purple-600' :
+                                                                  'text-gray-600'}" 
+                                         fill="currentColor" viewBox="0 0 20 20">
+                                        <path th:if="${activity.type == 'STATUS_CHANGE'}" fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        <path th:if="${activity.type == 'FILE_UPLOAD'}" fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                        <path th:if="${activity.type == 'COMMENT'}" fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-900" th:text="${activity.description}"></p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(activity.timestamp, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        
+                        <div th:if="${recentActivities.empty}" class="text-center py-4">
+                            <p class="text-sm text-gray-500">No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comments -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Comments</h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Comment Form -->
+                        <form th:action="@{/worker/tasks/{id}/comment(id=${task.id})}" 
+                              method="post"
+                              class="mb-4">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <textarea name="comment" 
+                                      rows="3"
+                                      placeholder="Add a comment..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            <div class="mt-2 flex justify-end">
+                                <button type="submit" 
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                    Post Comment
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Comments List -->
+                        <div class="space-y-4">
+                            <div th:each="comment : ${comments}" 
+                                 class="p-4 border border-gray-200 rounded-lg">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                            <span class="text-sm font-medium text-gray-600" 
+                                                  th:text="${comment.userFirstName.substring(0,1) + comment.userLastName.substring(0,1)}"></span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-medium text-gray-900">
+                                                <span th:text="${comment.userFirstName + ' ' + comment.userLastName}"></span>
+                                            </p>
+                                            <p class="text-xs text-gray-500" th:text="${#temporals.format(comment.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-700 whitespace-pre-line" th:text="${comment.content}"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div th:replace="~{layout/footer :: footer}"></div>
+    
+    <script>
+        // Timer functionality
+        let startTime = [[${currentSession ? currentSession.startTime : null}]];
+        
+        function updateTimer() {
+            if (startTime) {
+                const now = new Date().getTime();
+                const start = new Date(startTime).getTime();
+                const diff = now - start;
+                
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('currentTimer').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // Update timer every second
+        if (startTime) {
+            setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+        
+        function updateProgress(value) {
+            // In production, this would make an API call
+            fetch(`/worker/tasks/[[${task.id}]]/progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_csrf"]').value
+                },
+                body: JSON.stringify({ progress: value })
+            });
+        }
+        
+        function startWork() {
+            if (confirm('Start working on this task?')) {
+                document.querySelector('form[action*="start-timer"]').submit();
+            }
+        }
+        
+        function markComplete() {
+            if (confirm('Mark this task as complete?')) {
+                document.querySelector('form[action*="status"] select').value = 'COMPLETED';
+                document.querySelector('form[action*="status"]').submit();
+            }
+        }
+        
+        function openTimeTracker() {
+            // Open time tracking modal or page
+            window.location.href = '/worker/tasks/[[${task.id}]]/time-tracker';
+        }
+        
+        function printTask() {
+            window.print();
+        }
+        
+        function previewAttachment(attachmentId) {
+            window.open(`/api/files/preview/${attachmentId}`, '_blank');
+        }
+    </script>
+</body>
+</html>

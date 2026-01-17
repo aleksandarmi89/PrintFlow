@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Orders - PrintFlow Admin</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+    
+    <main class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Orders</h1>
+                    <p class="text-gray-600 mt-2">Manage work orders and track progress</p>
+                </div>
+                <div class="flex space-x-3">
+                    <a th:href="@{/admin/orders/create}" 
+                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        + New Order
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Filters and Search -->
+            <div class="mt-6">
+                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                    <!-- Status Filter -->
+                    <div class="flex-1">
+                        <form th:action="@{/admin/orders}" method="get" class="flex gap-2">
+                            <select name="status" 
+                                    th:onchange="this.form.submit()"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Statuses</option>
+                                <option th:each="status : ${orderStatuses}" 
+                                        th:value="${status}"
+                                        th:text="${status}"
+                                        th:selected="${param.status == status}">
+                                </option>
+                            </select>
+                            
+                            <!-- Search Input -->
+                            <div class="flex-1">
+                                <input type="text" 
+                                       name="search" 
+                                       th:value="${search}"
+                                       placeholder="Search orders by number, title, or client..."
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
+                                Search
+                            </button>
+                            <a th:href="@{/admin/orders}" 
+                               class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                Clear
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="text-sm text-gray-600">New</div>
+                <div class="text-2xl font-bold text-blue-600">0</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="text-sm text-gray-600">In Design</div>
+                <div class="text-2xl font-bold text-yellow-600">0</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="text-sm text-gray-600">In Print</div>
+                <div class="text-2xl font-bold text-purple-600">0</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="text-sm text-gray-600">Ready</div>
+                <div class="text-2xl font-bold text-green-600">0</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="text-sm text-gray-600">Overdue</div>
+                <div class="text-2xl font-bold text-red-600">0</div>
+            </div>
+        </div>
+        
+        <!-- Orders Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Order #
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Title
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Client
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Assigned To
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Deadline
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Price
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr th:each="order : ${orders}" 
+                            class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-blue-600">
+                                    <a th:href="@{/admin/orders/{id}(id=${order.id})}" 
+                                       th:text="${order.orderNumber}">
+                                        ORD-001
+                                    </a>
+                                </div>
+                                <div class="text-xs text-gray-500" 
+                                     th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy')}">
+                                    01.01.2024
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900" 
+                                     th:text="${order.title}">
+                                    Order Title
+                                </div>
+                                <div class="text-sm text-gray-500 truncate max-w-xs" 
+                                     th:text="${order.description}">
+                                    Order description...
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900" 
+                                     th:text="${order.clientName}">
+                                    Client Name
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900" 
+                                     th:text="${order.assignedToName ?: 'Not assigned'}">
+                                    Worker Name
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
+                                    (order.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
+                                     order.status == 'IN_DESIGN' ? 'bg-yellow-100 text-yellow-800' :
+                                     order.status == 'WAITING_CLIENT_APPROVAL' ? 'bg-orange-100 text-orange-800' :
+                                     order.status == 'IN_PRINT' ? 'bg-purple-100 text-purple-800' :
+                                     order.status == 'READY_FOR_DELIVERY' ? 'bg-green-100 text-green-800' :
+                                     order.status == 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
+                                     'bg-red-100 text-red-800')}">
+                                    <span th:text="${order.status}">Status</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center">
+        <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
+        <span th:class="${'text-sm ' + (order.deadline != null && order.deadline.isBefore(#temporals.createToday()) ? 'text-red-600 font-medium' : 'text-gray-900')}">
+            <th:block th:if="${order.deadline != null}" 
+                      th:text="${#temporals.format(order.deadline, 'dd.MM.yyyy HH:mm')}">
+            </th:block>
+            <span th:if="${order.deadline == null}" class="text-gray-400">No deadline</span>
+        </span>
+    </div>
+</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900" 
+                                     th:if="${order.price}" 
+                                     th:text="${'€' + #numbers.formatDecimal(order.price, 1, 2)}">
+                                    €100.00
+                                </div>
+                                <div class="text-sm text-gray-400" th:unless="${order.price}">
+                                    Not set
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a th:href="@{/admin/orders/{id}(id=${order.id})}" 
+                                       class="text-blue-600 hover:text-blue-900">
+                                        View
+                                    </a>
+                                    <a th:href="@{/admin/orders/{id}/edit(id=${order.id})}" 
+                                       class="text-green-600 hover:text-green-900">
+                                        Edit
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${orders.empty}">
+                            <td colspan="8" class="px-6 py-12 text-center">
+                                <div class="text-gray-500">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
+                                    <p class="mt-1 text-sm text-gray-500">
+                                        Get started by creating a new order.
+                                    </p>
+                                    <div class="mt-6">
+                                        <a th:href="@{/admin/orders/create}" 
+                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                            + New Order
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-c-3 gap-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">📋 Order Management Tips</h3>
+                <ul class="space-y-3 text-blue-800">
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Use the status filter to focus on specific stages of production.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Assign orders to specific workers for better accountability.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Set realistic deadlines and monitor overdue orders regularly.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </main>
+    
+    <div th:replace="~{layout/footer :: footer}"></div>
+</body>
+</html>
