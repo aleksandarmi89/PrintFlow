@@ -1,0 +1,175 @@
+package com.printflow.controller;
+
+import com.printflow.entity.Company;
+import com.printflow.entity.Task;
+import com.printflow.entity.User;
+import com.printflow.entity.User.Role;
+import com.printflow.entity.enums.ProductCategory;
+import com.printflow.entity.enums.UnitType;
+import com.printflow.pricing.entity.Product;
+import com.printflow.pricing.entity.ProductVariant;
+import com.printflow.pricing.repository.ProductRepository;
+import com.printflow.pricing.repository.ProductVariantRepository;
+import com.printflow.repository.CompanyRepository;
+import com.printflow.repository.ClientRepository;
+import com.printflow.repository.TaskRepository;
+import com.printflow.repository.UserRepository;
+import com.printflow.repository.WorkOrderRepository;
+import com.printflow.repository.AttachmentRepository;
+import com.printflow.testsupport.TenantTestFixture;
+import com.printflow.testsupport.TenantTestFixture.TenantIds;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Optional;
+import java.util.Arrays;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.anyOf;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class RegressionPagesIntegrationTest {
+
+    @Autowired private MockMvc mockMvc;
+    @Autowired private CompanyRepository companyRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private ClientRepository clientRepository;
+    @Autowired private TaskRepository taskRepository;
+    @Autowired private WorkOrderRepository workOrderRepository;
+    @Autowired private AttachmentRepository attachmentRepository;
+    @Autowired private ProductRepository productRepository;
+    @Autowired private ProductVariantRepository productVariantRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+
+    private TenantTestFixture fixture;
+    private TenantIds tenantIds;
+    private ProductVariant variant;
+    private MockHttpSession adminSession;
+    private MockHttpSession workerSession;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        fixture = new TenantTestFixture(
+            mockMvc,
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            taskRepository,
+            attachmentRepository,
+            passwordEncoder
+        );
+        tenantIds = fixture.createTenantData();
+
+        Company company = companyRepository.findById(tenantIds.company1Id()).orElseThrow();
+
+        Product product = new Product();
+        product.setCompany(company);
+        product.setName("Regression Product");
+        product.setCategory(ProductCategory.OTHER);
+        product.setUnitType(pickAnyPieceUnit());
+        productRepository.save(product);
+
+        variant = new ProductVariant();
+        variant.setCompany(company);
+        variant.setProduct(product);
+        variant.setName("Regression Variant");
+        productVariantRepository.save(variant);
+
+        adminSession = fixture.login("tenant1_admin", "password");
+
+        Role workerRole = pickWorkerLikeRole();
+        User worker = userRepository.findByUsername("tenant1_worker")
+            .orElseGet(() -> {
+                User user = new User();
+                user.setUsername("tenant1_worker");
+                user.setPassword(passwordEncoder.encode("password"));
+                user.setRole(workerRole);
+                user.setCompany(company);
+                user.setFirstName("Worker");
+                user.setLastName("One");
+                user.setFullName("Worker One");
+                return userRepository.save(user);
+            });
+
+        Optional<Task> taskOpt = taskRepository.findById(tenantIds.taskId());
+        if (taskOpt.isPresent()) {
+            Task task = taskOpt.get();
+            if (task.getAssignedTo() == null) {
+                task.setAssignedTo(worker);
+                taskRepository.save(task);
+            }
+        }
+
+        workerSession = fixture.login("tenant1_worker", "password");
+    }
+
+    @Test
+    void adminKeyPagesRender() throws Exception {
+        mockMvc.perform(get("/admin/pricing/products").session(adminSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/pricing/products/" + variant.getProduct().getId()).session(adminSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/pricing/variants/" + variant.getId()).session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Add Component"),
+                containsString("Dodaj komponentu")
+            )));
+        mockMvc.perform(get("/pricing/calculate").session(adminSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/orders").session(adminSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/orders/" + tenantIds.workOrderId()).session(adminSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/orders/" + tenantIds.workOrderId() + "/edit").session(adminSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/orders/create").session(adminSession))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void workerKeyPagesRender() throws Exception {
+        mockMvc.perform(get("/worker/dashboard").session(workerSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/worker/my-tasks").session(workerSession))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicPagesRender() throws Exception {
+        String token = workOrderRepository.findById(tenantIds.workOrderId())
+            .orElseThrow()
+            .getPublicToken();
+        mockMvc.perform(get("/public/track"))
+            .andExpect(status().isOk());
+        mockMvc.perform(get("/public/order/" + token))
+            .andExpect(status().isOk());
+    }
+
+    private UnitType pickAnyPieceUnit() {
+        String[] preferred = {"PCS", "PC", "PIECE", "KOM", "KOMAD", "ITEM"};
+        return Arrays.stream(UnitType.values())
+            .filter(v -> Arrays.stream(preferred).anyMatch(p -> p.equalsIgnoreCase(v.name())))
+            .findFirst()
+            .orElse(UnitType.values()[0]);
+    }
+
+    private Role pickWorkerLikeRole() {
+        String[] preferred = {"WORKER", "WORKER_GENERAL", "WORKER_PRINT", "WORKER_DESIGN", "EMPLOYEE", "STAFF", "PRODUCTION", "USER", "MANAGER", "ADMIN"};
+        return Arrays.stream(Role.values())
+            .filter(v -> Arrays.stream(preferred).anyMatch(p -> p.equalsIgnoreCase(v.name())))
+            .findFirst()
+            .orElse(Role.ADMIN);
+    }
+}

@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:printflow_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  sql:
+    init:
+      mode: never
+  flyway:
+    enabled: false
+
+app:
+  billing:
+    enforce: false
+  notification:
+    email:
+      enabled: false
+  seed:
+    enabled: false
+    sample:
+      enabled: false
+
+MAIL_CRYPT_KEY: MDEyMzQ1Njc4OWFiY2RlZg==
