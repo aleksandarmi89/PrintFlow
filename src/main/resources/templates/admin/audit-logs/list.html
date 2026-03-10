@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Audit Logs - PrintFlow Admin</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Audit Logs</h1>
+                <p class="text-gray-600 mt-1">System activity tracking</p>
+            </div>
+            <a th:href="@{/admin/audit-logs/export(companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType},page=${page},size=${size})}"
+               class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                Export CSV
+            </a>
+        </div>
+
+        <form th:action="@{/admin/audit-logs}" method="get" class="flex flex-wrap gap-3 mb-6">
+            <div th:if="${companies}">
+                <select name="companyId" class="px-3 py-2 border border-gray-300 rounded-lg">
+                    <option value="">All companies</option>
+                    <option th:each="c : ${companies}"
+                            th:value="${c.id}"
+                            th:selected="${companyId == c.id}"
+                            th:text="${c.name}">
+                    </option>
+                </select>
+            </div>
+            <select name="action" class="px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="">All actions</option>
+                <option th:each="a : ${actions}"
+                        th:value="${a.name()}"
+                        th:selected="${action == a.name()}"
+                        th:text="${a.name()}">
+                </option>
+            </select>
+            <select name="size" class="px-3 py-2 border border-gray-300 rounded-lg">
+                <option th:each="opt : ${allowedSizes}"
+                        th:value="${opt}"
+                        th:text="${opt}"
+                        th:selected="${size == opt}">20</option>
+            </select>
+            <input type="number" name="pageNumber" min="1" th:value="${pageNumber}" placeholder="Page"
+                   class="px-3 py-2 border border-gray-300 rounded-lg w-24">
+            <input type="text" name="entityType" th:value="${entityType}" placeholder="Entity type"
+                   class="px-3 py-2 border border-gray-300 rounded-lg">
+            <input type="number" name="entityId" th:value="${entityId}" placeholder="Entity ID"
+                   class="px-3 py-2 border border-gray-300 rounded-lg w-36">
+            <input type="number" name="userId" th:value="${userId}" placeholder="User ID"
+                   class="px-3 py-2 border border-gray-300 rounded-lg w-28">
+            <input type="text" name="query" th:value="${query}" placeholder="Search (user, entity, description)"
+                   class="px-3 py-2 border border-gray-300 rounded-lg">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Filter
+            </button>
+            <a th:href="@{/admin/audit-logs}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                Clear
+            </a>
+        </form>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr th:each="log : ${logs}" class="cursor-pointer group"
+                            th:attr="data-audit-id=${log.id}">
+                            <td class="px-6 py-4 text-sm text-gray-700"
+                                th:text="${#temporals.format(log.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2024</td>
+                            <td class="px-6 py-4 text-sm text-gray-900" th:text="${log.action}">UPDATE</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">
+                                <div th:text="${log.entityType}">WorkOrder</div>
+                                <div class="text-xs text-gray-500" th:text="${log.entityId}">1</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-700"
+                                th:text="${log.user != null ? log.user.fullName : 'System'}">User</td>
+                            <td class="px-6 py-4 text-sm text-gray-700"
+                                th:text="${log.company != null ? log.company.name : '-'}">Company</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">
+                                <div class="text-xs text-gray-500">Description</div>
+                                <div class="text-sm text-gray-900" th:text="${log.description}">Description</div>
+                                <div class="text-xs text-gray-500 mt-1">IP</div>
+                                <div class="text-sm text-gray-900" th:text="${log.ipAddress != null ? log.ipAddress : '—'}">—</div>
+                                <div class="text-xs text-gray-500 mt-1" th:if="${log.oldValue != null || log.newValue != null}">Diff</div>
+                                <div class="text-sm text-gray-900" th:if="${log.oldValue != null || log.newValue != null}">
+                                    <span th:text="${log.oldValue != null ? log.oldValue : '—'}"></span>
+                                    <span class="text-gray-400">→</span>
+                                    <span th:text="${log.newValue != null ? log.newValue : '—'}"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:each="log : ${logs}" th:attr="data-audit-detail=${log.id}" class="hidden bg-gray-50">
+                            <td colspan="6" class="px-6 py-4 text-sm text-gray-700">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="flex items-center justify-between">
+                                            <div class="text-xs text-gray-500">Old Value</div>
+                                            <button type="button" class="text-xs text-blue-600 hover:text-blue-800"
+                                                    th:attr="data-copy=${log.oldValue}">Copy</button>
+                                        </div>
+                                        <pre class="mt-1 text-xs text-gray-900 bg-white border border-gray-200 rounded-lg p-2 whitespace-pre-wrap audit-json"
+                                             th:attr="data-json=${log.oldValue}">-</pre>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between">
+                                            <div class="text-xs text-gray-500">New Value</div>
+                                            <button type="button" class="text-xs text-blue-600 hover:text-blue-800"
+                                                    th:attr="data-copy=${log.newValue}">Copy</button>
+                                        </div>
+                                        <pre class="mt-1 text-xs text-gray-900 bg-white border border-gray-200 rounded-lg p-2 whitespace-pre-wrap audit-json"
+                                             th:attr="data-json=${log.newValue}">-</pre>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">User Agent</div>
+                                        <div class="text-sm text-gray-900 break-words" th:text="${log.userAgent ?: '-'}">-</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">IP Address</div>
+                                        <div class="text-sm text-gray-900" th:text="${log.ipAddress ?: '-'}">-</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${logs == null || logs.size() == 0}">
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">No audit logs.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-between" th:if="${logsPage != null}">
+            <div class="text-sm text-gray-600">
+                Page <span th:text="${page + 1}">1</span> of <span th:text="${totalPages}">1</span>
+            </div>
+            <div class="flex gap-2">
+                <a th:if="${page > 0}"
+                   th:href="@{/admin/audit-logs(pageNumber=${page},size=${size},companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType})}"
+                   class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                    Prev
+                </a>
+                <a th:if="${page + 1 < totalPages}"
+                   th:href="@{/admin/audit-logs(pageNumber=${page + 2},size=${size},companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType})}"
+                   class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                    Next
+                </a>
+            </div>
+        </div>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rows = document.querySelectorAll('tr[data-audit-id]');
+            rows.forEach(row => {
+                row.addEventListener('click', function () {
+                    const id = row.getAttribute('data-audit-id');
+                    const detail = document.querySelector(`tr[data-audit-detail="${id}"]`);
+                    if (detail) {
+                        detail.classList.toggle('hidden');
+                    }
+                });
+            });
+
+            function safeParseJson(raw) {
+                if (!raw || raw.trim() === '-' || raw.trim() === '') {
+                    return null;
+                }
+                try {
+                    return JSON.parse(raw);
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function formatJson(raw) {
+                const parsed = safeParseJson(raw);
+                if (!parsed) {
+                    return raw || '-';
+                }
+                return JSON.stringify(parsed, null, 2);
+            }
+
+            document.querySelectorAll('pre.audit-json').forEach(pre => {
+                const raw = pre.getAttribute('data-json') || '';
+                pre.textContent = formatJson(raw);
+            });
+
+            document.querySelectorAll('button[data-copy]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const text = btn.getAttribute('data-copy') || '';
+                    if (!navigator.clipboard) {
+                        return;
+                    }
+                    navigator.clipboard.writeText(text);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

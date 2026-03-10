@@ -1,0 +1,229 @@
+package com.printflow.controller;
+
+import com.printflow.dto.CompanyDTO;
+import com.printflow.service.CompanyService;
+import com.printflow.service.TenantContextService;
+import com.printflow.service.AuditLogService;
+import com.printflow.entity.enums.AuditAction;
+import com.printflow.config.PaginationConfig;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Controller
+@RequestMapping("/admin/companies")
+public class CompanyController extends BaseController {
+
+    private final CompanyService companyService;
+    private final PaginationConfig paginationConfig;
+    private final com.printflow.service.CompanyBrandingService companyBrandingService;
+    private final TenantContextService tenantContextService;
+    private final AuditLogService auditLogService;
+
+    public CompanyController(CompanyService companyService,
+                             PaginationConfig paginationConfig,
+                             com.printflow.service.CompanyBrandingService companyBrandingService,
+                             TenantContextService tenantContextService,
+                             AuditLogService auditLogService) {
+        this.companyService = companyService;
+        this.paginationConfig = paginationConfig;
+        this.companyBrandingService = companyBrandingService;
+        this.tenantContextService = tenantContextService;
+        this.auditLogService = auditLogService;
+    }
+
+    @GetMapping
+    public String listCompanies(@RequestParam(required = false) String search,
+                                @RequestParam(required = false) String plan,
+                                @RequestParam(required = false) String override,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(required = false) Integer size,
+                                Model model) {
+        int safePage = paginationConfig.normalizePage(page);
+        int pageSize = paginationConfig.normalizeSize(size);
+        org.springframework.data.domain.Pageable pageable =
+            org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
+        com.printflow.entity.enums.PlanTier planTier = null;
+        if (plan != null && !plan.isBlank()) {
+            try {
+                planTier = com.printflow.entity.enums.PlanTier.valueOf(plan);
+            } catch (Exception ignored) {
+            }
+        }
+        Boolean overrideActive = null;
+        if (override != null && !override.isBlank()) {
+            if ("on".equalsIgnoreCase(override)) {
+                overrideActive = true;
+            } else if ("off".equalsIgnoreCase(override)) {
+                overrideActive = false;
+            }
+        }
+
+        org.springframework.data.domain.Page<CompanyDTO> companiesPage =
+            companyService.getCompanies(search, planTier, overrideActive, pageable);
+        if (safePage >= companiesPage.getTotalPages() && companiesPage.getTotalPages() > 0) {
+            safePage = companiesPage.getTotalPages() - 1;
+            pageable = org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
+            companiesPage = companyService.getCompanies(search, planTier, overrideActive, pageable);
+        }
+        model.addAttribute("companies", companiesPage.getContent());
+        model.addAttribute("companiesPage", companiesPage);
+        model.addAttribute("search", search);
+        model.addAttribute("plan", plan);
+        model.addAttribute("override", override);
+        model.addAttribute("planOptions", com.printflow.entity.enums.PlanTier.values());
+        model.addAttribute("currentPage", companiesPage.getNumber());
+        model.addAttribute("totalPages", companiesPage.getTotalPages());
+        model.addAttribute("totalItems", companiesPage.getTotalElements());
+        model.addAttribute("lastPage", Math.max(0, companiesPage.getTotalPages() - 1));
+        model.addAttribute("size", pageSize);
+        model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
+        model.addAttribute("totalCompanies", companiesPage.getTotalElements());
+        return "admin/companies/list";
+    }
+
+    @GetMapping("/create")
+    public String createCompanyForm(Model model) {
+        model.addAttribute("company", new CompanyDTO());
+        return "admin/companies/create";
+    }
+
+    @PostMapping("/create")
+    public String createCompany(@ModelAttribute CompanyDTO companyDTO, Model model) {
+        try {
+            companyService.createCompany(companyDTO);
+            return redirectWithSuccess("/admin/companies", "Company created successfully", model);
+        } catch (Exception e) {
+            model.addAttribute("company", companyDTO);
+            model.addAttribute("errorMessage", e.getMessage());
+            return "admin/companies/create";
+        }
+    }
+
+    @GetMapping("/edit/{id}")
+    public String editCompanyForm(@PathVariable Long id, Model model) {
+        try {
+            CompanyDTO company = companyService.getCompanyById(id);
+            model.addAttribute("company", company);
+            model.addAttribute("isSuperAdmin", tenantContextService.isSuperAdmin());
+            List<com.printflow.entity.AuditLog> overrideLogs = auditLogService.getByEntity("Company", id)
+                .stream()
+                .filter(log -> {
+                    String desc = log.getDescription() != null ? log.getDescription().toLowerCase() : "";
+                    String newValue = log.getNewValue() != null ? log.getNewValue().toLowerCase() : "";
+                    return desc.contains("override")
+                        || desc.contains("trial")
+                        || newValue.contains("override")
+                        || newValue.contains("trial");
+                })
+                .limit(10)
+                .collect(Collectors.toList());
+            model.addAttribute("overrideLogs", overrideLogs);
+            return "admin/companies/edit";
+        } catch (Exception e) {
+            return redirectWithError("/admin/companies", "Company not found", model);
+        }
+    }
+
+    @PostMapping("/edit/{id}")
+    public String updateCompany(@PathVariable Long id,
+                                @ModelAttribute CompanyDTO companyDTO,
+                                @RequestParam(value = "logo", required = false) org.springframework.web.multipart.MultipartFile logo,
+                                Model model) {
+        try {
+            if (!tenantContextService.isSuperAdmin()) {
+                companyDTO.setBillingOverrideActive(false);
+                companyDTO.setBillingOverrideUntil(null);
+            }
+            companyService.updateCompany(id, companyDTO);
+            if (logo != null && !logo.isEmpty()) {
+                companyService.updateLogo(id, logo);
+            }
+            return redirectWithSuccess("/admin/companies", "Company updated successfully", model);
+        } catch (Exception e) {
+            model.addAttribute("company", companyDTO);
+            model.addAttribute("errorMessage", e.getMessage());
+            return "admin/companies/edit";
+        }
+    }
+
+    @PostMapping("/disable/{id}")
+    public String disableCompany(@PathVariable Long id, Model model) {
+        try {
+            companyService.disableCompany(id);
+            return redirectWithSuccess("/admin/companies", "Company disabled successfully", model);
+        } catch (Exception e) {
+            return redirectWithError("/admin/companies", e.getMessage(), model);
+        }
+    }
+
+    @PostMapping("/enable/{id}")
+    public String enableCompany(@PathVariable Long id, Model model) {
+        try {
+            companyService.enableCompany(id);
+            return redirectWithSuccess("/admin/companies", "Company enabled successfully", model);
+        } catch (Exception e) {
+            return redirectWithError("/admin/companies", e.getMessage(), model);
+        }
+    }
+
+    @PostMapping("/edit/{id}/billing-override")
+    public String setBillingOverride(@PathVariable Long id,
+                                     @RequestParam(defaultValue = "false") boolean active,
+                                     @RequestParam(required = false) String until,
+                                     Model model) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
+        }
+        java.time.LocalDateTime untilDate = null;
+        if (until != null && !until.isBlank()) {
+            try {
+                untilDate = java.time.LocalDateTime.parse(until);
+            } catch (Exception ex) {
+                return redirectWithError("/admin/companies/edit/" + id, "Invalid date format", model);
+            }
+        }
+        companyService.setBillingOverride(id, active, untilDate);
+        auditLogService.log(AuditAction.UPDATE, "Company", id, null, active ? "billing_override_on" : "billing_override_off",
+            "Updated billing override");
+        return redirectWithSuccess("/admin/companies/edit/" + id, "billing.override.updated", model);
+    }
+
+    @PostMapping("/edit/{id}/billing-pro-30")
+    public String activateProTrial(@PathVariable Long id, Model model) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
+        }
+        companyService.activateProTrial(id, 30);
+        auditLogService.log(AuditAction.UPDATE, "Company", id, null, "trial_pro_30",
+            "Activated PRO trial for 30 days");
+        return redirectWithSuccess("/admin/companies/edit/" + id, "billing.override.updated", model);
+    }
+
+    @PostMapping("/edit/{id}/billing-pro-365")
+    public String activateProOneYear(@PathVariable Long id, Model model) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
+        }
+        companyService.activateProOverrideForDays(id, 365);
+        auditLogService.log(AuditAction.UPDATE, "Company", id, null, "override_pro_365",
+            "Activated PRO override for 1 year");
+        return redirectWithSuccess("/admin/companies/edit/" + id, "billing.override.updated", model);
+    }
+
+    @GetMapping("/{id}/logo")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<byte[]> companyLogo(@PathVariable Long id) {
+        try {
+            byte[] data = companyBrandingService.loadLogo(id);
+            return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
+                .body(data);
+        } catch (Exception ex) {
+            return org.springframework.http.ResponseEntity.notFound().build();
+        }
+    }
+}

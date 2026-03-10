@@ -1,0 +1,309 @@
+package com.printflow.service;
+
+import com.printflow.dto.CompanyDTO;
+import com.printflow.entity.Company;
+import com.printflow.repository.CompanyRepository;
+import com.printflow.repository.UserRepository;
+import com.printflow.repository.ClientRepository;
+import com.printflow.repository.WorkOrderRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.printflow.util.SlugUtil;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
+import java.time.LocalDateTime;
+
+@Service
+@Transactional
+public class CompanyService {
+
+    private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
+    private final ClientRepository clientRepository;
+    private final WorkOrderRepository workOrderRepository;
+    private final com.printflow.storage.FileStorage fileStorage;
+    private final int trialDays;
+    private final TemplateSeederService templateSeederService;
+    private final NotificationService notificationService;
+
+    public CompanyService(CompanyRepository companyRepository,
+                          UserRepository userRepository,
+                          ClientRepository clientRepository,
+                          WorkOrderRepository workOrderRepository,
+                          com.printflow.storage.FileStorage fileStorage,
+                          @Value("${app.billing.trial-days:14}") int trialDays,
+                          TemplateSeederService templateSeederService,
+                          NotificationService notificationService) {
+        this.companyRepository = companyRepository;
+        this.userRepository = userRepository;
+        this.clientRepository = clientRepository;
+        this.workOrderRepository = workOrderRepository;
+        this.fileStorage = fileStorage;
+        this.trialDays = trialDays;
+        this.templateSeederService = templateSeederService;
+        this.notificationService = notificationService;
+    }
+
+    public List<CompanyDTO> getCompanies(String search) {
+        List<Company> companies;
+        if (search != null && !search.trim().isEmpty()) {
+            companies = companyRepository.findByNameContainingIgnoreCase(search.trim());
+        } else {
+            companies = companyRepository.findAll();
+        }
+        return companies.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    public Page<CompanyDTO> getCompanies(String search, Pageable pageable) {
+        Page<Company> companies;
+        if (search != null && !search.trim().isEmpty()) {
+            companies = companyRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            companies = companyRepository.findAll(pageable);
+        }
+        return companies.map(this::toDTO);
+    }
+
+    public Page<CompanyDTO> getCompanies(String search,
+                                         com.printflow.entity.enums.PlanTier plan,
+                                         Boolean overrideActive,
+                                         Pageable pageable) {
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        if (hasSearch && plan != null && overrideActive != null) {
+            return companyRepository.findByNameContainingIgnoreCaseAndPlanAndBillingOverrideActive(search.trim(), plan, overrideActive, pageable)
+                .map(this::toDTO);
+        }
+        if (hasSearch && plan != null) {
+            return companyRepository.findByNameContainingIgnoreCaseAndPlan(search.trim(), plan, pageable)
+                .map(this::toDTO);
+        }
+        if (hasSearch && overrideActive != null) {
+            return companyRepository.findByNameContainingIgnoreCaseAndBillingOverrideActive(search.trim(), overrideActive, pageable)
+                .map(this::toDTO);
+        }
+        if (plan != null && overrideActive != null) {
+            return companyRepository.findByPlanAndBillingOverrideActive(plan, overrideActive, pageable)
+                .map(this::toDTO);
+        }
+        if (plan != null) {
+            return companyRepository.findByPlan(plan, pageable).map(this::toDTO);
+        }
+        if (overrideActive != null) {
+            return companyRepository.findByBillingOverrideActive(overrideActive, pageable).map(this::toDTO);
+        }
+        return getCompanies(search, pageable);
+    }
+
+    public CompanyDTO getCompanyById(Long id) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        return toDTO(company);
+    }
+
+    public CompanyDTO createCompany(CompanyDTO dto) {
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            throw new RuntimeException("Company name is required");
+        }
+        if (companyRepository.existsByName(dto.getName().trim())) {
+            throw new RuntimeException("Company name already exists");
+        }
+        Company company = new Company();
+        String companyName = dto.getName().trim();
+        company.setName(companyName);
+        company.setSlug(generateUniqueSlug(companyName, null));
+        company.setEmail(dto.getEmail() != null ? dto.getEmail().trim() : null);
+        company.setPhone(dto.getPhone());
+        company.setAddress(dto.getAddress());
+        company.setWebsite(dto.getWebsite());
+        company.setPrimaryColor(dto.getPrimaryColor());
+        company.setCurrency(normalizeCurrency(dto.getCurrency()));
+        company.setActive(dto.isActive());
+        LocalDateTime now = LocalDateTime.now();
+        company.setTrialStart(now);
+        company.setTrialEnd(now.plusDays(Math.max(0, trialDays)));
+        Company saved = companyRepository.save(company);
+        templateSeederService.seedDefaultTemplates(saved);
+        return toDTO(saved);
+    }
+
+    public CompanyDTO updateCompany(Long id, CompanyDTO dto) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        String newName = dto.getName() != null ? dto.getName().trim() : "";
+        if (newName.isEmpty()) {
+            throw new RuntimeException("Company name is required");
+        }
+        if (!company.getName().equalsIgnoreCase(newName) && companyRepository.existsByName(newName)) {
+            throw new RuntimeException("Company name already exists");
+        }
+
+        company.setName(newName);
+        company.setSlug(generateUniqueSlug(newName, company.getId()));
+        company.setEmail(dto.getEmail() != null ? dto.getEmail().trim() : null);
+        company.setPhone(dto.getPhone());
+        company.setAddress(dto.getAddress());
+        company.setWebsite(dto.getWebsite());
+        company.setPrimaryColor(dto.getPrimaryColor());
+        company.setCurrency(normalizeCurrency(dto.getCurrency()));
+        if (dto.getSmtpHost() != null && !dto.getSmtpHost().isBlank()) {
+            company.setSmtpHost(dto.getSmtpHost().trim());
+        }
+        if (dto.getSmtpPort() != null) {
+            company.setSmtpPort(dto.getSmtpPort());
+        }
+        if (dto.getSmtpUser() != null && !dto.getSmtpUser().isBlank()) {
+            company.setSmtpUser(dto.getSmtpUser().trim());
+        }
+        if (dto.getSmtpPassword() != null && !dto.getSmtpPassword().isBlank()) {
+            company.setSmtpPassword(dto.getSmtpPassword());
+        }
+        if (dto.getSmtpTls() != null) {
+            company.setSmtpTls(dto.getSmtpTls());
+        }
+        company.setActive(dto.isActive());
+        if (dto.isBillingOverrideActive()) {
+            company.setBillingOverrideActive(true);
+            company.setBillingOverrideUntil(dto.getBillingOverrideUntil());
+        }
+        Company saved = companyRepository.save(company);
+        return toDTO(saved);
+    }
+
+    public CompanyDTO setBillingOverride(Long id, boolean active, LocalDateTime until) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        company.setBillingOverrideActive(active);
+        company.setBillingOverrideUntil(active ? until : null);
+        if (active) {
+            company.setPlan(com.printflow.entity.enums.PlanTier.PRO);
+            company.setPlanUpdatedAt(LocalDateTime.now());
+        }
+        Company saved = companyRepository.save(company);
+        return toDTO(saved);
+    }
+
+    public CompanyDTO activateProTrial(Long id, int days) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        LocalDateTime now = LocalDateTime.now();
+        company.setPlan(com.printflow.entity.enums.PlanTier.PRO);
+        company.setPlanUpdatedAt(now);
+        company.setTrialStart(now);
+        company.setTrialEnd(now.plusDays(Math.max(0, days)));
+        company.setBillingOverrideActive(false);
+        company.setBillingOverrideUntil(null);
+        Company saved = companyRepository.save(company);
+        return toDTO(saved);
+    }
+
+    public CompanyDTO activateProOverrideForDays(Long id, int days) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        LocalDateTime now = LocalDateTime.now();
+        company.setPlan(com.printflow.entity.enums.PlanTier.PRO);
+        company.setPlanUpdatedAt(now);
+        company.setBillingOverrideActive(true);
+        company.setBillingOverrideUntil(now.plusDays(Math.max(0, days)));
+        Company saved = companyRepository.save(company);
+        return toDTO(saved);
+    }
+
+    public void sendTestSmtpEmail(Long companyId, String toEmail) {
+        Company company = companyRepository.findById(companyId)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        notificationService.sendCompanySmtpTest(company, toEmail);
+    }
+
+    public void updateLogo(Long id, org.springframework.web.multipart.MultipartFile logoFile) throws java.io.IOException {
+        if (logoFile == null || logoFile.isEmpty()) {
+            return;
+        }
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        String original = logoFile.getOriginalFilename() != null ? logoFile.getOriginalFilename() : "";
+        String lower = original.toLowerCase();
+        if (!(lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".svg"))) {
+            throw new RuntimeException("Logo must be PNG, JPG or SVG");
+        }
+        com.printflow.storage.StoredFile stored = fileStorage.store(logoFile, "/company_" + id + "/branding", false);
+        if (company.getLogoPath() != null && !company.getLogoPath().isBlank()) {
+            fileStorage.deleteIfExists(company.getLogoPath());
+        }
+        company.setLogoPath(stored.getFilePath());
+        companyRepository.save(company);
+    }
+
+    public void disableCompany(Long id) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        company.setActive(false);
+        companyRepository.save(company);
+    }
+
+    public void enableCompany(Long id) {
+        Company company = companyRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        company.setActive(true);
+        companyRepository.save(company);
+    }
+
+    private CompanyDTO toDTO(Company company) {
+        long usersCount = userRepository.countByCompany_Id(company.getId());
+        long activeUsersCount = userRepository.countByCompany_IdAndActiveTrue(company.getId());
+        long clientsCount = clientRepository.countByCompany_Id(company.getId());
+        long ordersCount = workOrderRepository.countByCompany_Id(company.getId());
+        CompanyDTO dto = new CompanyDTO(
+            company.getId(),
+            company.getName(),
+            company.isActive(),
+            company.getCreatedAt(),
+            company.getUpdatedAt(),
+            usersCount,
+            activeUsersCount,
+            clientsCount,
+            ordersCount
+        );
+        dto.setEmail(company.getEmail());
+        dto.setPhone(company.getPhone());
+        dto.setAddress(company.getAddress());
+        dto.setWebsite(company.getWebsite());
+        dto.setPrimaryColor(company.getPrimaryColor());
+        dto.setLogoPath(company.getLogoPath());
+        dto.setCurrency(company.getCurrency());
+        dto.setSmtpHost(company.getSmtpHost());
+        dto.setSmtpPort(company.getSmtpPort());
+        dto.setSmtpUser(company.getSmtpUser());
+        dto.setSmtpPassword(null);
+        dto.setSmtpTls(company.getSmtpTls());
+        dto.setPlan(company.getPlan());
+        dto.setBillingOverrideActive(company.isBillingOverrideActive());
+        dto.setBillingOverrideUntil(company.getBillingOverrideUntil());
+        return dto;
+    }
+
+    private String generateUniqueSlug(String name, Long companyIdToIgnore) {
+        String base = SlugUtil.toSlug(name);
+        String slug = base;
+        int i = 2;
+        while (true) {
+            var existing = companyRepository.findBySlug(slug);
+            if (existing.isEmpty() || (companyIdToIgnore != null && companyIdToIgnore.equals(existing.get().getId()))) {
+                return slug;
+            }
+            slug = base + "-" + i++;
+        }
+    }
+
+    private String normalizeCurrency(String currency) {
+        if (currency == null || currency.isBlank()) {
+            return "RSD";
+        }
+        return currency.trim().toUpperCase();
+    }
+}
