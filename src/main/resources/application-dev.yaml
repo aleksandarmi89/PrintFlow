@@ -1,0 +1,50 @@
+app:
+  seed:
+    enabled: true
+    sample:
+      enabled: true
+      reset: false
+      force: false
+      companies: 2
+      users-per-company: 4
+      clients-per-company: 4
+      orders-per-company: 6
+      tasks-per-order: 1
+  billing:
+    enforce: false
+  notification:
+    email:
+      enabled: ${APP_EMAIL_ENABLED:true}
+      from: ${APP_EMAIL_FROM:no-reply@printflow.local}
+      fallback-enabled: ${APP_EMAIL_FALLBACK:true}
+  mail:
+    dev:
+      host: ${MAILTRAP_HOST:sandbox.smtp.mailtrap.io}
+      port: ${MAILTRAP_PORT:2525}
+      username: ${MAILTRAP_USERNAME:}
+      password: ${MAILTRAP_PASSWORD:}
+MAIL_CRYPT_KEY: ${MAIL_CRYPT_KEY:MDEyMzQ1Njc4OWFiY2RlZg==}
+  upload:
+    public-max-total-size: 52428800   # 50MB in dev
+spring:
+  jpa:
+    show-sql: true
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+  flyway:
+    enabled: false
+stripe:
+  mode: ${STRIPE_MODE:test}
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

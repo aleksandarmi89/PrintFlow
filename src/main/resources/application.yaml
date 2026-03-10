@@ -11,7 +11,7 @@ spring:
   # MySQL Configuration
   
   datasource:
-    url: jdbc:mysql://localhost:3306/printflow_db?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/printflow_db?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=CONVERT_TO_NULL
     username: root
     password: 
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -21,6 +21,7 @@ spring:
       minimum-idle: 5
       idle-timeout: 600000
       max-lifetime: 1800000
+      leak-detection-threshold: 30000
   
   # JPA Configuration
   jpa:
@@ -60,11 +61,30 @@ spring:
     basename: messages/messages
     encoding: UTF-8
     fallback-to-system-locale: false
+
+  # Mail Configuration
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
   
   # SQL logging
   sql:
     init:
       mode: always
+
+  flyway:
+    enabled: false
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
 
   # Security - dodaj ovo za smanjenje debug logova
   security:
@@ -104,15 +124,137 @@ server:
 
 # Application Configuration
 app:
+  base-url: http://localhost:8088
+  env: dev
+  mail:
+    require-crypt-key: false
+  cache:
+    notification-count-ttl-seconds: 20
+    notification-count-max-size: 10000
+    recent-notifications-ttl-seconds: 8
+    recent-notifications-max-size: 10000
+  pagination:
+    default-size: 20
+    max-size: 50
+    allowed-sizes: [10, 20, 50]
+  seed:
+    enabled: false
+    sample:
+      enabled: false
+      reset: false
+      force: false
+      companies: 2
+      users-per-company: 12
+      clients-per-company: 8
+      orders-per-company: 25
+      tasks-per-order: 2
   upload:
     dir: ./uploads/
     max-file-size: 104857600  # 100MB in bytes
+    public-max-file-size: 10485760   # 10MB
+    public-max-files-per-order: 10
+    public-max-total-size: 52428800  # 50MB total per order upload
+    public-allowed-file-types: .pdf,.jpg,.jpeg,.png,.svg,.ai,.psd
+    comment-max-file-size: 10485760  # 10MB
+    comment-allowed-mime-types: image/jpeg,image/png,image/webp,image/gif,image/svg+xml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/postscript,application/vnd.adobe.photoshop
+    virus-scan:
+      enabled: false
+      command: ""   # e.g. "clamscan {file}"
   allowed-file-types: .ai,.psd,.pdf,.jpg,.jpeg,.png,.svg,.cdr,.eps
+  rate-limit:
+    forgot:
+      enabled: true
+      max-requests: 5
+      window-seconds: 60
+    public-upload:
+      enabled: true
+      max-requests: 5
+      window-seconds: 60
+    public-approve:
+      enabled: true
+      max-requests: 10
+      window-seconds: 60
+    public-track:
+      enabled: true
+      max-requests: 30
+      window-seconds: 60
+    public-global:
+      enabled: true
+      max-requests: 60
+      window-seconds: 60
+    ban-list:
+      enabled: false
+      enforce-all: true
+      ips: ""
+    public-token:
+      enabled: true
+      max-requests: 20
+      window-seconds: 60
+    white-list:
+      enabled: false
+      ips: ""
+    auto-ban:
+      enabled: false
+      threshold: 10
+      window-seconds: 300
+      ban-seconds: 3600
+    dashboard:
+      window-seconds: 3600
   notification:
     email:
-      enabled: false
+      enabled: true
+      from: ${APP_EMAIL_FROM:no-reply@printflow.local}
+      fallback-enabled: ${APP_EMAIL_FALLBACK:false}
+      rate-limit-per-minute: 60
     sms:
       enabled: false
+    recent-limit: 10
+  plans:
+    free:
+      max-users: 3
+      max-monthly-orders: 50
+      max-storage-bytes: 536870912   # 512MB
+    pro:
+      max-users: 20
+      max-monthly-orders: 500
+      max-storage-bytes: 10737418240  # 10GB
+    team:
+      max-users: 100
+      max-monthly-orders: 2000
+      max-storage-bytes: 107374182400 # 100GB
+  billing:
+    trial-days: 30
+    enforce: true
+  invites:
+    expiry-hours: 48
+  public-order:
+    token:
+      ttl-days: 90
+      bytes: 32
+  public-request:
+    max-files: 5
+    max-file-bytes: 15728640
+    rate-limit:
+      enabled: true
+      max-requests: 10
+      window-seconds: 300
+  security:
+    cors:
+      enabled: false
+      allowed-origins: []
+    hsts:
+      enabled: false
+
+stripe:
+  mode: ${STRIPE_MODE:test}
+  api-key: ${STRIPE_API_KEY:}
+  test-api-key: ${STRIPE_TEST_API_KEY:}
+  live-api-key: ${STRIPE_LIVE_API_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  test-webhook-secret: ${STRIPE_TEST_WEBHOOK_SECRET:}
+  live-webhook-secret: ${STRIPE_LIVE_WEBHOOK_SECRET:}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:8088/billing/success}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:8088/billing/cancel}
   
   # Security
   security:
