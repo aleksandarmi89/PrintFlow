@@ -14,6 +14,8 @@ import com.printflow.pricing.repository.PricingComponentRepository;
 import com.printflow.pricing.repository.ProductVariantRepository;
 import com.printflow.service.ResourceNotFoundException;
 import com.printflow.service.ClientPricingProfileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ import java.util.Map;
 
 @Service
 public class PricingEngineService {
+    private static final Logger log = LoggerFactory.getLogger(PricingEngineService.class);
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
     private static final BigDecimal ONE_TEN = new BigDecimal("1.10");
@@ -62,6 +65,9 @@ public class PricingEngineService {
 
         List<PricingComponent> components = componentRepository
             .findAllByVariant_IdAndCompany_Id(variant.getId(), company.getId());
+
+        log.info("pricing_calculate_start companyId={} variantId={} productId={} quantity={} clientId={} components={}",
+            company.getId(), variant.getId(), variant.getProduct().getId(), req.getQuantity(), req.getClientId(), components.size());
 
         PricingCalculateResponse response = new PricingCalculateResponse();
         response.setCurrency(resolveCurrency(company));
@@ -239,6 +245,10 @@ public class PricingEngineService {
                 }
             }
         }
+
+        log.info("pricing_calculate_done companyId={} variantId={} totalCost={} totalPrice={} marginPercent={} warnings={} rules={}",
+            company.getId(), variant.getId(), response.getTotalCost(), response.getTotalPrice(),
+            response.getMarginPercent(), response.getWarnings().size(), response.getAppliedRules().size());
 
         return response;
     }

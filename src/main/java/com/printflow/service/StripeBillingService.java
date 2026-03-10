@@ -49,6 +49,7 @@ public class StripeBillingService {
     public BillingCustomer ensureCustomer(Company company) throws StripeException {
         BillingCustomer existing = billingCustomerRepository.findByCompany_Id(company.getId()).orElse(null);
         if (existing != null) {
+            log.info("billing_customer_reused companyId={} stripeCustomerId={}", company.getId(), existing.getStripeCustomerId());
             return existing;
         }
         ensureApiKey();
@@ -60,7 +61,9 @@ public class StripeBillingService {
         BillingCustomer billingCustomer = new BillingCustomer();
         billingCustomer.setCompany(company);
         billingCustomer.setStripeCustomerId(customer.getId());
-        return billingCustomerRepository.save(billingCustomer);
+        BillingCustomer saved = billingCustomerRepository.save(billingCustomer);
+        log.info("billing_customer_created companyId={} stripeCustomerId={}", company.getId(), saved.getStripeCustomerId());
+        return saved;
     }
 
     public String createSubscriptionCheckout(Company company, String priceId) throws StripeException {
@@ -82,6 +85,8 @@ public class StripeBillingService {
             .build();
 
         Session session = Session.create(params);
+        log.info("billing_checkout_created companyId={} stripeCustomerId={} stripeSessionId={} priceId={}",
+            company.getId(), billingCustomer.getStripeCustomerId(), session.getId(), priceId);
         return session.getUrl();
     }
 
@@ -92,6 +97,7 @@ public class StripeBillingService {
             throw new SignatureVerificationException("Missing webhook secret", signatureHeader);
         }
         Event event = Webhook.constructEvent(payload, signatureHeader, secret);
+        log.info("billing_webhook_received type={} eventId={}", event.getType(), event.getId());
         handleEvent(event);
     }
 
@@ -177,6 +183,13 @@ public class StripeBillingService {
         billingSubscription.setStripePriceId(priceId);
 
         billingSubscriptionRepository.save(billingSubscription);
+        log.info("billing_subscription_upserted companyId={} stripeCustomerId={} status={} priceId={} periodEnd={} eventCreated={}",
+            billingCustomer.getCompany().getId(),
+            subscription.getCustomer(),
+            subscription.getStatus(),
+            priceId,
+            billingSubscription.getCurrentPeriodEnd(),
+            eventCreated);
     }
 
     private LocalDateTime toLocalDateTime(Long epochSeconds) {
