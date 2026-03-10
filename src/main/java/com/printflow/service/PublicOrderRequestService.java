@@ -15,6 +15,8 @@ import com.printflow.repository.UserRepository;
 import com.printflow.storage.FileStorage;
 import com.printflow.storage.StoredFile;
 import com.printflow.util.SlugUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +33,7 @@ import java.util.List;
 @Service
 @Transactional
 public class PublicOrderRequestService {
+    private static final Logger log = LoggerFactory.getLogger(PublicOrderRequestService.class);
 
     private final PublicOrderRequestRepository requestRepository;
     private final PublicOrderRequestAttachmentRepository attachmentRepository;
@@ -131,6 +134,8 @@ public class PublicOrderRequestService {
         request.setStatus(PublicOrderRequestStatus.NEW);
         request.setSourceChannel(PublicOrderRequestSourceChannel.PUBLIC_FORM);
         PublicOrderRequest saved = requestRepository.save(request);
+        log.info("public_request_created requestId={} companyId={} source={} ip={}",
+            saved.getId(), company.getId(), saved.getSourceChannel(), remoteIp);
 
         storeAttachments(saved, company, files);
         sendSubmitEmails(saved);
@@ -206,6 +211,8 @@ public class PublicOrderRequestService {
         }
         String key = "public-request:" + companySlug + ":" + (remoteIp != null ? remoteIp : "unknown");
         if (!rateLimitService.allow(key, rateLimitMax, rateLimitWindowSeconds * 1000L)) {
+            log.warn("public_request_rate_limited companySlug={} ip={} windowSec={} max={}",
+                companySlug, remoteIp, rateLimitWindowSeconds, rateLimitMax);
             throw new RuntimeException("Previše zahteva. Pokušajte ponovo kasnije.");
         }
     }
@@ -246,6 +253,8 @@ public class PublicOrderRequestService {
             }
         }
         attachmentRepository.saveAll(toSave);
+        log.info("public_request_attachments_saved requestId={} companyId={} count={}",
+            request.getId(), company.getId(), toSave.size());
     }
 
     private void sendSubmitEmails(PublicOrderRequest request) {
@@ -264,6 +273,8 @@ public class PublicOrderRequestService {
             try {
                 emailService.send(customer, company, "public-order-request-received");
             } catch (Exception ignored) {
+                log.warn("public_request_customer_email_failed requestId={} companyId={} to={}",
+                    request.getId(), company.getId(), request.getCustomerEmail());
                 // submission flow must not fail if email fails
             }
         }
@@ -288,6 +299,8 @@ public class PublicOrderRequestService {
             try {
                 emailService.send(internal, company, "public-order-request-admin");
             } catch (Exception ignored) {
+                log.warn("public_request_admin_email_failed requestId={} companyId={} to={}",
+                    request.getId(), company.getId(), admin.getEmail());
                 // submission flow must not fail if email fails
             }
         }
