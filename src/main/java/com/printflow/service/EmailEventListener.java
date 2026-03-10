@@ -12,9 +12,10 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class EmailEventListener {
@@ -37,7 +38,7 @@ public class EmailEventListener {
         this.baseUrl = baseUrl;
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onOrderCreated(OrderCreatedEvent event) {
         WorkOrder order = workOrderRepository.findById(event.getOrderId()).orElse(null);
         if (order == null || order.getClient() == null || order.getClient().getEmail() == null) {
@@ -54,7 +55,7 @@ public class EmailEventListener {
         emailService.send(msg, order.getCompany(), "order-created");
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onOrderStatusChanged(OrderStatusChangedEvent event) {
         WorkOrder order = workOrderRepository.findById(event.getOrderId()).orElse(null);
         if (order == null || order.getClient() == null || order.getClient().getEmail() == null) {
@@ -73,7 +74,7 @@ public class EmailEventListener {
         emailService.send(msg, order.getCompany(), "order-status-changed");
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onDesignApprovalRequested(DesignApprovalRequestedEvent event) {
         WorkOrder order = workOrderRepository.findById(event.getOrderId()).orElse(null);
         if (order == null || order.getClient() == null || order.getClient().getEmail() == null) {
