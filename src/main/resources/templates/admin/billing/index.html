@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{billing.page.title}">Billing - PrintFlow</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900" th:text="#{billing.page.heading}">Billing</h1>
+        <p class="text-gray-600 mt-2" th:text="#{billing.page.subheading}">
+            Manage your plan, usage, and payment details.
+        </p>
+    </div>
+
+    <div th:if="${errorKey != null}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <span th:text="#{${errorKey}}">Error</span>
+    </div>
+    <div th:if="${error != null and errorKey == null}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <span th:text="${error}">Error</span>
+    </div>
+    <div th:if="${successKey != null}" class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+        <span th:text="#{${successKey}}">Saved</span>
+    </div>
+    <div th:if="${priceConfigMissing}" class="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-yellow-800">
+        <span th:text="#{billing.checkout.not_configured}">Planovi nisu podešeni. Kontaktirajte vlasnika aplikacije.</span>
+    </div>
+    <div th:if="${priceTestMode}" class="mb-6 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+        <span th:text="#{billing.checkout.test_mode}">TEST MODE</span>
+    </div>
+    <div th:if="${stripeConfigured == false}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <span th:text="#{billing.checkout.stripe_not_configured}">Stripe nije povezan. Unesite live konfiguraciju.</span>
+    </div>
+    <div th:if="${stripeMode != null and stripeMode.equalsIgnoreCase('live') and priceTestMode}" class="mb-6 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-orange-700">
+        <span th:text="#{billing.checkout.live_with_test_price}">Live mode koristi test price ID. Zamenite u konfiguraciji.</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section class="lg:col-span-2 space-y-6">
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <div class="text-sm text-gray-500" th:text="#{billing.current_plan}">Current plan</div>
+                        <div class="text-2xl font-semibold text-gray-900" th:text="${plan}">FREE</div>
+                        <div class="text-sm text-gray-500 mt-1" th:text="#{billing.plan.subtitle}">Plan for your company</div>
+                        <div class="text-sm mt-2 text-gray-600" th:if="${trialActive and trialDaysRemaining != null}"
+                             th:text="#{billing.trial.remaining(${trialDaysRemaining})}">
+                            12 days remaining in trial
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span th:if="${trialActive}" class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700"
+                              th:text="#{billing.badge.trial_active}">Trial active</span>
+                        <span th:if="${trialExpired}" class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700"
+                              th:text="#{billing.badge.trial_expired}">Trial expired</span>
+                        <span th:if="${subscription != null and subscription.status != null}" class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700"
+                              th:text="${subscription.status}">active</span>
+                        <span th:if="${subscription == null}" class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600"
+                              th:text="#{billing.badge.no_subscription}">No subscription</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div>
+                        <div class="text-gray-500" th:text="#{billing.trial.start}">Trial start</div>
+                        <div th:text="${trialStart != null ? #temporals.format(trialStart, 'yyyy-MM-dd') : '-'}">-</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{billing.trial.end}">Trial end</div>
+                        <div th:text="${trialEnd != null ? #temporals.format(trialEnd, 'yyyy-MM-dd') : '-'}">-</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{billing.subscription.status}">Subscription status</div>
+                        <div th:text="${subscription != null && subscription.status != null ? subscription.status : '-'}">-</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{billing.subscription.period_end}">Current period end</div>
+                        <div th:text="${subscription != null && subscription.currentPeriodEnd != null ? #temporals.format(subscription.currentPeriodEnd, 'yyyy-MM-dd') : '-'}">-</div>
+                    </div>
+                    <div th:if="${trialExpired && trialDaysOverdue != null}">
+                        <div class="text-gray-500" th:text="#{billing.trial.overdue.label}">Trial overdue</div>
+                        <div class="text-red-600 font-semibold" th:text="#{billing.notice.overdue(${trialDaysOverdue})}">
+                            Overdue by 7 days.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-900" th:text="#{billing.plans.title}">Plans</h2>
+                <p class="text-sm text-gray-500 mt-1" th:text="#{billing.plans.subtitle}">
+                    Choose the plan that fits your growth.
+                </p>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="rounded-lg border border-gray-200 p-5 plan-card cursor-pointer" data-plan="FREE"
+                         th:attr="data-price-id-monthly=${priceIdFreeMonthly},data-price-id-yearly=${priceIdFreeYearly}">
+                        <div class="text-sm font-semibold text-gray-500" th:text="#{billing.plans.free.title}">FREE</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1" th:text="#{billing.plans.free.price}">0 RSD</div>
+                        <ul class="mt-3 text-sm text-gray-600 space-y-2">
+                            <li th:text="#{billing.plans.free.f1}">Basic order tracking</li>
+                            <li th:text="#{billing.plans.free.f2}">Limited users & orders</li>
+                            <li th:text="#{billing.plans.free.f3}">Standard support</li>
+                        </ul>
+                        <button type="button" data-plan-action class="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                           th:text="#{billing.plans.cta}">Select plan</button>
+                    </div>
+                    <div class="rounded-lg border border-blue-200 p-5 shadow-sm plan-card cursor-pointer" data-plan="PRO"
+                         th:attr="data-price-id-monthly=${priceIdProMonthly},data-price-id-yearly=${priceIdProYearly}">
+                        <div class="text-sm font-semibold text-blue-600" th:text="#{billing.plans.pro.title}">PRO</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1" th:text="#{billing.plans.pro.price}">29 EUR</div>
+                        <ul class="mt-3 text-sm text-gray-600 space-y-2">
+                            <li th:text="#{billing.plans.pro.f1}">Branded client portal</li>
+                            <li th:text="#{billing.plans.pro.f2}">Unlimited orders</li>
+                            <li th:text="#{billing.plans.pro.f3}">Priority email support</li>
+                        </ul>
+                        <button type="button" data-plan-action class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                           th:text="#{billing.plans.cta}">Select plan</button>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 p-5 plan-card cursor-pointer" data-plan="TEAM"
+                         th:attr="data-price-id-monthly=${priceIdTeamMonthly},data-price-id-yearly=${priceIdTeamYearly}">
+                        <div class="text-sm font-semibold text-gray-500" th:text="#{billing.plans.team.title}">TEAM</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1" th:text="#{billing.plans.team.price}">79 EUR</div>
+                        <ul class="mt-3 text-sm text-gray-600 space-y-2">
+                            <li th:text="#{billing.plans.team.f1}">Multi-location teams</li>
+                            <li th:text="#{billing.plans.team.f2}">Advanced analytics</li>
+                            <li th:text="#{billing.plans.team.f3}">Dedicated onboarding</li>
+                        </ul>
+                        <button type="button" data-plan-action class="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                           th:text="#{billing.plans.cta}">Select plan</button>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-4" th:text="#{billing.plans.note}">
+                    Prices are placeholders until Stripe products are configured.
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-900" th:text="#{billing.usage.title}">Usage</h2>
+                <p class="text-sm text-gray-500 mt-1" th:text="#{billing.usage.subtitle}">
+                    Track your current usage against plan limits.
+                </p>
+
+                <div class="mt-6 space-y-6">
+                    <div>
+                        <div class="flex items-center justify-between text-sm text-gray-700">
+                            <span th:text="#{billing.usage.users}">Active users</span>
+                            <span th:text="${activeUsers + ' / ' + (maxUsers > 0 ? maxUsers : '∞')}">0 / ∞</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-blue-500" th:style="'width:' + ${userUsagePercent} + '%'"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm text-gray-700">
+                            <span th:text="#{billing.usage.orders}">Orders this month</span>
+                            <span th:text="${monthOrders + ' / ' + (maxMonthlyOrders > 0 ? maxMonthlyOrders : '∞')}">0 / ∞</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-blue-500" th:style="'width:' + ${orderUsagePercent} + '%'"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm text-gray-700">
+                            <span th:text="#{billing.usage.storage}">Storage used</span>
+                            <span th:text="${storageUsedLabel + ' / ' + storageLimitLabel}">0 MB / ∞</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-blue-500" th:style="'width:' + ${storageUsagePercent} + '%'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-900" th:text="#{billing.premium.title}">Premium features</h2>
+                <p class="text-sm text-gray-500 mt-1" th:text="#{billing.premium.subtitle}">
+                    These features require an active subscription after trial.
+                </p>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm font-semibold text-gray-900" th:text="#{billing.premium.uploads.title}">
+                            Client file uploads
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1" th:text="#{billing.premium.uploads.desc}">
+                            Allow clients to upload files and approve proofs.
+                        </div>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm font-semibold text-gray-900" th:text="#{billing.premium.notifications.title}">
+                            Automated notifications
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1" th:text="#{billing.premium.notifications.desc}">
+                            Send branded email tracking and updates automatically.
+                        </div>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm font-semibold text-gray-900" th:text="#{billing.premium.pricing.title}">
+                            Advanced pricing
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1" th:text="#{billing.premium.pricing.desc}">
+                            Use full pricing calculator and snapshots.
+                        </div>
+                    </div>
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="text-sm font-semibold text-gray-900" th:text="#{billing.premium.support.title}">
+                            Priority support
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1" th:text="#{billing.premium.support.desc}">
+                            Faster responses for critical workflow issues.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="space-y-6">
+            <div id="checkout" class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900" th:text="#{billing.checkout.title}">
+                    Upgrade now
+                </h3>
+                <p class="text-sm text-gray-500 mt-1" th:text="#{billing.checkout.subtitle}">
+                    Select a plan and start checkout.
+                </p>
+                <form id="billingCheckoutForm" th:action="@{/admin/billing/checkout}" method="post" class="mt-4 space-y-3">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <label for="planSelect" class="text-sm text-gray-700" th:text="#{billing.checkout.plan}">
+                        Plan
+                    </label>
+                    <select id="planSelect" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <option value="FREE" th:selected="${selectedPlan == 'FREE'}" th:text="#{billing.plans.free.title}">FREE</option>
+                        <option value="PRO" th:selected="${selectedPlan == 'PRO'}" th:text="#{billing.plans.pro.title}">PRO</option>
+                        <option value="TEAM" th:selected="${selectedPlan == 'TEAM'}" th:text="#{billing.plans.team.title}">TEAM</option>
+                    </select>
+                    <label for="intervalSelect" class="text-sm text-gray-700" th:text="#{billing.checkout.interval}">
+                        Interval
+                    </label>
+                    <select id="intervalSelect" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <option value="MONTHLY" th:selected="${selectedInterval == 'MONTHLY'}" th:text="#{billing.checkout.interval.monthly}">Monthly</option>
+                        <option value="YEARLY" th:selected="${selectedInterval == 'YEARLY'}" th:text="#{billing.checkout.interval.yearly}">Yearly</option>
+                    </select>
+                    <input id="priceId" name="priceId" type="hidden" required>
+                    <div id="selectedPlanLabel" class="text-xs text-gray-500"></div>
+                    <div id="priceMissingWarning" class="hidden text-xs text-red-600" th:text="#{billing.checkout.missing_price}">
+                        Missing Stripe price ID for selected plan.
+                    </div>
+                    <button id="checkoutSubmit" type="submit"
+                            th:classappend="${stripeConfigured == false} ? 'opacity-60 cursor-not-allowed' : ''"
+                            th:disabled="${stripeConfigured == false}"
+                            class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                        <span th:text="#{billing.checkout.cta}">Start checkout</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-6 text-sm text-yellow-800">
+                <div class="font-semibold" th:text="#{billing.notice.card_title}">Billing enforcement</div>
+                <div class="mt-2" th:text="#{billing.notice.card_body}">
+                    When your trial ends, premium features are locked until subscription is active.
+                </div>
+                <a class="mt-3 inline-block font-semibold underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">
+                    Manage billing
+                </a>
+            </div>
+
+            <div sec:authorize="hasAuthority('SUPER_ADMIN')" class="rounded-xl border border-gray-200 bg-white p-6 text-sm">
+                <div class="font-semibold text-gray-900" th:text="#{billing.config.title}">Stripe Plan Config</div>
+                <div class="text-gray-500 mt-1" th:text="#{billing.config.subtitle}">
+                    Set Stripe price IDs per plan.
+                </div>
+                <form th:action="@{/admin/billing/config}" method="post" class="mt-4 space-y-3">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <div>
+                        <label class="text-xs text-gray-600" th:text="#{billing.plans.free.title}">FREE</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                            <input type="text" name="priceIdFreeMonthly" th:value="${priceIdFreeMonthly}"
+                                   th:placeholder="#{billing.checkout.interval.monthly}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="priceIdFreeYearly" th:value="${priceIdFreeYearly}"
+                                   th:placeholder="#{billing.checkout.interval.yearly}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-600" th:text="#{billing.plans.pro.title}">PRO</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                            <input type="text" name="priceIdProMonthly" th:value="${priceIdProMonthly}"
+                                   th:placeholder="#{billing.checkout.interval.monthly}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="priceIdProYearly" th:value="${priceIdProYearly}"
+                                   th:placeholder="#{billing.checkout.interval.yearly}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-600" th:text="#{billing.plans.team.title}">TEAM</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                            <input type="text" name="priceIdTeamMonthly" th:value="${priceIdTeamMonthly}"
+                                   th:placeholder="#{billing.checkout.interval.monthly}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="priceIdTeamYearly" th:value="${priceIdTeamYearly}"
+                                   th:placeholder="#{billing.checkout.interval.yearly}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
+                            th:text="#{billing.config.save}">
+                        Save
+                    </button>
+                </form>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+    (function () {
+        const priceInput = document.getElementById('priceId');
+        const cards = Array.from(document.querySelectorAll('.plan-card'));
+        const planSelect = document.getElementById('planSelect');
+        const intervalSelect = document.getElementById('intervalSelect');
+        const checkoutForm = document.getElementById('billingCheckoutForm');
+        const selectedPlan = /*[[${selectedPlan}]]*/ 'PRO';
+        const selectedInterval = /*[[${selectedInterval}]]*/ 'MONTHLY';
+        const stripeConfigured = /*[[${stripeConfigured}]]*/ true;
+
+        function setSelected(card) {
+            if (!card || !priceInput) return;
+            cards.forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'border-blue-400'));
+            card.classList.add('ring-2', 'ring-blue-500', 'border-blue-400');
+            const interval = intervalSelect ? intervalSelect.value : selectedInterval;
+            const priceId = interval === 'YEARLY'
+                ? (card.getAttribute('data-price-id-yearly') || '')
+                : (card.getAttribute('data-price-id-monthly') || '');
+            priceInput.value = priceId;
+            if (planSelect) {
+                planSelect.value = card.getAttribute('data-plan') || 'PRO';
+            }
+            updateCheckoutState();
+        }
+
+        function updateCheckoutState() {
+            const warning = document.getElementById('priceMissingWarning');
+            const submit = document.getElementById('checkoutSubmit');
+            const label = document.getElementById('selectedPlanLabel');
+            const plan = planSelect ? planSelect.value : selectedPlan;
+            const interval = intervalSelect ? intervalSelect.value : selectedInterval;
+            const missing = !priceInput.value;
+            const blocked = missing || !stripeConfigured;
+            if (label) {
+                label.textContent = /*[[#{billing.checkout.selected_plan}]]*/ 'Selected plan:' + ' ' + plan + ' / ' + interval;
+            }
+            if (warning) {
+                warning.classList.toggle('hidden', !missing);
+            }
+            if (submit) {
+                submit.disabled = blocked;
+                submit.classList.toggle('opacity-60', blocked);
+                submit.classList.toggle('cursor-not-allowed', blocked);
+            }
+        }
+
+        const defaultCard = cards.find(c => c.getAttribute('data-plan') === selectedPlan) || cards[0];
+        if (intervalSelect) {
+            intervalSelect.value = selectedInterval;
+        }
+        setSelected(defaultCard);
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => setSelected(card));
+        });
+
+        if (planSelect) {
+            planSelect.addEventListener('change', () => {
+                const card = cards.find(c => c.getAttribute('data-plan') === planSelect.value);
+                if (card) {
+                    setSelected(card);
+                }
+            });
+        }
+        if (intervalSelect) {
+            intervalSelect.addEventListener('change', () => {
+                const card = cards.find(c => c.getAttribute('data-plan') === (planSelect ? planSelect.value : selectedPlan));
+                if (card) {
+                    setSelected(card);
+                }
+            });
+        }
+
+        document.querySelectorAll('[data-plan-action]').forEach(btn => {
+            btn.addEventListener('click', (evt) => {
+                const card = evt.target.closest('.plan-card');
+                if (card) {
+                    setSelected(card);
+                }
+                if (checkoutForm && priceInput && priceInput.value) {
+                    checkoutForm.submit();
+                }
+            });
+        });
+        updateCheckoutState();
+    })();
+/*]]>*/
+</script>
+<div th:replace="~{layout/footer :: footer}"></div>
+</body>
+</html>
