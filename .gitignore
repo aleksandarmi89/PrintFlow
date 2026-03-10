@@ -2,6 +2,10 @@ HELP.md
 target/
 logs/
 uploads/
+PF
+[Help
+java
+mvn
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
