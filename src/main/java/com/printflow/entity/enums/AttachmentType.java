@@ -6,5 +6,6 @@ public enum AttachmentType {
     DESIGN_PREVIEW,
     PROOF_OF_WORK,
     CLIENT_FILE,
+    COMMENT,
     OTHER
 }

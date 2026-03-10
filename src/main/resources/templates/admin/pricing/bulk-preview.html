@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{pricing.bulk.preview}">Bulk Preview</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold" th:text="#{pricing.bulk.preview}">Bulk Preview</h1>
+            <p class="text-gray-600" th:text="#{pricing.bulk.preview_help}">Preview affected items before applying.</p>
+        </div>
+        <a th:href="@{/admin/pricing/products}" class="text-blue-600" th:text="#{pricing.products.back}">Back</a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-center gap-6 text-sm">
+            <div>
+                <div class="text-gray-500" th:text="#{pricing.bulk.preview_components}">Components affected</div>
+                <div class="text-lg font-semibold" th:text="${preview.componentCount}">0</div>
+            </div>
+            <div>
+                <div class="text-gray-500" th:text="#{pricing.bulk.preview_variants}">Variants affected</div>
+                <div class="text-lg font-semibold" th:text="${preview.variantCount}">0</div>
+            </div>
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+            <a class="text-blue-600"
+               th:href="${billingExpired} ? '#' : @{/admin/pricing/bulk-export(applyAllCategories=${bulkForm.applyAllCategories},category=${bulkForm.category},componentType=${bulkForm.componentType},pricingModel=${bulkForm.pricingModel})}"
+               th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed pointer-events-none' : ''"
+               th:text="#{pricing.bulk.export}">Export CSV</a>
+            <span th:if="${billingExpired}" class="text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.bulk.preview_components}">Components affected</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="text-gray-500">
+                <tr class="text-left border-b">
+                    <th class="py-2" th:text="#{pricing.products.category}">Category</th>
+                    <th class="py-2" th:text="#{pricing.products.name}">Product</th>
+                    <th class="py-2" th:text="#{pricing.variant.column}">Variant</th>
+                    <th class="py-2" th:text="#{pricing.component.type}">Type</th>
+                    <th class="py-2" th:text="#{pricing.component.model}">Model</th>
+                    <th class="py-2" th:text="#{pricing.component.amount}">Amount</th>
+                    <th class="py-2" th:text="#{pricing.component.notes}">Notes</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${preview.components}" class="border-b">
+                    <td class="py-2" th:text="${c.category}">-</td>
+                    <td class="py-2" th:text="${c.productName}">-</td>
+                    <td class="py-2" th:text="${c.variantName}">-</td>
+                    <td class="py-2" th:text="${c.componentType}">-</td>
+                    <td class="py-2" th:text="${c.pricingModel}">-</td>
+                    <td class="py-2" th:text="${c.amount}">-</td>
+                    <td class="py-2" th:text="${c.notes}">-</td>
+                </tr>
+                <tr th:if="${preview.components.empty}">
+                    <td colspan="7" class="py-4 text-gray-500" th:text="#{pricing.bulk.preview_none}">No components found.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.bulk.preview_variants}">Variants affected</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="text-gray-500">
+                <tr class="text-left border-b">
+                    <th class="py-2" th:text="#{pricing.products.category}">Category</th>
+                    <th class="py-2" th:text="#{pricing.products.name}">Product</th>
+                    <th class="py-2" th:text="#{pricing.variant.column}">Variant</th>
+                    <th class="py-2" th:text="#{pricing.variant.markup}">Markup %</th>
+                    <th class="py-2" th:text="#{pricing.variant.waste}">Waste %</th>
+                    <th class="py-2" th:text="#{pricing.variant.min_price}">Min price</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="v : ${preview.variants}" class="border-b">
+                    <td class="py-2" th:text="${v.category}">-</td>
+                    <td class="py-2" th:text="${v.productName}">-</td>
+                    <td class="py-2" th:text="${v.variantName}">-</td>
+                    <td class="py-2" th:text="${v.markupPercent}">-</td>
+                    <td class="py-2" th:text="${v.wastePercent}">-</td>
+                    <td class="py-2" th:text="${v.minPrice}">-</td>
+                </tr>
+                <tr th:if="${preview.variants.empty}">
+                    <td colspan="6" class="py-4 text-gray-500" th:text="#{pricing.bulk.preview_none}">No variants found.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

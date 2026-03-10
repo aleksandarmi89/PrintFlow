@@ -16,6 +16,7 @@ public class NotificationDTO {
     private Long userId;
     private Long relatedTaskId;
     private Long relatedOrderId;
+    private String link;
     
     public NotificationDTO() {
         // Default constructor
@@ -23,7 +24,7 @@ public class NotificationDTO {
     
     public NotificationDTO(Long id, String title, String message, String type, boolean read, 
                           LocalDateTime createdAt, LocalDateTime readAt, Long userId, 
-                          Long relatedTaskId, Long relatedOrderId) {
+                          Long relatedTaskId, Long relatedOrderId, String link) {
         this.id = id;
         this.title = title;
         this.message = message;
@@ -34,6 +35,7 @@ public class NotificationDTO {
         this.userId = userId;
         this.relatedTaskId = relatedTaskId;
         this.relatedOrderId = relatedOrderId;
+        this.link = link;
     }
     
     // Lombok @Data generiše gettere i settere, ali ako želite eksplicitno, evo ih:
@@ -116,6 +118,14 @@ public class NotificationDTO {
     
     public void setRelatedOrderId(Long relatedOrderId) {
         this.relatedOrderId = relatedOrderId;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
     }
     
     // Helper metode

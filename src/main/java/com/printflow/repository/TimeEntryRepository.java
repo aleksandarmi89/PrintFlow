@@ -7,13 +7,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
+    @Query("SELECT t FROM TimeEntry t WHERE t.id = :id AND t.task.company.id = :companyId")
+    Optional<TimeEntry> findByIdAndCompanyId(@Param("id") Long id, @Param("companyId") Long companyId);
     
     // ==================== BASIC QUERIES ====================
     
@@ -24,6 +29,11 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     Page<TimeEntry> findByTaskId(Long taskId, Pageable pageable);
     
     List<TimeEntry> findByUserIdAndTaskId(Long userId, Long taskId);
+
+    @Query("SELECT te FROM TimeEntry te JOIN te.task t JOIN t.workOrder wo " +
+           "WHERE wo.id = :workOrderId AND wo.company.id = :companyId")
+    List<TimeEntry> findByWorkOrderIdAndCompanyId(@Param("workOrderId") Long workOrderId,
+                                                  @Param("companyId") Long companyId);
     
     // ==================== DATE-BASED QUERIES ====================
     
@@ -36,6 +46,10 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     // Po konkretnom datumu
     @Query("SELECT te FROM TimeEntry te WHERE te.user.id = :userId AND DATE(te.date) = :date")
     List<TimeEntry> findByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    @Modifying
+    @Transactional
+    void deleteByTaskId(Long taskId);
     
     @Query("SELECT te FROM TimeEntry te WHERE te.task.id = :taskId AND DATE(te.date) = :date")
     List<TimeEntry> findByTaskIdAndDate(@Param("taskId") Long taskId, @Param("date") LocalDate date);

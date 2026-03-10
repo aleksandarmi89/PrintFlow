@@ -85,7 +85,7 @@ public class TaskDetailsDTO {
         this.createdByName = createdByName;
         this.assignedAt = assignedAt;
         this.timerStartedAt = timerStartedAt;
-        this.actualMinutes = actualMinutes;
+        this.actualMinutes = actualMinutes != null ? actualMinutes : 0;
     }
     
     // Getters i Setters

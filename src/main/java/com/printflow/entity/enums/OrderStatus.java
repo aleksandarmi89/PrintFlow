@@ -9,6 +9,12 @@ public enum OrderStatus {
     WAITING_QUALITY_CHECK,
     READY_FOR_DELIVERY,
     SENT,
+    OVERDUE,
     COMPLETED,
-    CANCELLED, IN_PROGRESS
+    CANCELLED,
+    IN_PROGRESS;
+
+    public String getMessageKey() {
+        return "orders.status." + name();
+    }
 }

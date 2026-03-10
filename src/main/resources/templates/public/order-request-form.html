@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{public.order.form.title}">Public Order Request</title>
+</head>
+<body class="bg-gray-50">
+<main class="max-w-3xl mx-auto px-4 py-10">
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8">
+        <div class="flex justify-end mb-3">
+            <div class="flex items-center gap-2 text-xs text-gray-600">
+                <span th:text="#{nav.language}">Language</span>
+                <a th:href="@{${requestUri}(lang='sr')}"
+                   th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                    <span th:text="#{nav.lang.sr}">SR</span>
+                </a>
+                <a th:href="@{${requestUri}(lang='en')}"
+                   th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                    <span th:text="#{nav.lang.en}">EN</span>
+                </a>
+            </div>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900" th:text="#{public.order.form.heading}">Pošaljite zahtev za narudžbinu</h1>
+        <p class="text-gray-600 mt-2">
+            <span th:text="#{public.order.form.company}">Kompanija</span>: <strong th:text="${company.name}">PrintFlow</strong>
+        </p>
+
+        <div th:if="${errorMessage}" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" th:text="${errorMessage}"></div>
+
+        <form th:action="@{/p/{slug}/order(slug=${companySlug})}" th:object="${form}" method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <section>
+                <h2 class="text-sm font-semibold text-gray-900 mb-3" th:text="#{public.order.form.contact}">Kontakt podaci</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.customer_name}">Ime i prezime *</label>
+                        <input type="text" th:field="*{customerName}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('customerName')}" th:errors="*{customerName}"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.customer_company}">Naziv firme</label>
+                        <input type="text" th:field="*{customerCompanyName}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.email}">Email *</label>
+                        <input type="email" th:field="*{customerEmail}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('customerEmail')}" th:errors="*{customerEmail}"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.phone}">Telefon</label>
+                        <input type="text" th:field="*{customerPhone}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-semibold text-gray-900 mb-3" th:text="#{public.order.form.order_info}">Podaci o narudžbini</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.product_type}">Tip proizvoda *</label>
+                        <input type="text" th:field="*{productType}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('productType')}" th:errors="*{productType}"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.quantity}">Količina *</label>
+                        <input type="number" min="1" th:field="*{quantity}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('quantity')}" th:errors="*{quantity}"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.dimensions}">Dimenzije</label>
+                        <input type="text" th:field="*{dimensions}" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{public.order.form.dimensions.placeholder}">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.material}">Materijal</label>
+                        <input type="text" th:field="*{material}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.finishing}">Dorada</label>
+                        <input type="text" th:field="*{finishing}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.deadline}">Rok</label>
+                        <input type="datetime-local" th:field="*{deadline}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.notes}">Napomena</label>
+                        <textarea th:field="*{notes}" rows="4" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-semibold text-gray-900 mb-3" th:text="#{public.order.form.files}">Fajlovi</h2>
+                <input type="file" name="files" multiple class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                <p class="text-xs text-gray-500 mt-1" th:text="#{public.order.form.files.hint}">PDF, JPG, PNG, SVG, AI, PSD. Maksimalno 5 fajlova.</p>
+            </section>
+
+            <div class="pt-2">
+                <button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 text-white px-5 py-2.5 font-medium hover:bg-blue-700">
+                    <span th:text="#{public.order.form.submit}">Pošalji zahtev</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>

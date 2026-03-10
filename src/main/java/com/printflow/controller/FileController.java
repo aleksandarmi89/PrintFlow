@@ -1,7 +1,6 @@
 package com.printflow.controller;
 
 import com.printflow.service.FileStorageService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/files")
-@RequiredArgsConstructor
 public class FileController {
     
     private final FileStorageService fileStorageService;
@@ -23,7 +21,7 @@ public class FileController {
 		this.fileStorageService = fileStorageService;
 	}
 
-	@GetMapping("/download/{attachmentId}")
+    @GetMapping("/download/{attachmentId}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long attachmentId) {
         try {
             com.printflow.dto.AttachmentDTO attachment = fileStorageService.getAttachmentById(attachmentId);
@@ -41,12 +39,56 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
     }
-    
-    @GetMapping("/thumbnail/{attachmentId}")
-    public ResponseEntity<Resource> getThumbnail(@PathVariable Long attachmentId) {
+
+    @GetMapping("/view/{attachmentId}")
+    public ResponseEntity<Resource> viewFile(@PathVariable Long attachmentId) {
         try {
             com.printflow.dto.AttachmentDTO attachment = fileStorageService.getAttachmentById(attachmentId);
-            byte[] thumbnailContent = fileStorageService.getThumbnail(attachmentId);
+            byte[] fileContent = fileStorageService.getAttachmentFile(attachmentId);
+
+            ByteArrayResource resource = new ByteArrayResource(fileContent);
+
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(attachment.getMimeType()))
+                .contentLength(attachment.getFileSize())
+                .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping(value = "/print/{attachmentId}", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> printFile(@PathVariable Long attachmentId) {
+        try {
+            com.printflow.dto.AttachmentDTO attachment = fileStorageService.getAttachmentById(attachmentId);
+            String fileUrl = "/api/files/view/" + attachmentId;
+            String mime = attachment.getMimeType() != null ? attachment.getMimeType() : "";
+            String content;
+            if (mime.startsWith("image/")) {
+                content = "<img src=\"" + fileUrl + "\" style=\"max-width:100%;height:auto;\" />";
+            } else {
+                content = "<iframe src=\"" + fileUrl + "\" style=\"width:100%;height:100vh;border:0;\"></iframe>";
+            }
+            String html = "<!doctype html><html><head><meta charset=\"utf-8\">"
+                + "<title>Print</title>"
+                + "<style>body{margin:0;padding:0;}</style>"
+                + "</head><body>"
+                + content
+                + "<script>window.onload=function(){setTimeout(function(){window.print();},300);};</script>"
+                + "</body></html>";
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    @GetMapping("/thumbnail/{attachmentId}")
+    public ResponseEntity<Resource> getThumbnail(@PathVariable Long attachmentId,
+                                                 @RequestParam(required = false) String token) {
+        try {
+            byte[] thumbnailContent = token != null && !token.isBlank()
+                ? fileStorageService.getThumbnailPublic(attachmentId, token)
+                : fileStorageService.getThumbnail(attachmentId);
             
             ByteArrayResource resource = new ByteArrayResource(thumbnailContent);
             

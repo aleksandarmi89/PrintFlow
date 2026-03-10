@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{auth.access_denied} + ' - PrintFlow'">Access Denied - PrintFlow</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-10">
+        <div class="max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-8 text-center">
+            <div class="text-4xl mb-3">⛔</div>
+            <h1 class="text-2xl font-semibold text-gray-900" th:text="#{auth.access_denied}">Access denied</h1>
+            <p class="mt-2 text-gray-600" th:text="#{auth.access_denied_detail}">
+                You don’t have permission to open this page.
+            </p>
+            <div class="mt-6 flex items-center justify-center gap-3">
+                <a th:href="@{/}" class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                   th:text="#{auth.go_home}">
+                    Go home
+                </a>
+                <a th:href="@{/worker/dashboard}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:text="#{auth.worker_dashboard}">
+                    Worker dashboard
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

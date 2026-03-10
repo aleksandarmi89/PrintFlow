@@ -3,10 +3,12 @@ package com.printflow.entity;
 import com.printflow.entity.enums.TaskStatus;
 import com.printflow.entity.enums.TaskPriority;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tasks")
+@Filter(name = "tenantFilter", condition = "tenant_id = :companyId")
 public class Task {
     
     @Id
@@ -20,7 +22,7 @@ public class Task {
     private String description;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private TaskStatus status = TaskStatus.NEW;
     
     @Enumerated(EnumType.STRING)
@@ -74,6 +76,10 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Company company;
     
     // Konstruktori
     public Task() {}
@@ -136,8 +142,8 @@ public class Task {
     public Double getActualHours() { return actualHours; }
     public void setActualHours(Double actualHours) { this.actualHours = actualHours; }
     
-    public long getActualMinutes() { return actualMinutes; }
-    public void setActualMinutes(long actualMinutes) { this.actualMinutes = actualMinutes; }
+    public Long getActualMinutes() { return actualMinutes; }
+    public void setActualMinutes(Long actualMinutes) { this.actualMinutes = actualMinutes; }
     
     public LocalDateTime getAssignedAt() { return assignedAt; }
     public void setAssignedAt(LocalDateTime assignedAt) { this.assignedAt = assignedAt; }
@@ -171,6 +177,9 @@ public class Task {
     
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
     
     // Helper metode
     @PrePersist

@@ -2,8 +2,8 @@ package com.printflow.service;
 
 import com.printflow.dto.ImportResultDTO;
 import com.printflow.entity.Client;
+import com.printflow.entity.Company;
 import com.printflow.repository.ClientRepository;
-import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class ExcelImportService {
     
     private final ClientRepository clientRepository;
@@ -26,7 +25,7 @@ public class ExcelImportService {
 		this.clientRepository = clientRepository;
 	}
 
-	public ImportResultDTO importClientsFromExcel(MultipartFile file) {
+	public ImportResultDTO importClientsFromExcel(MultipartFile file, Company company) {
         ImportResultDTO result = new ImportResultDTO();
         
         try (InputStream inputStream = file.getInputStream()) {
@@ -50,6 +49,7 @@ public class ExcelImportService {
                 
                 try {
                     Client client = parseClientFromRow(row);
+                    client.setCompany(company);
                     if (isValidClient(client)) {
                         clientsToImport.add(client);
                         importedRecords++;

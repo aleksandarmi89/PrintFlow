@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class AttachmentService {
@@ -27,15 +28,18 @@ public class AttachmentService {
     private final AttachmentRepository attachmentRepository;
     private final WorkOrderRepository workOrderRepository;
     private final UserRepository userRepository;
+    private final TenantGuard tenantGuard;
     
     private final String UPLOAD_DIR = "uploads";
     
     public AttachmentService(AttachmentRepository attachmentRepository, 
                             WorkOrderRepository workOrderRepository,
-                            UserRepository userRepository) {
+                            UserRepository userRepository,
+                            TenantGuard tenantGuard) {
         this.attachmentRepository = attachmentRepository;
         this.workOrderRepository = workOrderRepository;
         this.userRepository = userRepository;
+        this.tenantGuard = tenantGuard;
     }
     
     @Transactional
@@ -45,10 +49,11 @@ public class AttachmentService {
                                    Long uploadedById,
                                    String description) throws IOException {
         
-        WorkOrder workOrder = workOrderRepository.findById(workOrderId)
+        Long companyId = tenantGuard.requireCompanyId();
+        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
             .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
         
-        User uploadedBy = userRepository.findById(uploadedById)
+        User uploadedBy = userRepository.findByIdAndCompany_Id(uploadedById, companyId)
             .orElseThrow(() -> new RuntimeException("User not found with id: " + uploadedById));
         
         String originalFileName = file.getOriginalFilename();
@@ -83,7 +88,7 @@ public class AttachmentService {
     }
     
     public byte[] getAttachmentFile(Long attachmentId) throws IOException {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
+        Attachment attachment = attachmentRepository.findByIdAndCompany_Id(attachmentId, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("Attachment not found with id: " + attachmentId));
         
         Path filePath = Paths.get(attachment.getFilePath());
@@ -91,22 +96,28 @@ public class AttachmentService {
     }
     
     public AttachmentDTO getAttachmentById(Long attachmentId) {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
+        Attachment attachment = attachmentRepository.findByIdAndCompany_Id(attachmentId, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("Attachment not found with id: " + attachmentId));
         
         return convertToDTO(attachment);
     }
     
     public List<AttachmentDTO> getAttachmentsByWorkOrder(Long workOrderId) {
-        List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndActiveTrueOrderByUploadedAtDesc(workOrderId);
+        Long companyId = tenantGuard.requireCompanyId();
+        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+            .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
+        List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndCompany_IdAndActiveTrueOrderByUploadedAtDesc(workOrderId, companyId);
         return attachments.stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
     
     public List<AttachmentDTO> getAttachmentsByWorkOrderAndType(Long workOrderId, AttachmentType type) {
-        List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndAttachmentTypeAndActiveTrueOrderByUploadedAtDesc(
-            workOrderId, type);
+        Long companyId = tenantGuard.requireCompanyId();
+        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+            .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
+        List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndCompany_IdAndAttachmentTypeAndActiveTrueOrderByUploadedAtDesc(
+            workOrderId, companyId, type);
         return attachments.stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
@@ -114,7 +125,7 @@ public class AttachmentService {
     
     @Transactional
     public void deleteAttachment(Long attachmentId) throws IOException {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
+        Attachment attachment = attachmentRepository.findByIdAndCompany_Id(attachmentId, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("Attachment not found with id: " + attachmentId));
         
         Path filePath = Paths.get(attachment.getFilePath());
@@ -127,7 +138,10 @@ public class AttachmentService {
     }
     
     public AttachmentStatsDTO getAttachmentStats(Long workOrderId) {
-        List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndActiveTrue(workOrderId);
+        Long companyId = tenantGuard.requireCompanyId();
+        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+            .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
+        List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndCompany_IdAndActiveTrue(workOrderId, companyId);
         
         long totalFiles = attachments.size();
         long designFiles = attachments.stream()
@@ -178,6 +192,22 @@ public class AttachmentService {
         dto.setIsImage(attachment.getMimeType() != null && attachment.getMimeType().startsWith("image/"));
         
         return dto;
+    }
+
+    private void assertAttachmentAccess(Attachment attachment) {
+        if (tenantGuard.isSuperAdmin()) {
+            return;
+        }
+        Long companyId = attachment.getCompany() != null ? attachment.getCompany().getId() : null;
+        if (companyId == null && attachment.getWorkOrder() != null && attachment.getWorkOrder().getCompany() != null) {
+            companyId = attachment.getWorkOrder().getCompany().getId();
+        }
+        if (companyId == null && attachment.getTask() != null && attachment.getTask().getCompany() != null) {
+            companyId = attachment.getTask().getCompany().getId();
+        }
+        if (companyId == null || !companyId.equals(tenantGuard.requireCompanyId())) {
+            throw new AccessDeniedException("Attachment does not belong to your company.");
+        }
     }
     
     private String formatFileSize(long size) {

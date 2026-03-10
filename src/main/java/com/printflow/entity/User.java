@@ -2,10 +2,13 @@ package com.printflow.entity;
 
 import com.printflow.entity.enums.Language;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Filter;
 
 @Entity
 @Table(name = "users")
+@Filter(name = "tenantFilter", condition = "tenant_id = :companyId")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,9 +61,16 @@ public class User {
     
     @Column(name = "position")
     private String position;
+
+    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyRate;
     
     @Column(name = "notes", length = 1000)
     private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Company company;
     
     // Konstruktori
     public User() {}
@@ -139,13 +149,9 @@ public class User {
     }
     
     
-    public Boolean Available() {
-		return available;
-	}
-
-	public void setAvailable(Boolean available) {
-		this.available = available;
-	}
+    public Boolean getAvailable() {
+        return available;
+    }
 
 	public void setFullName(String fullName) { this.fullName = fullName; }
     
@@ -158,9 +164,7 @@ public class User {
     public LocalDateTime getLastLogin() { return lastLogin; }
     public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }
     
-    public boolean isAvailable()
-    
-    { return available != null && available; }
+    public boolean isAvailable() { return available != null && available; }
     public void setAvailable(boolean available) { this.available = available; }
     
     public String getDepartment() { return department; }
@@ -168,9 +172,15 @@ public class User {
     
     public String getPosition() { return position; }
     public void setPosition(String position) { this.position = position; }
+
+    public BigDecimal getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(BigDecimal hourlyRate) { this.hourlyRate = hourlyRate; }
     
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
     
     private void updateFullName() {
         if (firstName != null && lastName != null) {
@@ -197,6 +207,7 @@ public class User {
     }
     
     public enum Role {
+        SUPER_ADMIN,
         ADMIN,
         MANAGER,
         WORKER_DESIGN,    // Promenjeno iz WORKER_DESIGNER za konzistentnost

@@ -1,6 +1,7 @@
 package com.printflow.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
 import lombok.Data;
 
 
@@ -9,7 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "clients")
+@Table(name = "clients",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "email"}))
+@Filter(name = "tenantFilter", condition = "tenant_id = :companyId")
 @Data
 public class Client {
     @Id
@@ -25,7 +28,6 @@ public class Client {
     @Column(nullable = false)
     private String phone;
     
-    @Column(unique = true)
     private String email;
     
     private String address;
@@ -39,6 +41,10 @@ public class Client {
     
     @Column(name = "company_id")
     private String companyId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Company company;
     
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -156,13 +162,21 @@ public class Client {
 		this.taxId = taxId;
 	}
 
-	public String getCompanyId() {
-		return companyId;
-	}
+    public String getCompanyId() {
+        return companyId;
+    }
 
-	public void setCompanyId(String companyId) {
-		this.companyId = companyId;
-	}
+    public void setCompanyId(String companyId) {
+        this.companyId = companyId;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
+    }
 
 	public String getNotes() {
 		return notes;

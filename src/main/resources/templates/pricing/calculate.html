@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{pricing.calculate.title}">Price Calculator</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+        </div>
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6" th:text="#{pricing.calculate.title}">Price Calculator</h1>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <form id="priceForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="hidden" id="csrfParam" th:if="${_csrf != null}" th:value="${_csrf.parameterName}"/>
+                <input type="hidden" id="csrfToken" th:if="${_csrf != null}" th:value="${_csrf.token}"/>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1" th:text="#{products.title}">Product</label>
+                    <select id="productId" class="w-full border rounded px-3 py-2">
+                        <option value="" th:text="#{pricing.calculate.all_products}">All products</option>
+                        <option th:each="p : ${products}" th:value="${p.id}" th:text="${p.name}">Product</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1" th:text="#{pricing.calculate.variant}">Variant</label>
+                    <select id="variantId" class="w-full border rounded px-3 py-2" required>
+                        <option value="" th:text="#{pricing.calculate.select_variant}">Select variant</option>
+                        <option th:each="v : ${variants}" th:value="${v.id}" th:attr="data-product-id=${v.productId}" th:text="${v.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1" th:text="#{pricing.calculate.quantity}">Quantity</label>
+                    <input type="number" id="quantity" step="0.01" min="0.01" value="100" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div id="widthFieldWrap">
+                    <label class="block text-sm font-medium mb-1">
+                        <span th:text="#{pricing.calculate.width}">Width (mm)</span>
+                        <span class="ml-1 text-xs text-gray-500 cursor-help" th:attr="title=#{pricing.calculate.help.width}">ⓘ</span>
+                    </label>
+                    <input type="number" id="widthMm" min="1" class="w-full border rounded px-3 py-2">
+                </div>
+                <div id="heightFieldWrap">
+                    <label class="block text-sm font-medium mb-1">
+                        <span th:text="#{pricing.calculate.height}">Height (mm)</span>
+                        <span class="ml-1 text-xs text-gray-500 cursor-help" th:attr="title=#{pricing.calculate.help.height}">ⓘ</span>
+                    </label>
+                    <input type="number" id="heightMm" min="1" class="w-full border rounded px-3 py-2">
+                </div>
+                <div id="colorsFieldWrap">
+                    <label class="block text-sm font-medium mb-1">
+                        <span th:text="#{pricing.calculate.colors}">Colors</span>
+                        <span class="ml-1 text-xs text-gray-500 cursor-help" th:attr="title=#{pricing.calculate.help.colors}">ⓘ</span>
+                    </label>
+                    <input type="number" id="colors" min="1" value="4" class="w-full border rounded px-3 py-2">
+                </div>
+                <div id="sidesFieldWrap">
+                    <label class="block text-sm font-medium mb-1">
+                        <span th:text="#{pricing.calculate.sides}">Sides</span>
+                        <span class="ml-1 text-xs text-gray-500 cursor-help" th:attr="title=#{pricing.calculate.help.sides}">ⓘ</span>
+                    </label>
+                    <input type="number" id="sides" min="1" value="1" class="w-full border rounded px-3 py-2">
+                </div>
+                <div id="metersFieldWrap" class="hidden">
+                    <label class="block text-sm font-medium mb-1">
+                        <span th:text="#{pricing.calculate.meters}">Meters</span>
+                        <span class="ml-1 text-xs text-gray-500 cursor-help" th:attr="title=#{pricing.calculate.help.meters}">ⓘ</span>
+                    </label>
+                    <input type="number" id="meters" min="0.01" step="0.01" value="1" class="w-full border rounded px-3 py-2">
+                </div>
+                <div id="minutesFieldWrap" class="hidden">
+                    <label class="block text-sm font-medium mb-1">
+                        <span th:text="#{pricing.calculate.minutes}">Minutes</span>
+                        <span class="ml-1 text-xs text-gray-500 cursor-help" th:attr="title=#{pricing.calculate.help.minutes}">ⓘ</span>
+                    </label>
+                    <input type="number" id="minutes" min="1" step="1" value="30" class="w-full border rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1" th:text="#{pricing.calculate.client}">Client (optional)</label>
+                    <select id="clientId" class="w-full border rounded px-3 py-2">
+                        <option value="" th:text="#{pricing.calculate.select_client}">Select client</option>
+                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.companyName}"></option>
+                    </select>
+                </div>
+                <div class="md:col-span-3">
+                    <button id="calculateBtn" type="button"
+                            th:disabled="${billingExpired}"
+                            th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                            class="bg-blue-600 text-white rounded px-4 py-2"
+                            th:text="#{pricing.calculate.calculate}">Calculate</button>
+                    <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
+                </div>
+                <div class="md:col-span-3">
+                    <div id="formError" class="hidden text-sm text-red-600"></div>
+                </div>
+                <div class="md:col-span-3">
+                    <div id="fieldHint" class="text-xs text-gray-500" th:text="#{pricing.calculate.field_hint}">
+                        Width/Height are used for m² pricing, Colors for per-color, Sides for per-side.
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="resultCard" class="mt-6 hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold mb-4" th:text="#{pricing.calculate.estimated}">ESTIMATED PRICE</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <div class="text-gray-500" th:text="#{pricing.calculate.cost}">Cost</div>
+                        <div id="costValue" class="text-lg font-semibold"></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{pricing.calculate.price}">Price</div>
+                        <div id="priceValue" class="text-lg font-semibold"></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{pricing.calculate.margin}">Margin</div>
+                        <div id="marginValue" class="text-lg font-semibold"></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{pricing.calculate.markup}">Markup</div>
+                        <div id="markupValue" class="text-lg font-semibold"></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500" th:text="#{pricing.calculate.profit}">Profit</div>
+                        <div id="profitValue" class="text-lg font-semibold"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="text-gray-500 text-sm" th:text="#{pricing.calculate.recommended}">Recommended</div>
+                    <div id="recommendedValue" class="font-semibold"></div>
+                    <div class="text-gray-500 text-sm mt-2" th:text="#{pricing.calculate.minimum}">Minimum</div>
+                    <div id="minimumValue" class="font-semibold"></div>
+                    <div class="text-gray-500 text-sm mt-2" th:text="#{pricing.calculate.target_margin}">Target Margin (30%)</div>
+                    <div id="targetMarginValue" class="font-semibold"></div>
+                    <div class="text-gray-500 text-sm mt-2 hidden" id="clientDiscountLabel" th:text="#{pricing.calculate.client_discount}">Client discount</div>
+                    <div id="clientDiscountValue" class="font-semibold text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1 inline-block hidden"></div>
+                </div>
+
+                <div id="warningBox" class="mt-4 hidden border border-amber-300 bg-amber-50 text-amber-900 rounded px-3 py-2 text-sm">
+                    <div class="font-semibold mb-1" th:text="#{pricing.calculate.warnings}">Warnings</div>
+                    <ul id="warningList" class="list-disc pl-5"></ul>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-2" th:text="#{pricing.calculate.breakdown}">Breakdown</h3>
+                    <table class="min-w-full text-sm">
+                        <thead class="text-gray-500">
+                            <tr class="text-left border-b">
+                                <th class="py-2" th:text="#{pricing.calculate.type}">Type</th>
+                                <th class="py-2" th:text="#{pricing.calculate.model}">Model</th>
+                                <th class="py-2" th:text="#{pricing.calculate.amount}">Amount</th>
+                                <th class="py-2" th:text="#{pricing.calculate.multiplier}">Multiplier</th>
+                                <th class="py-2" th:text="#{pricing.calculate.unit}">Unit</th>
+                                <th class="py-2" th:text="#{pricing.calculate.line_cost}">Line Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdownBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1" th:text="#{pricing.calculate.add_to_order}">Add to Work Order</label>
+                        <select id="workOrderId" class="w-full border rounded px-3 py-2">
+                            <option value="" th:text="#{pricing.calculate.select_order}">Select work order</option>
+                            <option th:each="wo : ${workOrders}" th:value="${wo.id}" th:text="${wo.orderNumber + ' - ' + wo.title}"></option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="addToOrder"
+                                th:disabled="${billingExpired}"
+                                th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                                class="bg-green-600 text-white rounded px-4 py-2 w-full"
+                                th:text="#{pricing.calculate.add_button}">✅ Add to Work Order</button>
+                        <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
+                    </div>
+                </div>
+
+                <div id="resultMessage" class="mt-3 text-sm text-gray-600"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const priceForm = document.getElementById('priceForm');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultCard = document.getElementById('resultCard');
+        const breakdownBody = document.getElementById('breakdownBody');
+        const addToOrder = document.getElementById('addToOrder');
+        const resultMessage = document.getElementById('resultMessage');
+        const formError = document.getElementById('formError');
+        const warningBox = document.getElementById('warningBox');
+        const warningList = document.getElementById('warningList');
+        const fieldHint = document.getElementById('fieldHint');
+        const productSelect = document.getElementById('productId');
+        const variantSelect = document.getElementById('variantId');
+        const widthFieldWrap = document.getElementById('widthFieldWrap');
+        const heightFieldWrap = document.getElementById('heightFieldWrap');
+        const colorsFieldWrap = document.getElementById('colorsFieldWrap');
+        const sidesFieldWrap = document.getElementById('sidesFieldWrap');
+        const metersFieldWrap = document.getElementById('metersFieldWrap');
+        const minutesFieldWrap = document.getElementById('minutesFieldWrap');
+        const initialVariantOptions = variantSelect ? Array.from(variantSelect.querySelectorAll('option')).map(opt => ({
+            value: opt.value,
+            text: opt.textContent,
+            productId: opt.getAttribute('data-product-id')
+        })) : [];
+
+        function csrfHeaders() {
+            const metaToken = document.querySelector('meta[name="_csrf"]');
+            const metaHeader = document.querySelector('meta[name="_csrf_header"]');
+            if (metaToken && metaHeader) {
+                return { [metaHeader.getAttribute('content')]: metaToken.getAttribute('content') };
+            }
+            const param = document.getElementById('csrfParam');
+            const token = document.getElementById('csrfToken');
+            if (!param || !token) {
+                return {};
+            }
+            const headers = {};
+            headers[param.value] = token.value;
+            return headers;
+        }
+        function valueOrNull(value) {
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+            return Number(value);
+        }
+
+        function formatMoney(value, currency) {
+            const num = Number(value);
+            if (Number.isNaN(num)) {
+                return '-';
+            }
+            try {
+                return num.toLocaleString('sr-RS', { style: 'currency', currency: currency || 'RSD' });
+            } catch (err) {
+                return num.toFixed(2) + ' ' + (currency || 'RSD');
+            }
+        }
+
+        function formatPercent(value) {
+            const num = Number(value);
+            if (Number.isNaN(num)) {
+                return '-';
+            }
+            return num.toFixed(2) + '%';
+        }
+
+        function clearWarnings() {
+            if (warningList) {
+                warningList.innerHTML = '';
+            }
+            if (warningBox) {
+                warningBox.classList.add('hidden');
+            }
+        }
+
+        function showWarnings(warnings) {
+            clearWarnings();
+            if (!warningList || !warningBox || !warnings || warnings.length === 0) {
+                return;
+            }
+            warnings.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                warningList.appendChild(li);
+            });
+            warningBox.classList.remove('hidden');
+        }
+
+        function applyVariantFilter() {
+            if (!productSelect || !variantSelect) {
+                return;
+            }
+            const selectedProductId = productSelect.value;
+            const previousVariant = variantSelect.value;
+            variantSelect.innerHTML = '';
+            initialVariantOptions.forEach(opt => {
+                if (!opt.value) {
+                    const o = document.createElement('option');
+                    o.value = '';
+                    o.textContent = opt.text;
+                    variantSelect.appendChild(o);
+                    return;
+                }
+                if (selectedProductId && opt.productId !== selectedProductId) {
+                    return;
+                }
+                const o = document.createElement('option');
+                o.value = opt.value;
+                o.textContent = opt.text;
+                o.setAttribute('data-product-id', opt.productId || '');
+                if (o.value === previousVariant) {
+                    o.selected = true;
+                }
+                variantSelect.appendChild(o);
+            });
+        }
+
+        function toggleField(wrapper, visible) {
+            if (!wrapper) return;
+            if (visible) {
+                wrapper.classList.remove('hidden');
+            } else {
+                wrapper.classList.add('hidden');
+            }
+        }
+
+        async function refreshVariantRequirements() {
+            const selectedVariantId = Number(document.getElementById('variantId').value);
+            if (!selectedVariantId) {
+                toggleField(widthFieldWrap, true);
+                toggleField(heightFieldWrap, true);
+                toggleField(colorsFieldWrap, true);
+                toggleField(sidesFieldWrap, true);
+                toggleField(metersFieldWrap, false);
+                toggleField(minutesFieldWrap, false);
+                if (fieldHint) {
+                    fieldHint.textContent = /*[[#{pricing.calculate.field_hint}]]*/ 'Width/Height are used for m² pricing, Colors for per-color, Sides for per-side.';
+                }
+                return;
+            }
+            try {
+                const response = await fetch(`/api/pricing/variants/${selectedVariantId}/requirements`, {
+                    headers: { Accept: 'application/json' }
+                });
+                if (!response.ok) {
+                    return;
+                }
+                const req = await response.json();
+                toggleField(widthFieldWrap, !!req.requiresDimensions);
+                toggleField(heightFieldWrap, !!req.requiresDimensions);
+                toggleField(colorsFieldWrap, !!req.requiresColors);
+                toggleField(sidesFieldWrap, !!req.requiresSides);
+                toggleField(metersFieldWrap, !!req.requiresMeters);
+                toggleField(minutesFieldWrap, !!req.requiresMinutes);
+                if (fieldHint) {
+                    fieldHint.textContent = /*[[#{pricing.calculate.field_hint_dynamic}]]*/ 'Displayed fields are required by selected variant pricing components.';
+                }
+            } catch (error) {
+                // Keep current state on fetch error.
+            }
+        }
+
+        async function handleCalculate(e) {
+            if (e) {
+                e.preventDefault();
+            }
+            if (!priceForm) {
+                return;
+            }
+            if (!priceForm.reportValidity()) {
+                return;
+            }
+            if (formError) {
+                formError.textContent = '';
+                formError.classList.add('hidden');
+            }
+            clearWarnings();
+
+            const variantId = Number(document.getElementById('variantId').value);
+            const quantity = Number(document.getElementById('quantity').value);
+            const colors = Number(document.getElementById('colors').value || 1);
+            const sides = Number(document.getElementById('sides').value || 1);
+            const meters = Number(document.getElementById('meters').value || 0);
+            const minutes = Number(document.getElementById('minutes').value || 0);
+            if (!variantId || variantId <= 0) {
+                if (formError) {
+                    formError.textContent = /*[[#{pricing.calculate.select_variant_qty}]]*/ 'Please select a variant and enter quantity.';
+                    formError.classList.remove('hidden');
+                }
+                return;
+            }
+            if (!quantity || quantity <= 0) {
+                if (formError) {
+                    formError.textContent = /*[[#{pricing.calculate.invalid_quantity}]]*/ 'Quantity must be greater than 0.';
+                    formError.classList.remove('hidden');
+                }
+                return;
+            }
+            if (colors <= 0 || sides <= 0) {
+                if (formError) {
+                    formError.textContent = /*[[#{pricing.calculate.invalid_colors_sides}]]*/ 'Colors and sides must be at least 1.';
+                    formError.classList.remove('hidden');
+                }
+                return;
+            }
+            const payload = {
+                variantId,
+                quantity,
+                widthMm: valueOrNull(document.getElementById('widthMm').value),
+                heightMm: valueOrNull(document.getElementById('heightMm').value),
+                clientId: valueOrNull(document.getElementById('clientId').value),
+                attributes: {
+                    colors,
+                    sides,
+                    meters,
+                    minutes
+                }
+            };
+            try {
+                const response = await fetch('/api/pricing/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...csrfHeaders()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                let data = null;
+                const text = await response.text();
+                const contentType = response.headers.get('content-type') || '';
+                const looksLikeHtml = text && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || contentType.includes('text/html'));
+                if (looksLikeHtml) {
+                    data = { error: /*[[#{pricing.calculate.session_expired}]]*/ 'Session expired or access denied. Please refresh the page and try again.' };
+                } else {
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (err) {
+                        data = { error: text || /*[[#{pricing.calculate.error}]]*/ 'Error calculating price.' };
+                    }
+                }
+                if (!response.ok) {
+                    if (resultMessage) {
+                        resultMessage.textContent = data.error || (`Error calculating price (${response.status}).`);
+                    }
+                    resultCard.classList.remove('hidden');
+                    return;
+                }
+                const currency = data.currency || 'RSD';
+                const marginValue = document.getElementById('marginValue');
+                const markupValue = document.getElementById('markupValue');
+
+                document.getElementById('costValue').textContent = formatMoney(data.totalCost, currency);
+                document.getElementById('priceValue').textContent = formatMoney(data.totalPrice, currency);
+                if (marginValue) {
+                    marginValue.textContent = formatPercent(data.marginPercent);
+                    marginValue.classList.remove('text-red-600');
+                }
+                if (markupValue) {
+                    markupValue.textContent = formatPercent(data.markupPercent);
+                }
+                document.getElementById('profitValue').textContent = formatMoney(data.profitAmount, currency);
+                document.getElementById('recommendedValue').textContent = formatMoney(data.recommendedPrice, currency);
+                document.getElementById('minimumValue').textContent = data.minimumPrice != null ? formatMoney(data.minimumPrice, currency) : '-';
+                document.getElementById('targetMarginValue').textContent = formatMoney(data.targetMarginPrice, currency);
+
+                breakdownBody.innerHTML = '';
+                (data.breakdown || []).forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b';
+                    const computedText = row.computedAmount != null ? Number(row.computedAmount).toFixed(2) : '-';
+                    tr.innerHTML = `<td class="py-2">${row.componentType ?? '-'}</td>` +
+                        `<td class="py-2">${row.pricingModel ?? '-'}</td>` +
+                        `<td class="py-2">${formatMoney(row.baseAmount, currency)}</td>` +
+                        `<td class="py-2">${row.multiplierDescription ?? ''}</td>` +
+                        `<td class="py-2">${computedText} ${row.unit ?? ''}</td>` +
+                        `<td class="py-2">${formatMoney(row.lineCost, currency)}</td>`;
+                    breakdownBody.appendChild(tr);
+                });
+                resultCard.classList.remove('hidden');
+                const messages = [];
+                if (data.appliedRules && data.appliedRules.length > 0) {
+                    messages.push(data.appliedRules.join(' '));
+                }
+                if (data.warnings && data.warnings.length > 0) {
+                    messages.push(data.warnings.join(' '));
+                }
+                const discountRow = document.getElementById('clientDiscountValue');
+                const discountLabel = document.getElementById('clientDiscountLabel');
+                const discountLabelText = /*[[#{pricing.calculate.client_discount}]]*/ 'Client discount';
+                if (discountRow && discountLabel) {
+                    const discountRule = (data.appliedRules || []).find(r => r.startsWith('CLIENT_DISCOUNT'));
+                    if (discountRule) {
+                        discountRow.textContent = discountRule.replace('CLIENT_DISCOUNT', '').replace('(', '').replace(')', '');
+                        discountLabel.classList.remove('hidden');
+                        discountRow.classList.remove('hidden');
+                        const percentMatch = discountRule.match(/([\d.]+)/);
+                        const percent = percentMatch ? Number(percentMatch[1]) : 0;
+                        const totalPrice = Number(data.totalPrice);
+                        if (!Number.isNaN(totalPrice) && totalPrice > 0 && percent > 0) {
+                            const originalPrice = totalPrice / (1 - (percent / 100));
+                            const discountAmount = originalPrice - totalPrice;
+                            const tr = document.createElement('tr');
+                            tr.className = 'border-b text-green-700';
+                            tr.innerHTML = `<td class="py-2">${discountLabelText}</td>` +
+                                `<td class="py-2">-</td>` +
+                                `<td class="py-2">${formatMoney(-discountAmount, currency)}</td>` +
+                                `<td class="py-2">-${percent.toFixed(2)}%</td>` +
+                                `<td class="py-2">${currency}</td>` +
+                                `<td class="py-2">${formatMoney(-discountAmount, currency)}</td>`;
+                            breakdownBody.appendChild(tr);
+                        }
+                    } else {
+                        discountRow.textContent = '';
+                        discountLabel.classList.add('hidden');
+                        discountRow.classList.add('hidden');
+                    }
+                }
+
+                if (data.marginPercent != null && Number(data.marginPercent) < 30 && marginValue) {
+                    marginValue.classList.add('text-red-600');
+                    messages.push(/*[[#{pricing.calculate.margin_low}]]*/ 'Margin below target.');
+                }
+                showWarnings(data.warnings || []);
+                resultMessage.textContent = messages.join(' ');
+            } catch (err) {
+                if (resultMessage) {
+                    resultMessage.textContent = /*[[#{pricing.calculate.error}]]*/ 'Error calculating price.';
+                }
+                resultCard.classList.remove('hidden');
+            }
+        }
+
+        if (priceForm) {
+            priceForm.addEventListener('submit', handleCalculate);
+        }
+        if (calculateBtn) {
+            calculateBtn.addEventListener('click', handleCalculate);
+        }
+        if (productSelect) {
+            productSelect.addEventListener('change', () => {
+                applyVariantFilter();
+                refreshVariantRequirements();
+            });
+            applyVariantFilter();
+            refreshVariantRequirements();
+        } else if (variantSelect) {
+            refreshVariantRequirements();
+        }
+        if (variantSelect) {
+            variantSelect.addEventListener('change', refreshVariantRequirements);
+        }
+
+        if (addToOrder) {
+            addToOrder.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const workOrderId = document.getElementById('workOrderId').value;
+                if (!workOrderId) {
+                    if (resultMessage) {
+                    resultMessage.textContent = /*[[#{pricing.calculate.select_order_first}]]*/ 'Select a work order first.';
+                    }
+                    return;
+                }
+                const payload = {
+                    variantId: Number(document.getElementById('variantId').value),
+                    quantity: Number(document.getElementById('quantity').value),
+                    widthMm: valueOrNull(document.getElementById('widthMm').value),
+                    heightMm: valueOrNull(document.getElementById('heightMm').value),
+                    clientId: valueOrNull(document.getElementById('clientId').value),
+                    attributes: {
+                        colors: Number(document.getElementById('colors').value || 1),
+                        sides: Number(document.getElementById('sides').value || 1),
+                        meters: Number(document.getElementById('meters').value || 0),
+                        minutes: Number(document.getElementById('minutes').value || 0)
+                    }
+                };
+                const response = await fetch(`/api/workorders/${workOrderId}/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...csrfHeaders()
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const text = await response.text();
+                const contentType = response.headers.get('content-type') || '';
+                const looksLikeHtml = text && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || contentType.includes('text/html'));
+                let data = null;
+                if (looksLikeHtml) {
+                    data = { error: /*[[#{pricing.calculate.session_expired}]]*/ 'Session expired or access denied. Please refresh the page and try again.' };
+                } else {
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (err) {
+                        data = { error: text || /*[[#{pricing.calculate.error}]]*/ 'Error adding item.' };
+                    }
+                }
+                if (!response.ok) {
+                    if (resultMessage) {
+                        resultMessage.textContent = data.error || (`Error adding item (${response.status}).`);
+                    }
+                    return;
+                }
+                if (resultMessage) {
+                    resultMessage.textContent = /*[[#{pricing.calculate.added}]]*/ 'Item added to work order.';
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

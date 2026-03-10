@@ -26,7 +26,6 @@ public class Comment {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     public Comment() {
-		// TODO Auto-generated constructor stub
 	}
 	public Comment(Long id, Task task, User user, String content, LocalDateTime createdAt) {
 		

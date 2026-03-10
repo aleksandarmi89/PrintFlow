@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{public.requests.title}">Public Requests</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+<main class="container mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900" th:text="#{public.requests.title}">Public Requests</h1>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-4">
+        <form method="get" th:action="@{/admin/public-requests}" class="grid md:grid-cols-4 gap-3">
+            <input type="text" name="search" th:value="${search}" th:placeholder="#{public.requests.search_placeholder}"
+                   class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2"/>
+            <select name="status" class="rounded-lg border border-gray-300 px-3 py-2">
+                <option value="" th:text="#{public.requests.status.all}">All statuses</option>
+                <option th:each="s : ${allStatuses}" th:value="${s.name()}" th:selected="${statusFilter == s.name()}" th:text="${statusOptionLabels[s.name()]}">NEW</option>
+            </select>
+            <button class="rounded-lg bg-blue-600 text-white px-4 py-2 hover:bg-blue-700" th:text="#{common.filter}">Filter</button>
+            <a th:href="@{/admin/public-requests(resetFilters=true)}"
+               class="md:col-span-4 text-sm text-gray-600 hover:text-gray-900"
+               th:text="#{common.clear}">
+                Clear
+            </a>
+        </form>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-3 border-b border-gray-200 flex flex-wrap gap-2 items-center">
+            <form id="bulk-form" method="post" th:action="@{/admin/public-requests/bulk-action}" class="flex flex-wrap gap-2 items-center">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <select name="action" form="bulk-form" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <option value="none" th:text="#{public.requests.bulk.select_action}">Select action</option>
+                <option value="convert" th:text="#{public.requests.bulk.convert}">Convert selected</option>
+                <option value="auto-basic" th:text="#{public.requests.bulk.auto_basic}">Convert + Auto (basic)</option>
+                <option value="auto-advanced" th:text="#{public.requests.bulk.auto_advanced}">Convert + Auto (advanced)</option>
+            </select>
+            <button type="submit" form="bulk-form" class="rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700"
+                    th:text="#{public.requests.bulk.apply}">
+                Apply
+            </button>
+            </form>
+        </div>
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+            <tr>
+                <th class="text-left px-4 py-3">
+                    <input type="checkbox" id="select-all-requests" class="rounded border-gray-300">
+                </th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.customer}">Customer</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.email}">Email</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.product}">Product</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.quantity}">Qty</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.source}">Source</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.status}">Status</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.sla}">SLA</th>
+                <th class="text-left px-4 py-3" th:text="#{public.requests.col.created}">Created</th>
+                <th class="text-left px-4 py-3"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${requestsPage.content}" class="border-t border-gray-100">
+                <td class="px-4 py-3 align-top">
+                    <input type="checkbox" name="requestIds" th:value="${r.id}" form="bulk-form" class="request-select rounded border-gray-300">
+                </td>
+                <td class="px-4 py-3" th:text="${r.customerName}">Customer</td>
+                <td class="px-4 py-3" th:text="${r.customerEmail}">mail</td>
+                <td class="px-4 py-3" th:text="${r.productType}">Product</td>
+                <td class="px-4 py-3" th:text="${r.quantity}">1</td>
+                <td class="px-4 py-3" th:text="${sourceLabel[r.id]}">PUBLIC FORM</td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                          th:classappend="${r.status.name() == 'NEW'} ? ' bg-blue-100 text-blue-700' :
+                                          (${r.status.name() == 'UNDER_REVIEW'} ? ' bg-yellow-100 text-yellow-700' :
+                                          (${r.status.name() == 'REJECTED'} ? ' bg-red-100 text-red-700' :
+                                          (${r.status.name() == 'CONVERTED'} ? ' bg-emerald-100 text-emerald-700' : ' bg-gray-100 text-gray-700')))"
+                          th:text="${statusLabel[r.id]}">NEW</span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                          th:classappend="${slaState[r.id] == 'OVERDUE'} ? ' bg-red-100 text-red-700' :
+                                          (${slaState[r.id] == 'DUE_TODAY'} ? ' bg-orange-100 text-orange-700' :
+                                          (${slaState[r.id] == 'DUE_SOON'} ? ' bg-yellow-100 text-yellow-700' :
+                                          (${slaState[r.id] == 'ON_TRACK'} ? ' bg-emerald-100 text-emerald-700' :
+                                          ' bg-gray-100 text-gray-700')))"
+                          th:text="${slaLabel[r.id]}">Bez roka</span>
+                </td>
+                <td class="px-4 py-3" th:text="${#temporals.format(r.createdAt, 'dd.MM.yyyy HH:mm')}">date</td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-col gap-2">
+                        <a th:href="@{/admin/public-requests/{id}(id=${r.id})}" class="text-blue-600 hover:text-blue-800" th:text="#{common.open}">Open</a>
+                        <form th:action="@{/admin/public-requests/{id}/convert-and-create-task(id=${r.id})}" method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="text-xs rounded border border-blue-200 bg-blue-50 text-blue-700 px-2 py-1 hover:bg-blue-100"
+                                    th:text="#{public.requests.details.convert_task}">
+                                Convert + Task
+                            </button>
+                        </form>
+                        <form th:action="@{/admin/public-requests/{id}/convert-and-generate-tasks(id=${r.id})}" method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="text-xs rounded border border-indigo-200 bg-indigo-50 text-indigo-700 px-2 py-1 hover:bg-indigo-100"
+                                    th:text="#{public.requests.details.convert_auto}">
+                                Convert + Auto
+                            </button>
+                        </form>
+                        <form th:action="@{/admin/public-requests/{id}/delete(id=${r.id})}" method="post"
+                              th:attr="onsubmit=|return confirm('${#messages.msg('public.requests.delete_confirm')}');|">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="text-xs rounded border border-red-200 bg-red-50 text-red-700 px-2 py-1 hover:bg-red-100"
+                                    th:text="#{public.requests.delete}">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr th:if="${requestsPage.isEmpty()}">
+                <td colspan="10" class="px-4 py-6 text-center text-gray-500" th:text="#{public.requests.empty}">No requests found.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between text-sm text-gray-600" th:if="${requestsPage.totalPages > 1}">
+        <span th:text="#{pagination.page_of(${requestsPage.number + 1}, ${requestsPage.totalPages})}">Page 1 of 2</span>
+        <div class="flex gap-2">
+            <a th:if="${!requestsPage.first}" th:href="@{/admin/public-requests(page=${requestsPage.number - 1}, status=${statusFilter}, search=${search})}" class="px-3 py-1 border border-gray-300 rounded" th:text="#{common.prev}">Prev</a>
+            <a th:if="${!requestsPage.last}" th:href="@{/admin/public-requests(page=${requestsPage.number + 1}, status=${statusFilter}, search=${search})}" class="px-3 py-1 border border-gray-300 rounded" th:text="#{common.next}">Next</a>
+        </div>
+    </div>
+</main>
+<script>
+    (function () {
+        const selectAll = document.getElementById('select-all-requests');
+        if (!selectAll) return;
+        const boxes = () => Array.from(document.querySelectorAll('.request-select'));
+        selectAll.addEventListener('change', function () {
+            boxes().forEach(cb => { cb.checked = selectAll.checked; });
+        });
+    })();
+</script>
+</body>
+</html>

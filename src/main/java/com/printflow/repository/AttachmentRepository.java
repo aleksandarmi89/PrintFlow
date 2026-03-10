@@ -27,6 +27,7 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     // ==================== TASK ATTACHMENTS (Ovo sada radi!) ====================
     List<Attachment> findByTaskIdAndActiveTrue(Long taskId);
     List<Attachment> findByTaskIdAndActiveTrueOrderByUploadedAtDesc(Long taskId);
+    List<Attachment> findByCommentIdAndActiveTrueOrderByUploadedAtDesc(Long commentId);
     Page<Attachment> findByTaskIdAndActiveTrue(Long taskId, Pageable pageable);
 
     // ==================== USER ATTACHMENTS ====================
@@ -42,6 +43,9 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
 
     @Query("SELECT SUM(a.fileSize) FROM Attachment a WHERE a.active = true AND a.task.id = :taskId")
     Long sumFileSizeByTaskId(@Param("taskId") Long taskId);
+
+    @Query("SELECT SUM(a.fileSize) FROM Attachment a WHERE a.active = true AND a.company.id = :companyId")
+    Long sumFileSizeByCompanyId(@Param("companyId") Long companyId);
 
     // ==================== BULK OPERATIONS ====================
     @Modifying
@@ -65,7 +69,30 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     void deleteByTaskId(@Param("taskId") Long taskId);
 
     Optional<Attachment> findByIdAndActiveTrue(Long id);
+    Optional<Attachment> findByIdAndCompany_Id(Long id, Long companyId);
+    Optional<Attachment> findByIdAndCompany_IdAndActiveTrue(Long id, Long companyId);
+    Optional<Attachment> findByIdAndComment_IdAndCompany_Id(Long id, Long commentId, Long companyId);
+    List<Attachment> findByIdInAndComment_IdAndCompany_Id(List<Long> ids, Long commentId, Long companyId);
+    Optional<Attachment> findByApprovalTokenAndWorkOrder_Client_IdAndActiveTrue(String approvalToken, Long clientId);
+
+    @Query("SELECT a FROM Attachment a WHERE a.workOrder.id IN :workOrderIds AND a.active = true")
+    List<Attachment> findByWorkOrderIdInAndActiveTrue(@Param("workOrderIds") List<Long> workOrderIds);
+    Optional<Attachment> findByIdAndWorkOrder_PublicTokenAndAttachmentTypeAndActiveTrue(Long id, String publicToken, AttachmentType attachmentType);
+    Optional<Attachment> findByIdAndWorkOrder_PublicTokenAndWorkOrder_PublicTokenExpiresAtAfterAndAttachmentTypeAndActiveTrue(
+        Long id,
+        String publicToken,
+        java.time.LocalDateTime now,
+        AttachmentType attachmentType
+    );
 	List<Attachment> findByWorkOrder(WorkOrder workOrder);
 	List<Attachment> findByWorkOrderIdAndAttachmentTypeAndActiveTrueOrderByUploadedAtDesc(Long workOrderId,
 			AttachmentType type);
+    List<Attachment> findByWorkOrderIdAndCompany_IdAndAttachmentTypeAndActiveTrueOrderByUploadedAtDesc(Long workOrderId,
+                                                                                                       Long companyId,
+                                                                                                       AttachmentType type);
+    List<Attachment> findByWorkOrderIdAndCompany_IdAndActiveTrueOrderByUploadedAtDesc(Long workOrderId, Long companyId);
+    List<Attachment> findByWorkOrderIdAndCompany_IdAndActiveTrue(Long workOrderId, Long companyId);
+    List<Attachment> findByTaskIdAndCompany_IdAndActiveTrueOrderByUploadedAtDesc(Long taskId, Long companyId);
+    List<Attachment> findByCommentIdAndCompany_IdAndActiveTrueOrderByUploadedAtDesc(Long commentId, Long companyId);
+    long countByWorkOrderIdAndAttachmentTypeAndActiveTrue(Long workOrderId, AttachmentType type);
 }

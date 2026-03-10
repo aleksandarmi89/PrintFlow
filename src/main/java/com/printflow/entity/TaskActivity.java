@@ -26,7 +26,6 @@ public class TaskActivity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     public TaskActivity() {
-		// TODO Auto-generated constructor stub
 	}
 	public TaskActivity(Long id, Task task, User user, String action, String description, LocalDateTime createdAt) {
 		

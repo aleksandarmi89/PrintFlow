@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{products.title}">Products</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="flex flex-wrap gap-3 items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900" th:text="#{products.title}">Products</h1>
+            <p class="text-sm text-gray-600" th:text="#{products.subtitle}">Manage your tenant product catalog.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <form th:action="@{/products/sync-pricing}" method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="px-4 py-2 border border-emerald-300 text-emerald-700 rounded-lg text-sm hover:bg-emerald-50"
+                        th:text="#{products.sync_pricing}">
+                    Sync Pricing
+                </button>
+            </form>
+            <a th:href="@{/products/sync/settings}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+               th:text="#{products.sync.settings}">
+                API Sync Settings
+            </a>
+            <form th:if="${apiSyncConfigured}" th:action="@{/products/sync}" method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                        th:text="#{products.sync}">
+                    Sync API
+                </button>
+            </form>
+            <a th:href="@{/products/import}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" th:text="#{products.import}">Import Products</a>
+            <a th:href="@{/products/new}" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" th:text="#{products.add}">Add Product</a>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700" th:text="${errorMessage}"></div>
+    <div th:if="${apiSyncConfigured || syncStatus.lastSyncAt != null}" class="mb-4 p-3 rounded-lg border border-gray-200 bg-white text-sm">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="font-medium text-gray-700" th:text="#{products.sync.last_status}">Last API sync</span>
+            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                  th:classappend="${syncStatus.lastSyncStatus == 'SUCCESS'} ? ' bg-emerald-100 text-emerald-700' : (${syncStatus.lastSyncStatus == 'FAILED'} ? ' bg-red-100 text-red-700' : ' bg-gray-100 text-gray-700')"
+                  th:text="${syncStatus.lastSyncStatus == null ? #messages.msg('products.sync.never') : syncStatus.lastSyncStatus}">
+                NEVER
+            </span>
+            <span class="text-gray-600" th:if="${syncStatus.lastSyncAt != null}" th:text="${#temporals.format(syncStatus.lastSyncAt, 'dd.MM.yyyy HH:mm')}">-</span>
+            <span class="text-gray-500" th:if="${syncStatus.lastSyncAt == null}" th:text="#{products.sync.never}">Never</span>
+        </div>
+        <div class="mt-2 text-gray-600" th:if="${syncStatus.lastSyncAt != null}">
+            <span th:text="#{products.import.imported}">Imported</span>
+            <span th:text="|: ${syncStatus.lastSyncImported}|">: 0</span>
+            <span class="mx-2">|</span>
+            <span th:text="#{products.import.updated}">Updated</span>
+            <span th:text="|: ${syncStatus.lastSyncUpdated}|">: 0</span>
+            <span class="mx-2">|</span>
+            <span th:text="#{products.import.failed}">Failed</span>
+            <span th:text="|: ${syncStatus.lastSyncFailed}|">: 0</span>
+        </div>
+        <div class="mt-2 text-gray-600 truncate" th:if="${syncStatus.lastSyncMessage != null && !#strings.isEmpty(syncStatus.lastSyncMessage)}" th:text="${syncStatus.lastSyncMessage}">message</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-4">
+        <form th:action="@{/products}" method="get" class="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <input type="text" name="q" th:value="${filter.q}" th:placeholder="#{products.search_placeholder}"
+                   class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2"/>
+            <select name="active" class="rounded-lg border border-gray-300 px-3 py-2">
+                <option value="" th:selected="${filter.active == null}" th:text="#{products.filter.status_all}">All statuses</option>
+                <option value="true" th:selected="${filter.active == true}" th:text="#{products.filter.active}">Active</option>
+                <option value="false" th:selected="${filter.active == false}" th:text="#{products.filter.inactive}">Inactive</option>
+            </select>
+            <select name="source" class="rounded-lg border border-gray-300 px-3 py-2">
+                <option value="" th:selected="${filter.source == null}" th:text="#{products.filter.source_all}">All sources</option>
+                <option th:each="s : ${sources}"
+                        th:value="${s.name()}"
+                        th:selected="${filter.source != null && filter.source.name() == s.name()}"
+                        th:text="${#messages.msg('products.source.' + s.name())}">MANUAL</option>
+            </select>
+            <select name="sortBy" class="rounded-lg border border-gray-300 px-3 py-2">
+                <option value="name" th:selected="${filter.sortBy == 'name'}" th:text="#{products.sort.name}">Sort: Name</option>
+                <option value="createdAt" th:selected="${filter.sortBy == 'createdAt'}" th:text="#{products.sort.created}">Sort: Created</option>
+                <option value="basePrice" th:selected="${filter.sortBy == 'basePrice'}" th:text="#{products.sort.price}">Sort: Price</option>
+            </select>
+            <div class="flex gap-2">
+                <select name="sortDir" class="rounded-lg border border-gray-300 px-3 py-2 w-full">
+                    <option value="asc" th:selected="${filter.sortDir == 'asc'}" th:text="#{products.sort.asc}">Asc</option>
+                    <option value="desc" th:selected="${filter.sortDir == 'desc'}" th:text="#{products.sort.desc}">Desc</option>
+                </select>
+                <select name="size" class="rounded-lg border border-gray-300 px-3 py-2 w-full">
+                    <option th:each="s : ${allowedSizes}" th:value="${s}" th:selected="${filter.size == s}" th:text="${s}">20</option>
+                </select>
+            </div>
+            <div class="md:col-span-6 flex items-center gap-2">
+                <button class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black" th:text="#{common.apply}">Apply</button>
+                <a th:href="@{/products}" class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50" th:text="#{common.clear}">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+            <tr>
+                <th class="text-left px-4 py-3" th:text="#{products.col.name}">Name</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.sku}">SKU</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.category}">Category</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.price}">Price</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.source}">Source</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.pricing_status}">Pricing</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.status}">Status</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.created}">Created</th>
+                <th class="text-left px-4 py-3" th:text="#{products.col.actions}">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${productPage.content}" class="border-t border-gray-100">
+                <td class="px-4 py-3 font-medium text-gray-900" th:text="${p.name}">Name</td>
+                <td class="px-4 py-3 text-gray-700" th:text="${p.sku != null ? p.sku : '-'}">SKU</td>
+                <td class="px-4 py-3 text-gray-700" th:text="${p.categoryLabel != null ? p.categoryLabel : p.category}">Category</td>
+                <td class="px-4 py-3 text-gray-700" th:text="${#numbers.formatDecimal(p.basePrice, 1, 2)} + ' ' + ${p.currency}">0.00 RSD</td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                          th:classappend="${p.source == null} ? ' bg-gray-100 text-gray-700' :
+                                           (${p.source.name() == 'MANUAL'} ? ' bg-blue-100 text-blue-700' :
+                                           (${p.source.name() == 'IMPORT'} ? ' bg-amber-100 text-amber-700' :
+                                           ' bg-purple-100 text-purple-700'))"
+                          th:text="${p.source != null ? #messages.msg('products.source.' + p.source.name()) : '-'}">MANUAL</span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                          th:classappend="${pricingReadyMap[p.id]} ? ' bg-emerald-100 text-emerald-700' : ' bg-yellow-100 text-yellow-800'"
+                          th:text="${pricingReadyMap[p.id]} ? #{products.pricing_ready} : #{products.pricing_not_ready}">
+                        Ready
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                          th:classappend="${p.active} ? ' bg-emerald-100 text-emerald-700' : ' bg-gray-100 text-gray-700'"
+                          th:text="${p.active ? #messages.msg('products.filter.active') : #messages.msg('products.filter.inactive')}">Active</span>
+                </td>
+                <td class="px-4 py-3 text-gray-600" th:text="${#temporals.format(p.createdAt, 'dd.MM.yyyy HH:mm')}">date</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <a th:href="@{/products/{id}(id=${p.id})}" class="text-blue-600 hover:text-blue-800" th:text="#{common.view}">View</a>
+                        <a th:href="@{/admin/pricing/products/{id}(id=${p.id})}" class="text-emerald-600 hover:text-emerald-800" th:text="#{products.pricing}">Pricing</a>
+                        <a th:href="@{/products/{id}/edit(id=${p.id})}" class="text-indigo-600 hover:text-indigo-800" th:text="#{common.edit}">Edit</a>
+                        <form th:action="@{/products/{id}/delete(id=${p.id})}" method="post"
+                              th:attr="onsubmit=|return confirm('${#messages.msg('products.delete_confirm')}');|">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="text-red-600 hover:text-red-800" th:text="#{common.delete}">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr th:if="${productPage.isEmpty()}">
+                <td colspan="9" class="px-4 py-12 text-center text-gray-500">
+                    <p class="font-medium" th:text="#{products.empty_title}">No products yet.</p>
+                    <p class="text-sm mt-1" th:text="#{products.empty_subtitle}">Start by adding your first product or importing a file.</p>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:if="${productPage.totalPages > 1}" class="mt-4 flex items-center justify-between text-sm text-gray-600">
+        <span th:text="#{pagination.page_of(${productPage.number + 1}, ${productPage.totalPages})}">Page 1 of 1</span>
+        <div class="flex gap-2">
+            <a th:if="${!productPage.first}"
+               th:href="@{/products(page=${productPage.number - 1},size=${filter.size},q=${filter.q},active=${filter.active},source=${filter.source},sortBy=${filter.sortBy},sortDir=${filter.sortDir})}"
+               class="px-3 py-1 border border-gray-300 rounded" th:text="#{pagination.previous}">Prev</a>
+            <a th:if="${!productPage.last}"
+               th:href="@{/products(page=${productPage.number + 1},size=${filter.size},q=${filter.q},active=${filter.active},source=${filter.source},sortBy=${filter.sortBy},sortDir=${filter.sortDir})}"
+               class="px-3 py-1 border border-gray-300 rounded" th:text="#{pagination.next}">Next</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

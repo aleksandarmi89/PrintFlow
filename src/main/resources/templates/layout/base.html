@@ -6,44 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${pageTitle != null ? pageTitle + ' - PrintFlow' : 'PrintFlow SaaS'}"></title>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS (local build for production) -->
+    <link rel="stylesheet" th:href="@{/css/tailwind.min.css}">
     
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
     
-    <!-- Icons (Heroicons) -->
-    <script src="https://unpkg.com/@heroicons/vue@2.0.18/outline/index.js"></script>
-    
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/custom.css}">
+
+    <!-- Flatpickr (used in admin order create) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     
     <style>
         .htmx-indicator {

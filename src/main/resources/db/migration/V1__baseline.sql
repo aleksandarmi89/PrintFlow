@@ -1,0 +1,1 @@
+-- Flyway baseline migration. Intentionally left blank.

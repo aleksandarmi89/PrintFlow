@@ -2,16 +2,22 @@ package com.printflow.service;
 
 import com.printflow.dto.WorkOrderDTO;
 import com.printflow.entity.WorkOrder;
+import com.printflow.entity.WorkOrderItem;
 import com.printflow.entity.Client;
 import com.printflow.entity.User;
-import com.printflow.entity.Attachment;
 import com.printflow.entity.enums.OrderStatus;
-import com.printflow.entity.enums.AttachmentType;
+import com.printflow.entity.enums.AuditAction;
+import com.printflow.entity.enums.PrintType;
 import com.printflow.repository.WorkOrderRepository;
+import com.printflow.repository.WorkOrderItemRepository;
 import com.printflow.repository.ClientRepository;
 import com.printflow.repository.UserRepository;
+import com.printflow.events.DesignApprovalRequestedEvent;
+import com.printflow.events.OrderCreatedEvent;
+import com.printflow.events.OrderStatusChangedEvent;
 import com.printflow.repository.AttachmentRepository;
 import com.printflow.util.OrderNumberGenerator;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,24 +39,56 @@ public class WorkOrderService {
     private final AttachmentRepository attachmentRepository;
     private final OrderNumberGenerator orderNumberGenerator;
     private final FileStorageService fileStorageService;
+    private final TenantGuard tenantGuard;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
+    private final PlanLimitService planLimitService;
+    private final BillingAccessService billingAccessService;
+    private final PublicTokenService publicTokenService;
+    private final WorkOrderItemRepository workOrderItemRepository;
+    private final ClientPricingProfileService pricingProfileService;
+    private final ActivityLogService activityLogService;
+    private final ApplicationEventPublisher eventPublisher;
     
     public WorkOrderService(WorkOrderRepository workOrderRepository, 
                           ClientRepository clientRepository,
                           UserRepository userRepository, 
                           AttachmentRepository attachmentRepository,
                           OrderNumberGenerator orderNumberGenerator, 
-                          FileStorageService fileStorageService) {
+                          FileStorageService fileStorageService,
+                          TenantGuard tenantGuard,
+                          NotificationService notificationService,
+                          AuditLogService auditLogService,
+                          PlanLimitService planLimitService,
+                          BillingAccessService billingAccessService,
+                          PublicTokenService publicTokenService,
+                          WorkOrderItemRepository workOrderItemRepository,
+                          ClientPricingProfileService pricingProfileService,
+                          ActivityLogService activityLogService,
+                          ApplicationEventPublisher eventPublisher) {
         this.workOrderRepository = workOrderRepository;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
         this.attachmentRepository = attachmentRepository;
         this.orderNumberGenerator = orderNumberGenerator;
         this.fileStorageService = fileStorageService;
+        this.tenantGuard = tenantGuard;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
+        this.planLimitService = planLimitService;
+        this.billingAccessService = billingAccessService;
+        this.publicTokenService = publicTokenService;
+        this.workOrderItemRepository = workOrderItemRepository;
+        this.pricingProfileService = pricingProfileService;
+        this.activityLogService = activityLogService;
+        this.eventPublisher = eventPublisher;
     }
 
     public WorkOrderDTO createWorkOrder(WorkOrderDTO workOrderDTO) {
-        Client client = clientRepository.findById(workOrderDTO.getClientId())
-            .orElseThrow(() -> new RuntimeException("Client not found"));
+        Long companyId = tenantGuard.requireCompanyId();
+        Client client = getClientOrThrow(workOrderDTO.getClientId(), companyId);
+        billingAccessService.assertBillingActiveForPremiumAction(client.getCompany().getId());
+        planLimitService.assertMonthlyOrdersLimit(client.getCompany());
         
         WorkOrder workOrder = new WorkOrder();
         workOrder.setOrderNumber(orderNumberGenerator.generateOrderNumber());
@@ -62,27 +100,41 @@ public class WorkOrderService {
         workOrder.setDeadline(workOrderDTO.getDeadline());
         workOrder.setEstimatedHours(workOrderDTO.getEstimatedHours());
         workOrder.setPrice(workOrderDTO.getPrice());
+        workOrder.setCost(workOrderDTO.getCost());
         workOrder.setClient(client);
+        workOrder.setCompany(client.getCompany());
+        workOrder.setPrintType(workOrderDTO.getPrintType() != null ? workOrderDTO.getPrintType() : PrintType.OTHER);
+        PublicTokenService.TokenInfo tokenInfo = publicTokenService.newToken();
+        workOrder.setPublicToken(tokenInfo.token());
+        workOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
+        workOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
         
         if (workOrderDTO.getAssignedToId() != null) {
-            User assignedTo = userRepository.findById(workOrderDTO.getAssignedToId())
+            User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), companyId)
                 .orElse(null);
             workOrder.setAssignedTo(assignedTo);
         }
         
         if (workOrderDTO.getCreatedById() != null) {
-            User createdBy = userRepository.findById(workOrderDTO.getCreatedById())
+            User createdBy = userRepository.findByIdAndCompany_Id(workOrderDTO.getCreatedById(), companyId)
                 .orElse(null);
             workOrder.setCreatedBy(createdBy);
         }
         
         WorkOrder savedOrder = workOrderRepository.save(workOrder);
+        eventPublisher.publishEvent(new OrderCreatedEvent(savedOrder.getId()));
         return convertToDTO(savedOrder);
     }
     
     public WorkOrderDTO updateWorkOrder(Long id, WorkOrderDTO workOrderDTO) {
-        WorkOrder workOrder = workOrderRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
+        WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
+        Long oldClientId = workOrder.getClient() != null ? workOrder.getClient().getId() : null;
+        String oldPrintType = workOrder.getPrintType() != null ? workOrder.getPrintType().name() : null;
+        OrderStatus oldStatusEnum = workOrder.getStatus();
+        String oldStatus = oldStatusEnum != null ? oldStatusEnum.name() : null;
+        Double oldPrice = workOrder.getPrice();
+        Double oldCost = workOrder.getCost();
+        Long oldAssignedId = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getId() : null;
         
         workOrder.setTitle(workOrderDTO.getTitle());
         workOrder.setDescription(workOrderDTO.getDescription());
@@ -92,6 +144,7 @@ public class WorkOrderService {
         workOrder.setEstimatedHours(workOrderDTO.getEstimatedHours());
         workOrder.setActualHours(workOrderDTO.getActualHours());
         workOrder.setPrice(workOrderDTO.getPrice());
+        workOrder.setCost(workOrderDTO.getCost());
         workOrder.setPaid(workOrderDTO.getPaid());
         workOrder.setInternalNotes(workOrderDTO.getInternalNotes());
         workOrder.setDeliveryType(workOrderDTO.getDeliveryType());
@@ -99,33 +152,82 @@ public class WorkOrderService {
         workOrder.setTrackingNumber(workOrderDTO.getTrackingNumber());
         workOrder.setDeliveryAddress(workOrderDTO.getDeliveryAddress());
         workOrder.setDeliveryDate(workOrderDTO.getDeliveryDate());
+        workOrder.setPrintType(workOrderDTO.getPrintType() != null ? workOrderDTO.getPrintType() : PrintType.OTHER);
         
         if (workOrderDTO.getAssignedToId() != null) {
-            User assignedTo = userRepository.findById(workOrderDTO.getAssignedToId())
+            User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), tenantGuard.requireCompanyId())
                 .orElse(null);
             workOrder.setAssignedTo(assignedTo);
         }
         
         if (workOrderDTO.getStatus() != null) {
+            validateOrderStatusTransition(workOrder.getStatus(), workOrderDTO.getStatus());
             workOrder.setStatus(workOrderDTO.getStatus());
+        }
+
+        if (workOrderDTO.getClientId() != null && (workOrder.getClient() == null || !workOrder.getClient().getId().equals(workOrderDTO.getClientId()))) {
+            Client client = getClientOrThrow(workOrderDTO.getClientId(), tenantGuard.requireCompanyId());
+            workOrder.setClient(client);
+            workOrder.setCompany(client.getCompany());
         }
         
         WorkOrder updatedOrder = workOrderRepository.save(workOrder);
+        if (oldClientId != null && workOrder.getClient() != null && !oldClientId.equals(workOrder.getClient().getId())) {
+            auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+                "clientId:" + oldClientId, "clientId:" + workOrder.getClient().getId(),
+                "Order client updated", workOrder.getCompany());
+        }
+        String newPrintType = workOrder.getPrintType() != null ? workOrder.getPrintType().name() : null;
+        if (oldPrintType != null && newPrintType != null && !oldPrintType.equals(newPrintType)) {
+            auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+                oldPrintType, newPrintType, "Order print type updated", workOrder.getCompany());
+        }
+        String newStatus = workOrder.getStatus() != null ? workOrder.getStatus().name() : null;
+        if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
+            auditLogService.log(AuditAction.STATUS_CHANGE, "WorkOrder", workOrder.getId(),
+                oldStatus, newStatus, "Order status updated", workOrder.getCompany());
+            eventPublisher.publishEvent(new OrderStatusChangedEvent(updatedOrder.getId(), oldStatusEnum, workOrder.getStatus()));
+            if (workOrder.getStatus() == OrderStatus.READY_FOR_DELIVERY) {
+                notificationService.notifyClientOrderReady(updatedOrder);
+            }
+        }
+        Double newPrice = workOrder.getPrice();
+        if (oldPrice != null && newPrice != null && !oldPrice.equals(newPrice)) {
+            auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+                String.valueOf(oldPrice), String.valueOf(newPrice), "Order price updated", workOrder.getCompany());
+        }
+        Double newCost = workOrder.getCost();
+        if (oldCost != null && newCost != null && !oldCost.equals(newCost)) {
+            auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+                String.valueOf(oldCost), String.valueOf(newCost), "Order cost updated", workOrder.getCompany());
+        }
+        Long newAssignedId = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getId() : null;
+        if (oldAssignedId != null && newAssignedId != null && !oldAssignedId.equals(newAssignedId)) {
+            auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+                "assignedToId:" + oldAssignedId, "assignedToId:" + newAssignedId, "Order assignment updated", workOrder.getCompany());
+            notificationService.sendOrderAssignedNotification(workOrder, workOrder.getAssignedTo());
+        }
         return convertToDTO(updatedOrder);
     }
     
     public WorkOrderDTO updateWorkOrderStatus(Long id, OrderStatus status, String notes) {
-        WorkOrder workOrder = workOrderRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
+        WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
         
         OrderStatus oldStatus = workOrder.getStatus();
+        validateOrderStatusTransition(oldStatus, status);
         workOrder.setStatus(status);
         
+        boolean printedEvent = status == OrderStatus.WAITING_QUALITY_CHECK;
         if (notes != null && !notes.trim().isEmpty()) {
             workOrder.setInternalNotes(
                 (workOrder.getInternalNotes() != null ? workOrder.getInternalNotes() + "\n" : "") +
-                LocalDateTime.now() + ": Status changed from " + oldStatus + " to " + status + 
-                (notes != null ? " - " + notes : "")
+                LocalDateTime.now() + ": Status changed from " + oldStatus + " to " + status +
+                " - " + notes.trim()
+            );
+        } else if (printedEvent) {
+            workOrder.setInternalNotes(
+                (workOrder.getInternalNotes() != null ? workOrder.getInternalNotes() + "\n" : "") +
+                LocalDateTime.now() + ": Štampano"
             );
         }
         
@@ -134,12 +236,179 @@ public class WorkOrderService {
         }
         
         WorkOrder updatedOrder = workOrderRepository.save(workOrder);
+        String auditDescription = printedEvent ? "Štampano" : "Order status updated";
+        auditLogService.log(AuditAction.STATUS_CHANGE, "WorkOrder", workOrder.getId(),
+            oldStatus != null ? oldStatus.name() : null,
+            status != null ? status.name() : null,
+            auditDescription,
+            workOrder.getCompany());
+        Long actorId = tenantGuard.getCurrentUser() != null ? tenantGuard.getCurrentUser().getId() : null;
+        activityLogService.log(updatedOrder,
+            "STATUS_CHANGE",
+            "Status changed to " + status.name(),
+            actorId);
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(updatedOrder.getId(), oldStatus, status));
+        if (status == OrderStatus.READY_FOR_DELIVERY) {
+            notificationService.notifyClientOrderReady(updatedOrder);
+        }
         return convertToDTO(updatedOrder);
+    }
+
+    public WorkOrderDTO reorderWorkOrder(Long sourceId, Long createdById, String sourceLabel) {
+        WorkOrder source = getWorkOrderWithRelationsOrThrow(sourceId);
+        WorkOrder newOrder = new WorkOrder();
+        newOrder.setOrderNumber(orderNumberGenerator.generateOrderNumber());
+        newOrder.setTitle(source.getTitle());
+        newOrder.setDescription(source.getDescription());
+        newOrder.setSpecifications(source.getSpecifications());
+        newOrder.setStatus(OrderStatus.NEW);
+        newOrder.setPriority(source.getPriority());
+        newOrder.setDeadline(null);
+        newOrder.setEstimatedHours(source.getEstimatedHours());
+        newOrder.setClient(source.getClient());
+        newOrder.setCompany(source.getCompany());
+        newOrder.setPrintType(source.getPrintType());
+        newOrder.setInternalNotes("Reordered from WorkOrder #" + source.getOrderNumber());
+        PublicTokenService.TokenInfo tokenInfo = publicTokenService.newToken();
+        newOrder.setPublicToken(tokenInfo.token());
+        newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
+        newOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
+        if (createdById != null) {
+            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
+                .orElse(null);
+            newOrder.setCreatedBy(createdBy);
+        }
+
+        WorkOrder saved = workOrderRepository.save(newOrder);
+        List<WorkOrderItem> items = workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
+            sourceId, tenantGuard.requireCompanyId());
+        for (WorkOrderItem item : items) {
+            WorkOrderItem clone = new WorkOrderItem();
+            clone.setCompany(saved.getCompany());
+            clone.setWorkOrder(saved);
+            clone.setVariant(item.getVariant());
+            clone.setQuantity(item.getQuantity());
+            clone.setWidthMm(item.getWidthMm());
+            clone.setHeightMm(item.getHeightMm());
+            clone.setAttributesJson(item.getAttributesJson());
+            clone.setCalculatedCost(item.getCalculatedCost());
+            clone.setCalculatedPrice(item.getCalculatedPrice());
+            clone.setProfitAmount(item.getProfitAmount());
+            clone.setMarginPercent(item.getMarginPercent());
+            clone.setCurrency(item.getCurrency());
+            clone.setBreakdownJson(item.getBreakdownJson());
+            clone.setPricingSnapshotJson(item.getPricingSnapshotJson());
+            clone.setPriceLocked(true);
+            clone.setPriceCalculatedAt(LocalDateTime.now());
+            workOrderItemRepository.save(clone);
+            pricingProfileService.recordPrice(saved.getClient(), item.getVariant(), item.getCalculatedPrice());
+        }
+        auditLogService.log(AuditAction.CREATE, "WorkOrder", saved.getId(), null, null,
+            "Reordered from WorkOrder #" + source.getOrderNumber(), saved.getCompany());
+        activityLogService.log(saved,
+            "ORDER_DUPLICATED",
+            "Reordered from WorkOrder #" + source.getOrderNumber(),
+            createdById);
+        eventPublisher.publishEvent(new OrderCreatedEvent(saved.getId()));
+        return convertToDTO(saved);
+    }
+
+    public WorkOrderDTO duplicateWorkOrder(Long sourceId, Long createdById, boolean includeAttachments) {
+        WorkOrder source = getWorkOrderWithRelationsOrThrow(sourceId);
+        WorkOrder newOrder = new WorkOrder();
+        newOrder.setOrderNumber(orderNumberGenerator.generateOrderNumber());
+        newOrder.setTitle(source.getTitle());
+        newOrder.setDescription(source.getDescription());
+        newOrder.setSpecifications(source.getSpecifications());
+        newOrder.setStatus(OrderStatus.NEW);
+        newOrder.setPriority(source.getPriority());
+        newOrder.setDeadline(source.getDeadline());
+        newOrder.setEstimatedHours(source.getEstimatedHours());
+        newOrder.setClient(source.getClient());
+        newOrder.setCompany(source.getCompany());
+        newOrder.setPrintType(source.getPrintType());
+        newOrder.setInternalNotes("Duplicated from WorkOrder #" + source.getOrderNumber());
+        PublicTokenService.TokenInfo tokenInfo = publicTokenService.newToken();
+        newOrder.setPublicToken(tokenInfo.token());
+        newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
+        newOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
+        if (createdById != null) {
+            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
+                .orElse(null);
+            newOrder.setCreatedBy(createdBy);
+        }
+
+        WorkOrder saved = workOrderRepository.save(newOrder);
+        List<WorkOrderItem> items = workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
+            sourceId, tenantGuard.requireCompanyId());
+        for (WorkOrderItem item : items) {
+            WorkOrderItem clone = new WorkOrderItem();
+            clone.setCompany(saved.getCompany());
+            clone.setWorkOrder(saved);
+            clone.setVariant(item.getVariant());
+            clone.setQuantity(item.getQuantity());
+            clone.setWidthMm(item.getWidthMm());
+            clone.setHeightMm(item.getHeightMm());
+            clone.setAttributesJson(item.getAttributesJson());
+            clone.setCalculatedCost(item.getCalculatedCost());
+            clone.setCalculatedPrice(item.getCalculatedPrice());
+            clone.setProfitAmount(item.getProfitAmount());
+            clone.setMarginPercent(item.getMarginPercent());
+            clone.setCurrency(item.getCurrency());
+            clone.setBreakdownJson(item.getBreakdownJson());
+            clone.setPricingSnapshotJson(item.getPricingSnapshotJson());
+            clone.setPriceLocked(true);
+            clone.setPriceCalculatedAt(LocalDateTime.now());
+            workOrderItemRepository.save(clone);
+            pricingProfileService.recordPrice(saved.getClient(), item.getVariant(), item.getCalculatedPrice());
+        }
+
+        if (includeAttachments) {
+            List<com.printflow.entity.Attachment> attachments =
+                attachmentRepository.findByWorkOrderIdAndCompany_IdAndActiveTrue(sourceId, tenantGuard.requireCompanyId());
+            for (com.printflow.entity.Attachment attachment : attachments) {
+                com.printflow.entity.Attachment copy = new com.printflow.entity.Attachment();
+                copy.setCompany(saved.getCompany());
+                copy.setWorkOrder(saved);
+                copy.setFileName(attachment.getFileName());
+                copy.setFilePath(attachment.getFilePath());
+                copy.setOriginalFileName(attachment.getOriginalFileName());
+                copy.setFileType(attachment.getFileType());
+                copy.setMimeType(attachment.getMimeType());
+                copy.setFileSize(attachment.getFileSize());
+                copy.setAttachmentType(attachment.getAttachmentType());
+                copy.setDescription(attachment.getDescription());
+                copy.setThumbnailPath(attachment.getThumbnailPath());
+                copy.setUploadedBy(attachment.getUploadedBy());
+                copy.setActive(attachment.isActive());
+                copy.setApproved(false);
+                copy.setApprovedAt(null);
+                copy.setApprovedBy(null);
+                copy.setApprovalIp(null);
+                copy.setApprovalToken(null);
+                attachmentRepository.save(copy);
+            }
+        }
+
+        auditLogService.log(AuditAction.CREATE, "WorkOrder", saved.getId(), null, null,
+            "Duplicated from WorkOrder #" + source.getOrderNumber(), saved.getCompany());
+        activityLogService.log(saved,
+            "ORDER_DUPLICATED",
+            "Duplicated from WorkOrder #" + source.getOrderNumber(),
+            createdById);
+        eventPublisher.publishEvent(new OrderCreatedEvent(saved.getId()));
+        return convertToDTO(saved);
+    }
+
+    public WorkOrderDTO reorderWorkOrderForClientToken(String publicToken, Client client) {
+        WorkOrder source = workOrderRepository.findByPublicTokenAndClient_IdAndCompany_Id(
+            publicToken, client.getId(), client.getCompany().getId())
+            .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        return reorderWorkOrder(source.getId(), null, "portal");
     }
     
     public void deleteWorkOrder(Long id) {
-        WorkOrder workOrder = workOrderRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
+        WorkOrder workOrder = getWorkOrderOrThrow(id);
         
         // Prvo obrišimo sve attachment-e
         attachmentRepository.deleteByWorkOrderId(id);
@@ -149,45 +418,149 @@ public class WorkOrderService {
     }
     
     public WorkOrderDTO getWorkOrderById(Long id) {
-        WorkOrder workOrder = workOrderRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
+        WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
         return convertToDTO(workOrder);
+    }
+
+    public WorkOrder getWorkOrderEntityById(Long id) {
+        return getWorkOrderWithRelationsOrThrow(id);
     }
     
     public WorkOrderDTO getWorkOrderByPublicToken(String token) {
-        WorkOrder workOrder = workOrderRepository.findByPublicToken(token)
+        if (token == null || token.isBlank()) {
+            throw new RuntimeException("Work order not found");
+        }
+        WorkOrder workOrder = workOrderRepository
+            .findWithClientAndCompanyByPublicToken(token.trim())
             .orElseThrow(() -> new RuntimeException("Work order not found"));
+        if (workOrder.getPublicTokenExpiresAt() == null) {
+            workOrder.setPublicTokenExpiresAt(publicTokenService.expiresAtFromNow());
+            workOrderRepository.save(workOrder);
+        }
+        if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
+            throw new RuntimeException("Work order not found");
+        }
         return convertToDTO(workOrder);
     }
+
+    public WorkOrder getWorkOrderEntityByPublicToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new RuntimeException("Work order not found");
+        }
+        WorkOrder workOrder = workOrderRepository
+            .findWithClientAndCompanyByPublicToken(token.trim())
+            .orElseThrow(() -> new RuntimeException("Work order not found"));
+        if (workOrder.getPublicTokenExpiresAt() == null) {
+            workOrder.setPublicTokenExpiresAt(publicTokenService.expiresAtFromNow());
+            workOrderRepository.save(workOrder);
+        }
+        if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
+            throw new RuntimeException("Work order not found");
+        }
+        return workOrder;
+    }
+
+    public String resolvePublicTokenFromOrderNumber(String orderNumber) {
+        if (orderNumber == null || orderNumber.isBlank()) {
+            throw new RuntimeException("Work order not found");
+        }
+        String normalized = orderNumber.trim().toUpperCase();
+        WorkOrder workOrder = workOrderRepository.findByOrderNumberIgnoreCase(normalized)
+            .orElseThrow(() -> new RuntimeException("Work order not found"));
+        if (workOrder.getPublicToken() == null || workOrder.getPublicToken().isBlank()) {
+            throw new RuntimeException("Work order not found");
+        }
+        if (workOrder.getPublicTokenExpiresAt() != null &&
+            workOrder.getPublicTokenExpiresAt().isBefore(publicTokenService.now())) {
+            throw new RuntimeException("Work order not found");
+        }
+        return workOrder.getPublicToken();
+    }
     
-    public List<WorkOrderDTO> getAllWorkOrders() {
-        return workOrderRepository.findAll().stream()
+    public Page<WorkOrderDTO> getWorkOrders(Pageable pageable) {
+        if (tenantGuard.isSuperAdmin()) {
+            Page<WorkOrder> orders = workOrderRepository.findByOrderByCreatedAtDesc(pageable);
+            return orders.map(this::convertToDTO);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        Page<WorkOrder> orders = workOrderRepository.findByCompany_IdOrderByCreatedAtDesc(companyId, pageable);
+        return orders.map(this::convertToDTO);
+    }
+
+    public List<WorkOrderDTO> getRecentWorkOrders(int limit) {
+        PageRequest page = PageRequest.of(0, Math.max(1, limit), Sort.by("createdAt").descending());
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findByOrderByCreatedAtDesc(page).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.findByCompany_IdOrderByCreatedAtDesc(companyId, page).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
     
     public List<WorkOrderDTO> getWorkOrdersByStatus(OrderStatus status) {
-        return workOrderRepository.findByStatus(status).stream()
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findByStatus(status).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.findByStatusAndCompany_Id(status, companyId).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
+
+    public Page<WorkOrderDTO> getWorkOrdersByStatus(OrderStatus status, Pageable pageable) {
+        if (tenantGuard.isSuperAdmin()) {
+            Page<WorkOrder> orders = workOrderRepository.findByStatus(status, pageable);
+            return orders.map(this::convertToDTO);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        Page<WorkOrder> orders = workOrderRepository.findByStatusAndCompany_Id(status, companyId, pageable);
+        return orders.map(this::convertToDTO);
+    }
     
     public List<WorkOrderDTO> getWorkOrdersByClient(Long clientId) {
-        return workOrderRepository.findByClientId(clientId).stream()
+        Client client = getClientOrThrow(clientId, tenantGuard.requireCompanyId());
+        return workOrderRepository.findByClient(client).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
     
     public List<WorkOrderDTO> getWorkOrdersByAssignedUser(Long userId) {
-        return workOrderRepository.findByAssignedToId(userId).stream()
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findByAssignedToId(userId).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.findByAssignedToIdAndCompany_Id(userId, companyId).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
     
     public List<WorkOrderDTO> searchWorkOrders(String query) {
-        return workOrderRepository.search(query).stream()
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.search(query).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.searchByCompany(companyId, query).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
+    }
+
+    public Page<WorkOrderDTO> searchWorkOrders(String query, Pageable pageable) {
+        if (tenantGuard.isSuperAdmin()) {
+            Page<WorkOrder> orders = workOrderRepository.searchAll(query, pageable);
+            return orders.map(this::convertToDTO);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        Page<WorkOrder> orders = workOrderRepository.searchByCompanyAll(companyId, query, pageable);
+        return orders.map(this::convertToDTO);
     }
     
     public List<WorkOrderDTO> getOverdueOrders() {
@@ -197,37 +570,170 @@ public class WorkOrderService {
             OrderStatus.SENT
         );
         
-        return workOrderRepository.findOverdueOrders(
-            LocalDateTime.now(), 
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findOverdueOrders(LocalDateTime.now(), excludedStatuses).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.findOverdueOrdersByCompany(
+            companyId,
+            LocalDateTime.now(),
             excludedStatuses
         ).stream()
         .map(this::convertToDTO)
         .collect(Collectors.toList());
     }
+
+    public List<WorkOrderDTO> getOverdueOrders(int limit) {
+        List<OrderStatus> excludedStatuses = List.of(
+            OrderStatus.COMPLETED,
+            OrderStatus.CANCELLED,
+            OrderStatus.SENT
+        );
+        PageRequest page = PageRequest.of(0, Math.max(1, limit), Sort.by("deadline").ascending());
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findOverdueOrders(LocalDateTime.now(), excludedStatuses, page).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.findOverdueOrdersByCompany(
+                companyId,
+                LocalDateTime.now(),
+                excludedStatuses,
+                page
+            ).stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
+
+    public long countOverdueOrders() {
+        List<OrderStatus> excludedStatuses = List.of(
+            OrderStatus.COMPLETED,
+            OrderStatus.CANCELLED,
+            OrderStatus.SENT
+        );
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.countOverdueOrders(LocalDateTime.now(), excludedStatuses);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return workOrderRepository.countOverdueOrdersByCompany(companyId, LocalDateTime.now(), excludedStatuses);
+    }
     
-    public WorkOrderDTO approveDesign(Long orderId, boolean approved, String comment) {
-        WorkOrder workOrder = workOrderRepository.findById(orderId)
+    public WorkOrderDTO approveDesign(Long orderId, String token, boolean approved, String comment) {
+        if (token == null || token.isBlank()) {
+            throw new RuntimeException("Work order not found");
+        }
+        WorkOrder workOrder = workOrderRepository
+            .findByIdAndPublicTokenAndPublicTokenExpiresAtAfter(orderId, token, publicTokenService.now())
             .orElseThrow(() -> new RuntimeException("Work order not found"));
+        if (workOrder.getCompany() != null) {
+            billingAccessService.assertBillingActiveForPremiumAction(workOrder.getCompany().getId());
+        }
         
+        OrderStatus oldStatus = workOrder.getStatus();
         workOrder.setDesignApproved(approved);
         workOrder.setClientComment(comment);
         
         if (approved) {
+            validateOrderStatusTransition(oldStatus, OrderStatus.APPROVED_FOR_PRINT);
             workOrder.setStatus(OrderStatus.APPROVED_FOR_PRINT);
         } else {
+            validateOrderStatusTransition(oldStatus, OrderStatus.IN_DESIGN);
             workOrder.setStatus(OrderStatus.IN_DESIGN);
         }
         
         WorkOrder updatedOrder = workOrderRepository.save(workOrder);
+        auditLogService.log(
+            approved ? AuditAction.APPROVE : AuditAction.REJECT,
+            "WorkOrder",
+            workOrder.getId(),
+            oldStatus != null ? oldStatus.name() : null,
+            workOrder.getStatus() != null ? workOrder.getStatus().name() : null,
+            approved ? "Client approved design" : "Client requested changes",
+            workOrder.getCompany()
+        );
+        activityLogService.log(
+            updatedOrder,
+            approved ? "CLIENT_APPROVED" : "CLIENT_REQUESTED_CHANGES",
+            approved ? "Client approved design" : "Client requested changes",
+            null
+        );
+        notificationService.sendDesignApprovalResultNotification(updatedOrder, oldStatus, approved, comment);
         return convertToDTO(updatedOrder);
+    }
+
+    public String rotatePublicToken(Long orderId) {
+        WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(orderId);
+        String oldToken = workOrder.getPublicToken();
+        PublicTokenService.TokenInfo tokenInfo = publicTokenService.newToken();
+        workOrder.setPublicToken(tokenInfo.token());
+        workOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
+        workOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
+        workOrderRepository.saveAndFlush(workOrder);
+        auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+            oldToken, tokenInfo.token(), "Rotated public tracking token", workOrder.getCompany());
+        return tokenInfo.token();
+    }
+
+    public void sendForClientApproval(Long orderId) {
+        WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(orderId);
+
+        if (workOrder.getClient() == null || workOrder.getClient().getEmail() == null) {
+            throw new RuntimeException("Client email is required to send approval request");
+        }
+
+        OrderStatus oldStatus = workOrder.getStatus();
+        validateOrderStatusTransition(oldStatus, OrderStatus.WAITING_CLIENT_APPROVAL);
+        workOrder.setStatus(OrderStatus.WAITING_CLIENT_APPROVAL);
+        workOrder.setDesignApproved(false);
+        workOrderRepository.save(workOrder);
+
+        eventPublisher.publishEvent(new DesignApprovalRequestedEvent(workOrder.getId()));
+        auditLogService.log(AuditAction.STATUS_CHANGE, "WorkOrder", workOrder.getId(),
+            oldStatus != null ? oldStatus.name() : null,
+            OrderStatus.WAITING_CLIENT_APPROVAL.name(),
+            "Sent design for client approval",
+            workOrder.getCompany());
+    }
+
+    public void assignWorker(Long orderId, Long userId) {
+        WorkOrder workOrder = getWorkOrderOrThrow(orderId);
+
+        String oldAssigned = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getFullName() : "Unassigned";
+        Long previousAssignedId = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getId() : null;
+        User assignedTo = null;
+        if (userId != null) {
+            assignedTo = userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        }
+
+        workOrder.setAssignedTo(assignedTo);
+        workOrder.setUpdatedAt(LocalDateTime.now());
+        workOrderRepository.save(workOrder);
+        String newAssigned = assignedTo != null ? assignedTo.getFullName() : "Unassigned";
+        auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
+            oldAssigned, newAssigned, "Order assignment updated", workOrder.getCompany());
+        if (assignedTo != null && (previousAssignedId == null || !assignedTo.getId().equals(previousAssignedId))) {
+            notificationService.sendOrderAssignedNotification(workOrder, assignedTo);
+        }
     }
     
     public long countByStatus(OrderStatus status) {
-        return workOrderRepository.countByStatus(status);
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.countByStatus(status);
+        }
+        return workOrderRepository.countByStatusAndCompanyId(tenantGuard.requireCompanyId(), status);
     }
     
     public Page<WorkOrderDTO> getUnassignedWorkOrders(Pageable pageable) {
-        Page<WorkOrder> unassignedOrders = workOrderRepository.findByAssignedToIsNull(pageable);
+        if (tenantGuard.isSuperAdmin()) {
+            Page<WorkOrder> unassignedOrders = workOrderRepository.findByAssignedToIsNull(pageable);
+            return unassignedOrders.map(this::convertToDTO);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        Page<WorkOrder> unassignedOrders = workOrderRepository.findByAssignedToIsNullAndCompany_Id(companyId, pageable);
         return unassignedOrders.map(this::convertToDTO);
     }
 
@@ -235,16 +741,13 @@ public class WorkOrderService {
         return workOrderRepository.existsByIdAndAssignedToId(workOrderId, userId);
     }
 
-    public List<WorkOrderDTO> getRecentWorkOrders(int limit) {
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<WorkOrder> recentOrdersPage = workOrderRepository.findByOrderByCreatedAtDesc(pageable);
-        return recentOrdersPage.getContent().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
     public Page<WorkOrderDTO> getWorkOrdersByAssignedUser(Long userId, Pageable pageable) {
-        Page<WorkOrder> orders = workOrderRepository.findByAssignedToId(userId, pageable);
+        if (tenantGuard.isSuperAdmin()) {
+            Page<WorkOrder> orders = workOrderRepository.findByAssignedToId(userId, pageable);
+            return orders.map(this::convertToDTO);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        Page<WorkOrder> orders = workOrderRepository.findByAssignedToIdAndCompany_Id(userId, companyId, pageable);
         return orders.map(this::convertToDTO);
     }
     
@@ -261,6 +764,7 @@ public class WorkOrderService {
         dto.setEstimatedHours(workOrder.getEstimatedHours());
         dto.setActualHours(workOrder.getActualHours());
         dto.setPrice(workOrder.getPrice());
+        dto.setCost(workOrder.getCost());
         dto.setPaid(workOrder.getPaid());
         dto.setPublicToken(workOrder.getPublicToken());
         dto.setDesignApproved(workOrder.getDesignApproved());
@@ -271,6 +775,7 @@ public class WorkOrderService {
         dto.setTrackingNumber(workOrder.getTrackingNumber());
         dto.setDeliveryAddress(workOrder.getDeliveryAddress());
         dto.setDeliveryDate(workOrder.getDeliveryDate());
+        dto.setPrintType(workOrder.getPrintType());
         dto.setCreatedAt(workOrder.getCreatedAt());
         dto.setUpdatedAt(workOrder.getUpdatedAt());
         dto.setCompletedAt(workOrder.getCompletedAt());
@@ -279,6 +784,8 @@ public class WorkOrderService {
         if (workOrder.getClient() != null) {
             dto.setClientId(workOrder.getClient().getId());
             dto.setClientName(workOrder.getClient().getCompanyName());
+            dto.setClientEmail(workOrder.getClient().getEmail());
+            dto.setClientPhone(workOrder.getClient().getPhone());
         }
         
         // Assigned user info
@@ -293,18 +800,56 @@ public class WorkOrderService {
             dto.setCreatedByName(workOrder.getCreatedBy().getFullName());
         }
         
-        // Attachment counts
-        List<Attachment> attachments = attachmentRepository.findByWorkOrder(workOrder);
-        dto.setTotalAttachments(attachments.size());
-        dto.setDesignAttachments((int) attachments.stream()
-            .filter(a -> a.getAttachmentType() == AttachmentType.DESIGN_SOURCE || 
-                        a.getAttachmentType() == AttachmentType.DESIGN_PREVIEW)
-            .count());
-        dto.setProofAttachments((int) attachments.stream()
-            .filter(a -> a.getAttachmentType() == AttachmentType.PROOF_OF_WORK)
-            .count());
+        // Attachment counts intentionally omitted to avoid N+1; compute on demand when needed.
         
         return dto;
+    }
+
+    private void validateOrderStatusTransition(OrderStatus oldStatus, OrderStatus newStatus) {
+        if (newStatus == null || oldStatus == newStatus) {
+            return;
+        }
+        if (oldStatus == null) {
+            return;
+        }
+        if (oldStatus == OrderStatus.COMPLETED || oldStatus == OrderStatus.CANCELLED) {
+            throw new RuntimeException("Cannot change status from terminal state: " + oldStatus);
+        }
+
+        java.util.Map<OrderStatus, java.util.Set<OrderStatus>> allowed = java.util.Map.of(
+            OrderStatus.NEW, java.util.Set.of(OrderStatus.IN_DESIGN, OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED),
+            OrderStatus.IN_PROGRESS, java.util.Set.of(OrderStatus.IN_DESIGN, OrderStatus.WAITING_CLIENT_APPROVAL, OrderStatus.APPROVED_FOR_PRINT, OrderStatus.CANCELLED),
+            OrderStatus.IN_DESIGN, java.util.Set.of(OrderStatus.WAITING_CLIENT_APPROVAL, OrderStatus.APPROVED_FOR_PRINT, OrderStatus.CANCELLED),
+            OrderStatus.WAITING_CLIENT_APPROVAL, java.util.Set.of(OrderStatus.IN_DESIGN, OrderStatus.APPROVED_FOR_PRINT, OrderStatus.CANCELLED),
+            OrderStatus.APPROVED_FOR_PRINT, java.util.Set.of(OrderStatus.IN_PRINT, OrderStatus.CANCELLED),
+            OrderStatus.IN_PRINT, java.util.Set.of(OrderStatus.WAITING_QUALITY_CHECK, OrderStatus.CANCELLED),
+            OrderStatus.WAITING_QUALITY_CHECK, java.util.Set.of(OrderStatus.READY_FOR_DELIVERY, OrderStatus.IN_PRINT, OrderStatus.CANCELLED),
+            OrderStatus.READY_FOR_DELIVERY, java.util.Set.of(OrderStatus.SENT, OrderStatus.COMPLETED, OrderStatus.CANCELLED),
+            OrderStatus.SENT, java.util.Set.of(OrderStatus.COMPLETED)
+        );
+
+        java.util.Set<OrderStatus> allowedNext = allowed.get(oldStatus);
+        if (allowedNext == null || !allowedNext.contains(newStatus)) {
+            throw new RuntimeException("Invalid status transition: " + oldStatus + " -> " + newStatus);
+        }
+    }
+
+    private WorkOrder getWorkOrderOrThrow(Long id) {
+        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
+            .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
+        return workOrder;
+    }
+
+    private WorkOrder getWorkOrderWithRelationsOrThrow(Long id) {
+        WorkOrder workOrder = workOrderRepository.findWithRelationsByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
+            .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
+        return workOrder;
+    }
+
+    private Client getClientOrThrow(Long clientId, Long companyId) {
+        Client client = clientRepository.findByIdAndCompany_Id(clientId, companyId)
+            .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+        return client;
     }
     public List<WorkOrderDTO> getUnassignedWorkOrders() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));

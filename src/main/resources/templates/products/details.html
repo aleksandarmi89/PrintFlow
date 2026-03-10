@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{products.details.title}">Product Details</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8 max-w-5xl">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900" th:text="${product.name}">Product</h1>
+            <p class="text-sm text-gray-600" th:text="#{products.details.subtitle}">Product details and traceability.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a th:href="@{/products}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" th:text="#{common.back}">Back</a>
+            <a th:href="@{/admin/pricing/products/{id}(id=${product.id})}" class="px-4 py-2 border border-emerald-300 text-emerald-700 rounded-lg text-sm hover:bg-emerald-50" th:text="#{products.pricing}">Pricing</a>
+            <a th:href="@{/products/{id}/edit(id=${product.id})}" class="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm hover:bg-indigo-50" th:text="#{common.edit}">Edit</a>
+            <form th:action="@{/products/{id}/delete(id=${product.id})}" method="post"
+                  th:attr="onsubmit=|return confirm('${#messages.msg('products.delete_confirm')}');|">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700" th:text="#{common.delete}">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700" th:text="${errorMessage}"></div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+            <div>
+                <p class="text-gray-500" th:text="#{products.col.name}">Name</p>
+                <p class="font-medium text-gray-900" th:text="${product.name}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.col.sku}">SKU</p>
+                <p class="font-medium text-gray-900" th:text="${product.sku != null ? product.sku : '-'}">-</p>
+            </div>
+            <div class="md:col-span-2">
+                <p class="text-gray-500" th:text="#{products.form.description}">Description</p>
+                <p class="font-medium text-gray-900 whitespace-pre-wrap" th:text="${product.description != null ? product.description : '-'}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.col.category}">Category</p>
+                <p class="font-medium text-gray-900" th:text="${product.categoryLabel != null ? product.categoryLabel : product.category}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.form.unit}">Unit</p>
+                <p class="font-medium text-gray-900" th:text="${product.unitLabel != null ? product.unitLabel : product.unitType}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.col.price}">Price</p>
+                <p class="font-medium text-gray-900" th:text="${#numbers.formatDecimal(product.basePrice,1,2)} + ' ' + ${product.currency}">0.00 RSD</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.col.source}">Source</p>
+                <p class="font-medium text-gray-900" th:text="${product.source != null ? #messages.msg('products.source.' + product.source.name()) : '-'}">MANUAL</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.form.external_id}">External ID</p>
+                <p class="font-medium text-gray-900" th:text="${product.externalId != null ? product.externalId : '-'}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.col.status}">Status</p>
+                <p class="font-medium text-gray-900" th:text="${product.active ? #messages.msg('products.filter.active') : #messages.msg('products.filter.inactive')}">Active</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.details.created_at}">Created At</p>
+                <p class="font-medium text-gray-900" th:text="${#temporals.format(product.createdAt, 'dd.MM.yyyy HH:mm')}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.details.updated_at}">Updated At</p>
+                <p class="font-medium text-gray-900" th:text="${product.updatedAt != null ? #temporals.format(product.updatedAt, 'dd.MM.yyyy HH:mm') : '-'}">-</p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.details.created_by_id}">Created By User ID</p>
+                <p class="font-medium text-gray-900" th:if="${product.createdByUserId == null}">-</p>
+                <p class="font-medium text-gray-900" th:if="${product.createdByUserId != null}">
+                    <span th:if="${auditUserLabels[product.createdByUserId] != null}"
+                          th:text="${auditUserLabels[product.createdByUserId] + ' (#' + product.createdByUserId + ')'}">user@example.com (#1)</span>
+                    <span th:if="${auditUserLabels[product.createdByUserId] == null}"
+                          th:text="${'#' + product.createdByUserId}">#1</span>
+                </p>
+            </div>
+            <div>
+                <p class="text-gray-500" th:text="#{products.details.updated_by_id}">Updated By User ID</p>
+                <p class="font-medium text-gray-900" th:if="${product.updatedByUserId == null}">-</p>
+                <p class="font-medium text-gray-900" th:if="${product.updatedByUserId != null}">
+                    <span th:if="${auditUserLabels[product.updatedByUserId] != null}"
+                          th:text="${auditUserLabels[product.updatedByUserId] + ' (#' + product.updatedByUserId + ')'}">user@example.com (#1)</span>
+                    <span th:if="${auditUserLabels[product.updatedByUserId] == null}"
+                          th:text="${'#' + product.updatedByUserId}">#1</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

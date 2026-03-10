@@ -27,7 +27,6 @@ public class TimeEntry {
     @Column(name = "entry_date")
     private LocalDateTime date;
     public TimeEntry() {
-		// TODO Auto-generated constructor stub
 	}
 	public TimeEntry(Long id, Task task, User user, Integer hours, Integer minutes, String description,
 			LocalDateTime date) {

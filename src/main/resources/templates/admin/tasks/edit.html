@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Edit Task - PrintFlow Admin</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Edit Task</h1>
+                    <p class="text-gray-600 mt-2">Update task details</p>
+                </div>
+                <a th:href="@{/admin/tasks/{id}(id=${task.id})}"
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    ← Back to Task
+                </a>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Task Details</h2>
+                </div>
+
+                <form th:action="@{/admin/tasks/edit/{id}(id=${task.id})}" th:object="${task}" method="post" class="p-6 space-y-6">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                            Title *
+                        </label>
+                        <input type="text"
+                               id="title"
+                               name="title"
+                               th:field="*{title}"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            Description
+                        </label>
+                        <textarea id="description"
+                                  name="description"
+                                  th:field="*{description}"
+                                  rows="4"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">
+                                Priority
+                            </label>
+                            <select id="priority"
+                                    name="priority"
+                                    th:field="*{priority}"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option th:each="p : ${priorities}"
+                                        th:value="${p.name()}"
+                                        th:text="${p.name()}"></option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="dueDate" class="block text-sm font-medium text-gray-700 mb-2">
+                                Due Date
+                            </label>
+                            <input type="datetime-local"
+                                   id="dueDate"
+                                   name="dueDate"
+                                   th:field="*{dueDate}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label for="estimatedHours" class="block text-sm font-medium text-gray-700 mb-2">
+                                Estimated Hours
+                            </label>
+                            <input type="number"
+                                   step="0.5"
+                                   min="0"
+                                   id="estimatedHours"
+                                   name="estimatedHours"
+                                   th:field="*{estimatedHours}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="assignedToId" class="block text-sm font-medium text-gray-700 mb-2">
+                                Assign To
+                            </label>
+                            <select id="assignedToId"
+                                    name="assignedToId"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Unassigned</option>
+                                <option th:each="worker : ${workers}"
+                                        th:value="${worker.id}"
+                                        th:text="${worker.fullName}"
+                                        th:selected="${task.assignedToId == worker.id}">
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-200">
+                        <div class="flex justify-end space-x-3">
+                            <a th:href="@{/admin/tasks/{id}(id=${task.id})}"
+                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,8 +1,12 @@
 package com.printflow.entity;
 
 import com.printflow.entity.enums.OrderStatus;
+import com.printflow.entity.enums.PrintType;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -10,12 +14,19 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 @Entity
 @Table(name = "work_orders")
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "companyId", type = Long.class))
+@Filter(name = "tenantFilter", condition = "tenant_id = :companyId")
 @Data
 public class WorkOrder {
+    private static final SecureRandom PUBLIC_TOKEN_RANDOM = new SecureRandom();
+    private static final int PUBLIC_TOKEN_BYTES = 32;
+    private static final int PUBLIC_TOKEN_TTL_DAYS = 30;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -50,12 +61,21 @@ public class WorkOrder {
     
     @Column(name = "price")
     private Double price;
+
+    @Column(name = "cost")
+    private Double cost;
     
     @Column(name = "paid")
     private Boolean paid = false;
     
     @Column(name = "public_token", unique = true)
-    private String publicToken = UUID.randomUUID().toString();
+    private String publicToken;
+
+    @Column(name = "public_token_created_at")
+    private java.time.LocalDateTime publicTokenCreatedAt;
+
+    @Column(name = "public_token_expires_at")
+    private java.time.LocalDateTime publicTokenExpiresAt;
     
     @Column(name = "design_approved")
     private Boolean designApproved = false;
@@ -81,6 +101,10 @@ public class WorkOrder {
     
     @Column(name = "delivery_date")
     private java.time.LocalDateTime deliveryDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "print_type")
+    private PrintType printType = PrintType.OTHER;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
@@ -93,9 +117,16 @@ public class WorkOrder {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Company company;
     
     @OneToMany(mappedBy = "workOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attachment> attachments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "workOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkOrderItem> items = new ArrayList<>();
     
     @Column(name = "created_at")
     private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
@@ -113,6 +144,15 @@ public class WorkOrder {
         if (orderNumber == null) {
             orderNumber = "ORD-" + System.currentTimeMillis();
         }
+        if (publicToken == null || publicToken.isBlank()) {
+            publicToken = generateFallbackPublicToken();
+        }
+        if (publicTokenCreatedAt == null) {
+            publicTokenCreatedAt = java.time.LocalDateTime.now();
+        }
+        if (publicTokenExpiresAt == null) {
+            publicTokenExpiresAt = publicTokenCreatedAt.plusDays(PUBLIC_TOKEN_TTL_DAYS);
+        }
     }
     
     @PreUpdate
@@ -121,6 +161,12 @@ public class WorkOrder {
         if (status == OrderStatus.COMPLETED && completedAt == null) {
             completedAt = java.time.LocalDateTime.now();
         }
+    }
+
+    private String generateFallbackPublicToken() {
+        byte[] bytes = new byte[PUBLIC_TOKEN_BYTES];
+        PUBLIC_TOKEN_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     
@@ -253,6 +299,22 @@ public class WorkOrder {
 		this.price = price;
 	}
 
+	public Double getCost() {
+		return cost;
+	}
+
+	public void setCost(Double cost) {
+		this.cost = cost;
+	}
+
+	public PrintType getPrintType() {
+		return printType;
+	}
+
+	public void setPrintType(PrintType printType) {
+		this.printType = printType;
+	}
+
 	public Boolean getPaid() {
 		return paid;
 	}
@@ -268,6 +330,22 @@ public class WorkOrder {
 	public void setPublicToken(String publicToken) {
 		this.publicToken = publicToken;
 	}
+
+    public java.time.LocalDateTime getPublicTokenCreatedAt() {
+        return publicTokenCreatedAt;
+    }
+
+    public void setPublicTokenCreatedAt(java.time.LocalDateTime publicTokenCreatedAt) {
+        this.publicTokenCreatedAt = publicTokenCreatedAt;
+    }
+
+    public java.time.LocalDateTime getPublicTokenExpiresAt() {
+        return publicTokenExpiresAt;
+    }
+
+    public void setPublicTokenExpiresAt(java.time.LocalDateTime publicTokenExpiresAt) {
+        this.publicTokenExpiresAt = publicTokenExpiresAt;
+    }
 
 	public Boolean getDesignApproved() {
 		return designApproved;
@@ -349,13 +427,21 @@ public class WorkOrder {
 		this.assignedTo = assignedTo;
 	}
 
-	public User getCreatedBy() {
-		return createdBy;
-	}
+    public User getCreatedBy() {
+        return createdBy;
+    }
 
-	public void setCreatedBy(User createdBy) {
-		this.createdBy = createdBy;
-	}
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
+    }
 
 	public List<Attachment> getAttachments() {
 		return attachments;

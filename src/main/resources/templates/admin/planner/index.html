@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:lang="${#locale.language}">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{planner.page_title}">Production Planner - PrintFlow</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900" th:text="#{planner.title}">
+            Production Planner
+        </h1>
+        <p class="text-gray-600 mt-1" th:text="#{planner.subtitle}">
+            Capacity, deadlines, and profit overview for your print shop.
+        </p>
+    </div>
+
+    <form method="get" class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-3">
+        <label class="text-xs text-gray-500" th:text="#{planner.filter.month}">Month</label>
+        <input type="month" name="month" th:value="${monthFilter}"
+               class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+
+        <label class="text-xs text-gray-500" th:text="#{planner.filter.worker}">Worker</label>
+        <select name="workerId" class="px-2 py-1 border border-gray-300 rounded-lg text-xs min-w-[180px]">
+            <option value="" th:selected="${workerFilter == null}" th:text="#{planner.filter.all_workers}">
+                All workers
+            </option>
+            <option th:each="w : ${workers}"
+                    th:value="${w.id}"
+                    th:selected="${workerFilter != null && workerFilter == w.id}"
+                    th:text="${w.fullName}">
+            </option>
+        </select>
+
+        <label class="text-xs text-gray-500" th:text="#{planner.filter.trend}">Trend</label>
+        <select name="trendDays" class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+            <option value="7" th:selected="${trendDays == 7}" th:text="#{planner.trend.7}">7d</option>
+            <option value="14" th:selected="${trendDays == 14}" th:text="#{planner.trend.14}">14d</option>
+            <option value="30" th:selected="${trendDays == 30}" th:text="#{planner.trend.30}">30d</option>
+            <option value="60" th:selected="${trendDays == 60}" th:text="#{planner.trend.60}">60d</option>
+        </select>
+
+        <label class="text-xs text-gray-500" th:text="#{planner.filter.heatmap}">Heatmap</label>
+        <select name="heatmapMode" class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+            <option value="status"
+                    th:selected="${heatmapMode == null || heatmapMode == 'status'}"
+                    th:text="#{planner.heatmap.status}">
+                Status
+            </option>
+            <option value="deadline"
+                    th:selected="${heatmapMode == 'deadline'}"
+                    th:text="#{planner.heatmap.deadline}">
+                Deadline
+            </option>
+        </select>
+
+        <label class="text-xs text-gray-500" th:text="#{planner.filter.profit}">Profit</label>
+        <select name="profitMonths" class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+            <option value="6" th:selected="${profitMonths == 6}" th:text="#{planner.profit.6}">6m</option>
+            <option value="12" th:selected="${profitMonths == 12}" th:text="#{planner.profit.12}">12m</option>
+        </select>
+
+        <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs"
+                th:text="#{common.apply}">
+            Apply
+        </button>
+        <a th:href="@{/admin/planner}"
+           class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-700"
+           th:text="#{common.clear}">
+            Clear
+        </a>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500" th:text="#{planner.stats.open_orders}">Open Orders</div>
+            <div class="text-2xl font-bold text-gray-900" th:text="${stats.totalOpenOrders}">0</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500" th:text="#{planner.stats.overdue}">Overdue</div>
+            <div class="text-2xl font-bold text-red-600" th:text="${stats.overdueOrders}">0</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500" th:text="#{planner.stats.due_soon_7}">Due Soon (7d)</div>
+            <div class="text-2xl font-bold text-amber-600" th:text="${stats.dueSoonOrders}">0</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500" th:text="#{planner.stats.unassigned}">Unassigned</div>
+            <div class="text-2xl font-bold text-gray-900" th:text="${stats.unassignedOrders}">0</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Capacity -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{planner.capacity.title}">Capacity</h2>
+
+            <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+                <span th:text="#{planner.capacity.utilization}">Utilization</span>
+                <span th:text="${#numbers.formatDecimal(stats.capacityUtilization * 100, 1, 0) + '%'}">0%</span>
+            </div>
+
+            <div class="w-full bg-gray-100 rounded-full h-3">
+                <div class="bg-blue-600 h-3 rounded-full"
+                     th:style="'width:' + ${stats.capacityUtilization * 100} + '%'"></div>
+            </div>
+
+            <div class="mt-4 text-sm text-gray-600">
+                <div>
+                    <span th:text="#{planner.capacity.workers}">Workers:</span>
+                    <span class="font-semibold text-gray-900" th:text="${stats.totalWorkers}">0</span>
+                </div>
+                <div>
+                    <span th:text="#{planner.capacity.available}">Available:</span>
+                    <span class="font-semibold text-gray-900" th:text="${stats.availableWorkers}">0</span>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs text-gray-500" th:text="#{planner.capacity.in_design}">In Design</div>
+                    <div class="text-lg font-semibold text-gray-900" th:text="${stats.inDesignOrders}">0</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="text-xs text-gray-500" th:text="#{planner.capacity.in_print}">In Print</div>
+                    <div class="text-lg font-semibold text-gray-900" th:text="${stats.inPrintOrders}">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit Snapshot -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900" th:text="#{planner.profit_snapshot.title}">
+                    Profit Snapshot
+                </h2>
+
+                <form method="get" class="flex items-center gap-2">
+                    <label class="text-xs text-gray-500" th:text="#{planner.filter.month}">Month</label>
+                    <input type="month" name="month" th:value="${monthFilter}"
+                           class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+
+                    <input type="hidden" name="workerId" th:value="${workerFilter}">
+                    <input type="hidden" name="trendDays" th:value="${trendDays}">
+                    <input type="hidden" name="heatmapMode" th:value="${heatmapMode}">
+                    <input type="hidden" name="profitMonths" th:value="${profitMonths}">
+
+                    <label class="text-xs text-gray-500" th:text="#{planner.profit_snapshot.type}">Type</label>
+                    <select name="printType" class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+                        <option value="" th:selected="${printTypeFilter == null || printTypeFilter == ''}"
+                                th:text="#{common.all}">
+                            All
+                        </option>
+                        <option value="DTF" th:selected="${printTypeFilter == 'DTF'}">DTF</option>
+                        <option value="LASER" th:selected="${printTypeFilter == 'LASER'}"
+                                th:text="#{orders.create.print_type.laser}">Laser</option>
+                        <option value="OTHER" th:selected="${printTypeFilter == 'OTHER'}"
+                                th:text="#{orders.create.print_type.other}">Other</option>
+                    </select>
+
+                    <label class="text-xs text-gray-500" th:text="#{planner.profit_snapshot.scale}">Scale</label>
+                    <select id="scaleSelect" name="scale" class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
+                        <option value="log" th:selected="${scale == null || scale == 'log'}"
+                                th:text="#{planner.scale.log}">
+                            Log
+                        </option>
+                        <option value="linear" th:selected="${scale == 'linear'}"
+                                th:text="#{planner.scale.linear}">
+                            Linear
+                        </option>
+                    </select>
+
+                    <button type="button" id="resetScaleBtn"
+                            class="px-2 py-1 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs"
+                            th:text="#{common.reset}">
+                        Reset
+                    </button>
+
+                    <button type="submit" class="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs"
+                            th:text="#{common.filter}">
+                        Filter
+                    </button>
+                </form>
+            </div>
+
+            <div class="space-y-3 text-sm text-gray-700 mb-4">
+                <div class="flex items-center justify-between">
+                    <span th:text="#{planner.profit_snapshot.paid_this_month}">Paid this month</span>
+                    <span class="font-semibold text-emerald-700"
+                          th:text="${'€' + #numbers.formatDecimal(stats.paidRevenueMonth, 1, 2)}">€0.00</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span th:text="#{planner.profit_snapshot.outstanding}">Outstanding</span>
+                    <span class="font-semibold text-amber-700"
+                          th:text="${'€' + #numbers.formatDecimal(stats.outstandingRevenue, 1, 2)}">€0.00</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span th:text="#{planner.profit_snapshot.created_this_month}">Created this month</span>
+                    <span class="font-semibold text-gray-900" th:text="${stats.createdThisMonth}">0</span>
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-xs text-gray-500" th:text="#{planner.profit_snapshot.trend}">Profit trend</div>
+                    <a th:href="@{/admin/planner/profit-trend.csv(printType=${printTypeFilter},month=${monthFilter},workerId=${workerFilter},profitMonths=${profitMonths})}"
+                       class="text-xs text-blue-600 hover:text-blue-800"
+                       th:text="#{common.export_csv}">
+                        Export CSV
+                    </a>
+                </div>
+
+                <svg id="profitTrendSvg" viewBox="0 0 640 140" class="w-full h-36"></svg>
+
+                <div class="mt-2 text-xs text-gray-500">
+                    <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 bg-blue-500 inline-block rounded-full"></span>
+                        <span th:text="#{planner.legend.gross}">Gross</span>
+                    </span>
+                    ·
+                    <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 bg-emerald-500 inline-block rounded-full"></span>
+                        <span th:text="#{planner.legend.margin}">Margin</span>
+                    </span>
+                    ·
+                    <span class="inline-flex items-center gap-1">
+                        <span class="w-2 h-2 bg-red-500 inline-block rounded-full"></span>
+                        <span th:text="#{planner.legend.cost}">Cost</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div th:each="p : ${profitByType}" class="border border-gray-200 rounded-lg p-3">
+                    <div class="text-xs text-gray-500" th:text="${p.printType}">DTF</div>
+                    <div class="flex items-center justify-between text-sm mt-1">
+                        <span th:text="#{planner.legend.gross}">Gross</span>
+                        <span class="font-semibold" th:text="${'€' + #numbers.formatDecimal(p.gross, 1, 2)}">€0.00</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span th:text="#{planner.legend.margin}">Margin</span>
+                        <span class="font-semibold text-emerald-700" th:text="${'€' + #numbers.formatDecimal(p.margin, 1, 2)}">€0.00</span>
+                    </div>
+                </div>
+
+                <div th:if="${profitByType == null || profitByType.size() == 0}" class="text-sm text-gray-500"
+                     th:text="#{planner.no_data_for_filter}">
+                    No data for selected filter.
+                </div>
+            </div>
+        </div>
+
+        <!-- Due Soon -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{planner.due_soon.title}">Due Soon</h2>
+
+            <div class="space-y-3">
+                <div th:each="o : ${dueSoonOrders}" class="border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm font-semibold text-gray-900" th:text="${o.orderNumber}">#</div>
+                        <div class="text-xs text-gray-500" th:text="${#temporals.format(o.deadline, 'dd.MM.yyyy')}">date</div>
+                    </div>
+                    <div class="text-sm text-gray-700 mt-1" th:text="${o.title}">Order title</div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        <span th:text="${o.clientName ?: #messages.msg('planner.client')}">Client</span>
+                        <span th:if="${o.assignedToName != null}" th:text="' • ' + ${o.assignedToName}"></span>
+                    </div>
+                    <a th:href="@{/admin/orders/{id}(id=${o.id})}"
+                       class="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800"
+                       th:text="#{planner.open_order}">
+                        Open order
+                    </a>
+                </div>
+
+                <div th:if="${dueSoonOrders == null || dueSoonOrders.size() == 0}" class="text-sm text-gray-500"
+                     th:text="#{planner.no_upcoming_deadlines}">
+                    No upcoming deadlines.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{planner.load_by_day.title}">
+                Load by Day (next 7)
+            </h2>
+
+            <div class="space-y-3">
+                <div th:each="d : ${dailyLoad}" class="flex items-center gap-3"
+                     th:with="dailyPct=${maxDailyLoad == 0 ? 0 : (d.count / maxDailyLoad * 100)}">
+                    <div class="w-10 text-xs text-gray-500" th:text="${d.label}">MON</div>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3">
+                        <div class="bg-indigo-600 h-3 rounded-full"
+                             th:attr="data-tooltip=${d.count + ' ' + #messages.msg('planner.orders')}"
+                             th:style="'width:' + ${dailyPct} + '%'"></div>
+                    </div>
+                    <div class="w-6 text-xs text-gray-600" th:text="${d.count}">0</div>
+                </div>
+
+                <div th:if="${dailyLoad == null || dailyLoad.size() == 0}" class="text-sm text-gray-500"
+                     th:text="#{planner.no_deadlines_next_week}">
+                    No deadlines in the next week.
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{planner.load_by_worker.title}">
+                Load by Worker
+            </h2>
+
+            <div class="space-y-3">
+                <div th:each="w : ${workerLoad}" class="flex items-center gap-3"
+                     th:with="workerPct=${maxWorkerLoad == 0 ? 0 : (1.0 * w.count / maxWorkerLoad * 100)}">
+                    <div class="w-32 text-xs text-gray-700 truncate" th:text="${w.workerName}">Worker</div>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3">
+                        <div class="bg-emerald-600 h-3 rounded-full"
+                             th:attr="data-tooltip=${w.count + ' ' + #messages.msg('planner.orders')}"
+                             th:style="'width:' + ${workerPct} + '%'"></div>
+                    </div>
+                    <div class="w-6 text-xs text-gray-600" th:text="${w.count}">0</div>
+                </div>
+
+                <div th:if="${workerLoad == null || workerLoad.size() == 0}" class="text-sm text-gray-500"
+                     th:text="#{planner.no_assigned_work}">
+                    No assigned work.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Trend -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900" th:text="#{planner.status_trend.title}">Status Trend</h2>
+            <span class="text-xs text-gray-500"
+                  th:text="${trendDays + ' ' + #messages.msg('planner.days')}">7 days</span>
+        </div>
+
+        <div class="border border-gray-200 rounded-lg p-3 mb-4">
+            <svg id="statusTrendSvg" viewBox="0 0 640 140" class="w-full h-36"></svg>
+
+            <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
+                <span th:text="#{planner.legend.title}">Legend</span>
+                <a th:href="@{/admin/planner/status-trend.csv(month=${monthFilter},workerId=${workerFilter},trendDays=${trendDays})}"
+                   class="text-xs text-blue-600 hover:text-blue-800"
+                   th:text="#{common.export_csv}">
+                    Export CSV
+                </a>
+            </div>
+
+            <div class="mt-2 text-xs text-gray-500">
+                <span class="inline-flex items-center gap-1">
+                    <span class="w-2 h-2 bg-blue-500 inline-block rounded-full"></span>
+                    <span th:text="#{planner.status.new}">New</span>
+                </span>
+                ·
+                <span class="inline-flex items-center gap-1">
+                    <span class="w-2 h-2 bg-purple-500 inline-block rounded-full"></span>
+                    <span th:text="#{planner.status.design}">Design</span>
+                </span>
+                ·
+                <span class="inline-flex items-center gap-1">
+                    <span class="w-2 h-2 bg-emerald-500 inline-block rounded-full"></span>
+                    <span th:text="#{planner.status.print}">Print</span>
+                </span>
+                ·
+                <span class="inline-flex items-center gap-1">
+                    <span class="w-2 h-2 bg-amber-500 inline-block rounded-full"></span>
+                    <span th:text="#{planner.status.ready}">Ready</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <div th:each="p : ${statusTimeline}" class="flex items-center gap-4"
+                 th:with="newPct=${maxStatusCount == 0 ? 0 : (p.newCount / maxStatusCount * 100)},
+                          designPct=${maxStatusCount == 0 ? 0 : (p.designCount / maxStatusCount * 100)},
+                          printPct=${maxStatusCount == 0 ? 0 : (p.printCount / maxStatusCount * 100)},
+                          readyPct=${maxStatusCount == 0 ? 0 : (p.readyCount / maxStatusCount * 100)}">
+                <div class="w-10 text-xs text-gray-500" th:text="${p.label}">MON</div>
+
+                <div class="flex-1 flex items-center gap-2">
+                    <div class="flex-1 bg-gray-100 rounded-full h-3">
+                        <div class="bg-blue-500 h-3 rounded-full"
+                             th:attr="data-tooltip=${#messages.msg('planner.status.new') + ': ' + p.newCount}"
+                             th:style="'width:' + ${newPct} + '%'"></div>
+                    </div>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3">
+                        <div class="bg-purple-500 h-3 rounded-full"
+                             th:attr="data-tooltip=${#messages.msg('planner.status.design') + ': ' + p.designCount}"
+                             th:style="'width:' + ${designPct} + '%'"></div>
+                    </div>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3">
+                        <div class="bg-emerald-500 h-3 rounded-full"
+                             th:attr="data-tooltip=${#messages.msg('planner.status.print') + ': ' + p.printCount}"
+                             th:style="'width:' + ${printPct} + '%'"></div>
+                    </div>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3">
+                        <div class="bg-amber-500 h-3 rounded-full"
+                             th:attr="data-tooltip=${#messages.msg('planner.status.ready') + ': ' + p.readyCount}"
+                             th:style="'width:' + ${readyPct} + '%'"></div>
+                    </div>
+                </div>
+
+                <div class="w-16 text-xs text-gray-600 text-right">
+                    <span th:text="${p.newCount}">0</span>/<span th:text="${p.designCount}">0</span>/<span th:text="${p.printCount}">0</span>/<span th:text="${p.readyCount}">0</span>
+                </div>
+            </div>
+
+            <div th:if="${statusTimeline == null || statusTimeline.size() == 0}" class="text-sm text-gray-500"
+                 th:text="#{planner.no_status_timeline}">
+                No data for status timeline.
+            </div>
+        </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900" th:text="#{planner.heatmap.title}">
+                Daily Activity Heatmap
+            </h2>
+            <span class="text-xs text-gray-500"
+                  th:text="${heatmapMode == 'deadline' ? #messages.msg('planner.heatmap.deadlines') : #messages.msg('planner.heatmap.status_changes')}">
+                Status changes
+            </span>
+        </div>
+
+        <div class="grid grid-cols-7 gap-2 text-xs text-gray-700">
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.mon}">Mon</div>
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.tue}">Tue</div>
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.wed}">Wed</div>
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.thu}">Thu</div>
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.fri}">Fri</div>
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.sat}">Sat</div>
+            <div class="text-center text-gray-400" th:text="#{planner.weekday.sun}">Sun</div>
+        </div>
+
+        <div class="grid grid-cols-7 gap-2 mt-2">
+            <div th:if="${heatmapOffset > 0}"
+                 th:each="i : ${#numbers.sequence(1, heatmapOffset)}"
+                 class="h-10 rounded-md bg-transparent"></div>
+
+            <div th:each="h : ${heatmapDays}"
+                 th:with="opacity=${maxHeatmapCount == 0 ? 0.1 : (h.count / maxHeatmapCount * 0.8 + 0.1)},
+                          pct=${maxHeatmapCount == 0 ? 0 : (h.count / maxHeatmapCount * 100)}"
+                 class="h-10 rounded-md flex items-center justify-center text-xs text-gray-800"
+                 th:attr="data-tooltip=${#temporals.format(h.date, 'dd.MM.yyyy') + ': ' + h.count + ' (' + #numbers.formatDecimal(pct,1,0) + '%)'}"
+                 th:style="'background-color: rgba(59, 130, 246, ' + ${opacity} + ');'">
+                <span th:text="${h.day}">1</span>
+            </div>
+        </div>
+
+        <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
+            <span th:text="#{planner.low}">Low</span>
+            <div class="flex-1 h-2 rounded-full"
+                 style="background: linear-gradient(90deg, rgba(59,130,246,0.1), rgba(59,130,246,0.9));"></div>
+            <span th:text="#{planner.high}">High</span>
+        </div>
+
+        <div th:if="${heatmapDays == null || heatmapDays.size() == 0}" class="text-sm text-gray-500 mt-2"
+             th:text="#{planner.no_heatmap_data}">
+            No heatmap data for this month.
+        </div>
+    </div>
+
+    <!-- Margin by Print Type -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900" th:text="#{planner.margin_by_type.title}">
+                Margin by Print Type
+            </h2>
+            <a th:href="@{/admin/planner/margins.csv(printType=${printTypeFilter},month=${monthFilter})}"
+               class="text-xs text-blue-600 hover:text-blue-800"
+               th:text="#{common.export_csv}">
+                Export CSV
+            </a>
+        </div>
+
+        <div class="space-y-3">
+            <div th:each="p : ${profitByType}" class="flex items-center gap-3"
+                 th:with="grossScale=${scale == 'linear' ? (profitMaxGross == 0 ? 0 : (p.gross / profitMaxGross * 100)) : (profitMaxGrossLog == 0 ? 0 : (T(java.lang.Math).log1p(p.gross) / profitMaxGrossLog * 100))},
+                          costPct=${p.gross == 0 ? 0 : ((p.gross - p.margin) / p.gross * 100)},
+                          marginPct=${p.gross == 0 ? 0 : (p.margin / p.gross * 100)}">
+                <div class="w-16 text-xs text-gray-600" th:text="${p.printType}">DTF</div>
+
+                <div class="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div class="bg-blue-500 h-4 absolute left-0 top-0"
+                         th:attr="data-tooltip=${#messages.msg('planner.legend.gross') + ' €' + #numbers.formatDecimal(p.gross,1,2) + ' (100%)'}"
+                         th:style="'width:' + ${grossScale} + '%'"></div>
+                    <div class="bg-red-500 h-4 absolute left-0 top-0"
+                         th:attr="data-tooltip=${#messages.msg('planner.legend.cost') + ' €' + #numbers.formatDecimal(p.gross - p.margin,1,2) + ' (' + #numbers.formatDecimal(costPct,1,0) + '%)'}"
+                         th:style="'width:' + ${grossScale * costPct / 100} + '%'"></div>
+                    <div class="bg-emerald-600 h-4 absolute left-0 top-0"
+                         th:attr="data-tooltip=${#messages.msg('planner.legend.margin') + ' €' + #numbers.formatDecimal(p.margin,1,2) + ' (' + #numbers.formatDecimal(marginPct,1,0) + '%)'}"
+                         th:style="'width:' + ${grossScale * marginPct / 100} + '%'"></div>
+                </div>
+
+                <div class="w-36 text-xs text-gray-700 text-right">
+                    <span th:text="${'€' + #numbers.formatDecimal(p.gross, 1, 2)}">€0.00</span>
+                </div>
+            </div>
+
+            <div th:if="${profitByType == null || profitByType.size() == 0}" class="text-sm text-gray-500"
+                 th:text="#{planner.no_margin_data}">
+                No margin data.
+            </div>
+        </div>
+
+        <div class="mt-3 text-xs text-gray-500">
+            <span th:text="#{planner.legend.title}">Legend</span>:
+            <span class="inline-flex items-center gap-1" th:attr="title=#{planner.legend.gross.help}">
+                <span class="w-3 h-3 bg-blue-500 inline-block"></span><span th:text="#{planner.legend.gross}">Gross</span>
+            </span>
+            ·
+            <span class="inline-flex items-center gap-1" th:attr="title=#{planner.legend.margin.help}">
+                <span class="w-3 h-3 bg-emerald-600 inline-block"></span><span th:text="#{planner.legend.margin}">Margin</span>
+            </span>
+            ·
+            <span class="inline-flex items-center gap-1" th:attr="title=#{planner.legend.cost.help}">
+                <span class="w-3 h-3 bg-red-500 inline-block"></span><span th:text="#{planner.legend.cost}">Cost</span>
+            </span>
+        </div>
+    </div>
+</main>
+
+<div id="plannerTooltip"
+     class="fixed z-50 hidden px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none"></div>
+
+<script th:inline="javascript">
+    const statusTrendData = /*[[${statusTimelineJson}]]*/ [];
+    const profitTrendData = /*[[${profitTrendJson}]]*/ [];
+
+    const I18N = {
+        statusNew: /*[[#{planner.status.new}]]*/ 'New',
+        statusDesign: /*[[#{planner.status.design}]]*/ 'Design',
+        statusPrint: /*[[#{planner.status.print}]]*/ 'Print',
+        statusReady: /*[[#{planner.status.ready}]]*/ 'Ready',
+        gross: /*[[#{planner.legend.gross}]]*/ 'Gross',
+        margin: /*[[#{planner.legend.margin}]]*/ 'Margin',
+        cost: /*[[#{planner.legend.cost}]]*/ 'Cost',
+        max: /*[[#{planner.max}]]*/ 'MAX',
+        min: /*[[#{planner.min}]]*/ 'MIN'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const tooltip = document.getElementById('plannerTooltip');
+
+        function bindTooltip(el) {
+            if (!tooltip || el.dataset.tooltipBound) return;
+
+            el.addEventListener('mouseenter', () => {
+                tooltip.textContent = el.getAttribute('data-tooltip');
+                tooltip.classList.remove('hidden');
+            });
+            el.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 12) + 'px';
+                tooltip.style.top = (e.clientY + 12) + 'px';
+            });
+            el.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+            });
+            el.dataset.tooltipBound = '1';
+        }
+
+        if (tooltip) {
+            document.querySelectorAll('[data-tooltip]').forEach(bindTooltip);
+        }
+
+        const trendSvg = document.getElementById('statusTrendSvg');
+        if (trendSvg && Array.isArray(statusTrendData) && statusTrendData.length > 0) {
+            const width = 640;
+            const height = 140;
+            const padding = 10;
+            const max = statusTrendData.reduce((m, d) => {
+                return Math.max(m, d.newCount, d.designCount, d.printCount, d.readyCount);
+            }, 0) || 1;
+
+            function buildPoints(key) {
+                return statusTrendData.map((d, i) => {
+                    const x = padding + (i / Math.max(1, statusTrendData.length - 1)) * (width - padding * 2);
+                    const y = height - padding - (d[key] / max) * (height - padding * 2);
+                    return `${x},${y}`;
+                }).join(' ');
+            }
+
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (i / 4) * (height - padding * 2);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding);
+                line.setAttribute('x2', width - padding);
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e5e7eb');
+                line.setAttribute('stroke-width', '1');
+                trendSvg.appendChild(line);
+            }
+
+            const series = [
+                { key: 'newCount', color: '#3b82f6' },
+                { key: 'designCount', color: '#8b5cf6' },
+                { key: 'printCount', color: '#10b981' },
+                { key: 'readyCount', color: '#f59e0b' }
+            ];
+
+            function addMarker(key, color, type) {
+                const values = statusTrendData.map(d => d[key]);
+                const value = type === 'max' ? Math.max(...values) : Math.min(...values);
+                const index = values.indexOf(value);
+                if (index < 0) return;
+
+                const x = padding + (index / Math.max(1, statusTrendData.length - 1)) * (width - padding * 2);
+                const y = height - padding - (value / max) * (height - padding * 2);
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', y);
+                circle.setAttribute('r', 4);
+                circle.setAttribute('fill', color);
+                circle.setAttribute('stroke', '#ffffff');
+                circle.setAttribute('stroke-width', '2');
+                circle.setAttribute('data-tooltip', `${statusTrendData[index].label}: ${type === 'max' ? I18N.max : I18N.min} ${value}`);
+                trendSvg.appendChild(circle);
+                bindTooltip(circle);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', type === 'max' ? y - 6 : y + 12);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', color);
+                text.setAttribute('font-size', '9');
+                text.textContent = type === 'max' ? `▲ ${value}` : `▼ ${value}`;
+                trendSvg.appendChild(text);
+            }
+
+            series.forEach(s => {
+                const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                polyline.setAttribute('points', buildPoints(s.key));
+                polyline.setAttribute('fill', 'none');
+                polyline.setAttribute('stroke', s.color);
+                polyline.setAttribute('stroke-width', '2');
+                polyline.setAttribute('stroke-linecap', 'round');
+                polyline.setAttribute('stroke-linejoin', 'round');
+                trendSvg.appendChild(polyline);
+
+                statusTrendData.forEach((d, i) => {
+                    const x = padding + (i / Math.max(1, statusTrendData.length - 1)) * (width - padding * 2);
+                    const y = height - padding - (d[s.key] / max) * (height - padding * 2);
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', 3);
+                    circle.setAttribute('fill', '#ffffff');
+                    circle.setAttribute('stroke', s.color);
+                    circle.setAttribute('stroke-width', '2');
+
+                    circle.setAttribute('data-tooltip',
+                        `${d.label}: ${I18N.statusNew} ${d.newCount}, ${I18N.statusDesign} ${d.designCount}, ${I18N.statusPrint} ${d.printCount}, ${I18N.statusReady} ${d.readyCount}`);
+                    trendSvg.appendChild(circle);
+                    bindTooltip(circle);
+                });
+
+                addMarker(s.key, s.color, 'max');
+                addMarker(s.key, s.color, 'min');
+            });
+
+            statusTrendData.forEach((d, i) => {
+                if (i % 5 !== 0 && i !== statusTrendData.length - 1) return;
+
+                const x = padding + (i / Math.max(1, statusTrendData.length - 1)) * (width - padding * 2);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', height - 2);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#9ca3af');
+                text.setAttribute('font-size', '10');
+                text.textContent = d.label;
+                trendSvg.appendChild(text);
+            });
+
+            trendSvg.addEventListener('mousemove', (e) => {
+                if (!tooltip) return;
+                const rect = trendSvg.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const idx = Math.round(((x - padding) / (width - padding * 2)) * (statusTrendData.length - 1));
+                const safeIdx = Math.max(0, Math.min(statusTrendData.length - 1, idx));
+                const d = statusTrendData[safeIdx];
+                tooltip.textContent =
+                    `${d.label}: ${I18N.statusNew} ${d.newCount}, ${I18N.statusDesign} ${d.designCount}, ${I18N.statusPrint} ${d.printCount}, ${I18N.statusReady} ${d.readyCount}`;
+                tooltip.classList.remove('hidden');
+                tooltip.style.left = (e.clientX + 12) + 'px';
+                tooltip.style.top = (e.clientY + 12) + 'px';
+            });
+
+            trendSvg.addEventListener('mouseleave', () => {
+                if (tooltip) tooltip.classList.add('hidden');
+            });
+        }
+
+        const profitSvg = document.getElementById('profitTrendSvg');
+        if (profitSvg && Array.isArray(profitTrendData) && profitTrendData.length > 0) {
+            const width = 640;
+            const height = 140;
+            const padding = 10;
+            const max = profitTrendData.reduce((m, d) => Math.max(m, d.gross), 0) || 1;
+
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (i / 4) * (height - padding * 2);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding);
+                line.setAttribute('x2', width - padding);
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e5e7eb');
+                line.setAttribute('stroke-width', '1');
+                profitSvg.appendChild(line);
+            }
+
+            const barWidth = (width - padding * 2) / Math.max(1, profitTrendData.length) * 0.7;
+
+            profitTrendData.forEach((d, i) => {
+                const xCenter = padding + (i / Math.max(1, profitTrendData.length - 1)) * (width - padding * 2);
+                const barX = xCenter - barWidth / 2;
+                const barHeight = (d.gross / max) * (height - padding * 2);
+                const baseY = height - padding;
+
+                const costHeight = d.gross === 0 ? 0 : (d.cost / d.gross) * barHeight;
+                const marginHeight = d.gross === 0 ? 0 : (d.margin / d.gross) * barHeight;
+
+                const costRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                costRect.setAttribute('x', barX);
+                costRect.setAttribute('y', baseY - costHeight);
+                costRect.setAttribute('width', barWidth);
+                costRect.setAttribute('height', Math.max(0, costHeight));
+                costRect.setAttribute('fill', '#ef4444');
+                costRect.setAttribute('data-tooltip',
+                    `${d.label}: ${I18N.cost} €${d.cost.toFixed(2)} (${(d.gross === 0 ? 0 : (d.cost / d.gross * 100)).toFixed(0)}%)`);
+                profitSvg.appendChild(costRect);
+                bindTooltip(costRect);
+
+                const marginRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                marginRect.setAttribute('x', barX);
+                marginRect.setAttribute('y', baseY - costHeight - marginHeight);
+                marginRect.setAttribute('width', barWidth);
+                marginRect.setAttribute('height', Math.max(0, marginHeight));
+                marginRect.setAttribute('fill', '#10b981');
+                marginRect.setAttribute('data-tooltip',
+                    `${d.label}: ${I18N.margin} €${d.margin.toFixed(2)} (${(d.gross === 0 ? 0 : (d.margin / d.gross * 100)).toFixed(0)}%)`);
+                profitSvg.appendChild(marginRect);
+                bindTooltip(marginRect);
+
+                const outline = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                outline.setAttribute('x', barX);
+                outline.setAttribute('y', baseY - barHeight);
+                outline.setAttribute('width', barWidth);
+                outline.setAttribute('height', Math.max(0, barHeight));
+                outline.setAttribute('fill', 'transparent');
+                outline.setAttribute('stroke', '#3b82f6');
+                outline.setAttribute('stroke-width', '1');
+                outline.setAttribute('data-tooltip', `${d.label}: ${I18N.gross} €${d.gross.toFixed(2)}`);
+                profitSvg.appendChild(outline);
+                bindTooltip(outline);
+            });
+
+            profitTrendData.forEach((d, i) => {
+                if (i % 2 !== 0 && i !== profitTrendData.length - 1) return;
+                const x = padding + (i / Math.max(1, profitTrendData.length - 1)) * (width - padding * 2);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', height - 2);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#9ca3af');
+                text.setAttribute('font-size', '10');
+                text.textContent = d.label;
+                profitSvg.appendChild(text);
+            });
+        }
+
+        const scaleSelect = document.getElementById('scaleSelect');
+        if (scaleSelect) {
+            const key = 'plannerScalePreference';
+            const saved = localStorage.getItem(key);
+            if (saved && saved !== scaleSelect.value) {
+                scaleSelect.value = saved;
+            }
+            scaleSelect.addEventListener('change', () => {
+                localStorage.setItem(key, scaleSelect.value);
+            });
+            const resetBtn = document.getElementById('resetScaleBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    localStorage.removeItem(key);
+                    scaleSelect.value = 'log';
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>

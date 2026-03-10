@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:lang="${#locale.language}">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{tasks.review.page_title}">Task Review - PrintFlow Admin</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900" th:text="#{tasks.review.title}">
+                    Task Review
+                </h1>
+                <p class="text-gray-600 mt-2" th:text="#{tasks.review.subtitle}">
+                    Approve completed tasks
+                </p>
+            </div>
+            <a th:href="@{/admin/tasks/create}"
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+               th:text="#{tasks.review.create_task}">
+                + Create Task
+            </a>
+        </div>
+
+        <div class="mt-6">
+            <form th:action="@{/admin/tasks}" method="get" class="flex flex-wrap gap-2">
+                <input type="hidden" name="page" value="0">
+
+                <select name="status"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="AWAITING_REVIEW"
+                            th:selected="${status == 'AWAITING_REVIEW'}"
+                            th:text="#{tasks.status.AWAITING_REVIEW}">
+                        Awaiting Review
+                    </option>
+                    <option value="IN_PROGRESS"
+                            th:selected="${status == 'IN_PROGRESS'}"
+                            th:text="#{tasks.status.IN_PROGRESS}">
+                        In Progress
+                    </option>
+                    <option value="COMPLETED"
+                            th:selected="${status == 'COMPLETED'}"
+                            th:text="#{tasks.status.COMPLETED}">
+                        Completed
+                    </option>
+                </select>
+
+                <select name="size"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="10" th:selected="${size == 10}" th:text="#{pagination.size.10}">10 / page</option>
+                    <option value="20" th:selected="${size == 20}" th:text="#{pagination.size.20}">20 / page</option>
+                    <option value="50" th:selected="${size == 50}" th:text="#{pagination.size.50}">50 / page</option>
+                </select>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                        th:text="#{common.filter}">
+                    Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        th:text="#{tasks.review.table.task}">
+                        Task
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        th:text="#{tasks.review.table.order}">
+                        Order
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        th:text="#{tasks.review.table.status}">
+                        Status
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        th:text="#{common.actions}">
+                        Actions
+                    </th>
+                </tr>
+                </thead>
+
+                <tbody class="bg-white divide-y divide-gray-200">
+                <tr th:each="task : ${tasks}" class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900" th:text="${task.title}">Task title</div>
+                        <div class="text-xs text-gray-500" th:text="${task.assignedToName}">Assigned</div>
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900" th:text="${task.orderNumber}">ORD-</div>
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800"
+                              th:text="${task.status != null ? #messages.msg('tasks.status.' + task.status) : ''}">AWAITING_REVIEW</span>
+                    </td>
+
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <form th:if="${task.status == 'AWAITING_REVIEW'}"
+                              th:action="@{/admin/tasks/{id}/approve(id=${task.id})}"
+                              method="post"
+                              th:attr="onsubmit=|return confirm('${#messages.msg('tasks.review.approve.confirm')}');|"
+                              class="inline">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="text-green-600 hover:text-green-900"
+                                    th:text="#{tasks.review.approve}">
+                                Approve
+                            </button>
+                        </form>
+
+                        <a th:href="@{/admin/tasks/{id}(id=${task.id})}"
+                           class="ml-3 text-blue-600 hover:text-blue-900"
+                           th:text="#{common.details}">
+                            Details
+                        </a>
+                    </td>
+                </tr>
+
+                <tr th:if="${tasks.empty}">
+                    <td colspan="4" class="px-6 py-12 text-center">
+                        <div class="text-gray-500">
+                            <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{tasks.review.empty.title}">
+                                No tasks
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-500" th:text="#{tasks.review.empty.desc}">
+                                Nothing to review.
+                            </p>
+                            <p class="mt-2 text-xs text-gray-400" th:if="${scopeCompanyName != null}">
+                                <span th:text="#{tasks.review.scope.only_company}">Showing tasks for company:</span>
+                                <span class="font-medium" th:text="${scopeCompanyName}"></span>.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="text-sm text-gray-600">
+            <span th:text="${totalItems}">0</span>
+            <span th:text="#{pagination.total}">total</span>
+            <span> · </span>
+            <span th:text="#{pagination.page}">Page</span>
+            <span th:text="${currentPage + 1}">1</span>
+            <span> / </span>
+            <span th:text="${totalPages == 0 ? 1 : totalPages}">1</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a th:href="@{/admin/tasks(status=${status}, page=0, size=${size})}"
+               class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+               th:classappend="${currentPage == 0} ? ' opacity-50 pointer-events-none' : ''"
+               th:text="#{pagination.first}">
+                First
+            </a>
+            <a th:href="@{/admin/tasks(status=${status}, page=${currentPage - 1}, size=${size})}"
+               class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+               th:classappend="${currentPage == 0} ? ' opacity-50 pointer-events-none' : ''"
+               th:text="#{pagination.prev}">
+                Prev
+            </a>
+            <a th:href="@{/admin/tasks(status=${status}, page=${currentPage + 1}, size=${size})}"
+               class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+               th:classappend="${currentPage + 1 >= totalPages} ? ' opacity-50 pointer-events-none' : ''"
+               th:text="#{pagination.next}">
+                Next
+            </a>
+            <a th:href="@{/admin/tasks(status=${status}, page=${lastPage}, size=${size})}"
+               class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+               th:classappend="${totalPages == 0 or currentPage + 1 >= totalPages} ? ' opacity-50 pointer-events-none' : ''"
+               th:text="#{pagination.last}">
+                Last
+            </a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -14,7 +14,6 @@ public class LoginDTO {
     
 	public LoginDTO() {
 		
-		// TODO Auto-generated constructor stub
 	}
 	public LoginDTO(String username, String password, boolean rememberMe) {
 	

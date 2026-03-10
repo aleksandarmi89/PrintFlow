@@ -7,12 +7,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TaskActivityRepository extends JpaRepository<TaskActivity, Long> {
+    @Query("SELECT ta FROM TaskActivity ta WHERE ta.id = :id AND ta.task.company.id = :companyId")
+    Optional<TaskActivity> findByIdAndCompanyId(@Param("id") Long id, @Param("companyId") Long companyId);
     
     // Osnovne metode
     List<TaskActivity> findByTaskIdOrderByCreatedAtDesc(Long taskId);
@@ -53,6 +58,10 @@ public interface TaskActivityRepository extends JpaRepository<TaskActivity, Long
     
     @Query("SELECT ta.action, COUNT(ta) FROM TaskActivity ta WHERE ta.task.id = :taskId GROUP BY ta.action")
     List<Object[]> countActionsByTaskId(@Param("taskId") Long taskId);
+
+    @Modifying
+    @Transactional
+    void deleteByTaskId(Long taskId);
     
     // Najnovjih N aktivnosti
     @Query(value = "SELECT * FROM task_activities WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)

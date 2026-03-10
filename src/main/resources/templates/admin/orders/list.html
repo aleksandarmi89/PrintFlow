@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Orders - PrintFlow Admin</title>
+    <title th:text="#{orders.list.page_title}">Orders - PrintFlow Admin</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
     
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+        </div>
         <!-- Page Header -->
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Orders</h1>
-                    <p class="text-gray-600 mt-2">Manage work orders and track progress</p>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{orders.title}">Orders</h1>
+                    <p class="text-gray-600 mt-2" th:text="#{orders.list.subtitle}">Manage work orders and track progress</p>
                 </div>
                 <div class="flex space-x-3">
                     <a th:href="@{/admin/orders/create}" 
                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        + New Order
+                        <span th:text="#{orders.list.new_order}">+ New Order</span>
                     </a>
                 </div>
             </div>
@@ -27,14 +31,15 @@
                 <div class="flex flex-col md:flex-row md:items-center gap-4">
                     <!-- Status Filter -->
                     <div class="flex-1">
-                        <form th:action="@{/admin/orders}" method="get" class="flex gap-2">
+                        <form th:action="@{/admin/orders}" method="get" class="flex flex-wrap gap-2">
+                            <input type="hidden" name="page" value="0">
                             <select name="status" 
                                     th:onchange="this.form.submit()"
                                     class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">All Statuses</option>
+                                <option value="" th:text="#{orders.list.all_statuses}">All Statuses</option>
                                 <option th:each="status : ${orderStatuses}" 
                                         th:value="${status}"
-                                        th:text="${status}"
+                                        th:text="#{${status.messageKey}}"
                                         th:selected="${param.status == status}">
                                 </option>
                             </select>
@@ -44,17 +49,23 @@
                                 <input type="text" 
                                        name="search" 
                                        th:value="${search}"
-                                       placeholder="Search orders by number, title, or client..."
+                                       th:placeholder="#{orders.list.search_placeholder}"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
                             
                             <button type="submit" 
                                     class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
-                                Search
+                                <span th:text="#{common.search}">Search</span>
                             </button>
+                            <select name="size"
+                                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="10" th:selected="${size == 10}" th:text="#{orders.list.page_size(10)}">10 / page</option>
+                                <option value="20" th:selected="${size == 20}" th:text="#{orders.list.page_size(20)}">20 / page</option>
+                                <option value="50" th:selected="${size == 50}" th:text="#{orders.list.page_size(50)}">50 / page</option>
+                            </select>
                             <a th:href="@{/admin/orders}" 
                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                                Clear
+                                <span th:text="#{common.clear}">Clear</span>
                             </a>
                         </form>
                     </div>
@@ -65,24 +76,24 @@
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">New</div>
-                <div class="text-2xl font-bold text-blue-600">0</div>
+                <div class="text-sm text-gray-600" th:text="#{orders.status.NEW}">New</div>
+                <div class="text-2xl font-bold text-blue-600" th:text="${newCount}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">In Design</div>
-                <div class="text-2xl font-bold text-yellow-600">0</div>
+                <div class="text-sm text-gray-600" th:text="#{orders.status.IN_DESIGN}">In Design</div>
+                <div class="text-2xl font-bold text-yellow-600" th:text="${designCount}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">In Print</div>
-                <div class="text-2xl font-bold text-purple-600">0</div>
+                <div class="text-sm text-gray-600" th:text="#{orders.status.IN_PRINT}">In Print</div>
+                <div class="text-2xl font-bold text-purple-600" th:text="${printCount}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Ready</div>
-                <div class="text-2xl font-bold text-green-600">0</div>
+                <div class="text-sm text-gray-600" th:text="#{orders.status.READY_FOR_DELIVERY}">Ready</div>
+                <div class="text-2xl font-bold text-green-600" th:text="${readyCount}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Overdue</div>
-                <div class="text-2xl font-bold text-red-600">0</div>
+                <div class="text-sm text-gray-600" th:text="#{orders.list.overdue}">Overdue</div>
+                <div class="text-2xl font-bold text-red-600" th:text="${overdueCount}">0</div>
             </div>
         </div>
         
@@ -93,28 +104,28 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Order #
+                                <span th:text="#{orders.order_number}">Order #</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Title
+                                <span th:text="#{orders.title_field}">Title</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Client
+                                <span th:text="#{clients.title}">Client</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Assigned To
+                                <span th:text="#{orders.assigned_to}">Assigned To</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
+                                <span th:text="#{common.status}">Status</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Deadline
+                                <span th:text="#{orders.deadline}">Deadline</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Price
+                                <span th:text="#{orders.price}">Price</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
+                                <span th:text="#{common.actions}">Actions</span>
                             </th>
                         </tr>
                     </thead>
@@ -138,6 +149,13 @@
                                      th:text="${order.title}">
                                     Order Title
                                 </div>
+                                <div th:if="${orderToPublicRequestId != null && orderToPublicRequestId[order.id] != null}" class="mt-1">
+                                    <a th:href="@{/admin/public-requests/{id}(id=${orderToPublicRequestId[order.id]})}"
+                                       class="inline-flex rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-1"
+                                       th:text="#{public.requests.badge.from_request}">
+                                        From Public Request
+                                    </a>
+                                </div>
                                 <div class="text-sm text-gray-500 truncate max-w-xs" 
                                      th:text="${order.description}">
                                     Order description...
@@ -151,7 +169,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900" 
-                                     th:text="${order.assignedToName ?: 'Not assigned'}">
+                                     th:text="${order.assignedToName ?: #messages.msg('orders.list.not_assigned')}">
                                     Worker Name
                                 </div>
                             </td>
@@ -164,39 +182,39 @@
                                      order.status == 'READY_FOR_DELIVERY' ? 'bg-green-100 text-green-800' :
                                      order.status == 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
                                      'bg-red-100 text-red-800')}">
-                                    <span th:text="${order.status}">Status</span>
+                                    <span th:text="#{${order.status.messageKey}}">Status</span>
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
     <div class="flex items-center">
         <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
-        <span th:class="${'text-sm ' + (order.deadline != null && order.deadline.isBefore(#temporals.createToday()) ? 'text-red-600 font-medium' : 'text-gray-900')}">
+        <span th:class="${'text-sm ' + (order.deadline != null && order.deadline.isBefore(T(java.time.LocalDateTime).now()) ? 'text-red-600 font-medium' : 'text-gray-900')}">
             <th:block th:if="${order.deadline != null}" 
                       th:text="${#temporals.format(order.deadline, 'dd.MM.yyyy HH:mm')}">
             </th:block>
-            <span th:if="${order.deadline == null}" class="text-gray-400">No deadline</span>
+            <span th:if="${order.deadline == null}" class="text-gray-400" th:text="#{orders.list.no_deadline}">No deadline</span>
         </span>
     </div>
 </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900" 
                                      th:if="${order.price}" 
-                                     th:text="${'€' + #numbers.formatDecimal(order.price, 1, 2)}">
+                                     th:text="${(companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(order.price, 1, 2)}">
                                     €100.00
                                 </div>
                                 <div class="text-sm text-gray-400" th:unless="${order.price}">
-                                    Not set
+                                    <span th:text="#{orders.list.not_set}">Not set</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     <a th:href="@{/admin/orders/{id}(id=${order.id})}" 
                                        class="text-blue-600 hover:text-blue-900">
-                                        View
+                                        <span th:text="#{common.view}">View</span>
                                     </a>
                                     <a th:href="@{/admin/orders/{id}/edit(id=${order.id})}" 
                                        class="text-green-600 hover:text-green-900">
-                                        Edit
+                                        <span th:text="#{common.edit}">Edit</span>
                                     </a>
                                 </div>
                             </td>
@@ -207,14 +225,14 @@
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
-                                    <p class="mt-1 text-sm text-gray-500">
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{orders.list.empty_title}">No orders found</h3>
+                                    <p class="mt-1 text-sm text-gray-500" th:text="#{orders.list.empty_desc}">
                                         Get started by creating a new order.
                                     </p>
                                     <div class="mt-6">
                                         <a th:href="@{/admin/orders/create}" 
                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                                            + New Order
+                                            <span th:text="#{orders.list.new_order}">+ New Order</span>
                                         </a>
                                     </div>
                                 </div>
@@ -224,29 +242,61 @@
                 </table>
             </div>
         </div>
+
+        <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="text-sm text-gray-600">
+                <span th:text="${totalItems}">0</span>
+                <span th:text="#{orders.list.total_label}">total</span> ·
+                <span th:text="#{orders.list.page_label}">Page</span>
+                <span th:text="${currentPage + 1}">1</span> /
+                <span th:text="${totalPages == 0 ? 1 : totalPages}">1</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a th:href="@{/admin/orders(status=${status}, search=${search}, page=0, size=${size})}"
+                   class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:classappend="${currentPage == 0} ? ' opacity-50 pointer-events-none' : ''">
+                    <span th:text="#{orders.list.first}">First</span>
+                </a>
+                <a th:href="@{/admin/orders(status=${status}, search=${search}, page=${currentPage - 1}, size=${size})}"
+                   class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:classappend="${currentPage == 0} ? ' opacity-50 pointer-events-none' : ''">
+                    <span th:text="#{orders.list.prev}">Prev</span>
+                </a>
+                <a th:href="@{/admin/orders(status=${status}, search=${search}, page=${currentPage + 1}, size=${size})}"
+                   class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:classappend="${currentPage + 1 >= totalPages} ? ' opacity-50 pointer-events-none' : ''">
+                    <span th:text="#{orders.list.next}">Next</span>
+                </a>
+                <a th:href="@{/admin/orders(status=${status}, search=${search}, page=${lastPage}, size=${size})}"
+                   class="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:classappend="${totalPages == 0 or currentPage + 1 >= totalPages} ? ' opacity-50 pointer-events-none' : ''">
+                    <span th:text="#{orders.list.last}">Last</span>
+                </a>
+            </div>
+        </div>
         
         <!-- Quick Actions -->
         <div class="mt-8 grid grid-cols-1 md:grid-c-3 gap-6">
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h3 class="text-lg font-semibold text-blue-900 mb-4">📋 Order Management Tips</h3>
+                <h3 class="text-lg font-semibold text-blue-900 mb-4" th:text="#{orders.list.tips_title}">📋 Order Management Tips</h3>
                 <ul class="space-y-3 text-blue-800">
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span>Use the status filter to focus on specific stages of production.</span>
+                        <span th:text="#{orders.list.tip_filter}">Use the status filter to focus on specific stages of production.</span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span>Assign orders to specific workers for better accountability.</span>
+                        <span th:text="#{orders.list.tip_assign}">Assign orders to specific workers for better accountability.</span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span>Set realistic deadlines and monitor overdue orders regularly.</span>
+                        <span th:text="#{orders.list.tip_deadlines}">Set realistic deadlines and monitor overdue orders regularly.</span>
                     </li>
                 </ul>
             </div>

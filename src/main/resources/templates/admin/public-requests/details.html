@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{public.requests.details.title}">Request Details</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+<main class="container mx-auto px-4 py-8">
+    <div class="mb-4">
+        <a th:href="@{/admin/public-requests}" class="text-sm text-blue-600 hover:text-blue-800" th:text="#{public.requests.details.back}">← Back to list</a>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-6">
+        <section class="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            <h1 class="text-xl font-bold text-gray-900 mb-4">
+                <span th:text="#{public.requests.details.heading}">Public Request</span>
+                #<span th:text="${requestItem.id}">1</span>
+            </h1>
+
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div><span class="text-gray-500" th:text="#{public.requests.col.customer}">Customer</span><div class="font-medium" th:text="${requestItem.customerName}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.details.company}">Company</span><div class="font-medium" th:text="${requestItem.customerCompanyName}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.col.email}">Email</span><div class="font-medium" th:text="${requestItem.customerEmail}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.details.phone}">Phone</span><div class="font-medium" th:text="${requestItem.customerPhone}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.col.product}">Product</span><div class="font-medium" th:text="${requestItem.productType}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.col.quantity}">Quantity</span><div class="font-medium" th:text="${requestItem.quantity}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.details.dimensions}">Dimensions</span><div class="font-medium" th:text="${requestItem.dimensions}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.details.material}">Material</span><div class="font-medium" th:text="${requestItem.material}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.details.finishing}">Finishing</span><div class="font-medium" th:text="${requestItem.finishing}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.details.deadline}">Deadline</span><div class="font-medium" th:text="${requestItem.deadline != null ? #temporals.format(requestItem.deadline, 'dd.MM.yyyy HH:mm') : '-'}">-</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.col.source}">Source</span><div class="font-medium" th:text="${requestSourceLabel}">PUBLIC FORM</div></div>
+                <div><span class="text-gray-500" th:text="#{public.requests.col.created}">Created</span><div class="font-medium" th:text="${#temporals.format(requestItem.createdAt, 'dd.MM.yyyy HH:mm')}">-</div></div>
+            </div>
+
+            <div class="mt-5">
+                <div class="text-gray-500 text-sm" th:text="#{public.requests.details.notes}">Notes</div>
+                <div class="mt-1 whitespace-pre-wrap text-sm text-gray-800" th:text="${requestItem.notes}">-</div>
+            </div>
+
+            <div class="mt-6">
+                <h2 class="text-sm font-semibold text-gray-900 mb-2" th:text="#{public.requests.details.attachments}">Attachments</h2>
+                <ul class="space-y-2" th:if="${!attachments.isEmpty()}">
+                    <li th:each="att : ${attachments}" class="text-sm">
+                        <a th:href="@{/admin/public-requests/attachments/{id}/download(id=${att.id})}" class="text-blue-600 hover:text-blue-800" th:text="${att.originalFileName}">file</a>
+                        <span class="text-xs text-gray-500 ml-2" th:text="${att.fileSize != null ? '(' + att.fileSize + ' bytes)' : ''}"></span>
+                    </li>
+                </ul>
+                <p th:if="${attachments.isEmpty()}" class="text-sm text-gray-500" th:text="#{public.requests.details.no_files}">No files uploaded.</p>
+            </div>
+
+            <div class="mt-6">
+                <h2 class="text-sm font-semibold text-gray-900 mb-2" th:text="#{public.requests.details.timeline}">Timeline</h2>
+                <div class="space-y-2 text-sm">
+                    <div class="border border-gray-200 rounded-lg px-3 py-2">
+                        <div class="font-medium text-gray-800" th:text="#{public.requests.timeline.submitted}">Submitted</div>
+                        <div class="text-gray-500" th:text="${#temporals.format(requestItem.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
+                    </div>
+                    <div th:each="log : ${requestAuditLogs}" class="border border-gray-200 rounded-lg px-3 py-2">
+                        <div class="font-medium text-gray-800" th:text="${log.description != null ? log.description : log.action}">Event</div>
+                        <div class="text-gray-500" th:text="${#temporals.format(log.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+            <div>
+                <div class="text-sm text-gray-500" th:text="#{public.requests.details.current_status}">Current status</div>
+                <div class="text-base font-semibold text-gray-900" th:text="${requestStatusLabel}">NEW</div>
+            </div>
+
+            <form th:action="@{/admin/public-requests/{id}/status(id=${requestItem.id})}" method="post" class="space-y-2">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <label class="block text-sm text-gray-700" th:text="#{public.requests.details.change_status}">Change status</label>
+                <select name="status" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option th:each="s : ${allStatuses}" th:value="${s.name()}" th:selected="${requestItem.status == s}" th:text="${statusOptionLabels[s.name()]}">NEW</option>
+                </select>
+                <button class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" th:text="#{public.requests.details.update_status}">Update status</button>
+            </form>
+
+            <form th:if="${requestItem.status.name() != 'CONVERTED'}"
+                  th:action="@{/admin/public-requests/{id}/convert(id=${requestItem.id})}"
+                  method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="w-full rounded-lg bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700" th:text="#{public.requests.details.convert}">Convert to Order</button>
+            </form>
+
+            <form th:action="@{/admin/public-requests/{id}/convert-and-create-task(id=${requestItem.id})}"
+                  method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="w-full rounded-lg bg-blue-600 text-white px-3 py-2 text-sm hover:bg-blue-700"
+                        th:text="#{public.requests.details.convert_task}">
+                    Convert + Create Task
+                </button>
+            </form>
+
+            <form th:action="@{/admin/public-requests/{id}/convert-and-generate-tasks(id=${requestItem.id})}"
+                  method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <label class="block text-xs text-gray-600 mb-1" th:text="#{public.requests.details.template}">Task template</label>
+                <select name="template" class="w-full mb-2 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                    <option value="basic" th:text="#{public.requests.details.template.basic}">Basic (3 tasks)</option>
+                    <option value="advanced" th:text="#{public.requests.details.template.advanced}">Advanced (5 tasks)</option>
+                </select>
+                <button class="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700"
+                        th:text="#{public.requests.details.convert_auto}">
+                    Convert + Auto Tasks
+                </button>
+            </form>
+
+            <form th:action="@{/admin/public-requests/{id}/delete(id=${requestItem.id})}"
+                  method="post"
+                  th:attr="onsubmit=|return confirm('${#messages.msg('public.requests.delete_confirm')}');|">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="w-full rounded-lg bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700"
+                        th:text="#{public.requests.delete}">
+                    Delete
+                </button>
+            </form>
+
+            <div th:if="${convertedOrderId != null}" class="text-sm">
+                <div class="text-gray-500" th:text="#{public.requests.details.converted_order}">Converted order</div>
+                <a th:href="@{/admin/orders/{id}(id=${convertedOrderId})}" class="text-blue-600 hover:text-blue-800">
+                    <span th:text="#{public.requests.details.open_order}">Open order</span> #<span th:text="${convertedOrderNumber}">ORD</span>
+                </a>
+                <div class="mt-2">
+                    <a th:href="@{/admin/tasks/create(workOrderId=${convertedOrderId})}" class="text-blue-600 hover:text-blue-800">
+                        <span th:text="#{public.requests.details.create_task_for_order}">Create task for this order</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
+</main>
+</body>
+</html>

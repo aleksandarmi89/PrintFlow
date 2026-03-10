@@ -1,261 +1,822 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title th:text="'Order ' + ${order.orderNumber} + ' - PrintFlow'"></title>
+    <title th:text="#{order_tracking.title(${order.orderNumber})}">Order Tracking</title>
 </head>
 <body>
-    <!-- Simple header for public pages -->
-    <nav class="bg-white shadow-sm">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex justify-between items-center">
-                <a th:href="@{/}" class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+
+<!-- Simple header for public pages -->
+<nav class="bg-white shadow-sm">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <img th:if="${companyBrand != null and companyBrand.logoUrl != null}"
+                     th:src="${companyBrand.logoUrl}" alt="Logo" class="h-8 w-8 rounded">
+                <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="w-8 h-8 flex items-center justify-center">
+                    <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-16 w-auto object-contain"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div style="display:none" class="w-16 h-16 bg-blue-600 rounded-lg items-center justify-center">
                         <span class="text-white font-bold">PF</span>
                     </div>
-                    <span class="text-xl font-bold text-gray-800">PrintFlow</span>
-                </a>
-                <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 font-medium">
+                </div>
+                <span class="text-xl font-bold text-gray-800" th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a th:href="@{/public/track}" class="text-blue-600 hover:text-blue-800 font-medium" th:text="#{auth.back_home}">
                     ← Back to home
                 </a>
+                <div class="flex items-center gap-2 text-xs text-gray-600">
+                    <span th:text="#{nav.language}">Language</span>
+                    <a th:href="@{${requestUri}(lang='sr')}"
+                       th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                        <span th:text="#{nav.lang.sr}">SR</span>
+                    </a>
+                    <a th:href="@{${requestUri}(lang='en')}"
+                       th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                        <span th:text="#{nav.lang.en}">EN</span>
+                    </a>
+                </div>
             </div>
         </div>
-    </nav>
-    
+    </div>
+</nav>
+
     <main class="container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
-            <!-- Order Header -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900" th:text="${order.title}">Order Title</h1>
-                        <p class="text-gray-600 mt-1" th:text="${order.description}">Order description</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-500">Order Number</div>
-                        <div class="text-lg font-bold text-gray-900" th:text="${order.orderNumber}">ORD-001</div>
-                    </div>
+    <div class="max-w-4xl mx-auto">
+
+        <!-- Order Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900" th:text="${order.title}">Order Title</h1>
+                    <p class="text-gray-600 mt-1" th:text="${order.description}">Order description</p>
                 </div>
-                
-                <!-- Client Info -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    <div>
-                        <h3 class="text-sm font-medium text-gray-500">Client</h3>
-                        <p class="text-gray-900 font-medium" th:text="${order.clientName}">Client Name</p>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-medium text-gray-500">Order Date</h3>
-                        <p class="text-gray-900" th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy')}">01.01.2024</p>
-                    </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-500" th:text="#{orders.order_number}">Order Number</div>
+                    <div class="text-lg font-bold text-gray-900" th:text="${order.orderNumber}">ORD-001</div>
                 </div>
             </div>
-            
-            <!-- Status Timeline -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-6">Order Status</h2>
-                
-                <div class="relative">
-                    <!-- Timeline Line -->
-                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                    
-                    <!-- Timeline Steps -->
-                    <div class="space-y-8">
-                        <!-- Step 1: Order Created -->
-                        <div class="relative flex items-start">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).NEW.ordinal() ? 
-                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-6">
-                                <h3 class="text-lg font-medium text-gray-900">Order Created</h3>
-                                <p class="text-gray-600">Your order has been received and is being processed.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Step 2: Design -->
-                        <div class="relative flex items-start">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_DESIGN.ordinal() ? 
-                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-6">
-                                <h3 class="text-lg font-medium text-gray-900">Design Phase</h3>
-                                <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_DESIGN}">
-                                    Currently being designed. You'll receive a preview for approval soon.
-                                </p>
-                                <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}">
-                                    Design is ready for your approval. Please review the preview below.
-                                </p>
-                                <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL.ordinal()}">
-                                    Design has been approved and is ready for production.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Step 3: Production -->
-                        <div class="relative flex items-start">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal() ? 
-                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-6">
-                                <h3 class="text-lg font-medium text-gray-900">Production</h3>
-                                <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_PRINT}">
-                                    Currently in production. Your items are being printed/manufactured.
-                                </p>
-                                <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal()}">
-                                    Production has been completed.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Step 4: Ready for Delivery -->
-                        <div class="relative flex items-start">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                     th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).READY_FOR_DELIVERY.ordinal() ? 
-                                               'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-6">
-                                <h3 class="text-lg font-medium text-gray-900">Ready for Delivery</h3>
-                                <div th:if="${order.deliveryType == T(com.printflow.entity.enums.DeliveryType).PICKUP}">
-                                    <p class="text-gray-600">Your order is ready for pickup.</p>
-                                    <p class="text-sm text-gray-500 mt-1">Please contact the printing company for pickup details.</p>
-                                </div>
-                                <div th:if="${order.deliveryType == T(com.printflow.entity.enums.DeliveryType).EXPRESS_POST}">
-                                    <p class="text-gray-600">Your order has been shipped.</p>
-                                    <div class="mt-2 space-y-1">
-                                        <p class="text-sm" th:if="${order.courierName}">
-                                            Courier: <span class="font-medium" th:text="${order.courierName}"></span>
-                                        </p>
-                                        <p class="text-sm" th:if="${order.trackingNumber}">
-                                            Tracking Number: 
-                                            <a th:href="'https://tracking.' + ${order.courierName?.toLowerCase()} + '.com/' + ${order.trackingNumber}"
-                                               class="font-medium text-blue-600 hover:text-blue-800"
-                                               th:text="${order.trackingNumber}">
-                                                TRACK123456
-                                            </a>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
+            <!-- Client Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"
+                 th:with="profit=${order.price != null && order.cost != null ? (order.price - order.cost) : null},
+                          margin=${order.price != null && order.cost != null && order.price > 0 ? ((order.price - order.cost) / order.price) * 100 : null}">
+
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{clients.title}">Client</h3>
+                    <p class="text-gray-900 font-medium" th:text="${order.clientName}">Client Name</p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{order_tracking.order_date}">Order Date</h3>
+                    <p class="text-gray-900" th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy')}">01.01.2024</p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.price}">Price</h3>
+                    <p class="text-gray-900">
+                        <span th:if="${order.price != null}"
+                              th:text="${(companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(order.price,1,2)}">0.00</span>
+                        <span th:unless="${order.price != null}"
+                              th:text="#{order_tracking.not_set}">Not set</span>
+                    </p>
+                </div>
+
+                <div th:if="${profit != null}">
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{order_tracking.profit}">Profit</h3>
+                    <p class="text-gray-900"
+                       th:text="${(companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(profit,1,2)}">0.00</p>
+                </div>
+
+                <div th:if="${margin != null}">
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{order_tracking.margin}">Margin</h3>
+                    <p class="text-gray-900" th:text="${#numbers.formatDecimal(margin,1,2) + '%'}">0.00%</p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{common.status}">Status</h3>
+                    <p class="text-gray-900" th:text="#{${order.status.messageKey}}">NEW</p>
                 </div>
             </div>
-            
-            <!-- Design Approval Section -->
-            <div th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}" 
-                 class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4">Design Approval Required</h2>
-                <p class="text-gray-600 mb-6">Please review the design preview and approve or request changes.</p>
-                
-                <!-- Design Previews -->
-                <div class="space-y-4 mb-8">
-                    <div th:each="attachment : ${previewAttachments}" 
-                         class="border border-gray-200 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <h4 class="font-medium text-gray-900" th:text="${attachment.originalFileName}">design-preview.jpg</h4>
-                                <p class="text-sm text-gray-500 mt-1" th:text="${attachment.description}">Design preview for approval</p>
-                                <p class="text-sm text-gray-500" th:text="${attachment.formattedSize}">1.5 MB</p>
-                            </div>
-                            <a th:href="@{/api/files/download/{id}(id=${attachment.id})}"
-                               class="text-blue-600 hover:text-blue-800 font-medium">
-                                Download
-                            </a>
-                        </div>
-                        <div class="mt-4">
-                            <img th:if="${attachment.mimeType.startsWith('image/')}"
-                                 th:src="@{/api/files/thumbnail/{id}(id=${attachment.id})}"
-                                 alt="Design preview"
-                                 class="max-w-full h-auto rounded border border-gray-200">
-                            <div th:unless="${attachment.mimeType.startsWith('image/')}"
-                                 class="bg-gray-100 p-8 text-center rounded">
-                                <svg class="w-12 h-12 text-gray-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+        </div>
+
+        <!-- Items Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4" th:text="#{orders.items.title}">Items</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                    <tr class="border-b text-left text-gray-500">
+                        <th class="py-2" th:text="#{orders.items.variant}">Variant</th>
+                        <th class="py-2" th:text="#{orders.items.qty}">Qty</th>
+                        <th class="py-2" th:text="#{orders.items.dimensions}">Dimensions</th>
+                        <th class="py-2 text-right" th:text="#{orders.items.price}">Price</th>
+                        <th class="py-2 text-right" th:text="#{orders.items.snapshot}">Snapshot</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${orderItems}" class="border-b">
+                        <td class="py-2 font-medium text-gray-900" th:text="${item.variant != null ? item.variant.name : #messages.msg('orders.items.fallback_item')}">Item</td>
+                        <td class="py-2 text-gray-700" th:text="${item.quantity}">1</td>
+                        <td class="py-2 text-gray-600"
+                            th:text="${item.widthMm != null && item.heightMm != null ? item.widthMm + 'x' + item.heightMm + ' mm' : '-'}">-</td>
+                        <td class="py-2 text-right text-gray-900"
+                            th:text="${item.calculatedPrice != null ? ((item.currency != null ? item.currency : companyCurrency) != null ? (item.currency != null ? item.currency : companyCurrency) + ' ' : '') + #numbers.formatDecimal(item.calculatedPrice,1,2) : '-'}">0</td>
+                        <td class="py-2 text-right">
+                            <details class="text-xs">
+                                <summary class="cursor-pointer text-blue-600 hover:text-blue-800" th:text="#{common.view}">View</summary>
+                                <pre class="mt-2 whitespace-pre-wrap text-gray-600"
+                                     th:text="${item.pricingSnapshotJson != null ? item.pricingSnapshotJson : #messages.msg('orders.items.no_snapshot')}">No snapshot</pre>
+                            </details>
+                        </td>
+                    </tr>
+                    <tr th:if="${orderItems == null || orderItems.isEmpty()}">
+                        <td class="py-3 text-gray-500" colspan="5" th:text="#{orders.items.empty}">No items yet.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Company Contact -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3" th:text="#{contact.details}">Contact details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div th:if="${companyBrand != null && companyBrand.email != null}">
+                    <div class="text-gray-500" th:text="#{contact.email_label}">Email</div>
+                    <div th:text="${companyBrand.email}">email</div>
+                </div>
+                <div th:if="${companyBrand != null && companyBrand.phone != null}">
+                    <div class="text-gray-500" th:text="#{contact.phone_label}">Phone</div>
+                    <div th:text="${companyBrand.phone}">phone</div>
+                </div>
+                <div th:if="${companyBrand != null && companyBrand.address != null}">
+                    <div class="text-gray-500" th:text="#{contact.address_label}">Address</div>
+                    <div th:text="${companyBrand.address}">address</div>
+                </div>
+                <div th:if="${companyBrand != null && companyBrand.website != null}">
+                    <div class="text-gray-500" th:text="#{contact.website_label}">Website</div>
+                    <div th:text="${companyBrand.website}">website</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-6" th:text="#{order_tracking.status_title}">Order Status</h2>
+
+            <div class="relative">
+                <!-- Timeline Line -->
+                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+                <!-- Timeline Steps -->
+                <div class="space-y-8">
+
+                    <!-- Step 1: Order Created -->
+                    <div class="relative flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).NEW.ordinal() ?
+                                           'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                          clip-rule="evenodd"/>
                                 </svg>
-                                <p class="mt-2 text-gray-600" th:text="${attachment.originalFileName}">File preview not available</p>
                             </div>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step1_title}">Order Created</h3>
+                            <p class="text-gray-600" th:text="#{order_tracking.step1_desc}">Your order has been received and is being processed.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Design -->
+                    <div class="relative flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_DESIGN.ordinal() ?
+                                           'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                          d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                          clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step2_title}">Design Phase</h3>
+
+                            <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_DESIGN}">
+                                <span th:text="#{order_tracking.design_in_progress}">Currently being designed. You'll receive a preview for approval soon.</span>
+                            </p>
+
+                            <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}">
+                                <span th:text="#{order_tracking.design_waiting_approval}">Design is ready for your approval. Please review the preview below.</span>
+                            </p>
+
+                            <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL.ordinal()}">
+                                <span th:text="#{order_tracking.design_approved}">Design has been approved and is ready for production.</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Production -->
+                    <div class="relative flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal() ?
+                                           'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                          d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z"
+                                          clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-6">
+                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step3_title}">Production</h3>
+
+                            <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_PRINT}">
+                                <span th:text="#{order_tracking.production_in_progress}">Currently in production. Your items are being printed/manufactured.</span>
+                            </p>
+
+                            <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal()}">
+                                <span th:text="#{order_tracking.production_done}">Production has been completed.</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Ready for Delivery -->
+                    <div class="relative flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).READY_FOR_DELIVERY.ordinal() ?
+                                           'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                          clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="ml-6">
+                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step4_title}">Ready for Delivery</h3>
+
+                            <!-- FIX: No T(com.printflow.entity.enums.DeliveryType) to avoid SpEL type errors -->
+                            <div th:if="${order.deliveryType != null and order.deliveryType.name() == 'PICKUP'}">
+                                <p class="text-gray-600" th:text="#{order_tracking.pickup_ready}">Your order is ready for pickup.</p>
+                                <p class="text-sm text-gray-500 mt-1" th:text="#{order_tracking.pickup_help}">Please contact the printing company for pickup details.</p>
+                            </div>
+
+                            <div th:if="${order.deliveryType != null and order.deliveryType.name() == 'EXPRESS_POST'}">
+                                <p class="text-gray-600" th:text="#{order_tracking.shipped}">Your order has been shipped.</p>
+
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-sm" th:if="${order.courierName}">
+                                        <span th:text="#{order_tracking.courier}">Courier:</span>
+                                        <span class="font-medium" th:text="${order.courierName}">DHL</span>
+                                    </p>
+
+                                    <p class="text-sm" th:if="${order.trackingNumber}">
+                                        <span th:text="#{order_tracking.tracking_number}">Tracking Number:</span>
+                                        <a class="font-medium text-blue-600 hover:text-blue-800"
+                                           th:href="${order.courierName != null
+                                               ? ('https://tracking.' + #strings.toLowerCase(order.courierName) + '.com/' + order.trackingNumber)
+                                               : '#'}"
+                                           th:text="${order.trackingNumber}">
+                                            TRACK123456
+                                        </a>
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4" th:text="#{order_tracking.activity}">Activity</h2>
+            <div class="space-y-4">
+                <div th:each="activity : ${activityFeed}" class="flex items-start">
+                    <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                    <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900" th:text="${activity.message}">Activity</div>
+                        <div class="text-xs text-gray-500" th:text="${#temporals.format(activity.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
+                    </div>
+                </div>
+                <div th:if="${activityFeed == null || activityFeed.isEmpty()}" class="text-sm text-gray-500" th:text="#{order_tracking.no_recent_activity}">
+                    No recent activity.
+                </div>
+            </div>
+        </div>
+
+        <!-- Design Approval Section -->
+        <div th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}"
+             class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4" th:text="#{order_tracking.design_required}">Design Approval Required</h2>
+            <p class="text-gray-600 mb-6" th:text="#{order_tracking.design_review}">Please review the design preview and approve or request changes.</p>
+
+            <!-- Design Previews -->
+            <div class="space-y-4 mb-8">
+                <div th:each="attachment : ${previewAttachments}"
+                     class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="font-medium text-gray-900" th:text="${attachment.originalFileName}">design-preview.jpg</h4>
+                            <p class="text-sm text-gray-500 mt-1" th:text="${attachment.description}">Design preview for approval</p>
+                            <p class="text-sm text-gray-500" th:text="${attachment.formattedSize}">1.5 MB</p>
+                        </div>
+                        <a th:href="@{/api/files/download/{id}(id=${attachment.id})}"
+                           class="text-blue-600 hover:text-blue-800 font-medium">
+                            <span th:text="#{files.download}">Download</span>
+                        </a>
+                    </div>
+
+                    <div class="mt-4">
+                        <img th:if="${attachment.mimeType != null and attachment.mimeType.startsWith('image/')}"
+                             th:src="@{/api/files/thumbnail/{id}(id=${attachment.id},token=${token})}"
+                             alt="Design preview"
+                             class="max-w-full h-auto rounded border border-gray-200">
+
+                        <div th:unless="${attachment.mimeType != null and attachment.mimeType.startsWith('image/')}"
+                             class="bg-gray-100 p-8 text-center rounded">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                                      clip-rule="evenodd"/>
+                            </svg>
+                            <p class="mt-2 text-gray-600">
+                                <span th:text="${attachment.originalFileName}">file.pdf</span>
+                                <span class="block text-xs text-gray-500" th:text="#{order_tracking.file_preview_unavailable}">File preview not available</span>
+                            </p>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Approval Form -->
-                <form th:action="@{/public/order/{token}/approve-design(token=${token})}" 
-                      method="post" 
-                      class="space-y-4">
-                    <div>
-                        <label class="flex items-center space-x-3 cursor-pointer">
-                            <input type="radio" name="approved" value="true" class="h-4 w-4 text-blue-600">
-                            <span class="text-gray-900 font-medium">✅ Approve Design</span>
-                        </label>
-                        <p class="text-gray-600 text-sm ml-7">The design looks good, proceed with production.</p>
-                    </div>
-                    
-                    <div>
-                        <label class="flex items-start space-x-3 cursor-pointer">
-                            <input type="radio" name="approved" value="false" class="h-4 w-4 text-blue-600 mt-1">
-                            <div>
-                                <span class="text-gray-900 font-medium">❌ Request Changes</span>
-                                <textarea name="comment" 
-                                          rows="3"
-                                          class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                          placeholder="Please describe what changes you would like..."></textarea>
-                            </div>
-                        </label>
-                    </div>
-                    
-                    <div class="pt-4">
+            </div>
+
+            <!-- Approval Form -->
+            <form th:action="@{/public/order/{token}/approve-design(token=${token})}"
+                  method="post"
+                  class="space-y-4">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div>
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="radio" name="approved" value="true" class="h-4 w-4 text-blue-600" th:disabled="${billingExpired}">
+                        <span class="text-gray-900 font-medium" th:text="#{order_tracking.approve_design}">✅ Approve Design</span>
+                    </label>
+                    <p class="text-gray-600 text-sm ml-7" th:text="#{order_tracking.approve_help}">The design looks good, proceed with production.</p>
+                </div>
+
+                <div>
+                    <label class="flex items-start space-x-3 cursor-pointer">
+                        <input type="radio" name="approved" value="false" class="h-4 w-4 text-blue-600 mt-1" th:disabled="${billingExpired}">
+                        <div class="w-full">
+                            <span class="text-gray-900 font-medium" th:text="#{order_tracking.request_changes}">❌ Request Changes</span>
+                            <textarea name="comment"
+                                      rows="3"
+                                      th:disabled="${billingExpired}"
+                                      class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                      th:placeholder="#{order_tracking.request_placeholder}"></textarea>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="pt-4">
                         <button type="submit"
+                                th:disabled="${billingExpired}"
+                                th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
                                 class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700">
-                            Submit Feedback
+                            <span th:text="#{order_tracking.submit_feedback}">Submit Feedback</span>
+                            <span th:if="${billingExpired}" class="ml-2 text-xs" th:text="#{billing.lock.badge}">LOCKED</span>
+                        </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Client Reference Upload -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-2" th:text="#{order_tracking.upload_refs}">Upload Reference Files</h2>
+            <p class="text-gray-600 mb-4" th:text="#{order_tracking.upload_refs_help}">Share any files that help clarify your request (logos, references, notes).</p>
+
+            <div th:if="${uploadError != null || uploadErrorKey != null}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <span th:text="${uploadErrorKey != null ? #messages.msg(uploadErrorKey) : uploadError}">Upload error</span>
+            </div>
+
+            <form th:action="@{/public/order/{token}/upload-reference(token=${token})}" method="post" enctype="multipart/form-data"
+                  class="space-y-4">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" th:text="#{files.upload}">Files</label>
+
+                    <div id="dropzone"
+                         th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed pointer-events-none' : ''"
+                         class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition">
+                        <p class="text-sm text-gray-600" th:text="#{order_tracking.drop_files}">Drag & drop files here</p>
+                        <p class="text-xs text-gray-500 mt-1" th:text="#{order_tracking.drop_or_select}">or click to select</p>
+
+                        <input id="referenceFiles" type="file" name="file" multiple required
+                               th:disabled="${billingExpired}"
+                               th:attr="accept=${publicAllowedFileTypes}"
+                               class="hidden">
+
+                        <button type="button" id="selectFilesBtn"
+                                th:disabled="${billingExpired}"
+                                th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                                class="mt-3 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <span th:text="#{order_tracking.select_files}">Select files</span>
                         </button>
                     </div>
-                </form>
-            </div>
-            
-            <!-- Contact Information -->
-            <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
-                <h3 class="text-lg font-semibold text-blue-900 mb-4">Need Help?</h3>
-                <p class="text-blue-800 mb-4">
-                    If you have any questions about your order, please contact the printing company directly.
-                </p>
+
+                    <div id="fileList" class="mt-3 space-y-3 text-sm text-gray-700"></div>
+                    <div id="uploadClientError" class="text-xs text-red-600 hidden"></div>
+                    <div id="uploadClientWarning" class="text-xs text-amber-600 hidden"></div>
+                    <div id="uploadTotals" class="text-xs text-gray-500 mt-2"></div>
+
+                    <input type="hidden" id="fileMetaJson" name="fileMetaJson" value="[]"
+                           th:attr="data-max-files=${publicMaxFilesPerOrder},data-max-size=${publicMaxFileSize},data-max-total=${publicMaxTotalSizeLabel},data-max-total-raw=${publicMaxTotalSizeRaw}">
+
+                    <p class="mt-2 text-xs text-gray-500">
+                        <span th:text="#{order_tracking.allowed}">Allowed</span>: <span th:text="${publicAllowedFileTypes}"></span>
+                        • <span th:text="#{order_tracking.max_size}">Max size</span>: <span th:text="${publicMaxFileSizeLabel}"></span>
+                        • <span th:text="#{order_tracking.max_files}">Max files per order</span>: <span th:text="${publicMaxFilesPerOrder}"></span>
+                        • <span th:text="#{order_tracking.max_total}">Max total</span>: <span th:text="${publicMaxTotalSizeLabel}"></span>
+                    </p>
+                </div>
+
+                <button type="submit" id="uploadSubmitBtn"
+                        th:disabled="${billingExpired}"
+                        th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                        class="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700">
+                    <span th:text="#{files.upload}">Upload</span>
+                    <span th:if="${billingExpired}" class="ml-2 text-xs" th:text="#{billing.lock.badge}">LOCKED</span>
+                </button>
+            </form>
+
+            <div class="mt-6" th:if="${!#lists.isEmpty(clientAttachments)}">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2" th:text="#{order_tracking.uploaded_files}">Uploaded files</h3>
                 <div class="space-y-2">
-                    <p class="text-blue-800">
-                        <span class="font-medium">Phone:</span> Contact the number provided by the printing company
-                    </p>
-                    <p class="text-blue-800">
-                        <span class="font-medium">Email:</span> Contact the email address provided by the printing company
-                    </p>
+                    <div th:each="attachment : ${clientAttachments}"
+                         class="flex items-center justify-between border border-gray-200 rounded-lg p-3">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900" th:text="${attachment.originalFileName}">file.png</div>
+                            <div class="text-xs text-gray-500" th:text="${attachment.description}">Description</div>
+                        </div>
+                        <a th:href="@{/api/files/download/{id}(id=${attachment.id})}"
+                           class="text-sm text-blue-600 hover:text-blue-800" th:text="#{files.download}">Download</a>
+                    </div>
                 </div>
             </div>
         </div>
-    </main>
-    
-    <!-- Simple footer for public pages -->
-    <footer class="bg-gray-800 text-white py-8">
-        <div class="container mx-auto px-4 text-center">
-            <p class="text-gray-400">&copy; 2024 PrintFlow SaaS. Order tracking system.</p>
+
+        <!-- Design Feedback Summary -->
+        <div th:if="${order.status != T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL && order.clientComment != null}"
+             class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4" th:text="#{order_tracking.your_feedback}">Your Feedback</h2>
+            <p class="text-gray-700" th:text="${order.clientComment}">Client comment</p>
         </div>
-    </footer>
+
+        <!-- Contact Information -->
+        <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-4" th:text="#{order_tracking.need_help}">Need Help?</h3>
+            <p class="text-blue-800 mb-4" th:text="#{order_tracking.need_help_desc}">
+                If you have any questions about your order, please contact the printing company directly.
+            </p>
+            <div class="space-y-2">
+                <p class="text-blue-800">
+                    <span class="font-medium" th:text="#{order_tracking.phone_label}">Phone:</span>
+                    <span th:text="#{order_tracking.phone_value}">Contact the number provided by the printing company</span>
+                </p>
+                <p class="text-blue-800">
+                    <span class="font-medium" th:text="#{order_tracking.email_label}">Email:</span>
+                    <span th:text="#{order_tracking.email_value}">Contact the email address provided by the printing company</span>
+                </p>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Simple footer for public pages -->
+<footer class="bg-gray-800 text-white py-8">
+    <div class="container mx-auto px-4 text-center">
+        <p class="text-gray-400">
+            &copy; <span th:text="${currentYear}">2024</span> <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>.
+            <span th:text="#{order_tracking.footer_note}">Order tracking system.</span>
+        </p>
+    </div>
+</footer>
+
+<div id="i18n"
+     th:attr="data-file-too-large=#{order_tracking.js_file_too_large},
+              data-max-files=#{order_tracking.js_max_files},
+              data-total-exceeds=#{order_tracking.js_total_exceeds},
+              data-upload-blocked=#{order_tracking.js_upload_blocked},
+              data-files-label=#{order_tracking.js_files_label},
+              data-total-label=#{order_tracking.js_total_label},
+              data-move-up=#{order_tracking.js_move_up},
+              data-move-down=#{order_tracking.js_move_down},
+              data-remove=#{order_tracking.js_remove},
+              data-desc-placeholder=#{order_tracking.js_desc_placeholder},
+              data-file-badge=#{order_tracking.js_file_badge}"
+     class="hidden"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('referenceFiles');
+        const selectBtn = document.getElementById('selectFilesBtn');
+        const fileList = document.getElementById('fileList');
+        const totalsEl = document.getElementById('uploadTotals');
+        const submitBtn = document.getElementById('uploadSubmitBtn');
+        const i18nEl = document.getElementById('i18n');
+        const i18n = {
+            fileTooLarge: i18nEl ? i18nEl.getAttribute('data-file-too-large') : 'File "{name}" is too large.',
+            maxFiles: i18nEl ? i18nEl.getAttribute('data-max-files') : 'Maximum {max} files per order.',
+            totalExceeds: i18nEl ? i18nEl.getAttribute('data-total-exceeds') : 'Total size exceeds limit ({size}). Please remove files.',
+            uploadBlocked: i18nEl ? i18nEl.getAttribute('data-upload-blocked') : 'Upload blocked: total size exceeds limit.',
+            filesLabel: i18nEl ? i18nEl.getAttribute('data-files-label') : 'Files',
+            totalLabel: i18nEl ? i18nEl.getAttribute('data-total-label') : 'Total',
+            moveUp: i18nEl ? i18nEl.getAttribute('data-move-up') : 'Up',
+            moveDown: i18nEl ? i18nEl.getAttribute('data-move-down') : 'Down',
+            remove: i18nEl ? i18nEl.getAttribute('data-remove') : 'Remove',
+            descPlaceholder: i18nEl ? i18nEl.getAttribute('data-desc-placeholder') : 'Description for this file (optional)',
+            fileBadge: i18nEl ? i18nEl.getAttribute('data-file-badge') : 'FILE'
+        };
+        let selectedFiles = [];
+        let descriptions = [];
+
+        if (!dropzone || !fileInput || !selectBtn || !fileList) {
+            return;
+        }
+
+        function syncInputFiles() {
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+        }
+
+        function updateMetaJson() {
+            const meta = selectedFiles.map((file, idx) => ({
+                index: idx,
+                name: file.name,
+                size: file.size,
+                lastModified: file.lastModified || null,
+                type: file.type || null,
+                description: descriptions[idx] || ''
+            }));
+            const metaInput = document.getElementById('fileMetaJson');
+            if (metaInput) {
+                metaInput.value = JSON.stringify(meta);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes && bytes !== 0) return '0 B';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1);
+            return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function updateTotals() {
+            const metaInput = document.getElementById('fileMetaJson');
+            const maxFiles = metaInput ? Number(metaInput.getAttribute('data-max-files')) : null;
+            const maxTotal = metaInput ? Number(metaInput.getAttribute('data-max-total-raw')) : null;
+            const total = selectedFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+
+            if (totalsEl) {
+                const parts = [];
+                parts.push(`${i18n.filesLabel}: ${selectedFiles.length}${maxFiles ? '/' + maxFiles : ''}`);
+                parts.push(`${i18n.totalLabel}: ${formatBytes(total)}${maxTotal ? ' / ' + formatBytes(maxTotal) : ''}`);
+                totalsEl.textContent = parts.join(' • ');
+            }
+
+            const overTotal = maxTotal && total > maxTotal;
+            const overFiles = maxFiles && selectedFiles.length > maxFiles;
+            if (submitBtn) {
+                submitBtn.disabled = Boolean(overTotal || overFiles);
+                submitBtn.classList.toggle('opacity-50', submitBtn.disabled);
+                submitBtn.classList.toggle('cursor-not-allowed', submitBtn.disabled);
+            }
+        }
+
+        function renderFiles() {
+            fileList.innerHTML = '';
+            if (!selectedFiles || selectedFiles.length === 0) {
+                updateTotals();
+                return;
+            }
+
+            selectedFiles.forEach((file, idx) => {
+                const row = document.createElement('div');
+                row.className = 'border border-gray-200 rounded-lg px-3 py-2';
+
+                const isImage = file.type && file.type.startsWith('image/');
+                const thumb = isImage
+                    ? `<img src="${URL.createObjectURL(file)}" alt="" class="w-12 h-12 object-cover rounded-md border border-gray-200">`
+                    : `<div class="w-12 h-12 rounded-md border border-gray-200 flex items-center justify-center text-xs text-gray-400">${escapeHtml(i18n.fileBadge)}</div>`;
+
+                row.innerHTML = `
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            ${thumb}
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${escapeHtml(file.name)}</div>
+                                <div class="text-xs text-gray-500">${(file.size / 1024).toFixed(1)} KB</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" data-move="up" data-idx="${idx}"
+                                    class="text-xs text-gray-600 hover:text-gray-800">${escapeHtml(i18n.moveUp)}</button>
+                            <button type="button" data-move="down" data-idx="${idx}"
+                                    class="text-xs text-gray-600 hover:text-gray-800">${escapeHtml(i18n.moveDown)}</button>
+                            <button type="button" data-idx="${idx}"
+                                    class="text-xs text-red-600 hover:text-red-800">${escapeHtml(i18n.remove)}</button>
+                        </div>
+                    </div>
+                    <input type="text" name="description" placeholder="${escapeHtml(i18n.descPlaceholder)}"
+                           data-desc-idx="${idx}"
+                           value="${escapeHtml(descriptions[idx] || '')}"
+                           class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                `;
+                fileList.appendChild(row);
+            });
+
+            fileList.querySelectorAll('input[data-desc-idx]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const idx = Number(input.getAttribute('data-desc-idx'));
+                    if (!Number.isNaN(idx)) {
+                        descriptions[idx] = input.value;
+                        updateMetaJson();
+                    }
+                });
+            });
+
+            fileList.querySelectorAll('button[data-idx]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = Number(btn.getAttribute('data-idx'));
+                    const move = btn.getAttribute('data-move');
+                    if (Number.isNaN(idx)) return;
+
+                    if (move === 'up' && idx > 0) {
+                        const tmp = selectedFiles[idx - 1];
+                        selectedFiles[idx - 1] = selectedFiles[idx];
+                        selectedFiles[idx] = tmp;
+
+                        const tmpDesc = descriptions[idx - 1];
+                        descriptions[idx - 1] = descriptions[idx];
+                        descriptions[idx] = tmpDesc;
+                    } else if (move === 'down' && idx < selectedFiles.length - 1) {
+                        const tmp = selectedFiles[idx + 1];
+                        selectedFiles[idx + 1] = selectedFiles[idx];
+                        selectedFiles[idx] = tmp;
+
+                        const tmpDesc = descriptions[idx + 1];
+                        descriptions[idx + 1] = descriptions[idx];
+                        descriptions[idx] = tmpDesc;
+                    } else if (!move) {
+                        selectedFiles.splice(idx, 1);
+                        descriptions.splice(idx, 1);
+                    }
+
+                    syncInputFiles();
+                    renderFiles();
+                    updateMetaJson();
+                });
+            });
+
+            updateMetaJson();
+            updateTotals();
+        }
+
+        selectBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            const newFiles = Array.from(fileInput.files || []);
+            if (newFiles.length > 0) {
+                addFilesWithLimits(newFiles);
+            }
+            syncInputFiles();
+            renderFiles();
+            updateMetaJson();
+        });
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            dropzone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('border-blue-500', 'bg-blue-50');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            dropzone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                addFilesWithLimits(Array.from(files));
+                syncInputFiles();
+                renderFiles();
+                updateMetaJson();
+            }
+        });
+
+        function addFilesWithLimits(files) {
+            const metaInput = document.getElementById('fileMetaJson');
+            const maxFiles = metaInput ? Number(metaInput.getAttribute('data-max-files')) : null;
+            const maxSize = metaInput ? Number(metaInput.getAttribute('data-max-size')) : null;
+            const maxTotal = metaInput ? Number(metaInput.getAttribute('data-max-total-raw')) : null;
+            const errorEl = document.getElementById('uploadClientError');
+            const warnEl = document.getElementById('uploadClientWarning');
+
+            let added = 0;
+            files.forEach(file => {
+                if (maxSize && file.size > maxSize) {
+                    if (errorEl) {
+                        errorEl.textContent = i18n.fileTooLarge.replace('{name}', file.name);
+                        errorEl.classList.remove('hidden');
+                    }
+                    return;
+                }
+                const exists = selectedFiles.some(existing => existing.name === file.name && existing.size === file.size);
+                if (exists) return;
+
+                if (maxFiles && selectedFiles.length >= maxFiles) {
+                    if (errorEl) {
+                        errorEl.textContent = i18n.maxFiles.replace('{max}', String(maxFiles));
+                        errorEl.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                selectedFiles.push(file);
+                descriptions.push('');
+                added += 1;
+            });
+
+            if (errorEl && added > 0) errorEl.classList.add('hidden');
+
+            if (warnEl) {
+                const total = selectedFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+                if (maxTotal && total > maxTotal) {
+                    warnEl.textContent = i18n.totalExceeds.replace('{size}', formatBytes(total));
+                    warnEl.classList.remove('hidden');
+                } else {
+                    warnEl.classList.add('hidden');
+                }
+            }
+
+            updateTotals();
+        }
+
+        const formEl = dropzone.closest('form');
+        if (formEl) {
+            formEl.addEventListener('submit', (e) => {
+                const metaInput = document.getElementById('fileMetaJson');
+                const maxTotal = metaInput ? Number(metaInput.getAttribute('data-max-total-raw')) : null;
+                const errorEl = document.getElementById('uploadClientError');
+                const warnEl = document.getElementById('uploadClientWarning');
+
+                const total = selectedFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+                if (maxTotal && total > maxTotal) {
+                    if (warnEl) {
+                        warnEl.textContent = i18n.totalExceeds.replace('{size}', formatBytes(total));
+                        warnEl.classList.remove('hidden');
+                    }
+                    if (errorEl) {
+                        errorEl.textContent = i18n.uploadBlocked;
+                        errorEl.classList.remove('hidden');
+                    }
+                    e.preventDefault();
+                }
+            });
+        }
+
+        updateTotals();
+    });
+</script>
+
 </body>
 </html>

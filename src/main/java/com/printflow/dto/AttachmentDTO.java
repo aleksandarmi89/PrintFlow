@@ -18,6 +18,7 @@ public class AttachmentDTO {
     private String workOrderTitle;
     private Long uploadedById;
     private String uploadedByFullName; // Promenjeno iz uploadedByName
+    private Long commentId;
     
     private LocalDateTime uploadedAt;
     private String thumbnailPath;
@@ -92,6 +93,9 @@ public class AttachmentDTO {
     
     public String getUploadedByFullName() { return uploadedByFullName; }
     public void setUploadedByFullName(String uploadedByFullName) { this.uploadedByFullName = uploadedByFullName; }
+
+    public Long getCommentId() { return commentId; }
+    public void setCommentId(Long commentId) { this.commentId = commentId; }
     
     public LocalDateTime getUploadedAt() { return uploadedAt; }
     public void setUploadedAt(LocalDateTime uploadedAt) { this.uploadedAt = uploadedAt; }

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{public.order.success.title}">Zahtev je poslat</title>
+</head>
+<body class="bg-gray-50">
+<main class="max-w-xl mx-auto px-4 py-16">
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center">
+        <div class="flex justify-end mb-3">
+            <div class="flex items-center gap-2 text-xs text-gray-600">
+                <span th:text="#{nav.language}">Language</span>
+                <a th:href="@{${requestUri}(lang='sr')}"
+                   th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                    <span th:text="#{nav.lang.sr}">SR</span>
+                </a>
+                <a th:href="@{${requestUri}(lang='en')}"
+                   th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                    <span th:text="#{nav.lang.en}">EN</span>
+                </a>
+            </div>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900" th:text="#{public.order.success.heading}">Zahtev je uspešno poslat</h1>
+        <p class="text-gray-600 mt-3" th:utext="#{public.order.success.description(${company.name})}">
+            Hvala! Kompanija <strong>PrintFlow</strong> je primila vaš zahtev. Kontaktiraćemo vas uskoro.
+        </p>
+        <a th:href="@{/p/{slug}/order(slug=${companySlug})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
+            <span th:text="#{public.order.success.new_request}">Pošalji novi zahtev</span>
+        </a>
+    </div>
+</main>
+</body>
+</html>

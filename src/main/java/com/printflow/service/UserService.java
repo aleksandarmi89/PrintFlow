@@ -4,6 +4,7 @@ import com.printflow.dto.UserDTO;
 import com.printflow.dto.UserStatisticsDTO;
 import com.printflow.dto.UserTaskStats;
 import com.printflow.entity.User;
+import com.printflow.entity.Company;
 import com.printflow.entity.User.Role;
 import com.printflow.entity.enums.OrderStatus;
 import com.printflow.entity.enums.TaskStatus;
@@ -33,6 +34,10 @@ public class UserService {
     private final WorkOrderRepository workOrderRepository;
     private final TaskRepository taskRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TenantContextService tenantContextService;
+    private final com.printflow.repository.CompanyRepository companyRepository;
+    private final PlanLimitService planLimitService;
+    private final BillingAccessService billingAccessService;
 
     // Lista radničkih rola za konzistentnost
     private static final List<Role> WORKER_ROLES = Arrays.asList(
@@ -44,11 +49,19 @@ public class UserService {
     public UserService(UserRepository userRepository, 
                        WorkOrderRepository workOrderRepository,
                        TaskRepository taskRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       TenantContextService tenantContextService,
+                       com.printflow.repository.CompanyRepository companyRepository,
+                       PlanLimitService planLimitService,
+                       BillingAccessService billingAccessService) {
         this.userRepository = userRepository;
         this.workOrderRepository = workOrderRepository;
         this.taskRepository = taskRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tenantContextService = tenantContextService;
+        this.companyRepository = companyRepository;
+        this.planLimitService = planLimitService;
+        this.billingAccessService = billingAccessService;
     }
 
     // ==================== OSNOVNE METODE ====================
@@ -71,17 +84,40 @@ public class UserService {
         user.setFullName(userDTO.getFullName());
         user.setEmail(userDTO.getEmail());
         user.setPhone(userDTO.getPhone());
-        user.setRole(userDTO.getRole() != null ? Role.valueOf(userDTO.getRole()) : Role.WORKER_GENERAL);
+        Role requestedRole = userDTO.getRole() != null ? Role.valueOf(userDTO.getRole()) : Role.WORKER_GENERAL;
+        if (!tenantContextService.isSuperAdmin() && requestedRole == Role.SUPER_ADMIN) {
+            throw new RuntimeException("Not allowed to assign SUPER_ADMIN role");
+        }
+        user.setRole(requestedRole);
         user.setActive(true);
         user.setCreatedAt(LocalDateTime.now());
+        if (tenantContextService.isSuperAdmin()) {
+            if (userDTO.getCompanyId() == null) {
+                throw new RuntimeException("Company is required for new user");
+            }
+            Company company = companyRepository.findById(userDTO.getCompanyId())
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+            billingAccessService.assertBillingActiveForPremiumAction(company.getId());
+            planLimitService.assertUserLimit(company);
+            user.setCompany(company);
+        } else {
+            Company company = tenantContextService.getCurrentCompany();
+            billingAccessService.assertBillingActiveForPremiumAction(company.getId());
+            planLimitService.assertUserLimit(company);
+            user.setCompany(company);
+        }
 
         User savedUser = userRepository.save(user);
         return convertToDTO(savedUser);
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
 
         if (!user.getUsername().equals(userDTO.getUsername()) &&
             userRepository.existsByUsername(userDTO.getUsername())) {
@@ -96,7 +132,16 @@ public class UserService {
         user.setPhone(userDTO.getPhone());
         
         if (userDTO.getRole() != null) {
-            user.setRole(Role.valueOf(userDTO.getRole()));
+            Role requestedRole = Role.valueOf(userDTO.getRole());
+            if (!tenantContextService.isSuperAdmin() && requestedRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("Not allowed to assign SUPER_ADMIN role");
+            }
+            user.setRole(requestedRole);
+        }
+
+        if (tenantContextService.isSuperAdmin() && userDTO.getCompanyId() != null) {
+            user.setCompany(companyRepository.findById(userDTO.getCompanyId())
+                .orElseThrow(() -> new RuntimeException("Company not found")));
         }
         
         user.setActive(userDTO.isActive());
@@ -111,7 +156,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
         user.setActive(false);
         user.setUpdatedAt(LocalDateTime.now());
@@ -119,8 +164,12 @@ public class UserService {
     }
 
     public UserDTO getUserById(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
         return convertToDTO(user);
     }
 
@@ -134,33 +183,65 @@ public class UserService {
     }
 
     public List<UserDTO> getAllUsers() {
-        return userRepository.findAll().stream()
+        if (tenantContextService.isSuperAdmin()) {
+            return userRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantContextService.requireCompanyId();
+        return userRepository.findByCompany_Id(companyId, Pageable.unpaged()).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
 
     public Page<UserDTO> getAllUsers(Pageable pageable) {
-        Page<User> users = userRepository.findAll(pageable);
+        if (tenantContextService.isSuperAdmin()) {
+            Page<User> users = userRepository.findAll(pageable);
+            return users.map(this::convertToDTO);
+        }
+        Long companyId = tenantContextService.requireCompanyId();
+        Page<User> users = userRepository.findByCompany_Id(companyId, pageable);
         return users.map(this::convertToDTO);
     }
 
     public Page<User> findAll(int page, int pageSize) {
-        return userRepository.findAll(PageRequest.of(page, pageSize));
+        if (tenantContextService.isSuperAdmin()) {
+            return userRepository.findAll(PageRequest.of(page, pageSize));
+        }
+        Long companyId = tenantContextService.requireCompanyId();
+        return userRepository.findByCompany_Id(companyId, PageRequest.of(page, pageSize));
     }
 
     public List<UserDTO> getActiveUsers() {
-        return userRepository.findByActiveTrue().stream()
+        if (tenantContextService.isSuperAdmin()) {
+            return userRepository.findByActiveTrue().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantContextService.requireCompanyId();
+        return userRepository.findByCompany_IdAndActiveTrue(companyId).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
 
     public Page<UserDTO> getActiveUsers(Pageable pageable) {
-        Page<User> users = userRepository.findByActiveTrue(pageable);
+        if (tenantContextService.isSuperAdmin()) {
+            Page<User> users = userRepository.findByActiveTrue(pageable);
+            return users.map(this::convertToDTO);
+        }
+        Long companyId = tenantContextService.requireCompanyId();
+        Page<User> users = userRepository.findByCompany_IdAndActiveTrue(companyId, pageable);
         return users.map(this::convertToDTO);
     }
 
     public List<UserDTO> getUsersByRole(Role role) {
-        return userRepository.findByRoleAndActiveTrue(role).stream()
+        if (tenantContextService.isSuperAdmin()) {
+            return userRepository.findByRoleAndActiveTrue(role).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantContextService.requireCompanyId();
+        return userRepository.findByCompany_IdAndRoleAndActiveTrue(companyId, role).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
@@ -168,7 +249,24 @@ public class UserService {
     // ISPRAVLJENE METODE ZA RADNIKE
     public List<UserDTO> getWorkers() {
         // Koristimo jednostavniju metodu
-        return userRepository.findByRoleInAndActiveTrue(WORKER_ROLES).stream()
+        List<User> workers;
+        if (tenantContextService.isSuperAdmin()) {
+            workers = userRepository.findByRoleInAndActiveTrue(WORKER_ROLES);
+            if (workers.isEmpty()) {
+                workers = userRepository.findByActiveTrue().stream()
+                    .filter(user -> user.getRole() != Role.SUPER_ADMIN)
+                    .collect(Collectors.toList());
+            }
+        } else {
+            Long companyId = tenantContextService.requireCompanyId();
+            workers = userRepository.findByCompany_IdAndRoleInAndActiveTrue(companyId, WORKER_ROLES);
+            if (workers.isEmpty()) {
+                workers = userRepository.findByCompany_IdAndActiveTrue(companyId).stream()
+                    .filter(user -> user.getRole() != Role.SUPER_ADMIN)
+                    .collect(Collectors.toList());
+            }
+        }
+        return workers.stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
@@ -176,12 +274,25 @@ public class UserService {
     public List<UserDTO> getAvailableWorkers() {
         // Koristimo jednostavniju metodu
         try {
-            return userRepository.findByRoleInAndActiveTrueAndAvailableTrue(WORKER_ROLES).stream()
+            if (tenantContextService.isSuperAdmin()) {
+                return userRepository.findByRoleInAndActiveTrueAndAvailableTrue(WORKER_ROLES).stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            }
+            Long companyId = tenantContextService.requireCompanyId();
+            return userRepository.findByCompany_IdAndRoleInAndActiveTrueAndAvailableTrue(companyId, WORKER_ROLES).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         } catch (Exception e) {
             // Fallback ako metoda ne postoji
-            return userRepository.findByRoleInAndActiveTrue(WORKER_ROLES).stream()
+            if (tenantContextService.isSuperAdmin()) {
+                return userRepository.findByRoleInAndActiveTrue(WORKER_ROLES).stream()
+                    .filter(User::isAvailable)
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            }
+            Long companyId = tenantContextService.requireCompanyId();
+            return userRepository.findByCompany_IdAndRoleInAndActiveTrue(companyId, WORKER_ROLES).stream()
                 .filter(User::isAvailable)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -214,24 +325,55 @@ public class UserService {
     }
 
     public void deactivateUser(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
         user.setActive(false);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
     }
 
     public void activateUser(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
         user.setActive(true);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
     }
 
-    public boolean changePassword(Long userId, String currentPassword, String newPassword) {
-        User user = userRepository.findById(userId)
+    public void updateProfile(Long userId, String firstName, String lastName, String email, String phone,
+                              String department, String position, String notes) {
+        User user = userRepository.findByIdAndCompany_Id(userId, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setDepartment(department);
+        user.setPosition(position);
+        user.setNotes(notes);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+    }
+
+    public boolean changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findByIdAndCompany_Id(userId, tenantContextService.requireCompanyId())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
         
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             return false;
@@ -244,8 +386,12 @@ public class UserService {
     }
 
     public void resetPassword(Long userId, String newPassword) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndCompany_Id(userId, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
         
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setUpdatedAt(LocalDateTime.now());
@@ -254,12 +400,29 @@ public class UserService {
 
     public List<UserDTO> searchUsers(String keyword) {
         try {
-            return userRepository.searchUsers(keyword).stream()
+            if (tenantContextService.isSuperAdmin()) {
+                return userRepository.searchUsers(keyword).stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            }
+            Long companyId = tenantContextService.requireCompanyId();
+            return userRepository.searchUsersByCompany(companyId, keyword).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         } catch (Exception e) {
             // Alternativna implementacija
-            return userRepository.findAll().stream()
+            if (tenantContextService.isSuperAdmin()) {
+                return userRepository.findAll().stream()
+                    .filter(user -> 
+                        (user.getUsername() != null && user.getUsername().toLowerCase().contains(keyword.toLowerCase())) ||
+                        (user.getFullName() != null && user.getFullName().toLowerCase().contains(keyword.toLowerCase())) ||
+                        (user.getEmail() != null && user.getEmail().toLowerCase().contains(keyword.toLowerCase()))
+                    )
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            }
+            Long companyId = tenantContextService.requireCompanyId();
+            return userRepository.findByCompany_Id(companyId, Pageable.unpaged()).stream()
                 .filter(user -> 
                     (user.getUsername() != null && user.getUsername().toLowerCase().contains(keyword.toLowerCase())) ||
                     (user.getFullName() != null && user.getFullName().toLowerCase().contains(keyword.toLowerCase())) ||
@@ -273,8 +436,13 @@ public class UserService {
     // ==================== STATISTIKE ====================
 
     public UserStatisticsDTO getUserStatistics() {
-        long totalUsers = userRepository.count();
-        long activeUsers = userRepository.countByActiveTrue();
+        Long companyId = tenantContextService.isSuperAdmin() ? null : tenantContextService.requireCompanyId();
+        long totalUsers = tenantContextService.isSuperAdmin()
+            ? userRepository.count()
+            : userRepository.findByCompany_Id(companyId, Pageable.unpaged()).getTotalElements();
+        long activeUsers = tenantContextService.isSuperAdmin()
+            ? userRepository.countByActiveTrue()
+            : userRepository.findByCompany_IdAndActiveTrue(companyId, Pageable.unpaged()).getTotalElements();
         long inactiveUsers = totalUsers - activeUsers;
         
         UserStatisticsDTO stats = new UserStatisticsDTO();
@@ -284,11 +452,19 @@ public class UserService {
         
         // Sinhronizujte ove metode sa onima u UserStatisticsDTO
         try {
-            stats.setAdminCount(userRepository.countByRoleAndActiveTrue(Role.ADMIN));
-            stats.setManagerCount(userRepository.countByRoleAndActiveTrue(Role.MANAGER));
-            stats.setWorkerDesignCount(userRepository.countByRoleAndActiveTrue(Role.WORKER_DESIGN));
-            stats.setWorkerPrintCount(userRepository.countByRoleAndActiveTrue(Role.WORKER_PRINT));
-            stats.setWorkerGeneralCount(userRepository.countByRoleAndActiveTrue(Role.WORKER_GENERAL));
+            if (tenantContextService.isSuperAdmin()) {
+                stats.setAdminCount(userRepository.countByRoleAndActiveTrue(Role.ADMIN));
+                stats.setManagerCount(userRepository.countByRoleAndActiveTrue(Role.MANAGER));
+                stats.setWorkerDesignCount(userRepository.countByRoleAndActiveTrue(Role.WORKER_DESIGN));
+                stats.setWorkerPrintCount(userRepository.countByRoleAndActiveTrue(Role.WORKER_PRINT));
+                stats.setWorkerGeneralCount(userRepository.countByRoleAndActiveTrue(Role.WORKER_GENERAL));
+            } else {
+                stats.setAdminCount(userRepository.countByRoleAndActiveTrueAndCompany_Id(Role.ADMIN, companyId));
+                stats.setManagerCount(userRepository.countByRoleAndActiveTrueAndCompany_Id(Role.MANAGER, companyId));
+                stats.setWorkerDesignCount(userRepository.countByRoleAndActiveTrueAndCompany_Id(Role.WORKER_DESIGN, companyId));
+                stats.setWorkerPrintCount(userRepository.countByRoleAndActiveTrueAndCompany_Id(Role.WORKER_PRINT, companyId));
+                stats.setWorkerGeneralCount(userRepository.countByRoleAndActiveTrueAndCompany_Id(Role.WORKER_GENERAL, companyId));
+            }
         } catch (Exception e) {
             // Postavite podrazumevane vrednosti
             stats.setAdminCount(0);
@@ -302,8 +478,12 @@ public class UserService {
     }
 
     public UserTaskStats getUserTaskStats(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!tenantContextService.isSuperAdmin() &&
+            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
+            throw new RuntimeException("User not found");
+        }
 
         UserTaskStats stats = new UserTaskStats();
         stats.setLastLogin(user.getLastLogin());
@@ -336,6 +516,10 @@ public class UserService {
         dto.setUpdatedAt(user.getUpdatedAt());
         dto.setLastLogin(user.getLastLogin());
         dto.setAvailable(user.isAvailable());
+        if (user.getCompany() != null) {
+            dto.setCompanyId(user.getCompany().getId());
+            dto.setCompanyName(user.getCompany().getName());
+        }
         
         if (user.getDepartment() != null) {
             dto.setDepartment(user.getDepartment());
@@ -351,7 +535,9 @@ public class UserService {
         
         for (Role role : Role.values()) {
             try {
-                long count = userRepository.countByRoleAndActiveTrue(role);
+                long count = tenantContextService.isSuperAdmin()
+                    ? userRepository.countByRoleAndActiveTrue(role)
+                    : userRepository.countByRoleAndActiveTrueAndCompany_Id(role, tenantContextService.requireCompanyId());
                 roleCounts.put(role, count);
             } catch (Exception e) {
                 roleCounts.put(role, 0L);

@@ -9,12 +9,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+    @Query("SELECT c FROM Comment c WHERE c.id = :id AND c.task.company.id = :companyId")
+    Optional<Comment> findByIdAndCompanyId(@Param("id") Long id, @Param("companyId") Long companyId);
+    Optional<Comment> findByIdAndTask_IdAndTask_Company_Id(Long id, Long taskId, Long companyId);
     
     // Osnovne metode
     List<Comment> findByTaskIdOrderByCreatedAtDesc(Long taskId);

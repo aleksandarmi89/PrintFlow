@@ -1,0 +1,2 @@
+ALTER TABLE companies
+    ADD COLUMN email VARCHAR(255) NULL;

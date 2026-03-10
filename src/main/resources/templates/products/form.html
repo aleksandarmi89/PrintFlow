@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:if="${isEdit}" th:text="#{products.form.edit_title}">Edit Product</title>
+    <title th:unless="${isEdit}" th:text="#{products.form.create_title}">Create Product</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+        <h1 th:if="${isEdit}" class="text-2xl font-bold text-gray-900" th:text="#{products.form.edit_title}">Edit Product</h1>
+        <h1 th:unless="${isEdit}" class="text-2xl font-bold text-gray-900" th:text="#{products.form.create_title}">Create Product</h1>
+        <p class="text-sm text-gray-600" th:text="#{products.form.subtitle}">Manual product management for your company.</p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <form th:action="${isEdit} ? @{/products/{id}(id=${product.id})} : @{/products}" th:object="${productForm}" method="post" class="space-y-5">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <div th:if="${#fields.hasGlobalErrors()}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+                <p th:each="e : ${#fields.globalErrors()}" th:text="${e}">Error</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.col.name} + ' *'">Name *</label>
+                    <input type="text" th:field="*{name}" class="w-full rounded-lg border px-3 py-2"
+                           th:classappend="${#fields.hasErrors('name')} ? 'border-red-300' : 'border-gray-300'"/>
+                    <p th:if="${#fields.hasErrors('name')}" class="mt-1 text-xs text-red-600" th:errors="*{name}"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.col.sku}">SKU</label>
+                    <input type="text" th:field="*{sku}" class="w-full rounded-lg border border-gray-300 px-3 py-2"/>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.form.description}">Description</label>
+                    <textarea th:field="*{description}" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.col.category}">Category</label>
+                    <input type="text" th:field="*{category}" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{products.form.category_placeholder}"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.form.unit}">Unit</label>
+                    <input type="text" th:field="*{unit}" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{products.form.unit_placeholder}"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.col.price} + ' *'">Base Price *</label>
+                    <input type="number" step="0.01" min="0" th:field="*{basePrice}" class="w-full rounded-lg border px-3 py-2"
+                           th:classappend="${#fields.hasErrors('basePrice')} ? 'border-red-300' : 'border-gray-300'"/>
+                    <p th:if="${#fields.hasErrors('basePrice')}" class="mt-1 text-xs text-red-600" th:errors="*{basePrice}"></p>
+                    <p class="mt-1 text-xs text-gray-500" th:text="#{products.base_price_hint}">Base price is used to auto-generate default pricing for calculator/cenovnik.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.form.currency}">Currency</label>
+                    <input type="text" th:field="*{currency}" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{products.form.currency_placeholder}"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.form.external_id}">External ID</label>
+                    <input type="text" th:field="*{externalId}" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{products.form.external_id_placeholder}"/>
+                </div>
+                <div class="flex items-center gap-2 pt-7">
+                    <input type="checkbox" th:field="*{active}" class="rounded border-gray-300"/>
+                    <label class="text-sm text-gray-700" th:text="#{products.form.active}">Active product</label>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+                <a th:href="${isEdit} ? @{/products/{id}(id=${product.id})} : @{/products}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" th:text="#{common.cancel}">Cancel</a>
+                <button th:if="${isEdit}" type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+                        th:text="#{products.form.save_changes}">Save Changes</button>
+                <button th:unless="${isEdit}" type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+                        th:text="#{products.form.create_action}">Create Product</button>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>

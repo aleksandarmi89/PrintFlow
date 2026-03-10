@@ -5,14 +5,12 @@ import java.time.LocalDateTime;
 import com.printflow.entity.enums.AuditAction;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import org.hibernate.annotations.Filter;
 
 @Entity
 @Table(name = "audit_logs")
+@Filter(name = "tenantFilter", condition = "tenant_id = :companyId")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +38,10 @@ public class AuditLog {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Company company;
     
     @Column(name = "ip_address")
     private String ipAddress;
@@ -55,25 +57,22 @@ public class AuditLog {
         createdAt = java.time.LocalDateTime.now();
     }
 
-	public AuditLog() {
-	
-	}
+    public AuditLog() {}
 
-	public AuditLog(Long id, AuditAction action, String entityType, Long entityId, String oldValue, String newValue,
-			String description, User user, String ipAddress, String userAgent, LocalDateTime createdAt) {
-		
-		this.id = id;
-		this.action = action;
-		this.entityType = entityType;
-		this.entityId = entityId;
-		this.oldValue = oldValue;
-		this.newValue = newValue;
-		this.description = description;
-		this.user = user;
-		this.ipAddress = ipAddress;
-		this.userAgent = userAgent;
-		this.createdAt = createdAt;
-	}
+    public AuditLog(Long id, AuditAction action, String entityType, Long entityId, String oldValue, String newValue,
+            String description, User user, String ipAddress, String userAgent, LocalDateTime createdAt) {
+        this.id = id;
+        this.action = action;
+        this.entityType = entityType;
+        this.entityId = entityId;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+        this.description = description;
+        this.user = user;
+        this.ipAddress = ipAddress;
+        this.userAgent = userAgent;
+        this.createdAt = createdAt;
+    }
 
 	public Long getId() {
 		return id;
@@ -137,6 +136,14 @@ public class AuditLog {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public Company getCompany() {
+		return company;
+	}
+
+	public void setCompany(Company company) {
+		this.company = company;
 	}
 
 	public String getIpAddress() {

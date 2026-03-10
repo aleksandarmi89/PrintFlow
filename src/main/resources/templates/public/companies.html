@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{public.companies.title}">Companies - PrintFlow</title>
+    <link rel="stylesheet" th:href="@{/css/tailwind.min.css}">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+</head>
+<body class="bg-gray-50">
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+        <a th:href="@{/public}" class="flex items-center gap-2 text-gray-800 font-semibold">
+            <span class="h-16 rounded-lg flex items-center justify-center">
+                <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-16 w-auto object-contain"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                <span style="display:none" class="w-16 h-16 rounded-lg bg-blue-600 text-white items-center justify-center">PF</span>
+            </span>
+        </a>
+        <div class="flex items-center gap-3">
+            <a th:href="@{/public/track}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.track_order}">Track order</a>
+            <a th:href="@{/public/contact}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.contact}">Contact</a>
+            <div class="flex items-center gap-2 text-xs text-gray-600">
+                <span th:text="#{nav.language}">Language</span>
+                <a th:href="@{${requestUri}(lang='sr')}"
+                   th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                    <span th:text="#{nav.lang.sr}">SR</span>
+                </a>
+                <a th:href="@{${requestUri}(lang='en')}"
+                   th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                    <span th:text="#{nav.lang.en}">EN</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-900" th:text="#{public.companies.heading}">Choose company</h1>
+        <p class="text-gray-600 mt-2" th:text="#{public.companies.subtitle}">Submit an order request without asking for a direct link.</p>
+    </div>
+
+    <div th:if="${#lists.isEmpty(companies)}" class="bg-white border border-gray-200 rounded-xl p-6 text-gray-600">
+        <span th:text="#{public.companies.empty}">No active companies right now.</span>
+    </div>
+
+    <div th:if="${!#lists.isEmpty(companies)}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <article th:each="company : ${companies}" class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+                <img th:if="${company.logoPath != null and !#strings.isEmpty(company.logoPath)}"
+                     th:src="@{/public/company-logo/{id}(id=${company.id})}"
+                     alt="Logo"
+                     class="w-12 h-12 rounded-lg object-cover border border-gray-200">
+                <div th:if="${company.logoPath == null or #strings.isEmpty(company.logoPath)}"
+                     class="w-12 h-12 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm"
+                     th:text="${#strings.toUpperCase(#strings.substring(company.name,0,1))}">
+                    C
+                </div>
+                <div class="min-w-0">
+                    <h2 class="font-semibold text-gray-900 truncate" th:text="${company.name}">Company</h2>
+                    <p class="text-xs text-gray-500 truncate" th:text="'/' + ${company.slug}">/company-slug</p>
+                </div>
+            </div>
+            <a th:href="@{/p/company/{id}/order(id=${company.id})}"
+               class="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-medium py-2.5 hover:bg-blue-700">
+                <span th:text="#{public.companies.send_request}">Send request</span>
+            </a>
+        </article>
+    </div>
+</main>
+</body>
+</html>

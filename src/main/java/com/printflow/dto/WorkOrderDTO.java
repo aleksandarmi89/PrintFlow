@@ -2,6 +2,7 @@ package com.printflow.dto;
 
 import com.printflow.entity.WorkOrder.DeliveryType;
 import com.printflow.entity.enums.OrderStatus;
+import com.printflow.entity.enums.PrintType;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ public class WorkOrderDTO {
     private Double estimatedHours;
     private Double actualHours;
     private Double price;
+    private Double cost;
     private Boolean paid;
     private String publicToken;
     private Boolean designApproved;
@@ -32,10 +34,13 @@ public class WorkOrderDTO {
     private String trackingNumber;
     private String deliveryAddress;
     private LocalDateTime deliveryDate;
+    private PrintType printType;
     
     // Relacije
     private Long clientId;
     private String clientName;
+    private String clientEmail;
+    private String clientPhone;
     private Long assignedToId;
     private String assignedToName;
     private Long createdById;
@@ -54,13 +59,12 @@ public class WorkOrderDTO {
     
 	public WorkOrderDTO() {
 		
-		// TODO Auto-generated constructor stub
 	}
 	public WorkOrderDTO(Long id, String orderNumber, String title, String description, String specifications,
 			OrderStatus status, Integer priority, LocalDateTime deadline, Double estimatedHours, Double actualHours,
-			Double price, Boolean paid, String publicToken, Boolean designApproved, String clientComment,
+			Double price, Double cost, Boolean paid, String publicToken, Boolean designApproved, String clientComment,
 			String internalNotes, DeliveryType deliveryType, String courierName, String trackingNumber,
-			String deliveryAddress, LocalDateTime deliveryDate, Long clientId, String clientName, Long assignedToId,
+			String deliveryAddress, LocalDateTime deliveryDate, PrintType printType, Long clientId, String clientName, Long assignedToId,
 			String assignedToName, Long createdById, String createdByName, LocalDateTime createdAt,
 			LocalDateTime updatedAt, LocalDateTime completedAt, int totalAttachments, int designAttachments,
 			int proofAttachments) {
@@ -76,6 +80,8 @@ public class WorkOrderDTO {
 		this.estimatedHours = estimatedHours;
 		this.actualHours = actualHours;
 		this.price = price;
+		this.cost = cost;
+		this.cost = cost;
 		this.paid = paid;
 		this.publicToken = publicToken;
 		this.designApproved = designApproved;
@@ -86,6 +92,7 @@ public class WorkOrderDTO {
 		this.trackingNumber = trackingNumber;
 		this.deliveryAddress = deliveryAddress;
 		this.deliveryDate = deliveryDate;
+		this.printType = printType;
 		this.clientId = clientId;
 		this.clientName = clientName;
 		this.assignedToId = assignedToId;
@@ -165,6 +172,12 @@ public class WorkOrderDTO {
 	public void setPrice(Double price) {
 		this.price = price;
 	}
+	public Double getCost() {
+		return cost;
+	}
+	public void setCost(Double cost) {
+		this.cost = cost;
+	}
 	public Boolean getPaid() {
 		return paid;
 	}
@@ -225,18 +238,36 @@ public class WorkOrderDTO {
 	public void setDeliveryDate(LocalDateTime deliveryDate) {
 		this.deliveryDate = deliveryDate;
 	}
+	public PrintType getPrintType() {
+		return printType;
+	}
+	public void setPrintType(PrintType printType) {
+		this.printType = printType;
+	}
 	public Long getClientId() {
 		return clientId;
 	}
 	public void setClientId(Long clientId) {
 		this.clientId = clientId;
 	}
-	public String getClientName() {
-		return clientName;
-	}
-	public void setClientName(String clientName) {
-		this.clientName = clientName;
-	}
+    public String getClientName() {
+        return clientName;
+    }
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+    public String getClientEmail() {
+        return clientEmail;
+    }
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+    public String getClientPhone() {
+        return clientPhone;
+    }
+    public void setClientPhone(String clientPhone) {
+        this.clientPhone = clientPhone;
+    }
 	public Long getAssignedToId() {
 		return assignedToId;
 	}
@@ -258,9 +289,54 @@ public class WorkOrderDTO {
 	public String getCreatedByName() {
 		return createdByName;
 	}
-	public void setCreatedByName(String createdByName) {
-		this.createdByName = createdByName;
-	}
+    public void setCreatedByName(String createdByName) {
+        this.createdByName = createdByName;
+    }
+
+    // Safe display helpers for templates
+    public String getAssignedToNameSafe() {
+        return assignedToName == null || assignedToName.isBlank() ? "Not assigned" : assignedToName;
+    }
+
+    public String getCreatedByNameSafe() {
+        return createdByName == null || createdByName.isBlank() ? "System" : createdByName;
+    }
+
+    public String getPrintTypeSafe() {
+        return printType != null ? printType.name() : "OTHER";
+    }
+
+    public boolean isPaidSafe() {
+        return Boolean.TRUE.equals(paid);
+    }
+
+    public String getPaidLabel() {
+        return isPaidSafe() ? "Paid" : "Not paid";
+    }
+
+    public String getPaidClass() {
+        return isPaidSafe() ? "text-green-600" : "text-red-600";
+    }
+
+    public String getDescriptionSafe() {
+        return description == null || description.isBlank() ? "No description" : description;
+    }
+
+    public String getSpecificationsSafe() {
+        return specifications == null || specifications.isBlank() ? "No specifications" : specifications;
+    }
+
+    public String getInternalNotesSafe() {
+        return internalNotes == null || internalNotes.isBlank() ? "No internal notes" : internalNotes;
+    }
+
+    public String getClientEmailSafe() {
+        return clientEmail == null || clientEmail.isBlank() ? "No email" : clientEmail;
+    }
+
+    public String getClientPhoneSafe() {
+        return clientPhone == null || clientPhone.isBlank() ? "No phone" : clientPhone;
+    }
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}

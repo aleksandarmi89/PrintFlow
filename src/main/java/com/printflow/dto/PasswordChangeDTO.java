@@ -8,7 +8,6 @@ public class PasswordChangeDTO {
     private String newPassword;
     private String confirmPassword;
     public PasswordChangeDTO() {
-		// TODO Auto-generated constructor stub
 	}
 	public PasswordChangeDTO(String currentPassword, String newPassword, String confirmPassword) {
 		

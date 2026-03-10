@@ -1,0 +1,6 @@
+ALTER TABLE companies
+    ADD COLUMN phone VARCHAR(50) NULL,
+    ADD COLUMN address VARCHAR(255) NULL,
+    ADD COLUMN website VARCHAR(255) NULL,
+    ADD COLUMN primary_color VARCHAR(20) NULL,
+    ADD COLUMN logo_path VARCHAR(500) NULL;

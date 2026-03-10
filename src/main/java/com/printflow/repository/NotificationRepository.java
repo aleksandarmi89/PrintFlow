@@ -10,9 +10,33 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+    @Query("SELECT n FROM Notification n WHERE n.id = :id AND n.user.company.id = :companyId")
+    Optional<Notification> findByIdAndUserCompanyId(@Param("id") Long id, @Param("companyId") Long companyId);
+
+    @Query("SELECT n FROM Notification n WHERE n.user.id = :userId AND n.user.company.id = :companyId ORDER BY n.createdAt DESC")
+    org.springframework.data.domain.Page<Notification> findByUserIdAndCompanyIdOrderByCreatedAtDesc(@Param("userId") Long userId,
+                                                                                                    @Param("companyId") Long companyId,
+                                                                                                    org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.user.id = :userId AND n.user.company.id = :companyId AND n.read = false")
+    int countByUserIdAndCompanyIdAndReadFalse(@Param("userId") Long userId, @Param("companyId") Long companyId);
+
+    @Query("SELECT n FROM Notification n WHERE n.user.id = :userId AND n.user.company.id = :companyId AND n.read = false")
+    List<Notification> findByUserIdAndCompanyIdAndReadFalse(@Param("userId") Long userId, @Param("companyId") Long companyId);
+
+    @Query("SELECT n FROM Notification n WHERE n.user.id = :userId AND n.user.company.id = :companyId AND n.read = false AND n.link = :link")
+    List<Notification> findByUserIdAndCompanyIdAndReadFalseAndLink(@Param("userId") Long userId,
+                                                                    @Param("companyId") Long companyId,
+                                                                    @Param("link") String link);
+
+    @Query("SELECT n FROM Notification n WHERE n.id IN :notificationIds AND n.user.id = :userId AND n.user.company.id = :companyId")
+    List<Notification> findByIdsForUserAndCompany(@Param("notificationIds") List<Long> notificationIds,
+                                                   @Param("userId") Long userId,
+                                                   @Param("companyId") Long companyId);
     
     // Osnovne metode
     Page<Notification> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
@@ -20,6 +44,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByUserIdAndReadFalseOrderByCreatedAtDesc(Long userId);
     int countByUserIdAndReadFalse(Long userId);
     List<Notification> findByUserIdAndReadFalse(Long userId);
+    List<Notification> findByUserIdAndReadFalseAndLink(Long userId, String link);
     
     // Metode za filtriranje po tipu
     List<Notification> findByUserIdAndTypeOrderByCreatedAtDesc(Long userId, String type);

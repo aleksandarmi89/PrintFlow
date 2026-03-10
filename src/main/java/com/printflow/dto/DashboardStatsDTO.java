@@ -25,7 +25,6 @@ public class DashboardStatsDTO {
     
 	public DashboardStatsDTO() {
 		
-		// TODO Auto-generated constructor stub
 	}
 	public DashboardStatsDTO(long totalClients, long totalOrders, long activeOrders, long completedOrders,
 			long overdueOrders, long totalUsers, double monthlyRevenue, double pendingRevenue, long newOrders,

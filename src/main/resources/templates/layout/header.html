@@ -6,63 +6,207 @@
 </head>
 <body>
     <header th:fragment="header">
+        <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+        <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
+        <div th:if="${billingExpired}" class="bg-red-100 text-red-900 border-b border-red-200">
+            <div class="container mx-auto px-4 py-2 text-sm">
+                <strong th:text="#{billing.notice.title}">Billing notice:</strong>
+                <span th:if="${trialEnd}"
+                      th:text="#{billing.notice.expired_with_date(${#temporals.format(trialEnd, 'yyyy-MM-dd')})}">
+                    Your trial ended on 2026-02-25. Please upgrade to continue premium features.
+                </span>
+                <span th:if="${trialEnd == null}" th:text="#{billing.notice.expired}">
+                    Your trial has ended. Please upgrade to continue premium features.
+                </span>
+                <span th:if="${trialDaysOverdue != null}"
+                      th:text="' ' + #{billing.notice.overdue(${trialDaysOverdue})}">
+                    Overdue by 7 days.
+                </span>
+                <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+            </div>
+        </div>
+        <div th:if="${billingTrialActive}" class="bg-blue-50 text-blue-900 border-b border-blue-200">
+            <div class="container mx-auto px-4 py-2 text-sm">
+                <strong th:text="#{billing.trial.banner.title}">Trial notice:</strong>
+                <span th:if="${trialDaysRemaining != null}"
+                      th:text="#{billing.trial.banner.remaining(${trialDaysRemaining})}">
+                    Trial ends in 7 days.
+                </span>
+                <span th:if="${trialDaysRemaining == null}" th:text="#{billing.trial.banner.generic}">
+                    Your trial is active.
+                </span>
+                <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+            </div>
+        </div>
         <nav class="bg-white shadow-lg border-b border-gray-200">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center h-16">
                     <!-- Logo -->
-                    <div class="flex items-center">
-                        <a th:href="@{/admin/dashboard}" class="flex items-center space-x-2">
-                            <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold">PF</span>
+                    <div class="flex items-center shrink-0">
+                        <a sec:authorize="isAuthenticated()"
+                           th:href="@{/admin/dashboard}"
+                           class="relative z-20 pointer-events-auto flex items-center space-x-2 rounded-md px-1 py-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           th:title="#{nav.dashboard}">
+                            <div class="h-12 flex items-center justify-center">
+                                <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-auto object-contain"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div style="display:none" class="w-12 h-12 bg-primary-600 rounded-lg items-center justify-center">
+                                    <span class="text-white font-bold">PF</span>
+                                </div>
                             </div>
-                            <span class="text-xl font-bold text-gray-800">PrintFlow</span>
+                            <span class="hidden lg:inline text-base font-semibold text-gray-800 leading-none">ProPrintFlow</span>
+                            <span class="sr-only" th:text="#{nav.dashboard}">Dashboard</span>
+                        </a>
+                        <div sec:authorize="isAuthenticated()" class="ml-3 hidden 2xl:flex items-center gap-2 text-xs text-gray-600">
+                            <span th:if="${companyPlan != null}" class="rounded-full bg-gray-100 px-2 py-1 font-semibold text-gray-700"
+                                  th:text="#{billing.header.plan(${companyPlan})}">Plan: PRO</span>
+                            <span th:if="${billingActive}" class="rounded-full bg-green-100 px-2 py-1 font-semibold text-green-700"
+                                  th:text="#{billing.header.status.active}">Active</span>
+                            <span th:if="${!billingActive}" class="rounded-full bg-red-100 px-2 py-1 font-semibold text-red-700"
+                                  th:text="#{billing.header.status.expired}">Expired</span>
+                            <span sec:authorize="hasAnyAuthority('ADMIN','MANAGER')" th:if="${smtpConfigured}"
+                                  class="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700"
+                                  th:text="#{email.header.smtp_ok}">SMTP OK</span>
+                            <span sec:authorize="hasAnyAuthority('ADMIN','MANAGER')" th:if="${!smtpConfigured}"
+                                  class="rounded-full bg-yellow-100 px-2 py-1 font-semibold text-yellow-800"
+                                  th:text="#{email.header.smtp_missing}">SMTP NOT CONFIGURED</span>
+                        </div>
+                        <a sec:authorize="!isAuthenticated()" th:href="@{/public/track}" class="flex items-center space-x-2">
+                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-auto object-contain">
+                            <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 flex items-center justify-center">
+                                <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-auto object-contain"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div style="display:none" class="w-12 h-12 bg-blue-600 rounded-lg items-center justify-center">
+                                    <span class="text-white font-bold">PF</span>
+                                </div>
+                            </div>
+                            <span class="text-xl font-bold text-gray-800" th:if="${companyBrand != null && companyBrand.logoUrl != null}" th:text="${companyBrand.name}">Company</span>
                         </a>
                     </div>
                     
                     <!-- Desktop Navigation -->
-                    <div class="hidden md:flex items-center space-x-4">
-                        <div sec:authorize="isAuthenticated()" class="flex items-center space-x-4">
+                    <div class="hidden md:flex items-center gap-2 min-w-0">
+                        <a sec:authorize="!hasAuthority('SUPER_ADMIN')" th:href="@{/public/companies}"
+                           class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium shrink-0">
+                            <span th:text="#{public.companies.nav}">Companies</span>
+                        </a>
+                        <div sec:authorize="isAuthenticated()" class="flex items-center space-x-2">
                             <!-- Admin Menu -->
-                            <div sec:authorize="hasAuthority('ADMIN')" class="flex items-center space-x-4">
+                            <div id="desktop-admin-menu-strip" sec:authorize="hasAnyAuthority('ADMIN', 'MANAGER', 'SUPER_ADMIN')" class="flex items-center space-x-1 overflow-x-auto max-w-[48vw] xl:max-w-[52vw] 2xl:max-w-[58vw] whitespace-nowrap pr-1">
                                 <a th:href="@{/admin/dashboard}" 
-                                   class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    Dashboard
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.dashboard}">Dashboard</span>
                                 </a>
                                 <a th:href="@{/admin/clients}" 
-                                   class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    Clients
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.clients}">Clients</span>
                                 </a>
                                 <a th:href="@{/admin/orders}" 
-                                   class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    Orders
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.orders}">Orders</span>
+                                </a>
+                                <a th:href="@{/admin/public-requests}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{public.requests.title}">Public Requests</span>
+                                </a>
+                                <a th:href="@{/admin/tasks}" 
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.tasks}">Tasks</span>
+                                </a>
+                                <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/pricing/products}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.pricing}">Pricing</span>
+                                </a>
+                                <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/products}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.products}">Products</span>
+                                </a>
+                                <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/pricing/calculate}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.calculator}">Calculator</span>
+                                </a>
+                                <a th:href="@{/admin/planner}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.planner}">Planner</span>
                                 </a>
                                 <a th:href="@{/admin/users}" 
-                                   class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    Users
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.users}">Users</span>
+                                </a>
+                                <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/company}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.company_settings}">Company</span>
+                                </a>
+                                <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/settings/email}"
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.email_settings}">Email</span>
+                                </a>
+                                <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/companies}" 
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span class="hidden xl:inline" th:text="#{nav.companies}">Companies</span>
+                                    <span class="xl:hidden">Komp.</span>
+                                </a>
+                                <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/audit-logs}" 
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.audit_logs}">Audit Logs</span>
+                                </a>
+                                <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/rate-limit}" 
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.ban_list}">Ban List</span>
                                 </a>
                             </div>
                             
                             <!-- Worker Menu -->
-                            <div sec:authorize="hasAnyAuthority('WORKER_DESIGNER', 'WORKER_PRINTER', 'WORKER_GENERAL')" class="flex items-center space-x-4">
+                            <div id="desktop-worker-menu-strip" sec:authorize="hasAnyAuthority('WORKER_DESIGN', 'WORKER_PRINT', 'WORKER_GENERAL')" class="flex items-center space-x-1 overflow-x-auto max-w-[48vw] xl:max-w-[52vw] 2xl:max-w-[58vw] whitespace-nowrap pr-1">
                                 <a th:href="@{/worker/dashboard}" 
-                                   class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    Dashboard
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.dashboard}">Dashboard</span>
                                 </a>
                                 <a th:href="@{/worker/my-tasks}" 
-                                   class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    My Tasks
+                                   class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                    <span th:text="#{nav.my_tasks}">My Tasks</span>
                                 </a>
                             </div>
                             
+                            <!-- Language -->
+                            <div class="flex items-center gap-2 text-xs text-gray-600">
+                                <span th:text="#{nav.language}">Language</span>
+                                <a th:href="@{${requestUri}(lang='sr')}"
+                                   th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                                    <span th:text="#{nav.lang.sr}">SR</span>
+                                </a>
+                                <a th:href="@{${requestUri}(lang='en')}"
+                                   th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                                    <span th:text="#{nav.lang.en}">EN</span>
+                                </a>
+                            </div>
+                            
+                            <!-- Notifications -->
+                            <div class="relative shrink-0">
+                                <button id="notification-menu-button"
+                                        class="relative text-gray-700 hover:text-primary-600 focus:outline-none">
+                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6zM8 16a2 2 0 004 0H8z"/>
+                                    </svg>
+                                    <span th:if="${notificationCount > 0}"
+                                          class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1">
+                                        <span th:text="${notificationCount}">0</span>
+                                    </span>
+                                </button>
+                            </div>
+
                             <!-- User Dropdown -->
-                            <div class="relative">
+                            <div class="relative shrink-0">
                                 <button id="user-menu-button" 
-                                        class="flex items-center space-x-2 text-gray-700 hover:text-primary-600 focus:outline-none">
-                                    <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-700">
-                                            <span sec:authentication="name"></span>
-                                        </span>
+                                        class="flex items-center space-x-2 text-gray-700 hover:text-primary-600 focus:outline-none max-w-[14rem]">
+                                    <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center shrink-0">
+                                        <svg class="w-4 h-4 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 2a5 5 0 100 10 5 5 0 000-10zM3 16a7 7 0 0114 0v1H3v-1z" clip-rule="evenodd"/>
+                                        </svg>
                                     </div>
+                                    <span class="text-sm font-medium text-gray-700 truncate max-w-[9rem]">
+                                        <span sec:authentication="name"></span>
+                                    </span>
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                     </svg>
@@ -73,17 +217,26 @@
                                      class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
                                     <a th:href="@{/profile}" 
                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Profile
+                                        <span th:text="#{nav.profile}">Profile</span>
                                     </a>
                                     <a th:href="@{/settings}" 
                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Settings
+                                        <span th:text="#{nav.settings}">Settings</span>
+                                    </a>
+                                    <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/company}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <span th:text="#{nav.company_settings}">Company</span>
+                                    </a>
+                                    <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/settings/email}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <span th:text="#{nav.email_settings}">Email Settings</span>
                                     </a>
                                     <div class="border-t border-gray-200"></div>
                                     <form th:action="@{/logout}" method="post">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                                         <button type="submit" 
                                                 class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                                            Sign out
+                                            <span th:text="#{auth.sign_out}">Sign out</span>
                                         </button>
                                     </form>
                                 </div>
@@ -91,20 +244,42 @@
                         </div>
                         
                         <!-- Login/Register for non-authenticated users -->
-                        <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-4">
+                        <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-2">
                             <a th:href="@{/login}" 
-                               class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                                Login
+                               class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
+                                <span th:text="#{nav.login}">Login</span>
                             </a>
                             <a th:href="@{/register}" 
                                class="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700">
-                                Register
+                                <span th:text="#{nav.register}">Register</span>
                             </a>
+                            <div class="flex items-center gap-2 text-xs text-gray-600">
+                                <span th:text="#{nav.language}">Language</span>
+                                <a th:href="@{${requestUri}(lang='sr')}"
+                                   th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                                    <span th:text="#{nav.lang.sr}">SR</span>
+                                </a>
+                                <a th:href="@{${requestUri}(lang='en')}"
+                                   th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
+                                    <span th:text="#{nav.lang.en}">EN</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Mobile menu button -->
-                    <div class="md:hidden">
+                    <!-- Mobile actions -->
+                    <div class="md:hidden flex items-center gap-3">
+                        <button id="mobile-notification-menu-button"
+                                class="relative text-gray-700 hover:text-primary-600 focus:outline-none"
+                                aria-label="Notifications">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6zM8 16a2 2 0 004 0H8z"/>
+                            </svg>
+                            <span th:if="${notificationCount > 0}"
+                                  class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1">
+                                <span th:text="${notificationCount}">0</span>
+                            </span>
+                        </button>
                         <button id="mobile-menu-button" 
                                 class="text-gray-700 hover:text-primary-600 focus:outline-none">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,48 +291,97 @@
                 
                 <!-- Mobile menu -->
                 <div id="mobile-menu" class="hidden md:hidden py-2 border-t border-gray-200">
+                    <a sec:authorize="!hasAuthority('SUPER_ADMIN')" th:href="@{/public/companies}"
+                       class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                        <span th:text="#{public.companies.nav}">Companies</span>
+                    </a>
                     <div sec:authorize="isAuthenticated()">
                         <!-- Admin Mobile Menu -->
-                        <div sec:authorize="hasAuthority('ADMIN')" class="space-y-1">
+                        <div sec:authorize="hasAnyAuthority('ADMIN', 'MANAGER', 'SUPER_ADMIN')" class="space-y-1">
                             <a th:href="@{/admin/dashboard}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                Dashboard
+                                <span th:text="#{nav.dashboard}">Dashboard</span>
                             </a>
                             <a th:href="@{/admin/clients}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                Clients
+                                <span th:text="#{nav.clients}">Clients</span>
                             </a>
                             <a th:href="@{/admin/orders}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                Orders
+                                <span th:text="#{nav.orders}">Orders</span>
+                            </a>
+                            <a th:href="@{/admin/public-requests}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{public.requests.title}">Public Requests</span>
+                            </a>
+                            <a th:href="@{/admin/tasks}" 
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.tasks}">Tasks</span>
+                            </a>
+                            <a th:href="@{/products}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.products}">Products</span>
+                            </a>
+                            <a th:href="@{/admin/planner}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.planner}">Planner</span>
                             </a>
                             <a th:href="@{/admin/users}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                Users
+                                <span th:text="#{nav.users}">Users</span>
+                            </a>
+                            <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/company}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.company_settings}">Company</span>
+                            </a>
+                            <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/companies}" 
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.companies}">Companies</span>
+                            </a>
+                            <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/audit-logs}" 
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.audit_logs}">Audit Logs</span>
+                            </a>
+                            <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/rate-limit}" 
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.ban_list}">Ban List</span>
                             </a>
                         </div>
                         
                         <!-- Worker Mobile Menu -->
-                        <div sec:authorize="hasAnyAuthority('WORKER_DESIGNER', 'WORKER_PRINTER', 'WORKER_GENERAL')" class="space-y-1">
+                        <div sec:authorize="hasAnyAuthority('WORKER_DESIGN', 'WORKER_PRINT', 'WORKER_GENERAL')" class="space-y-1">
                             <a th:href="@{/worker/dashboard}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                Dashboard
+                                <span th:text="#{nav.dashboard}">Dashboard</span>
                             </a>
                             <a th:href="@{/worker/my-tasks}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                My Tasks
+                                <span th:text="#{nav.my_tasks}">My Tasks</span>
+                            </a>
+                        </div>
+
+                        <div class="px-4 pt-2 pb-1 text-xs text-gray-500" th:text="#{nav.language}">Language</div>
+                        <div class="flex items-center gap-2 px-4 pb-3">
+                            <a th:href="@{${requestUri}(lang='sr')}"
+                               th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900 text-xs' : 'px-2 py-1 rounded hover:bg-gray-100 text-xs'}">
+                                <span th:text="#{nav.lang.sr}">SR</span>
+                            </a>
+                            <a th:href="@{${requestUri}(lang='en')}"
+                               th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900 text-xs' : 'px-2 py-1 rounded hover:bg-gray-100 text-xs'}">
+                                <span th:text="#{nav.lang.en}">EN</span>
                             </a>
                         </div>
                         
                         <div class="border-t border-gray-200 pt-2 mt-2">
                             <a th:href="@{/profile}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                Profile
+                                <span th:text="#{nav.profile}">Profile</span>
                             </a>
                             <form th:action="@{/logout}" method="post" class="mt-2">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                                 <button type="submit" 
                                         class="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
-                                    Sign out
+                                    <span th:text="#{auth.sign_out}">Sign out</span>
                                 </button>
                             </form>
                         </div>
@@ -166,42 +390,148 @@
                     <div sec:authorize="!isAuthenticated()" class="space-y-2">
                         <a th:href="@{/login}" 
                            class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                            Login
+                            <span th:text="#{nav.login}">Login</span>
                         </a>
                         <a th:href="@{/register}" 
                            class="block px-4 py-2 bg-primary-600 text-white rounded-md">
-                            Register
+                            <span th:text="#{nav.register}">Register</span>
                         </a>
+                        <div class="px-4 pt-2 pb-1 text-xs text-gray-500" th:text="#{nav.language}">Language</div>
+                        <div class="flex items-center gap-2 px-4 pb-3">
+                            <a th:href="@{${requestUri}(lang='sr')}"
+                               th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900 text-xs' : 'px-2 py-1 rounded hover:bg-gray-100 text-xs'}">
+                                <span th:text="#{nav.lang.sr}">SR</span>
+                            </a>
+                            <a th:href="@{${requestUri}(lang='en')}"
+                               th:class="${#locale.language == 'en' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900 text-xs' : 'px-2 py-1 rounded hover:bg-gray-100 text-xs'}">
+                                <span th:text="#{nav.lang.en}">EN</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notification dropdown (shared for desktop + mobile) -->
+                <div id="notification-dropdown"
+                     class="hidden fixed right-4 left-4 top-16 w-auto max-w-[90vw] bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200 md:left-auto md:w-80 md:right-0 md:top-auto md:mt-2">
+                    <div class="px-4 py-2 flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-900" th:text="#{nav.notifications}">Notifications</span>
+                        <button id="mark-all-read"
+                                class="text-xs text-blue-600 hover:text-blue-800">
+                            <span th:text="#{nav.mark_all_read}">Mark all read</span>
+                        </button>
+                    </div>
+                    <div class="px-4 py-2">
+                        <a th:href="@{/notifications}" class="text-xs text-gray-600 hover:text-gray-800"
+                           th:text="#{nav.view_all}">
+                            View all
+                        </a>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto">
+                        <div th:each="n : ${recentNotifications}"
+                             class="px-4 py-3 border-t border-gray-100 hover:bg-gray-50">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900" th:text="${n.title}"></p>
+                                    <p class="text-xs text-gray-600 mt-1" th:text="${n.message}"></p>
+                                    <p class="text-xs text-gray-400 mt-1" th:text="${#temporals.format(n.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
+                                    <a th:if="${n.link}" th:href="${n.link}"
+                                       class="inline-block mt-1 text-xs text-blue-600 hover:text-blue-800">
+                                        <span th:text="#{common.open}">Open</span>
+                                    </a>
+                                </div>
+                                <button th:if="${!n.read}" 
+                                        th:attr="data-id=${n.id}"
+                                        class="mark-read text-xs text-gray-500 hover:text-gray-700">
+                                    <span th:text="#{nav.mark_read}">Mark</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div th:if="${#lists.isEmpty(recentNotifications)}" class="px-4 py-6 text-center">
+                            <p class="text-sm text-gray-500" th:text="#{notifications.none}">No notifications</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </nav>
         
-        <script>
-            // Mobile menu toggle
-            document.getElementById('mobile-menu-button').addEventListener('click', function() {
-                const menu = document.getElementById('mobile-menu');
-                menu.classList.toggle('hidden');
-            });
-            
-            // User dropdown toggle
-            const userMenuButton = document.getElementById('user-menu-button');
-            const userDropdown = document.getElementById('user-dropdown');
-            
-            if (userMenuButton && userDropdown) {
-                userMenuButton.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    userDropdown.classList.toggle('hidden');
-                });
+                <script>
+                    // Mobile menu toggle
+                    document.getElementById('mobile-menu-button').addEventListener('click', function() {
+                        const menu = document.getElementById('mobile-menu');
+                        menu.classList.toggle('hidden');
+                    });
+                    
+                    // User dropdown toggle
+                    const userMenuButton = document.getElementById('user-menu-button');
+                    const userDropdown = document.getElementById('user-dropdown');
+                    const notificationMenuButton = document.getElementById('notification-menu-button');
+                    const mobileNotificationMenuButton = document.getElementById('mobile-notification-menu-button');
+                    const notificationDropdown = document.getElementById('notification-dropdown');
+                    
+                    if (userMenuButton && userDropdown) {
+                        userMenuButton.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            userDropdown.classList.toggle('hidden');
+                        });
                 
                 // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!userDropdown.contains(e.target) && !userMenuButton.contains(e.target)) {
-                        userDropdown.classList.add('hidden');
+                        document.addEventListener('click', function(e) {
+                            if (!userDropdown.contains(e.target) && !userMenuButton.contains(e.target)) {
+                                userDropdown.classList.add('hidden');
+                            }
+                            if (notificationDropdown && notificationMenuButton &&
+                                !notificationDropdown.contains(e.target) && !notificationMenuButton.contains(e.target)) {
+                                notificationDropdown.classList.add('hidden');
+                            }
+                            if (notificationDropdown && mobileNotificationMenuButton &&
+                                !notificationDropdown.contains(e.target) && !mobileNotificationMenuButton.contains(e.target)) {
+                                notificationDropdown.classList.add('hidden');
+                            }
+                        });
                     }
-                });
-            }
-        </script>
+
+                    if (notificationMenuButton && notificationDropdown) {
+                        notificationMenuButton.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            notificationDropdown.classList.toggle('hidden');
+                        });
+                    }
+                    if (mobileNotificationMenuButton && notificationDropdown) {
+                        mobileNotificationMenuButton.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            notificationDropdown.classList.toggle('hidden');
+                        });
+                    }
+
+                    const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+                    const csrfHeaders = (csrfToken && csrfHeader) ? { [csrfHeader]: csrfToken } : {};
+
+                    const markAll = document.getElementById('mark-all-read');
+                    if (markAll) {
+                        markAll.addEventListener('click', function() {
+                            fetch('/notifications/mark-all-read', { method: 'POST', headers: csrfHeaders })
+                                .then(() => window.location.reload());
+                        });
+                    }
+
+                    document.querySelectorAll('.mark-read').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = btn.getAttribute('data-id');
+                            fetch(`/notifications/${id}/mark-read`, { method: 'POST', headers: csrfHeaders })
+                                .then(() => window.location.reload());
+                        });
+                    });
+
+                    const adminStrip = document.getElementById('desktop-admin-menu-strip');
+                    if (adminStrip) {
+                        adminStrip.scrollLeft = 0;
+                    }
+                    const workerStrip = document.getElementById('desktop-worker-menu-strip');
+                    if (workerStrip) {
+                        workerStrip.scrollLeft = 0;
+                    }
+                </script>
     </header>
 </body>
 </html>

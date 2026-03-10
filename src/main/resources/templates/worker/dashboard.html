@@ -1,24 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Worker Dashboard - PrintFlow</title>
+    <title th:text="#{worker.dashboard.title}">Worker Dashboard - PrintFlow</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
     
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+        </div>
         <!-- Page Header -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Worker Dashboard</h1>
-            <p class="text-gray-600 mt-2">Welcome back, <span sec:authentication="name"></span>! Here are your assigned tasks.</p>
+            <h1 class="text-3xl font-bold text-gray-900" th:text="#{worker.dashboard.heading}">Worker Dashboard</h1>
+            <p class="text-gray-600 mt-2">
+                <span th:text="#{worker.dashboard.welcome}">Welcome back,</span>
+                <span sec:authentication="name"></span>!
+                <span th:text="#{worker.dashboard.welcome_tail}">Here are your assigned tasks.</span>
+            </p>
         </div>
         
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Assigned Tasks</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.dashboard.assigned_tasks}">Assigned Tasks</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1" 
                            th:text="${assignedOrders.size()}">0</p>
                     </div>
@@ -30,10 +38,10 @@
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Pending Approval</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.dashboard.pending_approval}">Pending Approval</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1">0</p>
                     </div>
                     <div class="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
@@ -44,10 +52,10 @@
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Completed Today</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.dashboard.completed_today}">Completed Today</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1">0</p>
                     </div>
                     <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
@@ -64,14 +72,14 @@
             <!-- Assigned Tasks -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Your Assigned Tasks</h2>
-                    <p class="text-sm text-gray-600">Tasks that are currently assigned to you</p>
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.dashboard.assigned_section_title}">Your Assigned Tasks</h2>
+                    <p class="text-sm text-gray-600" th:text="#{worker.dashboard.assigned_section_subtitle}">Tasks that are currently assigned to you</p>
                 </div>
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="space-y-4">
                         <div th:each="order : ${assignedOrders}" 
                              class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                            <div class="flex justify-between items-start">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                                 <div>
                                     <a th:href="@{/worker/task/{id}(id=${order.id})}" 
                                        class="font-medium text-blue-600 hover:text-blue-800">
@@ -80,36 +88,36 @@
                                     </a>
                                     <div class="text-sm text-gray-600 mt-1" 
                                          th:text="${order.clientName}">
-                                        Client Name
+                                        <span th:text="#{worker.dashboard.client_name}">Client Name</span>
                                     </div>
                                 </div>
                                 <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
                                     (order.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
                                      order.status == 'IN_DESIGN' ? 'bg-yellow-100 text-yellow-800' :
                                      'bg-purple-100 text-purple-800')}">
-                                    <span th:text="${order.status}">Status</span>
+                                    <span th:text="${order.status != null ? #messages.msg('orders.status.' + order.status) : ''}">Status</span>
                                 </span>
                             </div>
-                            <div class="mt-3 flex justify-between items-center">
+                            <div class="mt-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                                 <div class="text-sm text-gray-500">
                                     <span th:if="${order.deadline}">
-                                        Deadline: 
+                                        <span th:text="#{worker.dashboard.deadline}">Deadline</span>:
                                         <span th:text="${#temporals.format(order.deadline, 'dd.MM.yyyy')}">
                                             01.01.2024
                                         </span>
                                     </span>
                                     <span th:unless="${order.deadline}" class="text-gray-400">
-                                        No deadline set
+                                        <span th:text="#{worker.dashboard.no_deadline}">No deadline set</span>
                                     </span>
                                 </div>
                                 <div class="text-sm">
                                     <span th:if="${order.priority >= 8}" 
                                           class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                                        High Priority
+                                        <span th:text="#{worker.dashboard.high_priority}">High Priority</span>
                                     </span>
                                     <span th:if="${order.priority >= 5 && order.priority < 8}" 
                                           class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                        Medium Priority
+                                        <span th:text="#{worker.dashboard.medium_priority}">Medium Priority</span>
                                     </span>
                                 </div>
                             </div>
@@ -119,15 +127,15 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
-                            <p class="mt-2 text-sm text-gray-500">No tasks assigned to you.</p>
-                            <p class="text-sm text-gray-400">Check back later or contact your manager.</p>
+                            <p class="mt-2 text-sm text-gray-500" th:text="#{worker.dashboard.no_tasks_assigned}">No tasks assigned to you.</p>
+                            <p class="text-sm text-gray-400" th:text="#{worker.dashboard.no_tasks_assigned_hint}">Check back later or contact your manager.</p>
                         </div>
                     </div>
                     
                     <div class="mt-4">
                         <a th:href="@{/worker/my-tasks}" 
                            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                            View all tasks →
+                            <span th:text="#{worker.dashboard.view_all_tasks}">View all tasks →</span>
                         </a>
                     </div>
                 </div>
@@ -136,14 +144,14 @@
             <!-- Pending Tasks -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Available Tasks</h2>
-                    <p class="text-sm text-gray-600">Tasks waiting to be picked up</p>
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.dashboard.available_tasks_title}">Available Tasks</h2>
+                    <p class="text-sm text-gray-600" th:text="#{worker.dashboard.available_tasks_subtitle}">Tasks waiting to be picked up</p>
                 </div>
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="space-y-4">
                         <div th:each="order : ${pendingOrders}" 
                              class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                            <div class="flex justify-between items-start">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                                 <div>
                                     <a th:href="@{/worker/task/{id}(id=${order.id})}" 
                                        class="font-medium text-blue-600 hover:text-blue-800">
@@ -151,21 +159,21 @@
                                     </a>
                                     <div class="text-sm text-gray-900 mt-1" 
                                          th:text="${order.title}">
-                                        Order Title
+                                        <span th:text="#{worker.dashboard.order_title}">Order Title</span>
                                     </div>
                                     <div class="text-sm text-gray-600" 
                                          th:text="${order.clientName}">
-                                        Client Name
+                                        <span th:text="#{worker.dashboard.client_name}">Client Name</span>
                                     </div>
                                 </div>
                                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                                    Unassigned
+                                    <span th:text="#{worker.dashboard.unassigned}">Unassigned</span>
                                 </span>
                             </div>
                             <div class="mt-3">
                                 <a th:href="@{/worker/task/{id}(id=${order.id})}" 
                                    class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                                    View details →
+                                    <span th:text="#{worker.dashboard.view_details}">View details →</span>
                                 </a>
                             </div>
                         </div>
@@ -174,14 +182,14 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <p class="mt-2 text-sm text-gray-500">No pending tasks available.</p>
+                            <p class="mt-2 text-sm text-gray-500" th:text="#{worker.dashboard.no_pending_tasks}">No pending tasks available.</p>
                         </div>
                     </div>
                     
                     <div class="mt-6">
                         <a th:href="@{/admin/orders}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                            View All Orders
+                            <span th:text="#{worker.dashboard.view_all_orders}">View All Orders</span>
                         </a>
                     </div>
                 </div>
@@ -191,7 +199,7 @@
         <!-- Quick Actions -->
         <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <a th:href="@{/worker/my-tasks}" 
-               class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+               class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -199,14 +207,14 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900">My Tasks</h3>
-                        <p class="text-sm text-gray-600 mt-1">View all tasks assigned to you</p>
+                        <h3 class="font-medium text-gray-900" th:text="#{worker.dashboard.my_tasks}">My Tasks</h3>
+                        <p class="text-sm text-gray-600 mt-1" th:text="#{worker.dashboard.my_tasks_desc}">View all tasks assigned to you</p>
                     </div>
                 </div>
             </a>
             
             <a th:href="@{/admin/orders}" 
-               class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:border-green-300 hover:shadow-md transition-all">
+               class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 hover:border-green-300 hover:shadow-md transition-all">
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -214,8 +222,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900">All Orders</h3>
-                        <p class="text-sm text-gray-600 mt-1">Browse all orders in the system</p>
+                        <h3 class="font-medium text-gray-900" th:text="#{worker.dashboard.all_orders}">All Orders</h3>
+                        <p class="text-sm text-gray-600 mt-1" th:text="#{worker.dashboard.all_orders_desc}">Browse all orders in the system</p>
                     </div>
                 </div>
             </a>
@@ -229,8 +237,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900">Clients</h3>
-                        <p class="text-sm text-gray-600 mt-1">View client information</p>
+                        <h3 class="font-medium text-gray-900" th:text="#{worker.dashboard.clients}">Clients</h3>
+                        <p class="text-sm text-gray-600 mt-1" th:text="#{worker.dashboard.clients_desc}">View client information</p>
                     </div>
                 </div>
             </a>

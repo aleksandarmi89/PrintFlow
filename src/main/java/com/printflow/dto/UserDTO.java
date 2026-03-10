@@ -45,6 +45,8 @@ public class UserDTO {
     private boolean available = true;
     private String department;
     private String position;
+    private Long companyId;
+    private String companyName;
     
     @Size(max = 1000, message = "Notes must be less than 1000 characters")
     private String notes;
@@ -247,6 +249,22 @@ public class UserDTO {
     
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
     }
     
     public LocalDateTime getCreatedAt() {

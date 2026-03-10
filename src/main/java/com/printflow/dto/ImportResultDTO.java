@@ -23,7 +23,6 @@ public class ImportResultDTO {
 
 	public ImportResultDTO() {
 		
-		// TODO Auto-generated constructor stub
 	}
 
 	public int getTotalRecords() {

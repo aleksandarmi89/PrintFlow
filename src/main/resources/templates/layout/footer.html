@@ -11,12 +11,15 @@
                 <!-- Company Info -->
                 <div>
                     <div class="flex items-center space-x-2 mb-4">
-                        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold">PF</span>
+                        <div class="h-12 flex items-center justify-center">
+                            <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-20 w-auto object-contain"
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                            <div style="display:none" class="w-20 h-20 bg-primary-600 rounded-lg items-center justify-center">
+                                <span class="text-white font-bold">PF</span>
+                            </div>
                         </div>
-                        <span class="text-xl font-bold text-gray-800">PrintFlow SaaS</span>
                     </div>
-                    <p class="text-gray-600">
+                    <p class="text-gray-600" th:text="#{footer.description}">
                         Professional workflow management for printing companies.
                         Streamline your production process and improve customer communication.
                     </p>
@@ -24,24 +27,24 @@
                 
                 <!-- Quick Links -->
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Links</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.quick_links}">Quick Links</h3>
                     <ul class="space-y-2">
-                        <li><a th:href="@{/public/}" class="text-gray-600 hover:text-primary-600">Home</a></li>
-                        <li><a th:href="@{/public/track}" class="text-gray-600 hover:text-primary-600">Track Order</a></li>
-                        <li><a th:href="@{/public/contact}" class="text-gray-600 hover:text-primary-600">Contact</a></li>
-                        <li><a th:href="@{/login}" class="text-gray-600 hover:text-primary-600">Login</a></li>
+                        <li><a th:href="@{/public/}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.home}">Home</a></li>
+                        <li><a th:href="@{/public/track}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.track_order}">Track Order</a></li>
+                        <li><a th:href="@{/public/contact}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.contact}">Contact</a></li>
+                        <li><a th:href="@{/login}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.login}">Login</a></li>
                     </ul>
                 </div>
                 
                 <!-- Contact Info -->
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Contact Info</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.contact_info}">Contact Info</h3>
                     <ul class="space-y-2 text-gray-600">
                         <li class="flex items-center space-x-2">
                             <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                             </svg>
-                            <span>Belgrade, Serbia</span>
+                            <span th:text="#{footer.location}">Belgrade, Serbia</span>
                         </li>
                         <li class="flex items-center space-x-2">
                             <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -62,8 +65,8 @@
             
             <!-- Copyright -->
             <div class="border-t border-gray-200 mt-8 pt-8 text-center text-gray-600">
-                <p>&copy; <span th:text="${currentYear}">2024</span> PrintFlow SaaS. All rights reserved.</p>
-                <p class="text-sm mt-2">Version 1.0.0</p>
+                <p>&copy; <span th:text="${currentYear}">2024</span> PrintFlow SaaS. <span th:text="#{footer.rights}">All rights reserved.</span></p>
+                <p class="text-sm mt-2"><span th:text="#{footer.version}">Version</span> <span th:text="#{app.version}">1.0.0</span></p>
             </div>
         </div>
     </footer>

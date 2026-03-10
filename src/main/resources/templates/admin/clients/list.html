@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
+      th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
-    <title>Clients - PrintFlow Admin</title>
+    <title th:text="#{clients.title}">Clients - PrintFlow Admin</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
@@ -11,16 +13,18 @@
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Clients</h1>
-                    <p class="text-gray-600 mt-2">Manage your client database</p>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{clients.title}">Clients</h1>
+                    <p class="text-gray-600 mt-2" th:text="#{clients.subtitle}">Manage your client database</p>
                 </div>
                 <div class="flex space-x-3">
                     <a th:href="@{/admin/clients/import}" 
-                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                       th:text="#{clients.import}">
                         Import
                     </a>
                     <a th:href="@{/admin/clients/create}" 
-                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                       th:text="#{clients.new}">
                         + Add Client
                     </a>
                 </div>
@@ -29,19 +33,22 @@
             <!-- Search Bar -->
             <div class="mt-6">
                 <form th:action="@{/admin/clients}" method="get" class="flex gap-2">
+                    <input type="hidden" name="size" th:value="${size}">
                     <div class="flex-1">
                         <input type="text" 
                                name="search" 
                                th:value="${search}"
-                               placeholder="Search clients by name, phone, email..."
+                               th:placeholder="#{clients.search_placeholder}"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <button type="submit" 
-                            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
+                            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                            th:text="#{common.search}">
                         Search
                     </button>
                     <a th:href="@{/admin/clients}" 
-                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                       th:text="#{common.clear}">
                         Clear
                     </a>
                 </form>
@@ -51,19 +58,19 @@
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Total Clients</div>
+                <div class="text-sm text-gray-600" th:text="#{dashboard.total_clients}">Total Clients</div>
                 <div class="text-2xl font-bold text-gray-900" th:text="${totalClients}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Active</div>
+                <div class="text-sm text-gray-600" th:text="#{clients.active}">Active</div>
                 <div class="text-2xl font-bold text-gray-900" th:text="${totalClients}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">With Orders</div>
+                <div class="text-sm text-gray-600" th:text="#{clients.with_orders}">With Orders</div>
                 <div class="text-2xl font-bold text-gray-900">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">New This Month</div>
+                <div class="text-sm text-gray-600" th:text="#{clients.new_this_month}">New This Month</div>
                 <div class="text-2xl font-bold text-gray-900">0</div>
             </div>
         </div>
@@ -74,25 +81,32 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{clients.table.company}">
                                 Company
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{clients.table.contact}">
                                 Contact
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{clients.table.phone}">
                                 Phone
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{clients.table.email}">
                                 Email
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{clients.table.orders}">
                                 Orders
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{common.status}">
                                 Status
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                th:text="#{common.actions}">
                                 Actions
                             </th>
                         </tr>
@@ -104,7 +118,7 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                                         <span class="text-blue-600 font-bold">
-                                            <span th:text="${client.companyName.substring(0, 1).toUpperCase()}">C</span>
+                                            <span th:text="${client.companyName != null ? client.companyName.substring(0, 1).toUpperCase() : 'C'}">C</span>
                                         </span>
                                     </div>
                                     <div class="ml-4">
@@ -112,68 +126,145 @@
                                              th:text="${client.companyName}">
                                             Company Name
                                         </div>
-                                        <div class="text-sm text-gray-500" 
-                                             th:text="${client.city}">
-                                            City
+                                        <!-- PREVOD ZA GRAD - REŠENJE 1 -->
+                                        <div class="text-sm text-gray-500">
+                                            <!-- Belgrade -> Beograd -->
+                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Belgrade')}">Beograd</span>
+                                            
+                                            <!-- Novi Sad ostaje Novi Sad (isti) -->
+                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Novi Sad')}" 
+                                                  th:text="${client.city}">Novi Sad</span>
+                                            
+                                            <!-- Nis ili Niš -> Niš -->
+                                            <span th:if="${client.city != null and (#strings.equalsIgnoreCase(client.city, 'Nis') or #strings.equalsIgnoreCase(client.city, 'Niš'))}">Niš</span>
+                                            
+                                            <!-- Kragujevac ostaje Kragujevac (isti) -->
+                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Kragujevac')}" 
+                                                  th:text="${client.city}">Kragujevac</span>
+                                            
+                                            <!-- Subotica ostaje Subotica (isti) -->
+                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Subotica')}" 
+                                                  th:text="${client.city}">Subotica</span>
+                                            
+                                            <!-- Ostali gradovi koji nisu u listi -->
+                                            <span th:if="${client.city != null and 
+                                                          !#strings.equalsIgnoreCase(client.city, 'Belgrade') and 
+                                                          !#strings.equalsIgnoreCase(client.city, 'Novi Sad') and 
+                                                          !#strings.equalsIgnoreCase(client.city, 'Nis') and 
+                                                          !#strings.equalsIgnoreCase(client.city, 'Niš') and
+                                                          !#strings.equalsIgnoreCase(client.city, 'Kragujevac') and
+                                                          !#strings.equalsIgnoreCase(client.city, 'Subotica')}"
+                                                  th:text="${client.city}">
+                                            </span>
+                                            
+                                            <!-- Ako nema grada -->
+                                            <span th:if="${client.city == null}">-</span>
                                         </div>
                                     </div>
                                 </div>
                             </td>
+                            
+                            <!-- PREVOD ZA CONTACT PERSON - REŠENJE 1 -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900" 
-                                     th:text="${client.contactPerson}">
-                                    Contact Person
+                                <div class="text-sm text-gray-900">
+                                    <!-- Contact 1 -> Kontakt 1 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 1')}">Kontakt 1</span>
+                                    
+                                    <!-- Contact 2 -> Kontakt 2 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 2')}">Kontakt 2</span>
+                                    
+                                    <!-- Contact 3 -> Kontakt 3 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 3')}">Kontakt 3</span>
+                                    
+                                    <!-- Contact 4 -> Kontakt 4 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 4')}">Kontakt 4</span>
+                                    
+                                    <!-- Contact 5 -> Kontakt 5 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 5')}">Kontakt 5</span>
+                                    
+                                    <!-- Contact 6 -> Kontakt 6 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 6')}">Kontakt 6</span>
+                                    
+                                    <!-- Contact 7 -> Kontakt 7 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 7')}">Kontakt 7</span>
+                                    
+                                    <!-- Contact 8 -> Kontakt 8 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 8')}">Kontakt 8</span>
+                                    
+                                    <!-- Contact 9 -> Kontakt 9 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 9')}">Kontakt 9</span>
+                                    
+                                    <!-- Contact 10 -> Kontakt 10 -->
+                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 10')}">Kontakt 10</span>
+                                    
+                                    <!-- Ostali kontakti koji nisu Contact X -->
+                                    <span th:if="${client.contactPerson != null and 
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 1') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 2') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 3') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 4') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 5') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 6') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 7') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 8') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 9') and
+                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 10')}"
+                                          th:text="${client.contactPerson}">
+                                    </span>
+                                    
+                                    <!-- Ako nema kontakt osobe -->
+                                    <span th:if="${client.contactPerson == null}">-</span>
                                 </div>
                             </td>
+                            
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900" 
-                                     th:text="${client.phone}">
+                                <div class="text-sm text-gray-900" th:text="${client.phone}">
                                     Phone
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900" 
-                                     th:text="${client.email}">
+                                <div class="text-sm text-gray-900" th:text="${client.email}">
                                     Email
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex flex-col gap-1">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                                        Total: <span th:text="${client.totalOrders}">0</span>
+                                        <span th:text="#{clients.table.total}">Total</span>: <span th:text="${client.totalOrders}">0</span>
                                     </span>
                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                        Completed: <span th:text="${client.completedOrders}">0</span>
+                                        <span th:text="#{clients.table.completed}">Completed</span>: <span th:text="${client.completedOrders}">0</span>
                                     </span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span th:if="${client.active}" 
                                       class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                    Active
+                                    <span th:text="#{clients.active}">Active</span>
                                 </span>
                                 <span th:unless="${client.active}" 
                                       class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                                    Inactive
+                                    <span th:text="#{clients.inactive}">Inactive</span>
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     <a th:href="@{/admin/orders?clientId={id}(id=${client.id})}" 
                                        class="text-blue-600 hover:text-blue-900">
-                                        Orders
+                                        <span th:text="#{nav.orders}">Orders</span>
                                     </a>
                                     <a th:href="@{/admin/clients/edit/{id}(id=${client.id})}" 
                                        class="text-green-600 hover:text-green-900">
-                                        Edit
+                                        <span th:text="#{common.edit}">Edit</span>
                                     </a>
                                     <form th:action="@{/admin/clients/delete/{id}(id=${client.id})}" 
                                           method="post" 
-                                          onsubmit="return confirm('Are you sure you want to deactivate this client?');"
+                                          th:attr="onsubmit='return confirm(\'' + #{clients.delete_confirm} + '\');'"
                                           class="inline">
+                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                         <button type="submit" 
                                                 class="text-red-600 hover:text-red-900">
-                                            Delete
+                                            <span th:text="#{common.delete}">Delete</span>
                                         </button>
                                     </form>
                                 </div>
@@ -185,14 +276,14 @@
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                     </svg>
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No clients</h3>
-                                    <p class="mt-1 text-sm text-gray-500">
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{clients.no_clients}">No clients</h3>
+                                    <p class="mt-1 text-sm text-gray-500" th:text="#{clients.no_clients_desc}">
                                         Get started by creating a new client.
                                     </p>
                                     <div class="mt-6">
                                         <a th:href="@{/admin/clients/create}" 
                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                                            + Add Client
+                                            <span th:text="#{clients.new}">+ Add Client</span>
                                         </a>
                                     </div>
                                 </div>
@@ -204,26 +295,61 @@
             
             <!-- Pagination -->
             <div class="px-6 py-4 border-t border-gray-200">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="text-sm text-gray-700">
-                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium" th:text="${totalClients}">0</span> results
+                        <span th:text="#{pagination.page}">Page</span>
+                        <span class="font-medium" th:text="${currentPage + 1}">1</span>
+                        <span th:text="#{pagination.of}">of</span>
+                        <span class="font-medium" th:text="${totalPages}">1</span>
                     </div>
-                    <div class="flex space-x-2">
-                        <button class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <div class="flex items-center gap-2">
+                        <a th:href="@{/admin/clients(page=0,size=${size},search=${search})}"
+                           class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
+                           th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.first}">
+                            First
+                        </a>
+                        <a th:href="@{/admin/clients(page=${currentPage-1},size=${size},search=${search})}"
+                           class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
+                           th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.previous}">
                             Previous
-                        </button>
-                        <button class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            1
-                        </button>
-                        <button class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            2
-                        </button>
-                        <button class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        </a>
+                        <a th:href="@{/admin/clients(page=${currentPage+1},size=${size},search=${search})}"
+                           class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
+                           th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.next}">
                             Next
-                        </button>
+                        </a>
+                        <a th:href="@{/admin/clients(page=${lastPage},size=${size},search=${search})}"
+                           class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
+                           th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.last}">
+                            Last
+                        </a>
                     </div>
+                    <form th:action="@{/admin/clients}" method="get" class="flex items-center gap-2">
+                        <input type="hidden" name="page" value="0">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <label class="text-sm text-gray-600" th:text="#{pagination.size}">Size</label>
+                        <select name="size" class="border rounded px-2 py-1 text-sm" onchange="this.form.submit()">
+                            <option th:each="opt : ${allowedSizes}"
+                                    th:value="${opt}"
+                                    th:text="${opt}"
+                                    th:selected="${opt == size}">20</option>
+                        </select>
+                    </form>
                 </div>
             </div>
+        </div>
+        
+        <!-- Debug info (opciono) -->
+        <div class="mt-8 p-4 bg-gray-100 rounded-lg text-sm">
+            <p><strong>Debug info:</strong> Locale: <span th:text="${#locale.language}">en</span></p>
+            <p>Test translations working: 
+                <span th:text="#{clients.title}">Clients</span>, 
+                <span th:text="#{clients.subtitle}">Manage your client database</span>
+            </p>
         </div>
     </main>
     

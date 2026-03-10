@@ -1,25 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head th:replace="~{layout/base :: head}">
-    <title>Admin Dashboard - PrintFlow</title>
+    <title th:text="#{nav.dashboard} + ' - PrintFlow'">Admin Dashboard - PrintFlow</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
     
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+        </div>
         <!-- Page Header -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p class="text-gray-600 mt-2">Welcome back, <span sec:authentication="name"></span>! Here's what's happening with your business.</p>
+            <h1 class="text-3xl font-bold text-gray-900" th:text="#{nav.dashboard}">Dashboard</h1>
+            <p class="text-gray-600 mt-2" th:text="#{dashboard.welcome_back(${#authentication.name})}">
+                Welcome back, <span sec:authentication="name"></span>! Here's what's happening with your business.
+            </p>
         </div>
         
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Clients -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+                 th:classappend="${billingExpired} ? ' border-red-200 bg-red-50' : ''">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Total Clients</p>
+                        <p class="text-sm text-gray-600" th:text="#{dashboard.total_clients}">Total Clients</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1" th:text="${stats.totalClients}">0</p>
                     </div>
                     <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -30,7 +37,7 @@
                 </div>
                 <div class="mt-4">
                     <a th:href="@{/admin/clients}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        View all clients →
+                        <span th:text="#{dashboard.view_all_clients}">View all clients →</span>
                     </a>
                 </div>
             </div>
@@ -39,7 +46,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Active Orders</p>
+                        <p class="text-sm text-gray-600" th:text="#{dashboard.active_orders}">Active Orders</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1" th:text="${stats.activeOrders}">0</p>
                     </div>
                     <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
@@ -50,7 +57,7 @@
                 </div>
                 <div class="mt-4">
                     <a th:href="@{/admin/orders}" class="text-sm text-green-600 hover:text-green-800 font-medium">
-                        View all orders →
+                        <span th:text="#{dashboard.view_all_orders}">View all orders →</span>
                     </a>
                 </div>
             </div>
@@ -59,7 +66,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Overdue Orders</p>
+                        <p class="text-sm text-gray-600" th:text="#{dashboard.overdue_orders_title}">Overdue Orders</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1" th:text="${stats.overdueOrders}">0</p>
                     </div>
                     <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
@@ -70,7 +77,7 @@
                 </div>
                 <div class="mt-4">
                     <a th:href="@{/admin/orders?status=OVERDUE}" class="text-sm text-red-600 hover:text-red-800 font-medium">
-                        View overdue →
+                        <span th:text="#{dashboard.view_overdue}">View overdue →</span>
                     </a>
                 </div>
             </div>
@@ -79,7 +86,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600">Monthly Revenue</p>
+                        <p class="text-sm text-gray-600" th:text="#{dashboard.monthly_revenue}">Monthly Revenue</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1">
                             €<span th:text="${#numbers.formatDecimal(stats.monthlyRevenue, 1, 2)}">0.00</span>
                         </p>
@@ -92,7 +99,12 @@
                     </div>
                 </div>
                 <div class="mt-4">
-                    <p class="text-sm text-gray-600">Pending: €<span th:text="${#numbers.formatDecimal(stats.pendingRevenue, 1, 2)}">0.00</span></p>
+                    <p class="text-sm text-gray-600">
+                        <span th:text="#{dashboard.pending_revenue}">Pending</span>: €<span th:text="${#numbers.formatDecimal(stats.pendingRevenue, 1, 2)}">0.00</span>
+                    </p>
+                    <p th:if="${billingExpired}" class="text-xs text-red-600 mt-2" th:text="#{billing.lock.expired}">
+                        Premium features are locked. Please upgrade to continue.
+                    </p>
                 </div>
             </div>
         </div>
@@ -102,18 +114,18 @@
             <!-- Recent Orders -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Recent Orders</h2>
-                    <p class="text-sm text-gray-600">Latest work orders in the system</p>
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{dashboard.recent_orders}">Recent Orders</h2>
+                    <p class="text-sm text-gray-600" th:text="#{dashboard.recent_orders_sub}">Latest work orders in the system</p>
                 </div>
                 <div class="p-6">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{orders.order_number}">Order #</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{clients.title}">Client</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{common.status}">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{orders.deadline}">Deadline</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
@@ -134,19 +146,19 @@
                                              order.status == 'IN_PRINT' ? 'bg-purple-100 text-purple-800' :
                                              order.status == 'COMPLETED' ? 'bg-green-100 text-green-800' :
                                              'bg-gray-100 text-gray-800')}">
-                                            <span th:text="${order.status}">Status</span>
+                                            <span th:text="#{${order.status.messageKey}}">Status</span>
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         <div class="text-sm text-gray-900" 
-                                             th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : 'N/A'}">
+                                             th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : '-'}">
                                             01.01.2024
                                         </div>
                                     </td>
                                 </tr>
                                 <tr th:if="${recentOrders.empty}">
                                     <td colspan="4" class="px-4 py-8 text-center text-gray-500">
-                                        No recent orders found.
+                                        <span th:text="#{dashboard.no_recent_orders}">No recent orders found.</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -154,7 +166,7 @@
                     </div>
                     <div class="mt-4 text-center">
                         <a th:href="@{/admin/orders}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
-                            View all orders →
+                            <span th:text="#{dashboard.view_all_orders}">View all orders →</span>
                         </a>
                     </div>
                 </div>
@@ -163,8 +175,8 @@
             <!-- Overdue Orders -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Overdue Orders</h2>
-                    <p class="text-sm text-gray-600">Orders that need immediate attention</p>
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{dashboard.overdue_orders_title}">Overdue Orders</h2>
+                    <p class="text-sm text-gray-600" th:text="#{dashboard.overdue_orders_sub}">Orders that need immediate attention</p>
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
@@ -178,14 +190,14 @@
                                     </a>
                                     <p class="text-sm text-red-600 mt-1" th:text="${order.title}">Order Title</p>
                                     <p class="text-xs text-red-500 mt-2">
-                                        Deadline: 
+                                        <span th:text="#{orders.deadline}">Deadline</span>: 
                                         <span th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : 'N/A'}">
                                             01.01.2024
                                         </span>
                                     </p>
                                 </div>
                                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                                    Overdue
+                                    <span th:text="#{dashboard.overdue_orders_title}">Overdue</span>
                                 </span>
                             </div>
                         </div>
@@ -193,7 +205,7 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2m0 0l7-7 7 7m-7-7v13m0-13h-2m2 0h2m-2 0v13m0 0l-2 2m2-2l2 2m-2-2h2m-2 0h-2m0 0v5m0-5h2m-2 0h-2"/>
                             </svg>
-                            <p class="mt-2 text-sm text-gray-500">No overdue orders. Great job!</p>
+                            <p class="mt-2 text-sm text-gray-500" th:text="#{dashboard.no_overdue_orders}">No overdue orders. Great job!</p>
                         </div>
                     </div>
                     <div class="mt-4">
@@ -202,7 +214,7 @@
                             <svg class="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
-                            Create New Order
+                            <span th:text="#{dashboard.create_new_order}">Create New Order</span>
                         </a>
                     </div>
                 </div>
@@ -220,8 +232,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900">Add New Client</h3>
-                        <p class="text-sm text-gray-600 mt-1">Register a new client to the system</p>
+                        <h3 class="font-medium text-gray-900" th:text="#{dashboard.quick_add_client}">Add New Client</h3>
+                        <p class="text-sm text-gray-600 mt-1" th:text="#{dashboard.quick_add_client_sub}">Register a new client to the system</p>
                     </div>
                 </div>
             </a>
@@ -235,8 +247,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900">Create New Order</h3>
-                        <p class="text-sm text-gray-600 mt-1">Start a new work order for a client</p>
+                        <h3 class="font-medium text-gray-900" th:text="#{dashboard.quick_add_order}">Create New Order</h3>
+                        <p class="text-sm text-gray-600 mt-1" th:text="#{dashboard.quick_add_order_sub}">Start a new work order for a client</p>
                     </div>
                 </div>
             </a>
@@ -250,8 +262,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900">Add New User</h3>
-                        <p class="text-sm text-gray-600 mt-1">Create a new worker or admin account</p>
+                        <h3 class="font-medium text-gray-900" th:text="#{dashboard.quick_add_user}">Add New User</h3>
+                        <p class="text-sm text-gray-600 mt-1" th:text="#{dashboard.quick_add_user_sub}">Create a new worker or admin account</p>
                     </div>
                 </div>
             </a>

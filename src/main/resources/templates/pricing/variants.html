@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Product Variants</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold" th:text="${product.name}">Product</h1>
+        <a th:href="@{/pricing/products}" class="text-blue-600">Back to Products</a>
+    </div>
+
+    <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4">Add Variant</h2>
+        <form th:action="@{/pricing/products/{id}/variants(id=${product.id})}" th:object="${variantForm}" method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="text" th:field="*{name}" placeholder="Variant name" class="border rounded px-3 py-2" required>
+            <input type="number" step="0.01" th:field="*{defaultMarkupPercent}" placeholder="Markup %" class="border rounded px-3 py-2" required>
+            <input type="number" step="0.01" th:field="*{wastePercent}" placeholder="Waste %" class="border rounded px-3 py-2" required>
+            <input type="number" step="0.01" th:field="*{minPrice}" placeholder="Min price" class="border rounded px-3 py-2">
+            <button type="submit" class="bg-blue-600 text-white rounded px-4 py-2">+ Add Variant</button>
+        </form>
+    </div>
+
+    <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <table class="min-w-full text-sm">
+            <thead class="text-gray-500">
+            <tr class="text-left border-b">
+                <th class="py-2">Variant</th>
+                <th class="py-2">Markup %</th>
+                <th class="py-2">Waste %</th>
+                <th class="py-2">Min price</th>
+                <th class="py-2">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="v : ${variants}" class="border-b">
+                <td class="py-2" th:text="${v.name}">Variant</td>
+                <td class="py-2" th:text="${v.defaultMarkupPercent}">0</td>
+                <td class="py-2" th:text="${v.wastePercent}">0</td>
+                <td class="py-2" th:text="${v.minPrice}">0</td>
+                <td class="py-2"><a th:href="@{/pricing/variants/{id}/pricing(id=${v.id})}" class="text-blue-600">Pricing</a></td>
+            </tr>
+            <tr th:if="${variants.empty}">
+                <td colspan="5" class="py-4 text-gray-500">No variants yet.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

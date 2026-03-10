@@ -6,5 +6,13 @@ public enum TaskStatus {
     WAITING_APPROVAL,
     BLOCKED,
     COMPLETED,
-    CANCELLED, UNDER_REVIEW, AWAITING_REVIEW, PENDING, ASSIGNED
+    CANCELLED,
+    UNDER_REVIEW,
+    AWAITING_REVIEW,
+    PENDING,
+    ASSIGNED;
+
+    public String getMessageKey() {
+        return "tasks.status." + name();
+    }
 }

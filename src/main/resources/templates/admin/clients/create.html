@@ -1,228 +1,283 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Add New Client - PrintFlow Admin</title>
+    <title th:text="#{clients.add.page_title}">Add New Client - PrintFlow Admin</title>
 </head>
 <body>
-    <div th:replace="~{layout/header :: header}"></div>
-    
-    <main class="container mx-auto px-4 py-8">
-        <!-- Page Header -->
-        <div class="mb-8">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Add New Client</h1>
-                    <p class="text-gray-600 mt-2">Create a new client in the system</p>
-                </div>
-                <a th:href="@{/admin/clients}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                    ← Back to Clients
-                </a>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900" th:text="#{clients.add.title}">
+                    Add New Client
+                </h1>
+                <p class="text-gray-600 mt-2" th:text="#{clients.add.subtitle}">
+                    Create a new client in the system
+                </p>
             </div>
+            <a th:href="@{/admin/clients}"
+               class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+               th:text="#{clients.add.back}">
+                ← Back to Clients
+            </a>
         </div>
-        
-        <!-- Client Form -->
-        <div class="max-w-4xl mx-auto">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Client Information</h2>
-                </div>
-                
-                <form th:action="@{/admin/clients/create}" 
-                      method="post" 
-                      class="p-6 space-y-6">
-                    
-                    <!-- Company Information -->
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Company Information</h3>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="companyName" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Company Name *
-                                </label>
-                                <input type="text" 
-                                       id="companyName" 
-                                       name="companyName" 
-                                       th:field="*{client.companyName}"
-                                       required
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Contact Person *
-                                </label>
-                                <input type="text" 
-                                       id="contactPerson" 
-                                       name="contactPerson" 
-                                       th:field="*{client.contactPerson}"
-                                       required
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Phone *
-                                </label>
-                                <input type="tel" 
-                                       id="phone" 
-                                       name="phone" 
-                                       th:field="*{client.phone}"
-                                       required
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Email
-                                </label>
-                                <input type="email" 
-                                       id="email" 
-                                       name="email" 
-                                       th:field="*{client.email}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Address Information -->
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Address Information</h3>
-                        
+    </div>
+
+    <!-- Client Form -->
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900" th:text="#{clients.form.title}">
+                    Client Information
+                </h2>
+            </div>
+
+            <form th:action="@{/admin/clients/create}"
+                  method="post"
+                  class="p-6 space-y-6">
+
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}"
+                       th:value="${_csrf.token}"/>
+
+                <!-- Company Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium text-gray-900" th:text="#{clients.section.company}">
+                        Company Information
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
-                                Address
+                            <label for="companyName"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.company_name}">
+                                Company Name *
                             </label>
-                            <input type="text" 
-                                   id="address" 
-                                   name="address" 
-                                   th:field="*{client.address}"
+                            <input type="text"
+                                   id="companyName"
+                                   name="companyName"
+                                   th:field="*{client.companyName}"
+                                   required
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
-                                    City
-                                </label>
-                                <input type="text" 
-                                       id="city" 
-                                       name="city" 
-                                       th:field="*{client.city}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="country" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Country
-                                </label>
-                                <input type="text" 
-                                       id="country" 
-                                       name="country" 
-                                       th:field="*{client.country}"
-                                       value="Serbia"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="taxId" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Tax ID
-                                </label>
-                                <input type="text" 
-                                       id="taxId" 
-                                       name="taxId" 
-                                       th:field="*{client.taxId}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                        </div>
-                        
+
                         <div>
-                            <label for="companyId" class="block text-sm font-medium text-gray-700 mb-2">
-                                Company ID (Registration Number)
+                            <label for="contactPerson"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.contact_person}">
+                                Contact Person *
                             </label>
-                            <input type="text" 
-                                   id="companyId" 
-                                   name="companyId" 
-                                   th:field="*{client.companyId}"
+                            <input type="text"
+                                   id="contactPerson"
+                                   name="contactPerson"
+                                   th:field="*{client.contactPerson}"
+                                   required
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    
-                    <!-- Additional Information -->
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Additional Information</h3>
-                        
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
-                                Notes
+                            <label for="phone"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.phone}">
+                                Phone *
                             </label>
-                            <textarea id="notes" 
-                                      name="notes" 
-                                      th:field="*{client.notes}"
-                                      rows="4"
-                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Any additional information about the client..."></textarea>
+                            <input type="tel"
+                                   id="phone"
+                                   name="phone"
+                                   th:field="*{client.phone}"
+                                   required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        
-                        <div class="flex items-center">
-                            <input type="checkbox" 
-                                   id="active" 
-                                   name="active" 
-                                   th:field="*{client.active}"
-                                   checked
-                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            <label for="active" class="ml-2 block text-sm text-gray-900">
-                                Client is active (can place new orders)
+
+                        <div>
+                            <label for="email"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.email}">
+                                Email
                             </label>
+                            <input type="email"
+                                   id="email"
+                                   name="email"
+                                   th:field="*{client.email}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    
-                    <!-- Form Actions -->
-                    <div class="pt-6 border-t border-gray-200">
-                        <div class="flex justify-end space-x-3">
-                            <a th:href="@{/admin/clients}" 
-                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                                Cancel
-                            </a>
-                            <button type="submit" 
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                Create Client
-                            </button>
+                </div>
+
+                <!-- Address Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium text-gray-900" th:text="#{clients.section.address}">
+                        Address Information
+                    </h3>
+
+                    <div>
+                        <label for="address"
+                               class="block text-sm font-medium text-gray-700 mb-2"
+                               th:text="#{clients.field.address}">
+                            Address
+                        </label>
+                        <input type="text"
+                               id="address"
+                               name="address"
+                               th:field="*{client.address}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="city"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.city}">
+                                City
+                            </label>
+                            <input type="text"
+                                   id="city"
+                                   name="city"
+                                   th:field="*{client.city}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label for="country"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.country}">
+                                Country
+                            </label>
+                            <input type="text"
+                                   id="country"
+                                   name="country"
+                                   th:field="*{client.country}"
+                                   value="Serbia"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label for="taxId"
+                                   class="block text-sm font-medium text-gray-700 mb-2"
+                                   th:text="#{clients.field.tax_id}">
+                                Tax ID
+                            </label>
+                            <input type="text"
+                                   id="taxId"
+                                   name="taxId"
+                                   th:field="*{client.taxId}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                </form>
-            </div>
-            
-            <!-- Quick Tips -->
-            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h3 class="text-lg font-semibold text-blue-900 mb-2">💡 Quick Tips</h3>
-                <ul class="space-y-2 text-blue-800">
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Fill in at least Company Name, Contact Person, and Phone for basic client information.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Use the Notes field to track special requirements or preferences.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>You can import multiple clients at once using the Import feature.</span>
-                    </li>
-                </ul>
-            </div>
+
+                    <div>
+                        <label for="companyId"
+                               class="block text-sm font-medium text-gray-700 mb-2"
+                               th:text="#{clients.field.company_id}">
+                            Company ID (Registration Number)
+                        </label>
+                        <input type="text"
+                               id="companyId"
+                               name="companyId"
+                               th:field="*{client.companyId}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium text-gray-900" th:text="#{clients.section.additional}">
+                        Additional Information
+                    </h3>
+
+                    <div>
+                        <label for="notes"
+                               class="block text-sm font-medium text-gray-700 mb-2"
+                               th:text="#{clients.field.notes}">
+                            Notes
+                        </label>
+                        <textarea id="notes"
+                                  name="notes"
+                                  th:field="*{client.notes}"
+                                  rows="4"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  th:placeholder="#{clients.field.notes.placeholder}"
+                                  placeholder="Any additional information about the client..."></textarea>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox"
+                               id="active"
+                               name="active"
+                               th:field="*{client.active}"
+                               checked
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="active"
+                               class="ml-2 block text-sm text-gray-900"
+                               th:text="#{clients.field.active}">
+                            Client is active (can place new orders)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="pt-6 border-t border-gray-200">
+                    <div class="flex justify-end space-x-3">
+                        <a th:href="@{/admin/clients}"
+                           class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                           th:text="#{clients.action.cancel}">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                th:text="#{clients.action.create}">
+                            Create Client
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-    </main>
-    
-    <div th:replace="~{layout/footer :: footer}"></div>
+
+        <!-- Quick Tips -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-2" th:text="#{clients.tips.title}">
+                💡 Quick Tips
+            </h3>
+            <ul class="space-y-2 text-blue-800">
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                    <span th:text="#{clients.tips.1}">
+                        Fill in at least Company Name, Contact Person, and Phone for basic client information.
+                    </span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                    <span th:text="#{clients.tips.2}">
+                        Use the Notes field to track special requirements or preferences.
+                    </span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                    <span th:text="#{clients.tips.3}">
+                        You can import multiple clients at once using the Import feature.
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{layout/footer :: footer}"></div>
 </body>
 </html>

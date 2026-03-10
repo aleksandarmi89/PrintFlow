@@ -1,42 +1,83 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>My Tasks - PrintFlow Worker</title>
+    <title th:text="#{worker.tasks.title}">My Tasks - PrintFlow Worker</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
     
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+        </div>
         <!-- Page Header -->
         <div class="mb-8">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">My Tasks</h1>
-                    <p class="text-gray-600 mt-2">Orders assigned to you and their current status</p>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{worker.tasks.heading}">My Tasks</h1>
+                    <p class="text-gray-600 mt-2" th:text="#{worker.tasks.subtitle}">Orders assigned to you and their current status</p>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex flex-col md:flex-row gap-3 md:items-center w-full md:w-auto">
                     <button onclick="refreshTasks()" 
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center">
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center justify-center md:justify-start w-full md:w-auto">
                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
                         </svg>
-                        Refresh
+                        <span th:text="#{worker.tasks.refresh}">Refresh</span>
                     </button>
-                    <select onchange="filterTasks(this.value)" 
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700">
-                        <option value="all">All Tasks</option>
-                        <option value="today">Due Today</option>
-                        <option value="this_week">This Week</option>
-                        <option value="overdue">Overdue</option>
-                        <option value="high_priority">High Priority</option>
-                    </select>
+                    <form method="get" class="flex flex-wrap gap-2 md:items-center w-full md:w-auto">
+                        <select name="status"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm w-full md:w-auto">
+                            <option value="" th:selected="${status == null || status == ''}" th:text="#{worker.tasks.all_statuses}">All Statuses</option>
+                            <option value="IN_PROGRESS" th:selected="${status == 'IN_PROGRESS'}" th:text="#{tasks.status.IN_PROGRESS}">In Progress</option>
+                            <option value="BLOCKED" th:selected="${status == 'BLOCKED'}" th:text="#{tasks.status.BLOCKED}">Blocked</option>
+                            <option value="WAITING_APPROVAL" th:selected="${status == 'WAITING_APPROVAL'}" th:text="#{tasks.status.WAITING_APPROVAL}">Waiting Approval</option>
+                            <option value="AWAITING_REVIEW" th:selected="${status == 'AWAITING_REVIEW'}" th:text="#{tasks.status.AWAITING_REVIEW}">Awaiting Review</option>
+                            <option value="COMPLETED" th:selected="${status == 'COMPLETED'}" th:text="#{tasks.status.COMPLETED}">Completed</option>
+                        </select>
+                        <select name="filter"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm w-full md:w-auto">
+                            <option value="" th:selected="${filter == null || filter == ''}" th:text="#{worker.tasks.all_tasks}">All Tasks</option>
+                            <option value="today" th:selected="${filter == 'today'}" th:text="#{worker.tasks.due_today}">Due Today</option>
+                            <option value="this_week" th:selected="${filter == 'this_week'}" th:text="#{worker.tasks.this_week}">This Week</option>
+                            <option value="overdue" th:selected="${filter == 'overdue'}" th:text="#{worker.tasks.overdue}">Overdue</option>
+                            <option value="high_priority" th:selected="${filter == 'high_priority'}" th:text="#{worker.tasks.high_priority}">High Priority</option>
+                        </select>
+                        <input type="text" name="q" th:placeholder="#{worker.tasks.search}"
+                               th:value="${q}"
+                               class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full md:w-auto"/>
+                        <select name="sort" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm w-full md:w-auto">
+                            <option value="" th:selected="${sort == null || sort == ''}" th:text="#{worker.tasks.sort}">Sort</option>
+                            <option value="dueDate" th:selected="${sort == 'dueDate'}" th:text="#{worker.tasks.due_date}">Due Date</option>
+                            <option value="priority" th:selected="${sort == 'priority'}" th:text="#{worker.tasks.priority}">Priority</option>
+                            <option value="createdAt" th:selected="${sort == 'createdAt'}" th:text="#{worker.tasks.created}">Created</option>
+                            <option value="status" th:selected="${sort == 'status'}" th:text="#{worker.tasks.status}">Status</option>
+                        </select>
+                        <select name="dir" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm w-full md:w-auto">
+                            <option value="asc" th:selected="${dir == null || dir == '' || dir == 'asc'}" th:text="#{worker.tasks.asc}">Asc</option>
+                            <option value="desc" th:selected="${dir == 'desc'}" th:text="#{worker.tasks.desc}">Desc</option>
+                        </select>
+                        <select name="size" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm w-full md:w-auto">
+                            <option value="10" th:selected="${size == 10}">10</option>
+                            <option value="20" th:selected="${size == 20}">20</option>
+                            <option value="50" th:selected="${size == 50}">50</option>
+                        </select>
+                        <button type="submit"
+                                class="px-3 py-2 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-900 w-full md:w-auto">
+                            <span th:text="#{worker.tasks.apply}">Apply</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
+
+        <div th:if="${successMessage}" class="mb-4 px-4 py-3 rounded-lg bg-green-50 text-green-700 border border-green-200" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 border border-red-200" th:text="${errorMessage}"></div>
         
         <!-- Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -46,12 +87,12 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-600">Total Tasks</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.tasks.total_tasks}">Total Tasks</p>
                         <p class="text-2xl font-bold text-gray-900" th:text="${stats.totalTasks}">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -61,12 +102,12 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-600">In Progress</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.tasks.in_progress}">In Progress</p>
                         <p class="text-2xl font-bold text-gray-900" th:text="${stats.inProgressTasks}">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -76,12 +117,12 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-600">Urgent</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.tasks.urgent}">Urgent</p>
                         <p class="text-2xl font-bold text-gray-900" th:text="${stats.urgentTasks}">0</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -91,7 +132,7 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-600">Completed Today</p>
+                        <p class="text-sm text-gray-600" th:text="#{worker.tasks.completed_today}">Completed Today</p>
                         <p class="text-2xl font-bold text-gray-900" th:text="${stats.completedToday}">0</p>
                     </div>
                 </div>
@@ -104,19 +145,19 @@
                  class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                 <div class="p-6">
                     <!-- Task Header -->
-                    <div class="flex justify-between items-start mb-4">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">
-                                <a th:href="@{/worker/tasks/{id}(id=${task.id})}" 
+                                <a th:href="@{/worker/task/{id}(id=${task.id})}" 
                                    class="hover:text-blue-600">
                                     <span th:text="${task.orderNumber}"></span>: <span th:text="${task.title}"></span>
                                 </a>
                             </h3>
                             <p class="text-sm text-gray-500 mt-1">
-                                Client: <span class="font-medium" th:text="${task.clientName}"></span>
+                                <span th:text="#{worker.tasks.client}">Client</span>: <span class="font-medium" th:text="${task.clientName}"></span>
                             </p>
                         </div>
-                        <div class="flex items-center space-x-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
                                 (task.priority == 'HIGH' ? 'bg-red-100 text-red-800' :
                                  task.priority == 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
@@ -125,11 +166,14 @@
                             </span>
                             <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
                                 (task.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
+                                 task.status == 'ASSIGNED' ? 'bg-blue-100 text-blue-800' :
                                  task.status == 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
                                  task.status == 'WAITING_APPROVAL' ? 'bg-orange-100 text-orange-800' :
+                                 task.status == 'AWAITING_REVIEW' ? 'bg-orange-100 text-orange-800' :
+                                 task.status == 'BLOCKED' ? 'bg-red-100 text-red-800' :
                                  task.status == 'COMPLETED' ? 'bg-green-100 text-green-800' :
                                  'bg-gray-100 text-gray-800')}">
-                                <span th:text="${task.status}"></span>
+                                <span th:text="${task.status != null ? #messages.msg('tasks.status.' + task.status) : ''}"></span>
                             </span>
                         </div>
                     </div>
@@ -138,16 +182,17 @@
                     <p class="text-gray-600 text-sm mb-4 line-clamp-2" th:text="${task.description}"></p>
                     
                     <!-- Task Details -->
-                    <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <p class="text-xs text-gray-500">Deadline</p>
+                            <p class="text-xs text-gray-500" th:text="#{worker.tasks.deadline}">Deadline</p>
                             <p class="text-sm font-medium" th:class="${task.isOverdue ? 'text-red-600' : 'text-gray-900'}">
-                                <span th:text="${#temporals.format(task.deadline, 'dd.MM.yyyy')}"></span>
-                                <span th:if="${task.isOverdue}" class="ml-1">⚠️ Overdue</span>
+                                <span th:if="${task.deadline != null}" th:text="${#temporals.format(task.deadline, 'dd.MM.yyyy')}"></span>
+                                <span th:if="${task.deadline == null}" th:text="#{worker.tasks.no_deadline}">No deadline</span>
+                                <span th:if="${task.isOverdue}" class="ml-1">⚠️ <span th:text="#{worker.tasks.overdue_label}">Overdue</span></span>
                             </p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500">Created</p>
+                            <p class="text-xs text-gray-500" th:text="#{worker.tasks.created_label}">Created</p>
                             <p class="text-sm text-gray-900" th:text="${#temporals.format(task.createdAt, 'dd.MM.yyyy')}"></p>
                         </div>
                     </div>
@@ -155,39 +200,119 @@
                     <!-- Progress Bar -->
                     <div class="mb-4">
                         <div class="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>Progress</span>
+                            <span th:text="#{worker.tasks.progress}">Progress</span>
                             <span th:text="${task.progress} + '%'">0%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
                             <div class="bg-blue-600 h-2 rounded-full" th:style="'width:' + ${task.progress} + '%'"></div>
                         </div>
                     </div>
+
+                    <!-- Quick Status Update -->
+                    <div class="mb-4">
+                        <form th:action="@{/worker/task/{id}/update-status(id=${task.id})}"
+                              method="post"
+                              class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <input type="hidden" name="_csrf" th:value="${_csrf != null ? _csrf.token : ''}"/>
+                            <input type="hidden" name="returnTo" value="list"/>
+                            <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-xs w-full sm:w-auto">
+                                <option value="IN_PROGRESS" th:selected="${task.status == 'IN_PROGRESS'}" th:text="#{tasks.status.IN_PROGRESS}">In Progress</option>
+                                <option value="BLOCKED" th:selected="${task.status == 'BLOCKED'}" th:text="#{tasks.status.BLOCKED}">Blocked</option>
+                                <option value="WAITING_APPROVAL" th:selected="${task.status == 'WAITING_APPROVAL'}" th:text="#{tasks.status.WAITING_APPROVAL}">Waiting Approval</option>
+                                <option value="AWAITING_REVIEW" th:selected="${task.status == 'AWAITING_REVIEW'}" th:text="#{tasks.status.AWAITING_REVIEW}">Awaiting Review</option>
+                            </select>
+                            <input type="text"
+                                   name="notes"
+                                   th:placeholder="#{worker.tasks.block_reason_placeholder}"
+                                   class="px-3 py-2 border border-gray-300 rounded-lg text-xs w-full sm:w-56"/>
+                            <button type="submit"
+                                    class="px-3 py-2 bg-gray-800 text-white text-xs rounded-lg hover:bg-gray-900 w-full sm:w-auto">
+                                <span th:text="#{worker.tasks.save}">Save</span>
+                            </button>
+                        </form>
+                        <p class="mt-1 text-xs text-gray-500" th:text="#{worker.tasks.awaiting_review_hint}">Awaiting Review sends task to admins for approval.</p>
+                    </div>
                     
                     <!-- Action Buttons -->
-                    <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t border-gray-100">
                         <div class="text-sm text-gray-500">
                             <span th:if="${task.attachmentsCount > 0}">
                                 📎 <span th:text="${task.attachmentsCount}"></span> files
                             </span>
                         </div>
-                        <div class="flex space-x-2">
-                            <a th:href="@{/worker/tasks/{id}(id=${task.id})}" 
-                               class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-                                View Details
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <a th:href="@{/worker/task/{id}(id=${task.id})}" 
+                               class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 text-center">
+                                <span th:text="#{worker.tasks.view_details}">View Details</span>
                             </a>
-                            <form th:action="@{/worker/tasks/{id}/start(id=${task.id})}" 
-                                  method="post"
-                                  th:if="${task.status == 'NEW'}"
-                                  class="inline">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <button type="submit" 
-                                        class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
-                                    Start Work
-                                </button>
-                            </form>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div th:if="${totalPages > 1}" class="flex items-center justify-between mt-8">
+            <div class="text-sm text-gray-500">
+                <span th:text="#{worker.tasks.page}">Page</span> <span th:text="${currentPage + 1}"></span> <span th:text="#{worker.tasks.of}">of</span> <span th:text="${totalPages}"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/worker/my-tasks(page=0,size=${size},status=${status},filter=${filter},q=${q},sort=${sort},dir=${dir})}"
+                   class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+                    <span th:text="#{worker.tasks.first}">First</span>
+                </a>
+                <span th:if="${currentPage == 0}"
+                      class="px-3 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm" th:text="#{worker.tasks.first}">First</span>
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/worker/my-tasks(page=${currentPage-1},size=${size},status=${status},filter=${filter},q=${q},sort=${sort},dir=${dir})}"
+                   class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+                    <span th:text="#{worker.tasks.prev}">Prev</span>
+                </a>
+                <span th:if="${currentPage == 0}"
+                      class="px-3 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm" th:text="#{worker.tasks.prev}">Prev</span>
+
+                <div class="flex items-center gap-1">
+                    <span th:each="p : ${pageNumbers}">
+                        <span th:if="${p == -1}" class="px-2 text-gray-400">…</span>
+                        <a th:if="${p != -1}"
+                           th:href="@{/worker/my-tasks(page=${p},size=${size},status=${status},filter=${filter},q=${q},sort=${sort},dir=${dir})}"
+                           th:text="${p + 1}"
+                           th:class="${'px-3 py-2 border rounded-lg text-sm ' + (p == currentPage ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-700 hover:bg-gray-50')}">
+                        </a>
+                    </span>
+                </div>
+
+                <a th:if="${currentPage + 1 < totalPages}"
+                   th:href="@{/worker/my-tasks(page=${currentPage+1},size=${size},status=${status},filter=${filter},q=${q},sort=${sort},dir=${dir})}"
+                   class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+                    <span th:text="#{worker.tasks.next}">Next</span>
+                </a>
+                <span th:if="${currentPage + 1 >= totalPages}"
+                      class="px-3 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm" th:text="#{worker.tasks.next}">Next</span>
+                <a th:if="${currentPage + 1 < totalPages}"
+                   th:href="@{/worker/my-tasks(page=${totalPages-1},size=${size},status=${status},filter=${filter},q=${q},sort=${sort},dir=${dir})}"
+                   class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+                    <span th:text="#{worker.tasks.last}">Last</span>
+                </a>
+                <span th:if="${currentPage + 1 >= totalPages}"
+                      class="px-3 py-2 border border-gray-200 rounded-lg text-gray-400 text-sm" th:text="#{worker.tasks.last}">Last</span>
+                <form method="get" class="flex items-center gap-2" onsubmit="return clampPageJump(this);">
+                    <input type="hidden" name="status" th:value="${status}"/>
+                    <input type="hidden" name="filter" th:value="${filter}"/>
+                    <input type="hidden" name="q" th:value="${q}"/>
+                    <input type="hidden" name="sort" th:value="${sort}"/>
+                    <input type="hidden" name="dir" th:value="${dir}"/>
+                    <input type="hidden" name="size" th:value="${size}"/>
+                    <input type="number" name="page" min="0"
+                           th:attr="max=${totalPages-1}"
+                           id="page-jump-input"
+                           class="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                           th:placeholder="#{worker.tasks.page_placeholder}"/>
+                    <button type="submit" class="px-2 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                        <span th:text="#{worker.tasks.go}">Go</span>
+                    </button>
+                </form>
             </div>
         </div>
         
@@ -196,8 +321,8 @@
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No tasks assigned</h3>
-            <p class="mt-1 text-sm text-gray-500">You don't have any tasks assigned to you yet.</p>
+            <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{worker.tasks.empty_title}">No tasks assigned</h3>
+            <p class="mt-1 text-sm text-gray-500" th:text="#{worker.tasks.empty_subtitle}">You don't have any tasks assigned to you yet.</p>
         </div>
     </main>
     
@@ -207,14 +332,39 @@
         function refreshTasks() {
             window.location.reload();
         }
-        
-        function filterTasks(filter) {
-            // In production, this would make an API call
-            window.location.href = '/worker/tasks?filter=' + filter;
+
+        function clampPageJump(form) {
+            var input = form.querySelector('input[name="page"]');
+            if (!input) return true;
+            var maxAttr = input.getAttribute('max');
+            var max = maxAttr ? parseInt(maxAttr, 10) : null;
+            var value = parseInt(input.value, 10);
+            if (isNaN(value)) {
+                input.value = 0;
+                return true;
+            }
+            if (value < 0) value = 0;
+            if (max !== null && !isNaN(max) && value > max) value = max;
+            input.value = value;
+            return true;
         }
-        
+                
         // Auto-refresh every 60 seconds
         setInterval(refreshTasks, 60000);
+
+        document.querySelectorAll('form[action*="update-status"]').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                var select = form.querySelector('select[name="status"]');
+                var notes = form.querySelector('input[name="notes"]');
+                if (select && select.value === 'BLOCKED') {
+                    var value = notes ? notes.value.trim() : '';
+                    if (!value) {
+                        e.preventDefault();
+                        alert([[#{worker.tasks.block_reason_required}]]);
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>

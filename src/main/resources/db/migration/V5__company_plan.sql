@@ -1,0 +1,3 @@
+ALTER TABLE companies
+    ADD COLUMN plan VARCHAR(20) NOT NULL DEFAULT 'FREE',
+    ADD COLUMN plan_updated_at TIMESTAMP NULL;

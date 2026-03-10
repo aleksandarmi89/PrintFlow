@@ -89,6 +89,7 @@
                       method="post" 
                       enctype="multipart/form-data"
                       class="space-y-6">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                   
                     
                     <div>

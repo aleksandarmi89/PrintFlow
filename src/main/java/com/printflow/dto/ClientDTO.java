@@ -25,7 +25,6 @@ public class ClientDTO {
     private long pendingOrders;
 	public ClientDTO() {
 		
-		// TODO Auto-generated constructor stub
 	}
 	
 	public ClientDTO(Long id, String companyName, String contactPerson, String phone, String email, String address,

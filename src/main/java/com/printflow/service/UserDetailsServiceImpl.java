@@ -1,8 +1,8 @@
 package com.printflow.service;
 
 import com.printflow.entity.User;
+import com.printflow.security.CustomUserPrincipal;
 import com.printflow.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 
 @Service
-@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
     
     private final UserRepository userRepository;
@@ -39,15 +38,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (!user.isActive()) {
             throw new UsernameNotFoundException("User is inactive: " + username);
         }
+        if (user.getCompany() != null && !user.getCompany().isActive()) {
+            throw new UsernameNotFoundException("Company is inactive: " + username);
+        }
         
-        return org.springframework.security.core.userdetails.User
-            .withUsername(user.getUsername())
-            .password(user.getPassword())
-            .authorities(Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name())))
-            .accountExpired(false)
-            .accountLocked(false)
-            .credentialsExpired(false)
-            .disabled(false)
-            .build();
+        return new CustomUserPrincipal(
+            user.getId(),
+            user.getCompany() != null ? user.getCompany().getId() : null,
+            user.getUsername(),
+            user.getPassword(),
+            Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name())),
+            user.isActive()
+        );
     }
 }

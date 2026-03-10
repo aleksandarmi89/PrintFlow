@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{products.import.title}">Import Products</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-8 max-w-5xl">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900" th:text="#{products.import.title}">Import Products</h1>
+            <p class="text-sm text-gray-600" th:text="#{products.import.subtitle}">Upload CSV or XLSX file and import into your tenant catalog.</p>
+        </div>
+        <a th:href="@{/products}" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" th:text="#{products.import.back}">Back to Products</a>
+    </div>
+
+    <div th:if="${successMessage}" class="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700" th:text="${errorMessage}"></div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-3" th:text="#{products.import.options}">Import Options</h2>
+        <form th:action="@{/products/import}" method="post" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.import.file}">File</label>
+                <input type="file" name="file" accept=".csv,.xlsx" required class="w-full rounded-lg border border-gray-300 px-3 py-2"/>
+                <p class="text-xs text-gray-500 mt-1" th:utext="#{products.import.file_hint}">Required columns: <code>name</code>, <code>basePrice</code>. Supports CSV and XLSX.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{products.import.mode}">Mode</label>
+                <select name="mode" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                    <option th:each="m : ${importModes}" th:value="${m.name()}" th:selected="${importMode != null && importMode.name() == m.name()}"
+                            th:text="${#messages.msg('products.import.mode.' + m.name())}">ADD_NEW_ONLY</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700" th:text="#{products.import.start}">Start Import</button>
+                <a th:href="@{/products/import/template}" class="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50" th:text="#{products.import.download_template}">Download Template</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-3" th:text="#{products.import.expected_columns}">Expected Columns</h2>
+        <div class="text-sm text-gray-700 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <p th:utext="#{products.import.required_cols}"><strong>Required:</strong> name, basePrice</p>
+            <p th:utext="#{products.import.optional_cols}"><strong>Optional:</strong> sku, description, category, unit, currency, active, externalId</p>
+        </div>
+    </div>
+
+    <div th:if="${importResult != null}" class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold mb-4" th:text="#{products.import.result}">Import Result</h2>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+            <div class="rounded-lg bg-gray-50 p-3"><p class="text-gray-500" th:text="#{products.import.total}">Total</p><p class="font-semibold" th:text="${importResult.totalRows}">0</p></div>
+            <div class="rounded-lg bg-green-50 p-3"><p class="text-gray-500" th:text="#{products.import.imported}">Imported</p><p class="font-semibold text-green-700" th:text="${importResult.importedCount}">0</p></div>
+            <div class="rounded-lg bg-blue-50 p-3"><p class="text-gray-500" th:text="#{products.import.updated}">Updated</p><p class="font-semibold text-blue-700" th:text="${importResult.updatedCount}">0</p></div>
+            <div class="rounded-lg bg-yellow-50 p-3"><p class="text-gray-500" th:text="#{products.import.skipped}">Skipped</p><p class="font-semibold text-yellow-700" th:text="${importResult.skippedCount}">0</p></div>
+            <div class="rounded-lg bg-red-50 p-3"><p class="text-gray-500" th:text="#{products.import.failed}">Failed</p><p class="font-semibold text-red-700" th:text="${importResult.failedCount}">0</p></div>
+        </div>
+        <div th:if="${!#lists.isEmpty(importResult.errors)}" class="mt-4">
+            <h3 class="font-medium text-red-700 mb-2" th:text="#{products.import.row_errors}">Row Errors</h3>
+            <ul class="space-y-1 text-sm">
+                <li th:each="e : ${importResult.errors}" class="text-red-700">
+                    <span th:text="#{products.import.row_error(${e.row}, ${e.message})}">Row 2: error</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</main>
+</body>
+</html>

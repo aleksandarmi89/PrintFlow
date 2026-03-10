@@ -19,6 +19,7 @@ public class Notification {
     private String title;
     private String message;
     private String type; // "ORDER_UPDATE", "TASK_ASSIGNED", "SYSTEM", etc.
+    private String link;
     @Column(name = "is_read")
     private boolean read;
     
@@ -28,9 +29,8 @@ public class Notification {
     @Column(name = "read_at")
     private LocalDateTime readAt;
     public Notification() {
-		// TODO Auto-generated constructor stub
 	}
-	public Notification(Long id, User user, String title, String message, String type, boolean read,
+    public Notification(Long id, User user, String title, String message, String type, boolean read,
 			LocalDateTime createdAt, LocalDateTime readAt) {
 		
 		this.id = id;
@@ -71,6 +71,12 @@ public class Notification {
 	}
 	public void setType(String type) {
 		this.type = type;
+	}
+	public String getLink() {
+		return link;
+	}
+	public void setLink(String link) {
+		this.link = link;
 	}
 	public boolean isRead() {
 		return read;

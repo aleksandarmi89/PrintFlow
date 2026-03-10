@@ -1,0 +1,2 @@
+ALTER TABLE companies
+    ADD COLUMN currency VARCHAR(10) NULL DEFAULT 'RSD';

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Method Not Allowed - PrintFlow</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-12">
+        <div class="max-w-xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-900" th:text="${errorTitle}">Method Not Allowed</h1>
+            <p class="mt-3 text-gray-600" th:text="${errorMessage}">This action is not allowed.</p>
+            <p class="mt-4 text-sm text-gray-400">Status <span th:text="${status}">405</span></p>
+            <div class="mt-6 flex justify-center gap-3">
+                <a th:href="@{/}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Go Home</a>
+                <button type="button" onclick="history.back()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Go Back</button>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{layout/footer :: footer}"></div>
+</body>
+</html>

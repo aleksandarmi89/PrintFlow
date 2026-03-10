@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{worker.tasks.dashboard.title}">My Dashboard - PrintFlow</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900" th:text="#{worker.tasks.dashboard.heading}">Worker Dashboard</h1>
+            <p class="text-gray-600 mt-1" th:text="#{worker.tasks.dashboard.subtitle}">Your tasks, orders, and activity.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <div class="text-xs text-gray-500" th:text="#{worker.tasks.dashboard.assigned_orders}">Assigned Orders</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${assignedOrders != null ? assignedOrders.size() : 0}">0</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <div class="text-xs text-gray-500" th:text="#{worker.tasks.dashboard.pending_orders}">Pending Orders</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${pendingOrders != null ? pendingOrders.size() : 0}">0</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <div class="text-xs text-gray-500" th:text="#{worker.tasks.dashboard.active_tasks}">Active Tasks</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${stats != null ? stats.inProgressTasks : 0}">0</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <div class="text-xs text-gray-500" th:text="#{worker.tasks.dashboard.completed_today}">Completed Today</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${stats != null ? stats.completedToday : 0}">0</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.dashboard.my_assigned_orders}">My Assigned Orders</h2>
+                    <a th:href="@{/worker/my-tasks}" class="text-xs text-blue-600 hover:text-blue-800" th:text="#{worker.tasks.dashboard.view_tasks}">View tasks</a>
+                </div>
+                <div class="space-y-3">
+                    <div th:each="o : ${assignedOrders}" class="border border-gray-200 rounded-lg p-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                            <div class="text-sm font-semibold text-gray-900" th:text="${o.orderNumber}">#</div>
+                            <div class="text-xs text-gray-500" th:text="${o.status != null ? #messages.msg('orders.status.' + o.status) : ''}">Status</div>
+                        </div>
+                        <div class="text-sm text-gray-700 mt-1" th:text="${o.title}">Order title</div>
+                        <a th:href="@{/worker/my-tasks(q=${o.orderNumber})}"
+                           class="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800" th:text="#{worker.tasks.dashboard.open_order}">Open order</a>
+                    </div>
+                    <div th:if="${assignedOrders == null || assignedOrders.size() == 0}" class="text-sm text-gray-500" th:text="#{worker.tasks.dashboard.no_assigned_orders}">
+                        No assigned orders.
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.dashboard.recent_activity}">Recent Activity</h2>
+                    <span class="text-xs text-gray-500" th:text="#{worker.tasks.dashboard.last_10}">Last 10</span>
+                </div>
+                <div class="space-y-3">
+                    <div th:each="a : ${recentActivities}" class="border border-gray-200 rounded-lg p-3">
+                        <div class="text-sm text-gray-900" th:text="${a.description}">Activity</div>
+                        <div class="text-xs text-gray-500 mt-1" th:text="${#temporals.format(a.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
+                    </div>
+                    <div th:if="${recentActivities == null || recentActivities.size() == 0}" class="text-sm text-gray-500" th:text="#{worker.tasks.dashboard.no_recent_activity}">
+                        No recent activity.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mt-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.dashboard.notifications}">Notifications</h2>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <button type="button" id="worker-mark-all-read"
+                            class="text-xs text-gray-600 hover:text-gray-800 w-full sm:w-auto text-left">
+                        <span th:text="#{worker.tasks.dashboard.mark_all_read}">Mark all read</span>
+                    </button>
+                    <a th:href="@{/notifications}" class="text-xs text-blue-600 hover:text-blue-800" th:text="#{worker.tasks.dashboard.view_all}">View all</a>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div th:each="n : ${recentNotifications}"
+                     class="border border-gray-200 rounded-lg p-3"
+                     th:classappend="${!n.read} ? ' bg-blue-50 border-blue-200' : ''">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span th:if="${!n.read}" class="inline-flex items-center text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Unread</span>
+                                <div class="text-sm font-medium text-gray-900" th:text="${n.title}">Title</div>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1" th:text="${n.message}">Message</div>
+                            <div class="text-xs text-gray-400 mt-1" th:text="${#temporals.format(n.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
+                            <a th:if="${n.link}" th:href="${n.link}"
+                               class="inline-block mt-1 text-xs text-blue-600 hover:text-blue-800">
+                                <span th:text="#{worker.tasks.dashboard.open}">Open</span>
+                            </a>
+                        </div>
+                        <button th:if="${!n.read}"
+                                th:attr="data-id=${n.id}"
+                                class="worker-mark-read text-xs text-gray-500 hover:text-gray-700 w-full sm:w-auto text-left">
+                            <span th:text="#{worker.tasks.dashboard.mark_read}">Mark read</span>
+                        </button>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(recentNotifications)}" class="text-sm text-gray-500">
+                    <span th:text="#{worker.tasks.dashboard.none}">No notifications yet.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mt-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{worker.tasks.dashboard.available_orders}">Available Orders</h2>
+            <div class="space-y-3">
+                <div th:each="o : ${pendingOrders}" class="border border-gray-200 rounded-lg p-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <div class="text-sm font-semibold text-gray-900" th:text="${o.orderNumber}">#</div>
+                        <div class="text-xs text-gray-500" th:text="${o.status != null ? #messages.msg('orders.status.' + o.status) : ''}">Status</div>
+                    </div>
+                    <div class="text-sm text-gray-700 mt-1" th:text="${o.title}">Order title</div>
+                    <a th:href="@{/worker/my-tasks(q=${o.orderNumber})}"
+                       class="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800" th:text="#{worker.tasks.dashboard.open_order}">Open order</a>
+                </div>
+                <div th:if="${pendingOrders == null || pendingOrders.size() == 0}" class="text-sm text-gray-500" th:text="#{worker.tasks.dashboard.no_pending_orders}">
+                    No pending orders.
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        (function () {
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+            const csrfHeaders = (csrfToken && csrfHeader) ? { [csrfHeader]: csrfToken } : {};
+
+            const markAll = document.getElementById('worker-mark-all-read');
+            if (markAll) {
+                markAll.addEventListener('click', function () {
+                    fetch('/notifications/mark-all-read', { method: 'POST', headers: csrfHeaders })
+                        .then(() => window.location.reload());
+                });
+            }
+
+            document.querySelectorAll('.worker-mark-read').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = btn.getAttribute('data-id');
+                    fetch(`/notifications/${id}/mark-read`, { method: 'POST', headers: csrfHeaders })
+                        .then(() => window.location.reload());
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

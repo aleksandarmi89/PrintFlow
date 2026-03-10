@@ -1,0 +1,66 @@
+<div th:fragment="itemsTable">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900" th:text="#{orders.items.title}">Items</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="text-gray-500">
+                <tr class="text-left border-b">
+                    <th class="py-2" th:text="#{orders.items.variant}">Variant</th>
+                    <th class="py-2" th:text="#{orders.items.qty}">Qty</th>
+                    <th class="py-2" th:text="#{orders.items.dimensions}">Dimensions</th>
+                    <th class="py-2" th:text="#{orders.items.price}">Price</th>
+                    <th class="py-2" th:text="#{orders.items.cost}">Cost</th>
+                    <th class="py-2" th:text="#{orders.items.margin}">Margin</th>
+                    <th class="py-2" th:text="#{orders.items.snapshot}">Snapshot</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${orderItems}" class="border-b">
+                    <td class="py-2" th:text="${item.variant != null ? item.variant.name : #messages.msg('orders.items.fallback_item')}">Variant</td>
+                    <td class="py-2" th:text="${item.quantity}">0</td>
+                    <td class="py-2 text-gray-600"
+                        th:text="${item.widthMm != null && item.heightMm != null ? item.widthMm + 'x' + item.heightMm + ' mm' : '-'}">-</td>
+                    <td class="py-2 text-green-700"
+                        th:text="${((item.currency != null ? item.currency : companyCurrency) != null ? (item.currency != null ? item.currency : companyCurrency) + ' ' : '') + (#numbers.formatDecimal(item.calculatedPrice, 1, 2))}">0</td>
+                    <td class="py-2 text-red-700"
+                        th:text="${((item.currency != null ? item.currency : companyCurrency) != null ? (item.currency != null ? item.currency : companyCurrency) + ' ' : '') + (#numbers.formatDecimal(item.calculatedCost, 1, 2))}">0</td>
+                    <td class="py-2" th:text="${#numbers.formatDecimal(item.marginPercent, 1, 2) + '%'}">0%</td>
+                    <td class="py-2">
+                        <details class="text-xs">
+                            <summary class="cursor-pointer text-blue-600 hover:text-blue-800" th:text="#{common.view}">View</summary>
+                            <pre class="mt-2 whitespace-pre-wrap text-gray-600"
+                                 th:text="${item.pricingSnapshotJson != null ? item.pricingSnapshotJson : #messages.msg('orders.items.no_snapshot')}">No snapshot</pre>
+                        </details>
+                    </td>
+                </tr>
+                <tr th:if="${orderItems == null || orderItems.isEmpty()}">
+                    <td class="py-4 text-gray-500" colspan="7" th:text="#{orders.items.empty}">No items yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div class="p-3 bg-gray-50 rounded">
+                <div class="text-gray-500" th:text="#{orders.items.total_revenue}">TOTAL REVENUE</div>
+                <div class="text-green-700 font-semibold"
+                     th:text="${(profitSummary.currency != null ? profitSummary.currency + ' ' : '') + #numbers.formatDecimal(profitSummary.revenue, 1, 2)}">0</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+                <div class="text-gray-500" th:text="#{orders.items.total_cost}">TOTAL COST</div>
+                <div class="text-red-700 font-semibold"
+                     th:text="${(profitSummary.currency != null ? profitSummary.currency + ' ' : '') + #numbers.formatDecimal(profitSummary.realCost, 1, 2)}">0</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+                <div class="text-gray-500" th:text="#{orders.items.total_profit}">PROFIT</div>
+                <div class="font-semibold"
+                     th:text="${(profitSummary.currency != null ? profitSummary.currency + ' ' : '') + #numbers.formatDecimal(profitSummary.profit, 1, 2)}">0</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded">
+                <div class="text-gray-500" th:text="#{orders.items.total_margin}">MARGIN</div>
+                <div class="font-semibold" th:text="${#numbers.formatDecimal(profitSummary.marginPercent, 1, 2) + '%'}">0%</div>
+            </div>
+        </div>
+    </div>
+</div>

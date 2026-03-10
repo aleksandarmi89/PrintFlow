@@ -1,410 +1,410 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
-    <title>Create Order - PrintFlow</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-        /* FLATPICKR FIX - OVO MORA BITI ISPRAVNO */
-        .flatpickr-calendar {
-            background: white !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 8px !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-            width: 320px !important;
-            z-index: 10000 !important;
-            position: absolute !important;
-        }
-        
-        .flatpickr-calendar.animate.open {
-            opacity: 1 !important;
-            visibility: visible !important;
-            transform: translateY(0) !important;
-        }
-        
-        .flatpickr-calendar * {
-            box-sizing: border-box !important;
-            font-family: inherit !important;
-        }
-        
-        .flatpickr-day {
-            border-radius: 4px !important;
-            height: 36px !important;
-            line-height: 36px !important;
-            max-width: 36px !important;
-        }
-        
-        .flatpickr-day.selected {
-            background: #3b82f6 !important;
-            border-color: #3b82f6 !important;
-            color: white !important;
-        }
-        
-        .flatpickr-day.today {
-            border-color: #3b82f6 !important;
-        }
-        
-        .flatpickr-day.today:hover {
-            background: #eff6ff !important;
-        }
-        
-        .flatpickr-time {
-            border-top: 1px solid #e2e8f0 !important;
-            height: 45px !important;
-        }
-        
-        .flatpickr-time .numInputWrapper {
-            width: 40% !important;
-        }
-        
-        .flatpickr-time .flatpickr-am-pm {
-            width: 20% !important;
-        }
-        
-        .flatpickr-months .flatpickr-month {
-            height: 50px !important;
-            background: #f8fafc !important;
-            border-radius: 8px 8px 0 0 !important;
-        }
-        
-        .flatpickr-current-month {
-            padding-top: 10px !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-        }
-        
-        .flatpickr-weekdays {
-            background: #f8fafc !important;
-            padding: 5px 0 !important;
-        }
-        
-        .flatpickr-weekday {
-            font-weight: 600 !important;
-            color: #64748b !important;
-        }
-        
-        .flatpickr-prev-month,
-        .flatpickr-next-month {
-            padding: 10px !important;
-            border-radius: 4px !important;
-            margin-top: 5px !important;
-        }
-        
-        .flatpickr-prev-month:hover,
-        .flatpickr-next-month:hover {
-            background: #f1f5f9 !important;
-        }
-        
-        /* Responsive */
-        @media (max-width: 640px) {
-            .flatpickr-calendar {
-                width: 300px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-            }
-        }
-        
-        /* Za input polje */
-        .date-input {
-            cursor: pointer;
-            background-color: white;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'%3E%3C/path%3E%3C/svg%3E");
-            background-position: right 12px center;
-            background-repeat: no-repeat;
-            background-size: 20px;
-            padding-right: 40px !important;
-        }
-    </style>
+    <title th:text="#{orders.create.page_title}">Create Order - PrintFlow</title>
 </head>
 <body class="bg-gray-50">
-    <div th:replace="~{layout/header :: header}"></div>
-    
+<div th:replace="~{layout/header :: header}"></div>
+
     <main class="container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Create New Order</h1>
-                <p class="text-gray-600 mt-2">Fill in the details to create a new printing order</p>
-            </div>
-            
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <form th:action="@{/admin/orders/create}" method="post" th:object="${order}" 
-                      enctype="multipart/form-data" class="p-6">
-                    
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
-                            <i class="fas fa-user mr-2 text-blue-600"></i> Client Information
-                        </h3>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Select Client *
-                                </label>
-                                <select th:field="*{clientId}" id="clientSelect"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        required>
-                                    <option value="">-- Select Client --</option>
-                                    <option th:each="client : ${clients}" 
-                                            th:value="${client.id}"
-                                            th:data-email="${client.email}"
-                                            th:data-phone="${client.phone}"
-                                            th:data-company="${client.companyName}"
-                                            th:data-address="${client.address}"
-                                            th:text="${client.contactPerson + ' (' + client.companyName + ')'}">
-                                    </option>
-                                </select>
-                                <div class="flex justify-between mt-1">
-                                    <a th:href="@{/admin/clients/create}" class="text-sm text-blue-600 hover:text-blue-800">
-                                        <i class="fas fa-plus mr-1"></i> Add New Client
-                                    </a>
-                                </div>
+        <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
+        </div>
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900" th:text="#{orders.create.title}">
+                Create New Order
+            </h1>
+            <p class="text-gray-600 mt-2" th:text="#{orders.create.subtitle}">
+                Fill in the details to create a new printing order
+            </p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <form th:action="@{/admin/orders/create}" method="post" th:object="${order}"
+                  enctype="multipart/form-data" class="p-6">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+                        <i class="fas fa-user mr-2 text-blue-600"></i>
+                        <span th:text="#{orders.create.section.client_info}">Client Information</span>
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.client.select}">Select Client *</label>
+
+                            <select th:field="*{clientId}" id="clientSelect"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    required>
+                                <option value="" th:text="#{orders.create.client.select.placeholder}">-- Select Client --</option>
+                                <option th:each="client : ${clients}"
+                                        th:value="${client.id}"
+                                        th:data-email="${client.email}"
+                                        th:data-phone="${client.phone}"
+                                        th:data-company="${client.companyName}"
+                                        th:data-address="${client.address}"
+                                        th:text="${client.contactPerson + ' (' + client.companyName + ')'}">
+                                </option>
+                            </select>
+
+                            <div class="flex justify-between mt-1">
+                                <a th:href="@{/admin/clients/create}" class="text-sm text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-plus mr-1"></i>
+                                    <span th:text="#{orders.create.client.add_new}">Add New Client</span>
+                                </a>
                             </div>
-                            
-                            <div id="clientInfo" class="hidden bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                <div class="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span class="font-medium text-gray-500 block">Email:</span>
-                                        <span id="clientEmail" class="text-gray-900">-</span>
-                                    </div>
-                                    <div>
-                                        <span class="font-medium text-gray-500 block">Phone:</span>
-                                        <span id="clientPhone" class="text-gray-900">-</span>
-                                    </div>
-                                    <div>
-                                        <span class="font-medium text-gray-500 block">Company:</span>
-                                        <span id="clientCompany" class="text-gray-900">-</span>
-                                    </div>
-                                    <div>
-                                        <span class="font-medium text-gray-500 block">Address:</span>
-                                        <span id="clientAddress" class="text-gray-900">-</span>
-                                    </div>
+                        </div>
+
+                        <div id="clientInfo" class="hidden bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium text-gray-500 block" th:text="#{common.contact.email}">Email:</span>
+                                    <span id="clientEmail" class="text-gray-900">-</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-500 block" th:text="#{common.contact.phone}">Phone:</span>
+                                    <span id="clientPhone" class="text-gray-900">-</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-500 block" th:text="#{clients.company_name}">Company:</span>
+                                    <span id="clientCompany" class="text-gray-900">-</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-500 block" th:text="#{clients.address}">Address:</span>
+                                    <span id="clientAddress" class="text-gray-900">-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
-                            <i class="fas fa-clipboard-list mr-2 text-blue-600"></i> Order Details
-                        </h3>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Order Title *</label>
-                                <input type="text" th:field="*{title}" id="orderTitle"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-                                <textarea th:field="*{description}" id="orderDescription" rows="3"
-                                          class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Paper Type</label>
-                                    <select name="paperType" id="paperType" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                        <option value="">Select Paper</option>
-                                        <option value="GLOSS">Glossy</option>
-                                        <option value="MATTE">Matte</option>
-                                        <option value="CARDSTOCK">Cardstock</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                                    <input type="number" name="quantity" id="quantity" class="w-full px-4 py-2 border border-gray-300 rounded-lg" min="1" value="1" required>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Colors</label>
-                                    <select name="colorType" id="colorType" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                        <option value="FULL_COLOR">Full Color</option>
-                                        <option value="BLACK_WHITE">Black & White</option>
-                                    </select>
-                                </div>
-                            </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+                        <i class="fas fa-clipboard-list mr-2 text-blue-600"></i>
+                        <span th:text="#{orders.create.section.order_details}">Order Details</span>
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.title}">Order Title *</label>
+                            <input type="text" th:field="*{title}" id="orderTitle"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
                         </div>
-                    </div>
-                    
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
-                            <i class="fas fa-cogs mr-2 text-blue-600"></i> Production Details
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Deadline *</label>
-                                <input type="text" th:field="*{deadline}" id="deadlinePicker"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 date-input"
-                                       placeholder="Select date and time"
-                                       readonly
-                                       autocomplete="off"
-                                       required>
-                            </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.description}">Description *</label>
+                            <textarea th:field="*{description}" id="orderDescription" rows="3"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                                <select th:field="*{priority}" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                    <option value="1">Low</option>
-                                    <option value="5">Normal</option>
-                                    <option value="10">High / Urgent</option>
+                                <label class="block text-sm font-medium text-gray-700 mb-1"
+                                       th:text="#{orders.create.field.paper_type}">Paper Type</label>
+                                <select name="paperType" id="paperType"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="" th:text="#{orders.create.paper.select}">Select Paper</option>
+                                    <option value="GLOSS" th:text="#{orders.create.paper.glossy}">Glossy</option>
+                                    <option value="MATTE" th:text="#{orders.create.paper.matte}">Matte</option>
+                                    <option value="CARDSTOCK" th:text="#{orders.create.paper.cardstock}">Cardstock</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-                                <select th:field="*{assignedToId}" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                    <option value="">-- Unassigned --</option>
-                                    <option th:each="user : ${users}" th:value="${user.id}" th:text="${user.firstName + ' ' + user.lastName}"></option>
-                                </select>
+                                <label class="block text-sm font-medium text-gray-700 mb-1"
+                                       th:text="#{orders.create.field.quantity}">Quantity *</label>
+                                <input type="number" name="quantity" id="quantity"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                       min="1" value="1" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Price (€)</label>
-                                <input type="number" th:field="*{price}" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-1"
+                                       th:text="#{orders.create.field.colors}">Colors</label>
+                                <select name="colorType" id="colorType"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="FULL_COLOR" th:text="#{orders.create.colors.full}">Full Color</option>
+                                    <option value="BLACK_WHITE" th:text="#{orders.create.colors.bw}">Black &amp; White</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
-                            <i class="fas fa-paperclip mr-2 text-blue-600"></i> Files & Attachments
-                        </h3>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2 block"></i>
-                            <input type="file" name="files" id="fileUpload" multiple class="hidden">
-                            <label for="fileUpload" class="cursor-pointer px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300">
-                                Select Files
-                            </label>
-                            <div id="fileList" class="mt-4 space-y-2 text-left"></div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+                        <i class="fas fa-cogs mr-2 text-blue-600"></i>
+                        <span th:text="#{orders.create.section.production_details}">Production Details</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="relative">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.deadline}">Deadline *</label>
+                            <input type="text" th:field="*{deadline}" id="deadlinePicker"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 date-input"
+                                   th:placeholder="#{orders.create.deadline.placeholder}"
+                                   placeholder="Select date and time"
+                                   readonly
+                                   autocomplete="off"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.priority}">Priority</label>
+                            <select th:field="*{priority}"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="1" th:text="#{orders.create.priority.low}">Low</option>
+                                <option value="5" th:text="#{orders.create.priority.normal}">Normal</option>
+                                <option value="10" th:text="#{orders.create.priority.high}">High / Urgent</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.print_type}">Print Type</label>
+                            <select th:field="*{printType}"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="DTF">DTF</option>
+                                <option value="LASER" th:text="#{orders.create.print_type.laser}">Laser</option>
+                                <option value="OTHER" th:text="#{orders.create.print_type.other}">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.assign_to}">Assign To</label>
+                            <select th:field="*{assignedToId}"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                    data-available-label="Available"
+                                    th:attr="data-available-label=#{workers.available},data-busy-label=#{workers.busy}">
+                                <option value="" th:text="#{orders.create.assign.unassigned}">-- Unassigned --</option>
+                               <option th:each="user : ${workers}"
+        th:value="${user.id}"
+        th:text="|${user.firstName} ${user.lastName} • ${#messages.msg(user.available ? 'workers.available' : 'workers.busy')}|">
+</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.price_label(${companyCurrency})}">Estimated Price (RSD)</label>
+                            <input type="number" th:field="*{price}" step="0.01"
+                                   th:placeholder="#{orders.amount_placeholder(${companyCurrency})}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <p class="mt-1 text-xs text-gray-500" th:text="#{orders.amount_hint(${companyCurrency})}">Enter amount in RSD (e.g., 1,200.00)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.create.field.cost_label(${companyCurrency})}">Estimated Cost (RSD)</label>
+                            <input type="number" th:field="*{cost}" step="0.01"
+                                   th:placeholder="#{orders.amount_placeholder(${companyCurrency})}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <p class="mt-1 text-xs text-gray-500" th:text="#{orders.amount_hint(${companyCurrency})}">Enter amount in RSD (e.g., 1,200.00)</p>
                         </div>
                     </div>
-                    
-                    <div class="flex justify-end space-x-4 pt-6 border-t">
-                        <a th:href="@{/admin/orders}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</a>
-                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            <i class="fas fa-save mr-2"></i> Create Order
-                        </button>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+                        <i class="fas fa-paperclip mr-2 text-blue-600"></i>
+                        <span th:text="#{orders.create.section.files}">Files &amp; Attachments</span>
+                    </h3>
+
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2 block"></i>
+                        <input type="file" name="files" id="fileUpload" multiple class="hidden" th:disabled="${billingExpired}">
+                        <label for="fileUpload"
+                               th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                               class="cursor-pointer px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300"
+                               th:text="#{orders.create.files.select}">
+                            Select Files
+                        </label>
+                        <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
+                        <div id="fileList" class="mt-4 space-y-2 text-left"></div>
                     </div>
-                </form>
-            </div>
-            
-            <div class="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <h4 class="font-semibold text-gray-900 mb-4"><i class="fas fa-magic mr-2 text-blue-600"></i> Quick Templates</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button type="button" onclick="loadTemplate('business_card')" class="bg-white p-4 rounded-lg border hover:border-blue-500 text-left transition-all">
-                        <h5 class="font-medium">Business Cards</h5>
-                        <p class="text-xs text-gray-500 mt-1">85x55mm, Cardstock, 500pcs</p>
-                    </button>
-                    <button type="button" onclick="loadTemplate('flyer')" class="bg-white p-4 rounded-lg border hover:border-blue-500 text-left transition-all">
-                        <h5 class="font-medium">Flyers</h5>
-                        <p class="text-xs text-gray-500 mt-1">A5, Matte, 1000pcs</p>
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-6 border-t">
+                    <a th:href="@{/admin/orders}"
+                       class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                       th:text="#{common.cancel}">
+                        Cancel
+                    </a>
+                    <button type="submit" th:disabled="${billingExpired}" th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-save mr-2"></i>
+                        <span th:text="#{orders.create.action.create}">Create Order</span>
+                        <span th:if="${billingExpired}" class="ml-2 text-xs" th:text="#{billing.lock.badge}">LOCKED</span>
                     </button>
                 </div>
+            </form>
+        </div>
+
+        <div class="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <h4 class="font-semibold text-gray-900 mb-4">
+                <i class="fas fa-magic mr-2 text-blue-600"></i>
+                <span th:text="#{orders.create.templates.title}">Quick Templates</span>
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button type="button" onclick="loadTemplate('business_card')"
+                        class="bg-white p-4 rounded-lg border hover:border-blue-500 text-left transition-all">
+                    <h5 class="font-medium" th:text="#{orders.create.templates.business_cards.title}">Business Cards</h5>
+                    <p class="text-xs text-gray-500 mt-1" th:text="#{orders.create.templates.business_cards.desc}">
+                        85x55mm, Cardstock, 500pcs
+                    </p>
+                </button>
+
+                <button type="button" onclick="loadTemplate('flyer')"
+                        class="bg-white p-4 rounded-lg border hover:border-blue-500 text-left transition-all">
+                    <h5 class="font-medium" th:text="#{orders.create.templates.flyers.title}">Flyers</h5>
+                    <p class="text-xs text-gray-500 mt-1" th:text="#{orders.create.templates.flyers.desc}">
+                        A5, Matte, 1000pcs
+                    </p>
+                </button>
             </div>
         </div>
-    </main>
-    
-    <div th:replace="~{layout/footer :: footer}"></div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Initializing flatpickr...');
-            
-            // Inicijalizacija date pickera
-            const deadlinePicker = document.getElementById('deadlinePicker');
-            
-            if (deadlinePicker) {
-                try {
-                    const flatpickrInstance = flatpickr(deadlinePicker, {
-                        enableTime: true,
-                        dateFormat: "Y-m-d H:i",
-                        time_24hr: true,
-                        minDate: "today",
-                        minuteIncrement: 30,
-                        position: "auto",
-                        appendTo: document.body,
-                        static: false,
-                        onReady: function(selectedDates, dateStr, instance) {
-                            console.log('Flatpickr ready');
-                            // Osiguraj da je kalendar ispravno pozicioniran
-                            if (instance.calendarContainer) {
-                                instance.calendarContainer.style.zIndex = '10000';
-                                instance.calendarContainer.style.position = 'absolute';
-                            }
-                        },
-                        onOpen: function(selectedDates, dateStr, instance) {
-                            console.log('Calendar opened');
-                            // Osiguraj da je kalendar vidljiv
-                            if (instance.calendarContainer) {
-                                instance.calendarContainer.style.display = 'block';
-                                instance.calendarContainer.style.visibility = 'visible';
-                                instance.calendarContainer.style.opacity = '1';
-                            }
+    </div>
+</main>
+
+<div th:replace="~{layout/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing flatpickr...');
+
+        // Inicijalizacija date pickera
+        const deadlinePicker = document.getElementById('deadlinePicker');
+
+        if (deadlinePicker) {
+            try {
+                const flatpickrInstance = flatpickr(deadlinePicker, {
+                    enableTime: true,
+                    dateFormat: "Y-m-d H:i",
+                    time_24hr: true,
+                    minDate: "today",
+                    minuteIncrement: 30,
+                    position: "auto",
+                    appendTo: document.body,
+                    static: false,
+                    onReady: function(selectedDates, dateStr, instance) {
+                        console.log('Flatpickr ready');
+                        // Osiguraj da je kalendar ispravno pozicioniran
+                        if (instance.calendarContainer) {
+                            instance.calendarContainer.style.zIndex = '10000';
+                            instance.calendarContainer.style.position = 'absolute';
                         }
-                    });
-                    
-                    console.log('Flatpickr initialized:', flatpickrInstance);
-                    
-                    // Dodaj click event da otvori kalendar
-                    deadlinePicker.addEventListener('click', function() {
-                        flatpickrInstance.open();
-                    });
-                    
-                } catch (error) {
-                    console.error('Error initializing flatpickr:', error);
-                    
-                    // Fallback ako flatpickr ne radi
-                    deadlinePicker.type = 'datetime-local';
-                    deadlinePicker.classList.remove('date-input');
-                }
-            }
-            
-            // Ostali event listener-i
-            const clientSelect = document.getElementById('clientSelect');
-            const clientInfo = document.getElementById('clientInfo');
-            
-            if (clientSelect && clientInfo) {
-                clientSelect.addEventListener('change', function() {
-                    const selected = this.options[this.selectedIndex];
-                    if (selected.value) {
-                        document.getElementById('clientEmail').textContent = selected.getAttribute('data-email') || '-';
-                        document.getElementById('clientPhone').textContent = selected.getAttribute('data-phone') || '-';
-                        document.getElementById('clientCompany').textContent = selected.getAttribute('data-company') || '-';
-                        document.getElementById('clientAddress').textContent = selected.getAttribute('data-address') || '-';
-                        clientInfo.classList.remove('hidden');
-                    } else {
-                        clientInfo.classList.add('hidden');
+                    },
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        console.log('Calendar opened');
+                        // Osiguraj da je kalendar vidljiv
+                        if (instance.calendarContainer) {
+                            instance.calendarContainer.style.display = 'block';
+                            instance.calendarContainer.style.visibility = 'visible';
+                            instance.calendarContainer.style.opacity = '1';
+                        }
                     }
                 });
-            }
 
-            const fileUpload = document.getElementById('fileUpload');
-            const fileList = document.getElementById('fileList');
-            
-            if (fileUpload && fileList) {
-                fileUpload.addEventListener('change', function() {
-                    fileList.innerHTML = '';
-                    Array.from(this.files).forEach(file => {
-                        const div = document.createElement('div');
-                        div.className = 'bg-white p-2 border rounded text-xs flex justify-between';
-                        div.innerHTML = `<span>${file.name}</span> <span class="text-gray-400">${Math.round(file.size/1024)} KB</span>`;
-                        fileList.appendChild(div);
-                    });
+                console.log('Flatpickr initialized:', flatpickrInstance);
+
+                // Dodaj click event da otvori kalendar
+                deadlinePicker.addEventListener('click', function() {
+                    flatpickrInstance.open();
                 });
-            }
-        });
 
-        function loadTemplate(type) {
-            const templates = {
-                'business_card': { title: 'Business Cards', desc: '85x55mm, double sided', paper: 'CARDSTOCK', qty: 500 },
-                'flyer': { title: 'A5 Flyers', desc: 'Single sided, full color', paper: 'MATTE', qty: 1000 }
-            };
-            const t = templates[type];
-            if (t) {
-                document.getElementById('orderTitle').value = t.title;
-                document.getElementById('orderDescription').value = t.desc;
-                document.getElementById('paperType').value = t.paper;
-                document.getElementById('quantity').value = t.qty;
+            } catch (error) {
+                console.error('Error initializing flatpickr:', error);
+
+                // Fallback ako flatpickr ne radi
+                deadlinePicker.type = 'datetime-local';
+                deadlinePicker.classList.remove('date-input');
             }
         }
-    </script>
+
+        // Ostali event listener-i
+        const clientSelect = document.getElementById('clientSelect');
+        const clientInfo = document.getElementById('clientInfo');
+
+        if (clientSelect && clientInfo) {
+            clientSelect.addEventListener('change', function() {
+                const selected = this.options[this.selectedIndex];
+                if (selected.value) {
+                    document.getElementById('clientEmail').textContent = selected.getAttribute('data-email') || '-';
+                    document.getElementById('clientPhone').textContent = selected.getAttribute('data-phone') || '-';
+                    document.getElementById('clientCompany').textContent = selected.getAttribute('data-company') || '-';
+                    document.getElementById('clientAddress').textContent = selected.getAttribute('data-address') || '-';
+                    clientInfo.classList.remove('hidden');
+                } else {
+                    clientInfo.classList.add('hidden');
+                }
+            });
+        }
+
+        const fileUpload = document.getElementById('fileUpload');
+        const fileList = document.getElementById('fileList');
+
+        if (fileUpload && fileList) {
+            fileUpload.addEventListener('change', function() {
+                fileList.innerHTML = '';
+                Array.from(this.files).forEach(file => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-2 border rounded text-xs flex justify-between';
+                    div.innerHTML = `<span>${file.name}</span> <span class="text-gray-400">${Math.round(file.size/1024)} KB</span>`;
+                    fileList.appendChild(div);
+                });
+            });
+        }
+    });
+
+    function loadTemplate(type) {
+        const templates = {
+            'business_card': {
+                title: /*[[#{orders.create.js.template.business.title}]]*/ 'Business Cards',
+                desc:  /*[[#{orders.create.js.template.business.desc}]]*/  '85x55mm, double sided',
+                paper: 'CARDSTOCK',
+                qty: 500
+            },
+            'flyer': {
+                title: /*[[#{orders.create.js.template.flyer.title}]]*/ 'A5 Flyers',
+                desc:  /*[[#{orders.create.js.template.flyer.desc}]]*/  'Single sided, full color',
+                paper: 'MATTE',
+                qty: 1000
+            }
+        };
+        const template = templates[type];
+        if (!template) {
+            return;
+        }
+
+        const titleInput = document.getElementById('orderTitle');
+        const descInput = document.getElementById('orderDescription');
+        const paperSelect = document.getElementById('paperType');
+        const qtyInput = document.getElementById('quantity');
+
+        if (titleInput) {
+            titleInput.value = template.title;
+        }
+        if (descInput) {
+            descInput.value = template.desc;
+        }
+        if (paperSelect) {
+            paperSelect.value = template.paper;
+        }
+        if (qtyInput) {
+            qtyInput.value = template.qty;
+        }
+    }
+</script>
 </body>
 </html>

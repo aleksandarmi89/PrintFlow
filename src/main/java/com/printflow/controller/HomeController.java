@@ -1,13 +1,21 @@
 package com.printflow.controller;
 
+import com.printflow.entity.User;
+import com.printflow.service.CurrentContextService;
+import com.printflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequiredArgsConstructor
 public class HomeController extends BaseController {
+
+    private final CurrentContextService currentContextService;
+    private final UserService userService;
     
     @GetMapping("/")
     public String home(Model model) {
@@ -30,12 +38,46 @@ public class HomeController extends BaseController {
     }
     
     @GetMapping("/profile")
-    public String profile() {
+    public String profile(Model model) {
+        User user = currentContextService.currentUser();
+        model.addAttribute("user", user);
         return "auth/profile";
     }
     
     @GetMapping("/settings")
-    public String settings() {
+    public String settings(Model model) {
+        User user = currentContextService.currentUser();
+        model.addAttribute("user", user);
         return "auth/settings";
+    }
+
+    @PostMapping("/profile")
+    public String updateProfile(@RequestParam(required = false) String firstName,
+                                @RequestParam(required = false) String lastName,
+                                @RequestParam(required = false) String email,
+                                @RequestParam(required = false) String phone,
+                                @RequestParam(required = false) String department,
+                                @RequestParam(required = false) String position,
+                                @RequestParam(required = false) String notes,
+                                Model model) {
+        User user = currentContextService.currentUser();
+        userService.updateProfile(user.getId(), firstName, lastName, email, phone, department, position, notes);
+        return redirectWithSuccess("/profile", "Profile updated.", model);
+    }
+
+    @PostMapping("/settings/password")
+    public String changePassword(@RequestParam String currentPassword,
+                                 @RequestParam String newPassword,
+                                 @RequestParam String confirmPassword,
+                                 Model model) {
+        if (!newPassword.equals(confirmPassword)) {
+            return redirectWithError("/settings", "Passwords do not match.", model);
+        }
+        User user = currentContextService.currentUser();
+        boolean changed = userService.changePassword(user.getId(), currentPassword, newPassword);
+        if (!changed) {
+            return redirectWithError("/settings", "Current password is incorrect.", model);
+        }
+        return redirectWithSuccess("/settings", "Password updated.", model);
     }
 }

@@ -3,25 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - PrintFlow</title>
+    <title th:text="#{auth.register_title} + ' - PrintFlow'">Register - PrintFlow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" th:href="@{/css/custom.css}">
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+<body class="bg-gray-50 min-h-screen flex items-center justify-center"
+      th:attr="data-pass-mismatch=#{auth.password_mismatch},data-pass-min=#{auth.password_min}">
     <div class="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <!-- Header -->
         <div>
             <div class="flex justify-center">
-                <div class="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center">
-                    <span class="text-white font-bold text-xl">PF</span>
+                <div class="w-16 h-16 rounded-lg flex items-center justify-center">
+                    <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="w-24 h-24 object-contain"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div style="display:none" class="w-24 h-24 bg-primary-600 rounded-lg items-center justify-center">
+                        <span class="text-white font-bold text-xl">PF</span>
+                    </div>
                 </div>
             </div>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Create your account
+                Create your company
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
-                Or
-                <a th:href="@{/login}" class="font-medium text-primary-600 hover:text-primary-500">
+                <span th:text="#{auth.or}">Or</span>
+                <a th:href="@{/login}" class="font-medium text-primary-600 hover:text-primary-500"
+                   th:text="#{auth.sign_in_existing}">
                     sign in to existing account
                 </a>
             </p>
@@ -29,6 +35,7 @@
         
         <!-- Register Form -->
         <form class="mt-8 space-y-6" th:action="@{/register}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <!-- Flash Messages -->
             <div th:if="${successMessage}" class="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div class="flex">
@@ -55,55 +62,55 @@
             <!-- Form Fields -->
             <div class="space-y-4">
                 <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700">Username *</label>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700">Company Name *</label>
+                    <input id="companyName" name="companyName" type="text" required
+                           class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                           placeholder="Acme Printing">
+                </div>
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700" th:text="#{auth.username} + ' *'">Username *</label>
                     <input id="username" name="username" type="text" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Enter username">
+                           th:placeholder="#{auth.username_placeholder}">
                 </div>
                 
                 <div>
-                    <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name *</label>
+                    <label for="fullName" class="block text-sm font-medium text-gray-700" th:text="#{users.full_name} + ' *'">Full Name *</label>
                     <input id="fullName" name="fullName" type="text" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Enter full name">
+                           th:placeholder="#{auth.full_name_placeholder}">
                 </div>
                 
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <label for="email" class="block text-sm font-medium text-gray-700" th:text="#{users.email}">Email</label>
                     <input id="email" name="email" type="email"
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Enter email">
+                           th:placeholder="#{auth.email_placeholder}">
                 </div>
                 
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                    <label for="phone" class="block text-sm font-medium text-gray-700" th:text="#{users.phone}">Phone</label>
                     <input id="phone" name="phone" type="tel"
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Enter phone number">
+                           th:placeholder="#{auth.phone_placeholder}">
                 </div>
                 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">Password *</label>
+                    <label for="password" class="block text-sm font-medium text-gray-700" th:text="#{auth.password} + ' *'">Password *</label>
                     <input id="password" name="password" type="password" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Enter password">
+                           th:placeholder="#{auth.password_placeholder}">
                 </div>
                 
                 <div>
-                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700">Confirm Password *</label>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700" th:text="#{auth.confirm_password} + ' *'">Confirm Password *</label>
                     <input id="confirmPassword" name="confirmPassword" type="password" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Confirm password">
+                           th:placeholder="#{auth.confirm_password_placeholder}">
                 </div>
                 
-                <div>
-                    <label for="role" class="block text-sm font-medium text-gray-700">Role *</label>
-                    <select id="role" name="role" required
-                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                        <option value="WORKER_GENERAL">General Worker</option>
-                        <option value="WORKER_DESIGNER">Designer</option>
-                        <option value="WORKER_PRINTER">Printer</option>
-                    </select>
+                <div class="text-xs text-gray-500">
+                    This will create your company and the first admin user.
                 </div>
             </div>
             
@@ -111,19 +118,19 @@
             <div>
                 <button type="submit"
                         class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Create Account
+                    <span th:text="#{auth.create_account_action}">Create Account</span>
                 </button>
             </div>
             
             <!-- Terms and Conditions -->
             <div class="text-center text-xs text-gray-600">
-                <p>By creating an account, you agree to our Terms of Service and Privacy Policy.</p>
+                <p th:text="#{auth.terms_notice}">By creating an account, you agree to our Terms of Service and Privacy Policy.</p>
             </div>
         </form>
         
         <!-- Back to Home -->
         <div class="text-center mt-4">
-            <a th:href="@{/public/}" class="text-sm text-primary-600 hover:text-primary-500">
+            <a th:href="@{/public/}" class="text-sm text-primary-600 hover:text-primary-500" th:text="#{auth.back_home}">
                 ← Back to home page
             </a>
         </div>
@@ -134,16 +141,18 @@
         document.querySelector('form').addEventListener('submit', function(e) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const msgMismatch = document.body.getAttribute('data-pass-mismatch') || 'Passwords do not match!';
+            const msgMin = document.body.getAttribute('data-pass-min') || 'Password must be at least 6 characters long!';
             
             if (password !== confirmPassword) {
                 e.preventDefault();
-                alert('Passwords do not match!');
+                alert(msgMismatch);
                 return false;
             }
             
             if (password.length < 6) {
                 e.preventDefault();
-                alert('Password must be at least 6 characters long!');
+                alert(msgMin);
                 return false;
             }
         });

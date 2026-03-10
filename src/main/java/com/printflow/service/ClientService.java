@@ -4,33 +4,33 @@ import com.printflow.dto.ClientDTO;
 import com.printflow.entity.Client;
 import com.printflow.repository.ClientRepository;
 import com.printflow.repository.WorkOrderRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class ClientService {
     
     private final ClientRepository clientRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final TenantGuard tenantGuard;
     
-    
-    
-    public ClientService(ClientRepository clientRepository, WorkOrderRepository workOrderRepository) {
-		
-		this.clientRepository = clientRepository;
-		this.workOrderRepository = workOrderRepository;
-	}
+    public ClientService(ClientRepository clientRepository, WorkOrderRepository workOrderRepository, TenantGuard tenantGuard) {
+        this.clientRepository = clientRepository;
+        this.workOrderRepository = workOrderRepository;
+        this.tenantGuard = tenantGuard;
+    }
 
-	public ClientDTO createClient(ClientDTO clientDTO) {
-        // Provera za unique email
-        if (clientDTO.getEmail() != null && !clientDTO.getEmail().isEmpty() && 
-            clientRepository.existsByEmail(clientDTO.getEmail())) {
+    @Transactional // Write operation
+    public ClientDTO createClient(ClientDTO clientDTO) {
+        // Provera za unique email (u okviru kompanije)
+        if (clientDTO.getEmail() != null && !clientDTO.getEmail().isEmpty() &&
+            clientRepository.existsByEmailAndCompany_Id(clientDTO.getEmail(), tenantGuard.requireCompanyId())) {
             throw new RuntimeException("Email already exists");
         }
         
@@ -50,6 +50,7 @@ public class ClientService {
         client.setCountry(clientDTO.getCountry() != null ? clientDTO.getCountry() : "Serbia");
         client.setTaxId(clientDTO.getTaxId());
         client.setCompanyId(clientDTO.getCompanyId());
+        client.setCompany(tenantGuard.requireCompany());
         client.setNotes(clientDTO.getNotes());
         client.setActive(true);
         
@@ -57,14 +58,14 @@ public class ClientService {
         return convertToDTO(savedClient);
     }
     
+    @Transactional // Write operation
     public ClientDTO updateClient(Long id, ClientDTO clientDTO) {
-        Client client = clientRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Client not found"));
+        Client client = getClientOrThrow(id);
         
-        // Provera za unique email
-        if (clientDTO.getEmail() != null && !clientDTO.getEmail().isEmpty() && 
-            !clientDTO.getEmail().equals(client.getEmail()) && 
-            clientRepository.existsByEmail(clientDTO.getEmail())) {
+        // Provera za unique email (u okviru kompanije)
+        if (clientDTO.getEmail() != null && !clientDTO.getEmail().isEmpty() &&
+            !clientDTO.getEmail().equals(client.getEmail()) &&
+            clientRepository.existsByEmailAndCompany_Id(clientDTO.getEmail(), tenantGuard.requireCompanyId())) {
             throw new RuntimeException("Email already exists");
         }
         
@@ -91,41 +92,99 @@ public class ClientService {
         return convertToDTO(updatedClient);
     }
     
+    @Transactional // Write operation
     public void deleteClient(Long id) {
-        Client client = clientRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Client not found"));
+        Client client = getClientOrThrow(id);
         
         // Soft delete
         client.setActive(false);
         clientRepository.save(client);
     }
     
+    @Transactional(readOnly = true) // READ-ONLY - OVO JE KLJUČNO
     public ClientDTO getClientById(Long id) {
-        Client client = clientRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Client not found"));
+        Client client = getClientOrThrow(id);
         return convertToDTOWithStats(client);
     }
+
+    @Transactional(readOnly = true)
+    public Client getClientEntity(Long id) {
+        return getClientOrThrow(id);
+    }
     
+    @Transactional(readOnly = true) // READ-ONLY - OVO JE KLJUČNO
     public List<ClientDTO> getAllClients() {
-        return clientRepository.findAll().stream()
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.findAll().stream()
+                .map(this::convertToDTOWithStats)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return clientRepository.findByCompany_Id(companyId).stream()
             .map(this::convertToDTOWithStats)
             .collect(Collectors.toList());
     }
     
+    @Transactional(readOnly = true) // READ-ONLY - OVO JE KLJUČNO ZA CONNECTION LEAK
     public List<ClientDTO> getActiveClients() {
-        return clientRepository.findByActiveTrue().stream()
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.findByActiveTrue().stream()
+                .map(this::convertToDTOWithStats)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return clientRepository.findByCompany_IdAndActiveTrue(companyId).stream()
             .map(this::convertToDTOWithStats)
             .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public Page<ClientDTO> getActiveClients(Pageable pageable) {
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.findByActiveTrue(pageable)
+                .map(this::convertToDTOWithStats);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return clientRepository.findByCompany_IdAndActiveTrue(companyId, pageable)
+            .map(this::convertToDTOWithStats);
+    }
     
+    @Transactional(readOnly = true) // READ-ONLY - OVO JE KLJUČNO
     public List<ClientDTO> searchClients(String query) {
-        return clientRepository.searchActive(query).stream()
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.searchActive(query).stream()
+                .map(this::convertToDTOWithStats)
+                .collect(Collectors.toList());
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return clientRepository.searchActiveByCompany(companyId, query).stream()
             .map(this::convertToDTOWithStats)
             .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public Page<ClientDTO> searchClients(String query, Pageable pageable) {
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.searchActive(query, pageable)
+                .map(this::convertToDTOWithStats);
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        return clientRepository.searchActiveByCompany(companyId, query, pageable)
+            .map(this::convertToDTOWithStats);
+    }
     
+    @Transactional(readOnly = true) // READ-ONLY - OVO JE KLJUČNO
     public long getTotalActiveClients() {
-        return clientRepository.countActiveClients();
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.countActiveClients();
+        }
+        return clientRepository.countActiveClientsByCompany(tenantGuard.requireCompanyId());
+    }
+
+    private Client getClientOrThrow(Long id) {
+        Client client = clientRepository.findByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
+            .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+        return client;
     }
     
     private ClientDTO convertToDTO(Client client) {
@@ -148,7 +207,7 @@ public class ClientService {
     private ClientDTO convertToDTOWithStats(Client client) {
         ClientDTO dto = convertToDTO(client);
         
-        // Dodavanje statistike
+        // Dodavanje statistike - OVO JE U TRANSACTION SADA
         List<com.printflow.entity.WorkOrder> orders = workOrderRepository.findByClient(client);
         
         dto.setTotalOrders(orders.size());

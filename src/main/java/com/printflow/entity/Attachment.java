@@ -2,10 +2,12 @@ package com.printflow.entity;
 
 import com.printflow.entity.enums.AttachmentType;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Filter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "attachments")
+@Filter(name = "tenantFilter", condition = "tenant_id = :companyId")
 public class Attachment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +39,7 @@ public class Attachment {
     private String description;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "work_order_id", nullable = false)
+    @JoinColumn(name = "work_order_id")
     private WorkOrder workOrder;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,6 +54,21 @@ public class Attachment {
     
     @Column(nullable = false)
     private boolean active = true;
+
+    @Column(name = "approved", nullable = false)
+    private boolean approved = false;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "approved_by")
+    private String approvedBy;
+
+    @Column(name = "approval_ip")
+    private String approvalIp;
+
+    @Column(name = "approval_token", unique = true)
+    private String approvalToken;
     
     @PrePersist
     protected void onCreate() {
@@ -61,16 +78,30 @@ public class Attachment {
     @JoinColumn(name = "task_id") // Može biti nullable ako attachment ide na WorkOrder, a ne na Task
     private Task task;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    private Comment comment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Company company;
+
     // I dodajte getter i setter:
     public Task getTask() { return task; }
     public void setTask(Task task) { this.task = task; }
+
+    public Comment getComment() { return comment; }
+    public void setComment(Comment comment) { this.comment = comment; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
     public Attachment() {
     }
 
     public Attachment(Long id, String fileName, String filePath, String originalFileName, String fileType,
                      String mimeType, Long fileSize, AttachmentType attachmentType, String description, 
                      WorkOrder workOrder, User uploadedBy, LocalDateTime uploadedAt, String thumbnailPath, 
-                     boolean active,Task task) {
+                     boolean active,Task task, Comment comment) {
         this.id = id;
         this.fileName = fileName;
         this.filePath = filePath;
@@ -85,7 +116,9 @@ public class Attachment {
         this.uploadedAt = uploadedAt;
         this.thumbnailPath = thumbnailPath;
         this.active = active;
-        this.task=task;   }
+        this.task=task;
+        this.comment = comment;
+    }
 
     public Long getId() {
         return id;
@@ -198,6 +231,17 @@ public class Attachment {
     public void setActive(boolean active) {
         this.active = active;
     }
+
+    public boolean isApproved() { return approved; }
+    public void setApproved(boolean approved) { this.approved = approved; }
+    public LocalDateTime getApprovedAt() { return approvedAt; }
+    public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
+    public String getApprovedBy() { return approvedBy; }
+    public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
+    public String getApprovalIp() { return approvalIp; }
+    public void setApprovalIp(String approvalIp) { this.approvalIp = approvalIp; }
+    public String getApprovalToken() { return approvalToken; }
+    public void setApprovalToken(String approvalToken) { this.approvalToken = approvalToken; }
 
     // Dodajte ove metode za kompatibilnost sa AttachmentService
     public String getStoredFileName() {
