@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="layout(title, logoUrl, logoInline, companyName, companyEmail, companyPhone, companyWebsite, companyAddress, content)">
+    <div style="font-family: Arial, sans-serif; color:#111; background:#f5f7fb; margin:0; padding:24px;">
+        <div style="max-width:640px; margin:0 auto; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px;">
+            <div th:if="${logoInline != null}" style="margin:0 0 16px;">
+                <img th:src="${logoInline}" alt="Company logo" style="height:72px; max-width:260px; width:auto; object-fit:contain;">
+            </div>
+            <div th:if="${logoInline == null and logoUrl != null}" style="margin:0 0 16px;">
+                <img th:src="${logoUrl}" alt="Company logo" style="height:72px; max-width:260px; width:auto; object-fit:contain;">
+            </div>
+
+            <h2 style="margin-top:0;" th:text="${title}">Email title</h2>
+
+            <th:block th:replace="${content}"></th:block>
+
+            <hr style="border:none; border-top:1px solid #e5e7eb; margin:16px 0;">
+            <p style="margin:0; font-weight:600;" th:text="${companyName}">PrintFlow</p>
+            <p style="margin:4px 0 0 0; font-size:12px; color:#6b7280;">
+                <span th:if="${companyEmail != null}" th:text="${companyEmail}">company@example.com</span>
+                <span th:if="${companyPhone != null}" th:text="${' | ' + companyPhone}">| +381...</span>
+            </p>
+            <p th:if="${companyWebsite != null}" style="margin:4px 0 0 0; font-size:12px; color:#6b7280;" th:text="${companyWebsite}">https://example.com</p>
+            <p th:if="${companyAddress != null}" style="margin:4px 0 0 0; font-size:12px; color:#6b7280;" th:text="${companyAddress}">Address</p>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Design feedback</title>
+</head>
+<body>
+<th:block th:replace="~{email/base :: layout(
+    ${heading},
+    ${logoUrl},
+    ${logoInline},
+    ${companyName},
+    ${companyEmail},
+    ${companyPhone},
+    ${companyWebsite},
+    ${companyAddress},
+    ~{::content}
+)}">
+    <th:block th:fragment="content">
+        <p style="margin:0 0 12px;" th:text="${statusLine}">Your design has been approved and production can continue.</p>
+        <table style="width:100%; border-collapse:collapse; margin:12px 0;">
+            <tr>
+                <td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Broj naloga' : 'Order number'}">Order number</td>
+                <td style="padding:6px 0;" th:text="${orderNumber}">ORD-001</td>
+            </tr>
+            <tr>
+                <td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Naziv naloga' : 'Order title'}">Order title</td>
+                <td style="padding:6px 0;" th:text="${orderTitle}">Order title</td>
+            </tr>
+        </table>
+        <p th:if="${comment != null}" style="margin:12px 0 0; font-size:14px;"><strong th:text="${lang == 'sr' ? 'Vaš komentar:' : 'Your comment:'}">Your comment:</strong> <span th:text="${comment}"></span></p>
+        <p style="margin:16px 0;">
+            <a th:href="${link}" style="display:inline-block; padding:10px 16px; background:#2563eb; color:#fff; text-decoration:none; border-radius:8px;" th:text="${lang == 'sr' ? 'Prati nalog' : 'Track order'}">Track order</a>
+        </p>
+        <p style="font-size:12px; color:#6b7280;">
+            <span th:text="${lang == 'sr' ? 'Link za praćenje: ' : 'Tracking link: '}">Tracking link: </span><span th:text="${link}">https://example.com</span>
+        </p>
+    </th:block>
+</th:block>
+</body>
+</html>

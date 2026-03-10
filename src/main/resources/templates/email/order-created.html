@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Order created</title>
+</head>
+<body>
+<th:block th:replace="~{email/base :: layout(
+    ${(lang == 'sr' ? 'Kreiran nalog: ' : 'Order created: ') + orderNumber},
+    ${logoUrl},
+    ${logoInline},
+    ${companyName},
+    ${companyEmail},
+    ${companyPhone},
+    ${companyWebsite},
+    ${companyAddress},
+    ~{::content}
+)}">
+    <th:block th:fragment="content">
+        <p th:text="${lang == 'sr' ? 'Zdravo, ' + clientName + '.' : 'Hello, ' + clientName + '.'}">Hello</p>
+        <p th:text="${lang == 'sr' ? 'Vaš nalog je kreiran i ušao je u tok proizvodnje.' : 'Your order has been created and entered into production flow.'}">Your order has been created and entered into production flow.</p>
+        <table style="width:100%; border-collapse:collapse; margin:16px 0;">
+            <tr><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Broj naloga' : 'Order number'}">Order number</td><td style="padding:6px 0;" th:text="${orderNumber}">ORD-XXXX</td></tr>
+            <tr><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Naziv' : 'Title'}">Title</td><td style="padding:6px 0;" th:text="${orderTitle}">Order title</td></tr>
+            <tr><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Status' : 'Status'}">Status</td><td style="padding:6px 0;" th:text="${orderStatus}">NEW</td></tr>
+            <tr th:if="${orderPrice != null}"><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Cena' : 'Price'}">Price</td><td style="padding:6px 0;" th:text="|${#numbers.formatDecimal(orderPrice,1,'COMMA',2,'POINT')} ${currency}|">100.00 RSD</td></tr>
+            <tr th:if="${deadline != null}"><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Rok' : 'Deadline'}">Deadline</td><td style="padding:6px 0;" th:text="${#temporals.format(deadline, 'dd.MM.yyyy HH:mm')}">07.03.2026 12:00</td></tr>
+        </table>
+        <p style="margin:18px 0;">
+            <a th:href="${trackingUrl}" style="background:#2563eb;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;" th:text="${lang == 'sr' ? 'Prati nalog' : 'Track order'}">Track order</a>
+        </p>
+        <p style="font-size:12px; color:#6b7280;">
+            <span th:text="${lang == 'sr' ? 'Link za praćenje: ' : 'Tracking link: '}">Tracking link: </span>
+            <span th:text="${trackingUrl}">https://...</span>
+        </p>
+    </th:block>
+</th:block>
+</body>
+</html>

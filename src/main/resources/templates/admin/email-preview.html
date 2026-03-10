@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title>Email Preview - PrintFlow Admin</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-6">
+            <a th:href="@{/admin/orders/{id}(id=${orderId})}"
+               class="text-sm text-blue-600 hover:text-blue-800">← Back to order</a>
+            <h1 class="text-2xl font-bold text-gray-900 mt-2">Email Preview</h1>
+            <p class="text-sm text-gray-500">Subject: <span th:text="${subject}"></span></p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
+            <form th:action="@{/admin/orders/{id}/email-preview(id=${orderId})}" method="get"
+                  class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Template</label>
+                    <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="approval" th:selected="${type == 'approval'}">Approval</option>
+                        <option value="feedback-approved" th:selected="${type == 'feedback-approved'}">Feedback Approved</option>
+                        <option value="feedback-changes" th:selected="${type == 'feedback-changes'}">Feedback Changes</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Comment (optional)</label>
+                    <input type="text" name="comment" th:value="${comment}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Shown in feedback templates">
+                </div>
+                <div>
+                    <button type="submit"
+                            class="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Update Preview
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 text-sm text-gray-600">
+                Preview type: <span th:text="${type}"></span>
+            </div>
+            <div class="p-4 bg-gray-50">
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div th:utext="${html}"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mt-6">
+            <form id="sendTestEmailForm" th:action="@{/admin/orders/{id}/email-preview/send-test(id=${orderId})}" method="post"
+                  class="flex flex-wrap items-center gap-3">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" name="type" th:value="${type}"/>
+                <input type="hidden" name="comment" th:value="${comment}"/>
+                <input type="email" name="toEmail" id="toEmailInput" placeholder="test@example.com" required
+                       pattern="^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+                       th:value="${currentUserEmail}"
+                       class="px-3 py-2 border border-gray-300 rounded-lg w-64">
+                <button type="submit"
+                        class="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                    Send Test Email
+                </button>
+                <button type="button" id="sendTestToMeBtn"
+                        class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                    Send to me
+                </button>
+                <label class="inline-flex items-center gap-2 text-xs text-gray-600 ml-2">
+                    <input type="checkbox" id="autoSendToggle" class="h-4 w-4">
+                    Auto‑send on load
+                </label>
+            </form>
+            <div id="sendTestEmailFeedback" class="mt-3 text-sm hidden"></div>
+        </div>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('sendTestEmailForm');
+            const feedback = document.getElementById('sendTestEmailFeedback');
+            const emailInput = document.getElementById('toEmailInput');
+            const sendToMeBtn = document.getElementById('sendTestToMeBtn');
+            const autoToggle = document.getElementById('autoSendToggle');
+            if (!form || !feedback) return;
+            const autoKey = `emailPreviewAutoSendEnabled:${form.action}:${form.querySelector('input[name="type"]').value}`;
+            if (autoToggle) {
+                autoToggle.checked = localStorage.getItem(autoKey) === '1';
+                autoToggle.addEventListener('change', () => {
+                    localStorage.setItem(autoKey, autoToggle.checked ? '1' : '0');
+                });
+            }
+            if (autoToggle && autoToggle.checked && emailInput && emailInput.value && emailInput.value.trim() !== '') {
+                const key = `emailPreviewAutoSent:${form.action}:${form.querySelector('input[name="type"]').value}:${form.querySelector('input[name="comment"]').value || ''}`;
+                if (!sessionStorage.getItem(key)) {
+                    sessionStorage.setItem(key, '1');
+                    form.requestSubmit();
+                }
+            }
+            if (sendToMeBtn && emailInput) {
+                sendToMeBtn.addEventListener('click', () => {
+                    if (emailInput.value && emailInput.value.trim() !== '') {
+                        form.requestSubmit();
+                    } else {
+                        feedback.textContent = 'Your email is not available.';
+                        feedback.classList.add('text-red-600');
+                        feedback.classList.remove('hidden');
+                    }
+                });
+            }
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                feedback.classList.add('hidden');
+                feedback.classList.remove('text-red-600', 'text-emerald-600');
+                if (emailInput && !emailInput.checkValidity()) {
+                    feedback.textContent = 'Please provide a valid email address.';
+                    feedback.classList.add('text-red-600');
+                    feedback.classList.remove('hidden');
+                    return;
+                }
+                const formData = new FormData(form);
+                const action = form.action + '-ajax';
+                try {
+                    const res = await fetch(action, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.status === 'ok') {
+                        feedback.textContent = data.message;
+                        feedback.classList.add('text-emerald-600');
+                    } else {
+                        feedback.textContent = data.message || 'Error sending test email';
+                        feedback.classList.add('text-red-600');
+                    }
+                } catch (err) {
+                    feedback.textContent = 'Error sending test email';
+                    feedback.classList.add('text-red-600');
+                }
+                feedback.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

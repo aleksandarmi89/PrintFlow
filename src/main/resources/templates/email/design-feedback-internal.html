@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Design feedback</title>
+</head>
+<body>
+<th:block th:replace="~{email/base :: layout(
+    ${'Design feedback: ' + orderNumber},
+    ${logoUrl},
+    ${logoInline},
+    ${companyName},
+    ${companyEmail},
+    ${companyPhone},
+    ${companyWebsite},
+    ${companyAddress},
+    ~{::content}
+)}">
+    <th:block th:fragment="content">
+        <p style="margin:0 0 12px;">
+            <span th:text="${lang == 'sr' ? 'Klijent je ' : 'Client has '}">Client has </span><strong th:text="${action}">approved</strong><span th:text="${lang == 'sr' ? ' dizajn.' : ' the design.'}"> the design.</span>
+        </p>
+        <table style="width:100%; border-collapse:collapse; margin:12px 0;">
+            <tr>
+                <td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Broj naloga' : 'Order number'}">Order number</td>
+                <td style="padding:6px 0;" th:text="${orderNumber}">ORD-001</td>
+            </tr>
+            <tr>
+                <td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Naziv naloga' : 'Order title'}">Order title</td>
+                <td style="padding:6px 0;" th:text="${orderTitle}">Order title</td>
+            </tr>
+            <tr>
+                <td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Trenutni status' : 'Current status'}">Current status</td>
+                <td style="padding:6px 0;" th:text="${currentStatus}">IN_DESIGN</td>
+            </tr>
+        </table>
+        <p th:if="${comment != null}" style="margin:12px 0 0; font-size:14px;"><strong th:text="${lang == 'sr' ? 'Komentar:' : 'Comment:'}">Comment:</strong> <span th:text="${comment}"></span></p>
+        <p style="margin:16px 0;">
+            <a th:href="${link}" style="display:inline-block; padding:10px 16px; background:#2563eb; color:#fff; text-decoration:none; border-radius:8px;" th:text="${lang == 'sr' ? 'Otvori nalog' : 'Open order'}">Open order</a>
+        </p>
+    </th:block>
+</th:block>
+</body>
+</html>

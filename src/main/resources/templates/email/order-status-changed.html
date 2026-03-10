@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Order status updated</title>
+</head>
+<body>
+<th:block th:replace="~{email/base :: layout(
+    ${(lang == 'sr' ? 'Status naloga ažuriran: ' : 'Order status updated: ') + orderNumber},
+    ${logoUrl},
+    ${logoInline},
+    ${companyName},
+    ${companyEmail},
+    ${companyPhone},
+    ${companyWebsite},
+    ${companyAddress},
+    ~{::content}
+)}">
+    <th:block th:fragment="content">
+        <p th:text="${lang == 'sr' ? 'Zdravo, ' + clientName + '.' : 'Hello, ' + clientName + '.'}">Hello</p>
+        <p>
+            <span th:text="${lang == 'sr' ? 'Status je promenjen sa ' : 'Status changed from '}">Status changed from </span><strong th:text="${oldStatus}">OLD</strong>
+            <span th:text="${lang == 'sr' ? ' na ' : ' to '}"> to </span><strong th:text="${newStatus}">NEW</strong>.
+        </p>
+        <table style="width:100%; border-collapse:collapse; margin:16px 0;">
+            <tr><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Broj naloga' : 'Order number'}">Order number</td><td style="padding:6px 0;" th:text="${orderNumber}">ORD-XXXX</td></tr>
+            <tr><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Naziv' : 'Title'}">Title</td><td style="padding:6px 0;" th:text="${orderTitle}">Order title</td></tr>
+            <tr th:if="${deadline != null}"><td style="padding:6px 0; color:#6b7280;" th:text="${lang == 'sr' ? 'Rok' : 'Deadline'}">Deadline</td><td style="padding:6px 0;" th:text="${#temporals.format(deadline, 'dd.MM.yyyy HH:mm')}">07.03.2026 12:00</td></tr>
+        </table>
+        <p style="margin:18px 0;">
+            <a th:href="${trackingUrl}" style="background:#2563eb;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;" th:text="${lang == 'sr' ? 'Prati nalog' : 'Track order'}">Track order</a>
+        </p>
+        <p style="font-size:12px; color:#6b7280;">
+            <span th:text="${lang == 'sr' ? 'Link za praćenje: ' : 'Tracking link: '}">Tracking link: </span>
+            <span th:text="${trackingUrl}">https://...</span>
+        </p>
+    </th:block>
+</th:block>
+</body>
+</html>

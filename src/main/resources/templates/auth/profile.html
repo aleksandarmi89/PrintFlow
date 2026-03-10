@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{auth.profile_title} + ' - PrintFlow'">Profile - PrintFlow</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-12">
+        <div class="max-w-3xl mx-auto">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <h1 class="text-2xl font-bold text-gray-900 mb-2" th:text="#{auth.profile_title}">Profile</h1>
+                <p class="text-gray-600" th:text="#{auth.profile_subtitle}">Manage your personal information and account details.</p>
+
+                <form th:action="@{/profile}" method="post" class="mt-6 space-y-4">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">First name</label>
+                            <input type="text" name="firstName" th:value="${user.firstName}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Last name</label>
+                            <input type="text" name="lastName" th:value="${user.lastName}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" name="email" th:value="${user.email}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Phone</label>
+                            <input type="text" name="phone" th:value="${user.phone}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Department</label>
+                            <input type="text" name="department" th:value="${user.department}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Position</label>
+                            <input type="text" name="position" th:value="${user.position}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Notes</label>
+                        <textarea name="notes" rows="3"
+                                  class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2"
+                                  th:text="${user.notes}"></textarea>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{layout/footer :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{notifications.title} + ' - PrintFlow'">Notifications - PrintFlow</title>
+</head>
+<body>
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{notifications.title}">Notifications</h1>
+                    <p class="text-gray-600 mt-2" th:text="#{notifications.all}">All your notifications</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="notifications-mark-all-read"
+                            class="text-xs text-blue-600 hover:text-blue-800">
+                        <span th:text="#{nav.mark_all_read}">Mark all read</span>
+                    </button>
+                    <button type="submit" form="notifications-bulk-delete-form"
+                            class="text-xs text-red-600 hover:text-red-800"
+                            th:text="#{notifications.delete_selected}">
+                        Delete selected
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <form th:action="@{/notifications}" method="get" class="flex gap-2 flex-wrap">
+                    <input type="hidden" name="page" value="0">
+                    <input type="text" name="type" th:value="${type}" th:placeholder="#{notifications.type}"
+                           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select name="read"
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="" th:selected="${read == null}" th:text="#{common.all}">All</option>
+                        <option value="false" th:selected="${read == false}" th:text="#{notifications.unread}">Unread</option>
+                        <option value="true" th:selected="${read == true}" th:text="#{notifications.read}">Read</option>
+                    </select>
+                    <select name="size"
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option th:each="opt : ${allowedSizes}"
+                                th:value="${opt}"
+                                th:text="${opt}"
+                                th:selected="${opt == size}">20</option>
+                    </select>
+                    <button type="submit"
+                            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
+                        <span th:text="#{common.filter}">Filter</span>
+                    </button>
+                    <a th:href="@{/notifications}"
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <span th:text="#{common.clear}">Clear</span>
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <form id="notifications-bulk-delete-form" th:action="@{/notifications/delete-selected}" method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            </form>
+            <div class="divide-y divide-gray-200">
+                <div class="p-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                    <input type="checkbox" id="notifications-select-all" class="rounded border-gray-300">
+                    <label for="notifications-select-all" class="text-sm text-gray-700" th:text="#{common.select_all}">Select all</label>
+                </div>
+                <div th:each="n : ${notifications.content}"
+                     th:class="${n.read} ? 'p-4 hover:bg-gray-50' : 'p-4 hover:bg-gray-50 bg-blue-50/40'">
+                    <div class="flex justify-between gap-4">
+                        <div class="flex gap-3">
+                            <div class="pt-1">
+                                <input type="checkbox" name="notificationIds" th:value="${n.id}" form="notifications-bulk-delete-form"
+                                       class="notification-select rounded border-gray-300">
+                            </div>
+                            <div>
+                            <p class="text-sm font-semibold text-gray-900" th:text="${n.title}"></p>
+                            <p class="text-sm text-gray-600 mt-1" th:text="${n.message}"></p>
+                            <p class="text-xs text-gray-400 mt-2" th:text="${#temporals.format(n.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            <a th:if="${n.link}" th:href="${n.link}"
+                               class="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800">
+                                Open
+                            </a>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span th:if="${n.read}" class="text-xs text-green-600" th:text="#{notifications.read}">Read</span>
+                            <span th:unless="${n.read}" class="text-xs text-red-600" th:text="#{notifications.unread}">Unread</span>
+                            <button th:if="${!n.read}"
+                                    th:attr="data-id=${n.id}"
+                                    class="notification-mark-read mt-2 block text-xs text-gray-500 hover:text-gray-700">
+                                <span th:text="#{nav.mark_read}">Mark read</span>
+                            </button>
+                            <form th:action="@{/notifications/{id}/delete(id=${n.id})}" method="post" class="mt-2">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="text-xs text-red-600 hover:text-red-800">
+                                    <span th:text="#{common.delete}">Delete</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${notifications.totalElements == 0}" class="p-8 text-center text-gray-500">
+                    <span th:text="#{notifications.none}">No notifications.</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mt-4">
+            <div class="text-sm text-gray-600">
+                <span th:text="#{pagination.page}">Page</span>
+                <span th:text="${currentPage + 1}">1</span>
+                <span th:text="#{pagination.of}">of</span>
+                <span th:text="${totalPages}">1</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a th:href="@{/notifications(page=0,size=${size},type=${type},read=${read})}"
+                   class="px-3 py-1 border rounded text-sm"
+                   th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''"
+                   th:text="#{pagination.first}">First</a>
+                <a th:href="@{/notifications(page=${currentPage-1},size=${size},type=${type},read=${read})}"
+                   class="px-3 py-1 border rounded text-sm"
+                   th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''"
+                   th:text="#{pagination.previous}">Prev</a>
+                <a th:href="@{/notifications(page=${currentPage+1},size=${size},type=${type},read=${read})}"
+                   class="px-3 py-1 border rounded text-sm"
+                   th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
+                   th:text="#{pagination.next}">Next</a>
+                <a th:href="@{/notifications(page=${totalPages-1},size=${size},type=${type},read=${read})}"
+                   class="px-3 py-1 border rounded text-sm"
+                   th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
+                   th:text="#{pagination.last}">Last</a>
+            </div>
+        </div>
+    </main>
+    <script>
+        (function() {
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+            const csrfToken = document.querySelector('meta[name="_csrf"]');
+            const csrfHeaders = {};
+            if (csrfHeader && csrfToken && csrfHeader.content) {
+                csrfHeaders[csrfHeader.content] = csrfToken.content;
+            }
+
+            const updateHeaderBadge = (delta) => {
+                const badge = document.querySelector('#notification-menu-button span span');
+                if (!badge) return;
+                const current = parseInt(badge.textContent || '0', 10);
+                const next = Math.max(0, current + delta);
+                badge.textContent = String(next);
+                const badgeWrapper = badge.closest('span');
+                if (badgeWrapper) {
+                    if (next === 0) {
+                        badgeWrapper.classList.add('hidden');
+                    } else {
+                        badgeWrapper.classList.remove('hidden');
+                    }
+                }
+            };
+
+            document.querySelectorAll('.notification-mark-read').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = btn.getAttribute('data-id');
+                    if (!id) return;
+                    fetch(`/notifications/${id}/mark-read`, { method: 'POST', headers: csrfHeaders })
+                        .then(r => r.ok ? r.json() : null)
+                        .then(() => {
+                            btn.remove();
+                            const container = btn.closest('div');
+                            if (container) {
+                                const status = container.querySelector('span.text-red-600');
+                                if (status) {
+                                    status.textContent = 'Read';
+                                    status.classList.remove('text-red-600');
+                                    status.classList.add('text-green-600');
+                                }
+                            }
+                            const card = btn.closest('div.p-4');
+                            if (card) {
+                                card.classList.remove('bg-blue-50/40');
+                            }
+                            updateHeaderBadge(-1);
+                        });
+                });
+            });
+
+            const markAll = document.getElementById('notifications-mark-all-read');
+            if (markAll) {
+                markAll.addEventListener('click', function () {
+                    fetch('/notifications/mark-all-read', { method: 'POST', headers: csrfHeaders })
+                        .then(r => r.ok ? r.json() : null)
+                        .then(() => {
+                            document.querySelectorAll('.notification-mark-read').forEach(btn => btn.remove());
+                            document.querySelectorAll('.text-red-600').forEach(span => {
+                                if (span.textContent === 'Unread') {
+                                    span.textContent = 'Read';
+                                    span.classList.remove('text-red-600');
+                                    span.classList.add('text-green-600');
+                                }
+                            });
+                            document.querySelectorAll('.bg-blue-50\\/40').forEach(card => {
+                                card.classList.remove('bg-blue-50/40');
+                            });
+                            updateHeaderBadge(-9999);
+                        });
+                });
+            }
+
+            const selectAll = document.getElementById('notifications-select-all');
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    document.querySelectorAll('.notification-select').forEach(cb => {
+                        cb.checked = selectAll.checked;
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
