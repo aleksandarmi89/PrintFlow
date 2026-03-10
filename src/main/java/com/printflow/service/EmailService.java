@@ -6,6 +6,7 @@ import com.printflow.entity.EmailOutbox;
 import com.printflow.entity.MailSettings;
 import com.printflow.entity.enums.EmailOutboxStatus;
 import com.printflow.repository.EmailOutboxRepository;
+import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -33,17 +34,20 @@ public class EmailService {
     private final TenantEmailRateLimiter rateLimiter;
     private final boolean emailEnabled;
     private final String defaultFrom;
+    private final int sendAttempts;
 
     public EmailService(MailSenderResolver mailSenderResolver,
                         EmailOutboxRepository outboxRepository,
                         TenantEmailRateLimiter rateLimiter,
                         @Value("${app.notification.email.enabled:false}") boolean emailEnabled,
-                        @Value("${app.notification.email.from:no-reply@printflow.local}") String defaultFrom) {
+                        @Value("${app.notification.email.from:no-reply@printflow.local}") String defaultFrom,
+                        @Value("${app.notification.email.send-attempts:2}") int sendAttempts) {
         this.mailSenderResolver = mailSenderResolver;
         this.outboxRepository = outboxRepository;
         this.rateLimiter = rateLimiter;
         this.emailEnabled = emailEnabled;
         this.defaultFrom = defaultFrom;
+        this.sendAttempts = Math.max(1, sendAttempts);
     }
 
     @Async("emailExecutor")
@@ -127,7 +131,7 @@ public class EmailService {
             for (InlineImage image : processed.images()) {
                 helper.addInline(image.cid(), new ByteArrayResource(image.data()), image.mimeType());
             }
-            sender.send(helper.getMimeMessage());
+            sendWithRetry(sender, helper.getMimeMessage(), message.getTo(), message.getSubject());
             outbox.setStatus(EmailOutboxStatus.SENT);
             outbox.setSentAt(LocalDateTime.now());
             outboxRepository.save(outbox);
@@ -144,6 +148,26 @@ public class EmailService {
                 throw new RuntimeException(ex);
             }
         }
+    }
+
+    private void sendWithRetry(JavaMailSender sender, MimeMessage mimeMessage, String to, String subject) throws Exception {
+        Exception last = null;
+        for (int attempt = 1; attempt <= sendAttempts; attempt++) {
+            try {
+                sender.send(mimeMessage);
+                if (attempt > 1) {
+                    log.info("Email send succeeded after retry for to={} subject={} attempts={}", to, subject, attempt);
+                }
+                return;
+            } catch (Exception ex) {
+                last = ex;
+                if (attempt < sendAttempts) {
+                    log.warn("Email send attempt failed for to={} subject={} attempt={}/{}",
+                        to, subject, attempt, sendAttempts, ex);
+                }
+            }
+        }
+        throw last != null ? last : new IllegalStateException("Unknown email send failure");
     }
 
     private String resolveFrom(MailSettings settings, Company company) {
