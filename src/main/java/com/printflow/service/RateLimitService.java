@@ -2,6 +2,8 @@ package com.printflow.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayDeque;
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RateLimitService {
+    private static final Logger log = LoggerFactory.getLogger(RateLimitService.class);
 
     private final ConcurrentHashMap<String, Deque<Long>> buckets = new ConcurrentHashMap<>();
     private final Set<String> bannedIps = ConcurrentHashMap.newKeySet();
@@ -202,6 +205,8 @@ public class RateLimitService {
                 queue.pollFirst();
             }
             if (queue.size() >= maxRequests) {
+                log.warn("rate_limit_denied key={} maxRequests={} windowMs={} currentSize={}",
+                    key, maxRequests, windowMillis, queue.size());
                 recordViolation(key);
                 return false;
             }
@@ -229,6 +234,8 @@ public class RateLimitService {
                 java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now()
                     .plusSeconds(autoBanBanMillis / 1000L);
                 ban(ip, "auto-ban: rate limit exceeded", expiresAt);
+                log.warn("rate_limit_auto_ban ip={} threshold={} windowMs={} banMs={} expiresAt={}",
+                    ip, autoBanThreshold, autoBanWindowMillis, autoBanBanMillis, expiresAt);
             }
         }
     }
