@@ -82,18 +82,18 @@ public class PublicOrderRequestService {
 
     public Company requireActiveCompanyBySlug(String companySlug) {
         return companyRepository.findBySlugAndActiveTrue(companySlug)
-            .orElseThrow(() -> new RuntimeException("Kompanija nije pronađena"));
+            .orElseThrow(() -> new PublicOrderRequestException("public.order.error.company_not_found"));
     }
 
     public Company requireActiveCompanyById(Long companyId) {
         return companyRepository.findById(companyId)
             .filter(Company::isActive)
-            .orElseThrow(() -> new RuntimeException("Kompanija nije pronađena"));
+            .orElseThrow(() -> new PublicOrderRequestException("public.order.error.company_not_found"));
     }
 
     public String ensureCompanySlug(Company company) {
         if (company == null) {
-            throw new RuntimeException("Kompanija nije pronađena");
+            throw new PublicOrderRequestException("public.order.error.company_not_found");
         }
         if (company.getSlug() != null && !company.getSlug().isBlank()) {
             return company.getSlug();
@@ -160,7 +160,7 @@ public class PublicOrderRequestService {
     @Transactional(readOnly = true)
     public PublicOrderRequest getForCurrentTenant(Long id) {
         return requestRepository.findDetailedByIdAndCompanyId(id, tenantGuard.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("Zahtev nije pronađen"));
+            .orElseThrow(() -> new PublicOrderRequestException("public.order.error.request_not_found"));
     }
 
     public PublicOrderRequest updateStatus(Long id, PublicOrderRequestStatus status) {
@@ -184,7 +184,7 @@ public class PublicOrderRequestService {
     @Transactional(readOnly = true)
     public PublicOrderRequestAttachment getAttachmentForCurrentTenant(Long attachmentId) {
         return attachmentRepository.findByIdAndCompany_Id(attachmentId, tenantGuard.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("Fajl nije pronađen"));
+            .orElseThrow(() -> new PublicOrderRequestException("public.order.error.file_not_found"));
     }
 
     @Transactional(readOnly = true)
@@ -213,7 +213,7 @@ public class PublicOrderRequestService {
         if (!rateLimitService.allow(key, rateLimitMax, rateLimitWindowSeconds * 1000L)) {
             log.warn("public_request_rate_limited companySlug={} ip={} windowSec={} max={}",
                 companySlug, remoteIp, rateLimitWindowSeconds, rateLimitMax);
-            throw new RuntimeException("Previše zahteva. Pokušajte ponovo kasnije.");
+            throw new PublicOrderRequestException("public.order.error.too_many_requests");
         }
     }
 
@@ -226,16 +226,16 @@ public class PublicOrderRequestService {
             return;
         }
         if (nonEmpty.size() > publicMaxFiles) {
-            throw new RuntimeException("Maksimalan broj fajlova je " + publicMaxFiles);
+            throw new PublicOrderRequestException("public.order.error.max_files", publicMaxFiles);
         }
         List<PublicOrderRequestAttachment> toSave = new ArrayList<>();
         for (MultipartFile file : nonEmpty) {
             if (file.getSize() > publicMaxFileBytes) {
-                throw new RuntimeException("Fajl je prevelik: " + file.getOriginalFilename());
+                throw new PublicOrderRequestException("public.order.error.file_too_large", file.getOriginalFilename());
             }
             String ext = extension(file.getOriginalFilename()).toLowerCase();
             if (!List.of(".pdf", ".jpg", ".jpeg", ".png", ".svg", ".ai", ".psd").contains(ext)) {
-                throw new RuntimeException("Nedozvoljen tip fajla: " + file.getOriginalFilename());
+                throw new PublicOrderRequestException("public.order.error.file_type_not_allowed", file.getOriginalFilename());
             }
             try {
                 StoredFile stored = fileStorage.store(file, "/company_" + company.getId() + "/public_requests/" + request.getId(), false);
@@ -249,7 +249,7 @@ public class PublicOrderRequestService {
                 att.setFileSize(file.getSize());
                 toSave.add(att);
             } catch (IOException ex) {
-                throw new RuntimeException("Greška pri upload-u fajla: " + file.getOriginalFilename(), ex);
+                throw new PublicOrderRequestException("public.order.error.upload_failed", file.getOriginalFilename());
             }
         }
         attachmentRepository.saveAll(toSave);

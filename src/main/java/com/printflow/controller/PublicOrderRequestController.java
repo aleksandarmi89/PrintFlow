@@ -2,9 +2,12 @@ package com.printflow.controller;
 
 import com.printflow.dto.PublicOrderRequestForm;
 import com.printflow.entity.Company;
+import com.printflow.service.PublicOrderRequestException;
 import com.printflow.service.PublicOrderRequestService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,9 +24,11 @@ import java.util.List;
 public class PublicOrderRequestController extends BaseController {
 
     private final PublicOrderRequestService requestService;
+    private final MessageSource messageSource;
 
-    public PublicOrderRequestController(PublicOrderRequestService requestService) {
+    public PublicOrderRequestController(PublicOrderRequestService requestService, MessageSource messageSource) {
         this.requestService = requestService;
+        this.messageSource = messageSource;
     }
 
     @GetMapping("/p/{companySlug}/order")
@@ -53,10 +58,17 @@ public class PublicOrderRequestController extends BaseController {
         try {
             requestService.createPublicRequest(companySlug, form, files, request.getRemoteAddr());
             return "redirect:/p/" + companySlug + "/order/success";
+        } catch (PublicOrderRequestException ex) {
+            model.addAttribute("company", company);
+            model.addAttribute("companySlug", companySlug);
+            model.addAttribute("errorMessage",
+                messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), LocaleContextHolder.getLocale()));
+            return "public/order-request-form";
         } catch (Exception ex) {
             model.addAttribute("company", company);
             model.addAttribute("companySlug", companySlug);
-            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("errorMessage",
+                messageSource.getMessage("public.order.error.generic", null, LocaleContextHolder.getLocale()));
             return "public/order-request-form";
         }
     }
