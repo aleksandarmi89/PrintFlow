@@ -18,10 +18,10 @@
                 The tracking link is invalid or has expired. Please check the link or contact the print shop.
             </p>
             <div class="mt-6 flex items-center justify-center gap-3">
-                <a th:href="@{/public/track}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{order_not_found.track_another}">
+                <a th:href="@{/public/track(lang=${#locale.language})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{order_not_found.track_another}">
                     Track another order
                 </a>
-                <a th:href="@{/public/}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50" th:text="#{order_not_found.public_home}">
+                <a th:href="@{/public/(lang=${#locale.language})}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50" th:text="#{order_not_found.public_home}">
                     Public home
                 </a>
             </div>
