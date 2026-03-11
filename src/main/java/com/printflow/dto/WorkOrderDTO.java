@@ -5,8 +5,6 @@ import com.printflow.entity.enums.OrderStatus;
 import com.printflow.entity.enums.PrintType;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 

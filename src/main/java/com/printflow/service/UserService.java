@@ -6,11 +6,7 @@ import com.printflow.dto.UserTaskStats;
 import com.printflow.entity.User;
 import com.printflow.entity.Company;
 import com.printflow.entity.User.Role;
-import com.printflow.entity.enums.OrderStatus;
-import com.printflow.entity.enums.TaskStatus;
 import com.printflow.repository.UserRepository;
-import com.printflow.repository.WorkOrderRepository;
-import com.printflow.repository.TaskRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,8 +27,6 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final WorkOrderRepository workOrderRepository;
-    private final TaskRepository taskRepository;
     private final PasswordEncoder passwordEncoder;
     private final TenantContextService tenantContextService;
     private final com.printflow.repository.CompanyRepository companyRepository;
@@ -46,17 +40,13 @@ public class UserService {
         Role.WORKER_PRINT
     );
 
-    public UserService(UserRepository userRepository, 
-                       WorkOrderRepository workOrderRepository,
-                       TaskRepository taskRepository,
+    public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        TenantContextService tenantContextService,
                        com.printflow.repository.CompanyRepository companyRepository,
                        PlanLimitService planLimitService,
                        BillingAccessService billingAccessService) {
         this.userRepository = userRepository;
-        this.workOrderRepository = workOrderRepository;
-        this.taskRepository = taskRepository;
         this.passwordEncoder = passwordEncoder;
         this.tenantContextService = tenantContextService;
         this.companyRepository = companyRepository;

@@ -1,8 +1,6 @@
 package com.printflow.dto;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @Data
 public class ClientDTO {

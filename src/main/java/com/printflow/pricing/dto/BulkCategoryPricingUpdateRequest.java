@@ -3,7 +3,6 @@ package com.printflow.pricing.dto;
 import com.printflow.entity.enums.PricingComponentType;
 import com.printflow.entity.enums.PricingModel;
 import com.printflow.entity.enums.ProductCategory;
-import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 

@@ -37,7 +37,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -271,13 +270,13 @@ public class DataInitializer {
 
             for (Company company : companies) {
                 String slug = company.getName().toLowerCase().replaceAll("[^a-z0-9]+", "");
-                User admin = ensureUser(userRepository, company, slug + "_admin", "Admin", "Owner", Role.ADMIN, random);
-                User manager = ensureUser(userRepository, company, slug + "_manager", "Manager", "Lead", Role.MANAGER, random);
+                ensureUser(userRepository, company, slug + "_admin", "Admin", "Owner", Role.ADMIN, random);
+                ensureUser(userRepository, company, slug + "_manager", "Manager", "Lead", Role.MANAGER, random);
 
                 List<Role> workerRoles = List.of(Role.WORKER_DESIGN, Role.WORKER_PRINT, Role.WORKER_GENERAL);
                 for (int i = 0; i < Math.max(1, usersPerCompany - 2); i++) {
                     Role role = workerRoles.get(i % workerRoles.size());
-                    User worker = ensureUser(userRepository, company,
+                    ensureUser(userRepository, company,
                         slug + "_worker_" + (i + 1),
                         "Worker", String.valueOf(i + 1),
                         role, random);

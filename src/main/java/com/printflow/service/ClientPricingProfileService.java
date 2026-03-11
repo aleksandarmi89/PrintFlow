@@ -7,7 +7,6 @@ import com.printflow.pricing.entity.ProductVariant;
 import com.printflow.repository.ClientPricingProfileRepository;
 import com.printflow.repository.ClientRepository;
 import com.printflow.pricing.repository.ProductVariantRepository;
-import com.printflow.service.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

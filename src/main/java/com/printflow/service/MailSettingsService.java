@@ -4,7 +4,6 @@ import com.printflow.dto.MailSettingsDTO;
 import com.printflow.entity.Company;
 import com.printflow.entity.MailSettings;
 import com.printflow.repository.MailSettingsRepository;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
