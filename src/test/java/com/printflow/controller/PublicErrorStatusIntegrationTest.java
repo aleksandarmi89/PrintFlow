@@ -89,7 +89,8 @@ class PublicErrorStatusIntegrationTest {
                 .header("X-Forwarded-For", "198.51.100.20"))
             .andExpect(status().isNotFound())
             .andExpect(view().name("public/order-not-found"))
-            .andExpect(model().attribute("errorKey", "order_not_found.message"));
+            .andExpect(model().attribute("errorKey", "order_not_found.message"))
+            .andExpect(model().attribute("errorHeadingKey", "order_not_found.heading"));
     }
 
     @Test
@@ -116,7 +117,8 @@ class PublicErrorStatusIntegrationTest {
                 .header("X-Forwarded-For", "198.51.100.30"))
             .andExpect(status().isTooManyRequests())
             .andExpect(view().name("public/order-not-found"))
-            .andExpect(model().attribute("errorKey", "public.error.too_many_requests"));
+            .andExpect(model().attribute("errorKey", "public.error.too_many_requests"))
+            .andExpect(model().attribute("errorHeadingKey", "public.error.heading"));
     }
 
     private String assignPublicToken(String token) {

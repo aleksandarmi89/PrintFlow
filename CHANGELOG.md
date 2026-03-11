@@ -38,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Maven enforcer now blocks duplicate dependency declarations in `pom.xml`.
 - Public track form now preserves selected UI language on submit via hidden `lang` field (prevents locale fallback on validation errors).
 - CI quality workflow now also runs `PublicErrorStatusIntegrationTest` and `PublicUploadReferenceIntegrationTest`.
+- Public order error page now uses a dedicated heading for `public.error.*` cases (instead of always "Order not found").
 
 ## [1.2.3] - 2026-03-10
 

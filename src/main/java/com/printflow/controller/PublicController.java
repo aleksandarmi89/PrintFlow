@@ -403,10 +403,18 @@ public class PublicController extends BaseController {
 
     private String renderOrderNotFound(Model model, HttpServletResponse response, String errorKey, int statusCode) {
         model.addAttribute("errorKey", errorKey);
+        model.addAttribute("errorHeadingKey", resolveOrderErrorHeadingKey(errorKey));
         if (response != null) {
             response.setStatus(statusCode);
         }
         return "public/order-not-found";
+    }
+
+    private String resolveOrderErrorHeadingKey(String errorKey) {
+        if (errorKey != null && errorKey.startsWith("public.error.")) {
+            return "public.error.heading";
+        }
+        return "order_not_found.heading";
     }
 
     private void logBillingBlockedPublic(String action, String token) {
