@@ -145,6 +145,20 @@ class PublicOrderTokenIntegrationTest {
     }
 
     @Test
+    void canonicalOrderRedirectOmitsUnsupportedLang() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        order.setPublicToken("canonical-token-no-lang");
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusHours(1));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(get("/public/order/{token}", "  canonical-token-no-lang  ")
+                .param("lang", "de"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/canonical-token-no-lang"));
+    }
+
+    @Test
     void orderNumberRedirectPreservesNormalizedSupportedLang() throws Exception {
         WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
         order.setPublicToken("resolved-token-lang");

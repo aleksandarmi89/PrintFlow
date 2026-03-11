@@ -61,6 +61,7 @@ All notable changes to this project will be documented in this file.
 - Added upload success redirect regression coverage for locale handling:
   - unsupported locale is omitted,
   - trimmed uppercase supported locale is normalized (`"  EN  "` -> `lang=en`).
+- Added canonical token-trim redirect regression to verify unsupported locale is omitted from redirect URLs.
 
 ## [1.2.3] - 2026-03-10
 
