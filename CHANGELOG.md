@@ -40,6 +40,7 @@ All notable changes to this project will be documented in this file.
 - CI quality workflow now also runs `PublicErrorStatusIntegrationTest` and `PublicUploadReferenceIntegrationTest`.
 - Public order error page now uses a dedicated heading for `public.error.*` cases (instead of always "Order not found").
 - Public upload-reference form now preserves selected `lang` across error redirects (`uploadErrorKey`) to avoid locale fallback.
+- Public design approval feedback now uses i18n message keys and has a dedicated `public/design-feedback` template.
 
 ## [1.2.3] - 2026-03-10
 

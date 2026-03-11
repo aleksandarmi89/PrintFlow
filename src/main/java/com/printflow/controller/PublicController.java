@@ -267,9 +267,9 @@ public class PublicController extends BaseController {
             workOrderService.approveDesign(order.getId(), normalizedToken, approved, comment);
             
             if (approved) {
-                model.addAttribute("message", "Thank you for approving the design. Production will start soon.");
+                model.addAttribute("messageKey", "public.design_feedback.approved");
             } else {
-                model.addAttribute("message", "Thank you for your feedback. The design will be revised.");
+                model.addAttribute("messageKey", "public.design_feedback.revision_requested");
             }
             
             return "public/design-feedback";
