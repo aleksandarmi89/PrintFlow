@@ -208,6 +208,9 @@ public class WorkOrderService {
     }
     
     public WorkOrderDTO updateWorkOrderStatus(Long id, OrderStatus status, String notes) {
+        if (status == null) {
+            throw new RuntimeException("Status is required");
+        }
         WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
         
         OrderStatus oldStatus = workOrder.getStatus();
