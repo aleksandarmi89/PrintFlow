@@ -240,7 +240,7 @@ public class FileStorageService {
     public List<AttachmentDTO> getAttachmentsByWorkOrder(Long workOrderId) {
         if (shouldEnforceTenant()) {
             Long companyId = tenantGuard.requireCompanyId();
-            WorkOrder order = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+            workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
                 .orElseThrow(() -> new RuntimeException("Work order not found"));
             return attachmentRepository.findByWorkOrderIdAndCompany_IdAndActiveTrue(workOrderId, companyId).stream()
                 .filter(this::canAccessAttachment)
@@ -254,7 +254,7 @@ public class FileStorageService {
 
     public List<AttachmentDTO> getAttachmentsByTask(Long taskId) {
         if (shouldEnforceTenant()) {
-            Task task = taskRepository.findByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId())
+            taskRepository.findByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId())
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         }
         return attachmentRepository.findByTaskIdAndCompany_IdAndActiveTrueOrderByUploadedAtDesc(taskId, tenantGuard.requireCompanyId()).stream()

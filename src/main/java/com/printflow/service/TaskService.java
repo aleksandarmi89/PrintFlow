@@ -249,7 +249,7 @@ public class TaskService {
 
         if (shouldSendStatusNotification(task, userId, nextStatus)) {
             notificationService.sendTaskStatusNotification(task.getId(), task.getCreatedBy().getId(),
-                task.getTitle(), oldStatus.name(), nextStatus.name());
+                task.getTitle(), statusName(oldStatus), statusName(nextStatus));
         }
 
         if (nextStatus == TaskStatus.AWAITING_REVIEW) {
@@ -312,7 +312,7 @@ public class TaskService {
 
         if (shouldSendStatusNotification(task, userId, nextStatus)) {
             notificationService.sendTaskStatusNotification(task.getId(), task.getCreatedBy().getId(),
-                task.getTitle(), oldStatus.name(), nextStatus.name());
+                task.getTitle(), statusName(oldStatus), statusName(nextStatus));
         }
 
         if (nextStatus == TaskStatus.AWAITING_REVIEW) {
@@ -353,7 +353,7 @@ public class TaskService {
 
         if (shouldSendStatusNotification(task, userId, task.getStatus())) {
             notificationService.sendTaskStatusNotification(task.getId(), task.getCreatedBy().getId(),
-                task.getTitle(), oldStatus.name(), task.getStatus().name());
+                task.getTitle(), statusName(oldStatus), statusName(task.getStatus()));
         }
 
         if (safeProgress >= 100) {
@@ -396,7 +396,7 @@ public class TaskService {
 
         if (shouldSendStatusNotification(task, userId, task.getStatus())) {
             notificationService.sendTaskStatusNotification(task.getId(), task.getCreatedBy().getId(),
-                task.getTitle(), oldStatus.name(), task.getStatus().name());
+                task.getTitle(), statusName(oldStatus), statusName(task.getStatus()));
         }
 
         if (safeProgress >= 100) {
@@ -407,6 +407,10 @@ public class TaskService {
     private boolean hasProofAttachment(Long taskId) {
         return fileStorageService.getAttachmentsByTask(taskId).stream()
             .anyMatch(a -> a.getAttachmentType() == AttachmentType.PROOF_OF_WORK);
+    }
+
+    private String statusName(TaskStatus status) {
+        return status != null ? status.name() : "";
     }
 
     public void markComplete(Long taskId, String notes, Long userId) {

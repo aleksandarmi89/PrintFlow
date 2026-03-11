@@ -38,7 +38,6 @@ public class WorkOrderService {
     private final UserRepository userRepository;
     private final AttachmentRepository attachmentRepository;
     private final OrderNumberGenerator orderNumberGenerator;
-    private final FileStorageService fileStorageService;
     private final TenantGuard tenantGuard;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
@@ -55,7 +54,6 @@ public class WorkOrderService {
                           UserRepository userRepository, 
                           AttachmentRepository attachmentRepository,
                           OrderNumberGenerator orderNumberGenerator, 
-                          FileStorageService fileStorageService,
                           TenantGuard tenantGuard,
                           NotificationService notificationService,
                           AuditLogService auditLogService,
@@ -71,7 +69,6 @@ public class WorkOrderService {
         this.userRepository = userRepository;
         this.attachmentRepository = attachmentRepository;
         this.orderNumberGenerator = orderNumberGenerator;
-        this.fileStorageService = fileStorageService;
         this.tenantGuard = tenantGuard;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
@@ -245,7 +242,7 @@ public class WorkOrderService {
         Long actorId = tenantGuard.getCurrentUser() != null ? tenantGuard.getCurrentUser().getId() : null;
         activityLogService.log(updatedOrder,
             "STATUS_CHANGE",
-            "Status changed to " + status.name(),
+            "Status changed to " + orderStatusName(status),
             actorId);
         eventPublisher.publishEvent(new OrderStatusChangedEvent(updatedOrder.getId(), oldStatus, status));
         if (status == OrderStatus.READY_FOR_DELIVERY) {
@@ -725,6 +722,10 @@ public class WorkOrderService {
             return workOrderRepository.countByStatus(status);
         }
         return workOrderRepository.countByStatusAndCompanyId(tenantGuard.requireCompanyId(), status);
+    }
+
+    private String orderStatusName(OrderStatus status) {
+        return status != null ? status.name() : "UNKNOWN";
     }
     
     public Page<WorkOrderDTO> getUnassignedWorkOrders(Pageable pageable) {

@@ -49,9 +49,10 @@ public class CompanyService {
     }
 
     public List<CompanyDTO> getCompanies(String search) {
+        String normalizedSearch = search == null ? "" : search.trim();
         List<Company> companies;
-        if (search != null && !search.trim().isEmpty()) {
-            companies = companyRepository.findByNameContainingIgnoreCase(search.trim());
+        if (!normalizedSearch.isEmpty()) {
+            companies = companyRepository.findByNameContainingIgnoreCase(normalizedSearch);
         } else {
             companies = companyRepository.findAll();
         }
@@ -59,9 +60,10 @@ public class CompanyService {
     }
 
     public Page<CompanyDTO> getCompanies(String search, Pageable pageable) {
+        String normalizedSearch = search == null ? "" : search.trim();
         Page<Company> companies;
-        if (search != null && !search.trim().isEmpty()) {
-            companies = companyRepository.findByNameContainingIgnoreCase(search.trim(), pageable);
+        if (!normalizedSearch.isEmpty()) {
+            companies = companyRepository.findByNameContainingIgnoreCase(normalizedSearch, pageable);
         } else {
             companies = companyRepository.findAll(pageable);
         }
@@ -72,17 +74,18 @@ public class CompanyService {
                                          com.printflow.entity.enums.PlanTier plan,
                                          Boolean overrideActive,
                                          Pageable pageable) {
-        boolean hasSearch = search != null && !search.trim().isEmpty();
+        String normalizedSearch = search == null ? "" : search.trim();
+        boolean hasSearch = !normalizedSearch.isEmpty();
         if (hasSearch && plan != null && overrideActive != null) {
-            return companyRepository.findByNameContainingIgnoreCaseAndPlanAndBillingOverrideActive(search.trim(), plan, overrideActive, pageable)
+            return companyRepository.findByNameContainingIgnoreCaseAndPlanAndBillingOverrideActive(normalizedSearch, plan, overrideActive, pageable)
                 .map(this::toDTO);
         }
         if (hasSearch && plan != null) {
-            return companyRepository.findByNameContainingIgnoreCaseAndPlan(search.trim(), plan, pageable)
+            return companyRepository.findByNameContainingIgnoreCaseAndPlan(normalizedSearch, plan, pageable)
                 .map(this::toDTO);
         }
         if (hasSearch && overrideActive != null) {
-            return companyRepository.findByNameContainingIgnoreCaseAndBillingOverrideActive(search.trim(), overrideActive, pageable)
+            return companyRepository.findByNameContainingIgnoreCaseAndBillingOverrideActive(normalizedSearch, overrideActive, pageable)
                 .map(this::toDTO);
         }
         if (plan != null && overrideActive != null) {

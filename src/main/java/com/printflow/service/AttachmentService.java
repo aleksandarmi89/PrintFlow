@@ -104,7 +104,7 @@ public class AttachmentService {
     
     public List<AttachmentDTO> getAttachmentsByWorkOrder(Long workOrderId) {
         Long companyId = tenantGuard.requireCompanyId();
-        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+        workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
             .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
         List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndCompany_IdAndActiveTrueOrderByUploadedAtDesc(workOrderId, companyId);
         return attachments.stream()
@@ -114,7 +114,7 @@ public class AttachmentService {
     
     public List<AttachmentDTO> getAttachmentsByWorkOrderAndType(Long workOrderId, AttachmentType type) {
         Long companyId = tenantGuard.requireCompanyId();
-        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+        workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
             .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
         List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndCompany_IdAndAttachmentTypeAndActiveTrueOrderByUploadedAtDesc(
             workOrderId, companyId, type);
@@ -139,7 +139,7 @@ public class AttachmentService {
     
     public AttachmentStatsDTO getAttachmentStats(Long workOrderId) {
         Long companyId = tenantGuard.requireCompanyId();
-        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
+        workOrderRepository.findByIdAndCompany_Id(workOrderId, companyId)
             .orElseThrow(() -> new RuntimeException("Work order not found with id: " + workOrderId));
         List<Attachment> attachments = attachmentRepository.findByWorkOrderIdAndCompany_IdAndActiveTrue(workOrderId, companyId);
         

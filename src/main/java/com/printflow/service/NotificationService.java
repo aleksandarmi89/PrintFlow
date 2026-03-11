@@ -11,9 +11,9 @@ import com.printflow.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -38,47 +38,41 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final TenantGuard tenantGuard;
-    private final String emailFrom;
     private final String baseUrl;
     private final boolean emailEnabled;
     private final boolean smsEnabled;
-    private final boolean emailFallbackEnabled;
-    private final ApplicationContext applicationContext;
     private final CacheManager cacheManager;
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
     private final CompanyBrandingService companyBrandingService;
+    private final ApplicationEventPublisher eventPublisher;
     private final int recentNotificationLimit;
     public NotificationService(
             NotificationRepository notificationRepository, 
             UserRepository userRepository,
-            @Value("${app.notification.email.from:no-reply@printflow.local}") String emailFrom,
             @Value("${app.base-url:http://localhost:8088}") String baseUrl,
             @Value("${app.notification.email.enabled:false}") boolean emailEnabled,
-            @Value("${app.notification.email.fallback-enabled:false}") boolean emailFallbackEnabled,
             @Value("${app.notification.sms.enabled:false}") boolean smsEnabled,
             @Value("${app.notification.recent-limit:10}") int recentNotificationLimit,
-            ApplicationContext applicationContext,
             TenantGuard tenantGuard,
             CacheManager cacheManager,
             EmailService emailService,
             EmailTemplateService emailTemplateService,
-            CompanyBrandingService companyBrandingService) {
+            CompanyBrandingService companyBrandingService,
+            ApplicationEventPublisher eventPublisher) {
         
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
-        this.emailFrom = emailFrom;
         this.baseUrl = baseUrl;
         this.emailEnabled = emailEnabled;
-        this.emailFallbackEnabled = emailFallbackEnabled;
         this.smsEnabled = smsEnabled;
         this.recentNotificationLimit = recentNotificationLimit;
-        this.applicationContext = applicationContext;
         this.tenantGuard = tenantGuard;
         this.cacheManager = cacheManager;
         this.emailService = emailService;
         this.emailTemplateService = emailTemplateService;
         this.companyBrandingService = companyBrandingService;
+        this.eventPublisher = eventPublisher;
     }
 
     // ==================== CLIENT EMAIL NOTIFICATIONS ====================
@@ -295,7 +289,7 @@ public class NotificationService {
         }).collect(Collectors.toList());
         
         notificationRepository.saveAll(notifications);
-        applicationContext.publishEvent(new NotificationBatchCreatedEvent(userIds));
+        eventPublisher.publishEvent(new NotificationBatchCreatedEvent(userIds));
     }
     
     // ==================== TASK NOTIFICATIONS ====================
@@ -818,65 +812,6 @@ public class NotificationService {
             message.setTextBody(body);
         }
         emailService.send(message, company, null);
-    }
-
-    private Object getMailSenderIfAvailable() {
-        try {
-            Class<?> mailSenderClass = Class.forName("org.springframework.mail.javamail.JavaMailSender");
-            return applicationContext.getBean(mailSenderClass);
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    private Object getMailSenderForCompany(Company company) {
-        Object sender = buildCompanyMailSender(company);
-        if (sender != null) {
-            return sender;
-        }
-        if (emailFallbackEnabled) {
-            return getMailSenderIfAvailable();
-        }
-        return null;
-    }
-
-    private Object buildCompanyMailSender(Company company) {
-        if (company == null) {
-            return null;
-        }
-        String host = company.getSmtpHost();
-        Integer port = company.getSmtpPort();
-        String user = company.getSmtpUser();
-        String pass = company.getSmtpPassword();
-        Boolean tls = company.getSmtpTls();
-        if (host == null || host.isBlank()) {
-            return null;
-        }
-        try {
-            Class<?> implClass = Class.forName("org.springframework.mail.javamail.JavaMailSenderImpl");
-            Object impl = implClass.getConstructor().newInstance();
-            implClass.getMethod("setHost", String.class).invoke(impl, host.trim());
-            implClass.getMethod("setPort", int.class).invoke(impl, port != null ? port : 587);
-            if (user != null && !user.isBlank()) {
-                implClass.getMethod("setUsername", String.class).invoke(impl, user.trim());
-            }
-            if (pass != null && !pass.isBlank()) {
-                implClass.getMethod("setPassword", String.class).invoke(impl, pass);
-            }
-            java.util.Properties props = new java.util.Properties();
-            boolean auth = user != null && !user.isBlank();
-            props.put("mail.smtp.auth", String.valueOf(auth));
-            boolean tlsEnabled = tls == null || tls;
-            props.put("mail.smtp.starttls.enable", String.valueOf(tlsEnabled));
-            if (port != null && port == 465) {
-                props.put("mail.smtp.ssl.enable", "true");
-            }
-            implClass.getMethod("setJavaMailProperties", java.util.Properties.class).invoke(impl, props);
-            return impl;
-        } catch (Exception ex) {
-            log.warn("Failed to build company mail sender for company {}", company.getId(), ex);
-            return null;
-        }
     }
 
     private String resolveCompanyFrom(Company company) {
