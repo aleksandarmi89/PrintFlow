@@ -27,6 +27,7 @@ public class CacheConfig {
         CaffeineCache notificationCounts = new CaffeineCache(
             "notificationCounts",
             Caffeine.newBuilder()
+                .recordStats()
                 .expireAfterWrite(Duration.ofSeconds(props.getNotificationCountTtlSeconds()))
                 .maximumSize(props.getNotificationCountMaxSize())
                 .build()
@@ -34,6 +35,7 @@ public class CacheConfig {
         CaffeineCache recentNotifications = new CaffeineCache(
             "recentNotifications",
             Caffeine.newBuilder()
+                .recordStats()
                 .expireAfterWrite(Duration.ofSeconds(props.getRecentNotificationsTtlSeconds()))
                 .maximumSize(props.getRecentNotificationsMaxSize())
                 .build()
