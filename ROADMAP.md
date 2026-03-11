@@ -22,6 +22,7 @@
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).
 - [ ] Finish edge-case handling in public upload/request forms and pricing bulk flows.
 : Added regression test `PublicMessagesConsistencyTest` to enforce SR/EN key presence for public error flows.
+: Extended i18n regression test to enforce placeholder-count consistency across SR/EN public keys.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).

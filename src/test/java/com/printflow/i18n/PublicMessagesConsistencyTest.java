@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class PublicMessagesConsistencyTest {
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\d+}");
 
     private static final List<String> PUBLIC_KEYS = List.of(
         "track.error.too_many_requests",
@@ -54,6 +58,8 @@ class PublicMessagesConsistencyTest {
             assertNotNull(srValue, "Missing SR key: " + key);
             assertFalse(enValue.isBlank(), "Empty EN key: " + key);
             assertFalse(srValue.isBlank(), "Empty SR key: " + key);
+            assertEquals(countPlaceholders(enValue), countPlaceholders(srValue),
+                "Placeholder count mismatch for key: " + key);
         }
     }
 
@@ -64,5 +70,14 @@ class PublicMessagesConsistencyTest {
             props.load(input);
             return props;
         }
+    }
+
+    private int countPlaceholders(String value) {
+        int count = 0;
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(value);
+        while (matcher.find()) {
+            count++;
+        }
+        return count;
     }
 }

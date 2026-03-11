@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
   - `printflow_rate_limit_auto_ban_total`
 - Unit tests for the new metrics counters in email and rate-limit services.
 - `PublicMessagesConsistencyTest` to guard SR/EN key coverage for public error messages.
+- `PublicMessagesConsistencyTest` now also validates placeholder-count parity between SR/EN public keys.
 
 ### Changed
 - Email pipeline reliability improved:
