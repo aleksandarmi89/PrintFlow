@@ -31,6 +31,7 @@
 : Extended i18n regression test coverage with public track-form validation keys (`track.error.*`).
 : Track form POST now carries `lang` so validation errors stay in the selected locale.
 : Public order error page now switches heading by error context (`order_not_found.*` vs `public.error.*`).
+: Public upload-reference POST now carries `lang` so upload validation errors keep selected locale after redirect.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).

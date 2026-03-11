@@ -287,6 +287,7 @@ public class PublicController extends BaseController {
                                   @RequestParam("file") MultipartFile[] files,
                                   @RequestParam(name = "description", required = false) String[] descriptions,
                                   @RequestParam(name = "fileMetaJson", required = false) String fileMetaJson,
+                                  @RequestParam(name = "lang", required = false) String lang,
                                   HttpServletRequest request,
                                   HttpServletResponse response,
                                   Model model) {
@@ -296,20 +297,20 @@ public class PublicController extends BaseController {
                 return renderOrderNotFound(model, response, "order_not_found.message", HttpServletResponse.SC_NOT_FOUND);
             }
             if (files == null || files.length == 0) {
-                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.select_file");
+                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.select_file", lang);
             }
             String ip = getClientIp(request);
             if (rateLimitService.isWhitelisted(ip)) {
                 // Skip rate limiting for whitelisted IPs
             } else {
             if (isBanned(ip)) {
-                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.access_denied");
+                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.access_denied", lang);
             }
             if (!checkGlobalRateLimit(ip)) {
-                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.too_many_requests");
+                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.too_many_requests", lang);
             }
             if (!checkTokenRateLimit(normalizedToken, ip)) {
-                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.too_many_requests");
+                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.too_many_requests", lang);
             }
             if (publicUploadRateLimitEnabled) {
                 boolean allowed = rateLimitService.allow(
@@ -318,18 +319,18 @@ public class PublicController extends BaseController {
                     publicUploadRateLimitWindowSeconds * 1000L
                 );
                 if (!allowed) {
-                    return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.too_many_uploads");
+                    return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.too_many_uploads", lang);
                 }
             }
             }
             WorkOrderDTO order = workOrderService.getWorkOrderByPublicToken(normalizedToken);
             long existingCount = fileStorageService.countClientFiles(order.getId());
             if (existingCount + files.length > publicMaxFilesPerOrder) {
-                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.limit_reached");
+                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.limit_reached", lang);
             }
             java.util.List<FileMeta> meta = parseFileMeta(fileMetaJson);
             if (meta.isEmpty() || meta.size() != files.length) {
-                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.metadata_mismatch");
+                return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.metadata_mismatch", lang);
             }
             boolean[] used = new boolean[files.length];
             for (int m = 0; m < meta.size(); m++) {
@@ -377,7 +378,7 @@ public class PublicController extends BaseController {
                     }
                 }
                 if (match < 0) {
-                    return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.metadata_mismatch");
+                    return redirectWithUploadErrorKey(normalizedToken, "public.upload.error.metadata_mismatch", lang);
                 }
                 used[match] = true;
                 MultipartFile file = files[match];
@@ -386,19 +387,23 @@ public class PublicController extends BaseController {
             return "redirect:/public/order/" + normalizedToken;
         } catch (BillingRequiredException e) {
             logBillingBlockedPublic("upload-reference", token);
-            return redirectWithUploadErrorKey(normalizePublicTokenOrFallback(token), "public.upload.error.unavailable");
+            return redirectWithUploadErrorKey(normalizePublicTokenOrFallback(token), "public.upload.error.unavailable", lang);
         } catch (Exception e) {
             log.warn("Public upload-reference failed for token={}: {}", token, e.toString());
-            return redirectWithUploadErrorKey(normalizePublicTokenOrFallback(token), "public.upload.error.generic");
+            return redirectWithUploadErrorKey(normalizePublicTokenOrFallback(token), "public.upload.error.generic", lang);
         }
     }
 
-    private String redirectWithUploadErrorKey(String token, String errorKey) {
+    private String redirectWithUploadErrorKey(String token, String errorKey, String lang) {
         String safeToken = normalizePublicTokenOrFallback(token);
         if (safeToken == null || safeToken.isBlank()) {
             return "public/order-not-found";
         }
-        return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey;
+        String normalizedLang = (lang == null || lang.isBlank()) ? null : lang.trim();
+        if (normalizedLang == null) {
+            return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey;
+        }
+        return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey + "&lang=" + normalizedLang;
     }
 
     private String renderOrderNotFound(Model model, HttpServletResponse response, String errorKey, int statusCode) {

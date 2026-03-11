@@ -9,6 +9,7 @@ import com.printflow.repository.CompanyRepository;
 import com.printflow.repository.TaskRepository;
 import com.printflow.repository.UserRepository;
 import com.printflow.repository.WorkOrderRepository;
+import com.printflow.service.RateLimitService;
 import com.printflow.testsupport.TenantTestFixture;
 import com.printflow.testsupport.TenantTestFixture.TenantIds;
 import java.time.LocalDateTime;
@@ -48,6 +49,7 @@ class PublicUploadReferenceIntegrationTest {
     @Autowired private TaskRepository taskRepository;
     @Autowired private AttachmentRepository attachmentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private RateLimitService rateLimitService;
 
     private TenantTestFixture fixture;
     private TenantIds ids;
@@ -65,10 +67,12 @@ class PublicUploadReferenceIntegrationTest {
             passwordEncoder
         );
         ids = fixture.createTenantData();
+        rateLimitService.clearInMemoryState();
     }
 
     @AfterEach
     void tearDown() throws Exception {
+        rateLimitService.clearInMemoryState();
         if (fixture != null) {
             fixture.cleanup();
         }
@@ -112,6 +116,27 @@ class PublicUploadReferenceIntegrationTest {
                 .with(csrf()))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/public/order/" + token + "?uploadErrorKey=public.upload.error.metadata_mismatch"));
+
+        assertClientFileCount(0L);
+    }
+
+    @Test
+    void uploadReferencePreservesLangInErrorRedirect() throws Exception {
+        String token = assignPublicToken("upload-metadata-lang");
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "proof.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("lang", "en")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?uploadErrorKey=public.upload.error.metadata_mismatch&lang=en"));
 
         assertClientFileCount(0L);
     }
