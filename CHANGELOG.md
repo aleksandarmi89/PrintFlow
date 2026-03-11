@@ -54,6 +54,7 @@ All notable changes to this project will be documented in this file.
 - CI quality workflow now includes `PublicTrackPageIntegrationTest` in the focused regression set.
 - Extended `PublicTrackPageIntegrationTest` with EN rendering and unsupported-locale hidden-lang fallback checks.
 - Added upload redirect regression for trimmed locale input (`\"  EN  \"` -> `lang=en`).
+- Added track redirect regression for trimmed locale input (`\"  EN  \"` -> `lang=en`).
 
 ## [1.2.3] - 2026-03-10
 

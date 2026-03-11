@@ -26,6 +26,7 @@
 : Expanded `quality-gates.yml` test set with `PublicTrackPageIntegrationTest` to cover public track page render regressions.
 : Added track-page regression checks for EN rendering and hidden `lang` fallback to `sr` on unsupported locale input.
 : Added upload redirect regression for trimmed locale normalization (`\"  EN  \"` => `en`).
+: Added track redirect regression for trimmed locale normalization (`\"  EN  \"` => `en`).
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).

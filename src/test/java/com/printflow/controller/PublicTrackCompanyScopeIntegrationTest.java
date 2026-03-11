@@ -177,6 +177,24 @@ class PublicTrackCompanyScopeIntegrationTest {
     }
 
     @Test
+    void trackFormRedirectTrimsAndNormalizesLocale() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-lang-trimmed";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("lang", "  EN  ")
+                .param("trackingCode", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
+    }
+
+    @Test
     void trackFormRejectsTooLongTrackingCode() throws Exception {
         String tooLongCode = "x".repeat(200);
 
