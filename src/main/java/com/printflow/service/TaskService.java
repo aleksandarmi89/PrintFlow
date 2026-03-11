@@ -13,7 +13,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -1132,54 +1131,6 @@ public class TaskService {
         timeEntryRepository.save(timeEntry);
     }
 
-    private List<Task> applyWorkerFilter(List<Task> tasks, String filter) {
-        LocalDateTime now = LocalDateTime.now();
-        return switch (filter) {
-            case "today" -> {
-                LocalDateTime start = now.toLocalDate().atStartOfDay();
-                LocalDateTime end = start.plusDays(1);
-                yield tasks.stream()
-                    .filter(t -> t.getDueDate() != null
-                        && !t.getDueDate().isBefore(start)
-                        && t.getDueDate().isBefore(end))
-                    .collect(Collectors.toList());
-            }
-            case "this_week" -> {
-                LocalDate startDate = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
-                LocalDateTime start = startDate.atStartOfDay();
-                LocalDateTime end = start.plusDays(7);
-                yield tasks.stream()
-                    .filter(t -> t.getDueDate() != null
-                        && !t.getDueDate().isBefore(start)
-                        && t.getDueDate().isBefore(end))
-                    .collect(Collectors.toList());
-            }
-            case "overdue" -> tasks.stream()
-                .filter(t -> t.getDueDate() != null && t.getDueDate().isBefore(now)
-                    && t.getStatus() != TaskStatus.COMPLETED)
-                .collect(Collectors.toList());
-            case "high_priority" -> tasks.stream()
-                .filter(t -> t.getPriority() == TaskPriority.HIGH)
-                .collect(Collectors.toList());
-            default -> tasks;
-        };
-    }
-
-    private List<Task> applyWorkerSort(List<Task> tasks, String sort, String dir) {
-        boolean desc = "desc".equalsIgnoreCase(dir);
-        Comparator<Task> comparator = switch (sort) {
-            case "dueDate" -> Comparator.comparing(Task::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "priority" -> Comparator.comparing(Task::getPriority, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "createdAt" -> Comparator.comparing(Task::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "status" -> Comparator.comparing(Task::getStatus, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(Task::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        if (desc) {
-            comparator = comparator.reversed();
-        }
-        return tasks.stream().sorted(comparator).collect(Collectors.toList());
-    }
-
     private Pageable applyWorkerSort(Pageable pageable, String sort, String dir) {
         if (sort == null || sort.isBlank()) {
             return pageable;
@@ -1249,14 +1200,6 @@ public class TaskService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-    }
-
-    private Page<Task> pageFromList(List<Task> tasks, Pageable pageable) {
-        int total = tasks.size();
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), total);
-        List<Task> content = start >= total ? List.of() : tasks.subList(start, end);
-        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
     private Set<String> extractMentions(String comment) {
@@ -1426,47 +1369,6 @@ public class TaskService {
             
             return dto;
         
-    }
-
-    private TaskDetailsDTO convertToTaskDetailsDTO(Task task) {
-        TaskDetailsDTO dto = new TaskDetailsDTO();
-        dto.setId(task.getId());
-        dto.setTitle(task.getTitle());
-        dto.setDescription(task.getDescription());
-        dto.setStatus(task.getStatus().name());
-        dto.setNotes(task.getNotes());
-        dto.setPriority(task.getPriority() != null ? task.getPriority().name() : "MEDIUM");
-        dto.setProgress(task.getProgress() != null ? task.getProgress() : 0);
-        dto.setDueDate(task.getDueDate());
-        dto.setEstimatedHours(task.getEstimatedHours());
-        dto.setActualHours(task.getActualHours());
-        dto.setCreatedAt(task.getCreatedAt());
-        dto.setUpdatedAt(task.getUpdatedAt());
-        dto.setStartedAt(task.getStartedAt());
-        dto.setCompletedAt(task.getCompletedAt());
-        dto.setOverdue(task.isOverdue());
-        dto.setAssignedAt(task.getAssignedAt());
-        dto.setTimerStartedAt(task.getTimerStartedAt());
-        dto.setActualMinutes(task.getActualMinutes() != null ? task.getActualMinutes() : 0);
-        
-        if (task.getWorkOrder() != null) {
-            dto.setWorkOrderId(task.getWorkOrder().getId());
-            dto.setOrderNumber(task.getWorkOrder().getOrderNumber());
-            dto.setOrderTitle(task.getWorkOrder().getTitle());
-        }
-        
-        if (task.getAssignedTo() != null) {
-            dto.setAssignedToId(task.getAssignedTo().getId());
-            dto.setAssignedToName(task.getAssignedTo().getFullName());
-            dto.setAssignedToEmail(task.getAssignedTo().getEmail());
-        }
-        
-        if (task.getCreatedBy() != null) {
-            dto.setCreatedById(task.getCreatedBy().getId());
-            dto.setCreatedByName(task.getCreatedBy().getFullName());
-        }
-        
-        return dto;
     }
 
     private TaskActivityDTO convertToTaskActivityDTO(TaskActivity activity) {
