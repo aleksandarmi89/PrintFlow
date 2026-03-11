@@ -31,5 +31,11 @@ class SecurityLogoutIntegrationTest {
             .andExpect(redirectedUrl("/login?logout=true"))
             .andExpect(cookie().maxAge("JSESSIONID", 0));
     }
-}
 
+    @Test
+    void logoutWithoutCsrfIsForbidden() throws Exception {
+        mockMvc.perform(post("/logout")
+                .with(user("test-admin").roles("ADMIN")))
+            .andExpect(status().isForbidden());
+    }
+}
