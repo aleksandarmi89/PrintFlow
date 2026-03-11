@@ -16,6 +16,9 @@ class PublicMessagesConsistencyTest {
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\d+}");
 
     private static final List<String> PUBLIC_KEYS = List.of(
+        "track.error.required",
+        "track.error.company_mismatch",
+        "track.error.invalid_code",
         "track.error.too_many_requests",
         "public.error.access_denied",
         "public.error.too_many_requests",
