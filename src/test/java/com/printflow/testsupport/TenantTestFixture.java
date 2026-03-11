@@ -65,8 +65,8 @@ public class TenantTestFixture {
         Company tenant1 = getOrCreateCompany("Tenant One");
         Company tenant2 = getOrCreateCompany("Tenant Two");
 
-        User user1 = getOrCreateUser("tenant1_admin", tenant1, Role.ADMIN);
-        User user2 = getOrCreateUser("tenant2_admin", tenant2, Role.ADMIN);
+        getOrCreateUser("tenant1_admin", tenant1, Role.ADMIN);
+        getOrCreateUser("tenant2_admin", tenant2, Role.ADMIN);
 
         Client client = getOrCreateClient("client1@example.com", tenant1, "Client One");
 

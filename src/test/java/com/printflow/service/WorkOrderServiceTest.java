@@ -26,7 +26,6 @@ class WorkOrderServiceTest {
         UserRepository userRepository = Mockito.mock(UserRepository.class);
         AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
         OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
-        FileStorageService fileStorageService = Mockito.mock(FileStorageService.class);
         TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
         NotificationService notificationService = Mockito.mock(NotificationService.class);
         AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
@@ -44,7 +43,6 @@ class WorkOrderServiceTest {
             userRepository,
             attachmentRepository,
             orderNumberGenerator,
-            fileStorageService,
             tenantGuard,
             notificationService,
             auditLogService,

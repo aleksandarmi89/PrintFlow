@@ -2,7 +2,6 @@ package com.printflow.service;
 
 import com.printflow.entity.Company;
 import com.printflow.entity.TimeEntry;
-import com.printflow.entity.WorkOrder;
 import com.printflow.entity.WorkOrderItem;
 import com.printflow.repository.TimeEntryRepository;
 import com.printflow.repository.WorkOrderItemRepository;
@@ -31,7 +30,7 @@ public class WorkOrderProfitService {
     }
 
     public ProfitResult calculateRealProfit(Long workOrderId, Company company) {
-        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(workOrderId, company.getId())
+        workOrderRepository.findByIdAndCompany_Id(workOrderId, company.getId())
             .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
 
         List<WorkOrderItem> items = workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(workOrderId, company.getId());

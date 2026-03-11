@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.context.ApplicationContext;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,7 +34,7 @@ class NotificationCacheTest {
     @MockBean private EmailService emailService;
     @MockBean private EmailTemplateService emailTemplateService;
     @MockBean private CompanyBrandingService companyBrandingService;
-    @MockBean private ApplicationContext applicationContext;
+    @MockBean private ApplicationEventPublisher applicationEventPublisher;
 
     @BeforeEach
     void setUp() {
