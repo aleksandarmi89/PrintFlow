@@ -3,13 +3,9 @@ package com.printflow.config;
 import com.printflow.entity.User;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,36 +21,21 @@ public class SecurityConfig {
     
     // Spring će sam pronaći tvoj UserService (ili UserDetailsService) i PasswordEncoder
     private final UserDetailsService userDetailsService;
-    private final PasswordEncoder passwordEncoder;
     private final boolean corsEnabled;
     private final List<String> corsAllowedOrigins;
     private final boolean hstsEnabled;
 
     public SecurityConfig(UserDetailsService userDetailsService,
-                          PasswordEncoder passwordEncoder,
                           @Value("${app.security.cors.enabled:false}") boolean corsEnabled,
                           @Value("${app.security.cors.allowed-origins:}") List<String> corsAllowedOrigins,
                           @Value("${app.security.hsts.enabled:false}") boolean hstsEnabled) {
 		super();
 		this.userDetailsService = userDetailsService;
-		this.passwordEncoder = passwordEncoder;
         this.corsEnabled = corsEnabled;
         this.corsAllowedOrigins = corsAllowedOrigins;
         this.hstsEnabled = hstsEnabled;
 	}
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);       // Bez zagrada, koristimo polje
-        return authProvider;
-    }
-    
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
-    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -123,7 +104,7 @@ public class SecurityConfig {
                         .maxAgeInSeconds(31536000));
                 }
             })
-            .authenticationProvider(authenticationProvider());
+            .userDetailsService(userDetailsService);
         
         return http.build();
     }
