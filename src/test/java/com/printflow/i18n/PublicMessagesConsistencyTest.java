@@ -24,6 +24,7 @@ class PublicMessagesConsistencyTest {
         "public.error.access_denied",
         "public.error.too_many_requests",
         "public.error.too_many_requests_for_order",
+        "public.error.heading",
         "public.error.request_unavailable",
         "public.error.unable_to_process",
         "public.design_feedback.page_title",

@@ -44,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - Public order tracking approval form now also includes hidden `lang` to preserve selected locale on POST.
 - Added i18n regression checks to keep shared public error texts consistent across related keys (within EN and SR bundles).
 - CI quality workflow now also includes `PublicOrderTokenIntegrationTest` in focused public regression suite.
+- i18n consistency regression now also covers `public.error.heading` key across EN/SR bundles.
 
 ## [1.2.3] - 2026-03-10
 
