@@ -30,12 +30,12 @@ jobs:
         if: runner.os != 'Windows'
         run: >
           ./mvnw -B
-          -Dtest=PublicTrackCompanyScopeIntegrationTest,PublicOrderTokenIntegrationTest,PublicErrorStatusIntegrationTest,PublicUploadReferenceIntegrationTest,PublicMessagesConsistencyTest,MonitoringAssetsSmokeTest,ManagementMetricsIntegrationTest
+          -Dtest=PublicTrackCompanyScopeIntegrationTest,PublicTrackPageIntegrationTest,PublicOrderTokenIntegrationTest,PublicErrorStatusIntegrationTest,PublicUploadReferenceIntegrationTest,PublicMessagesConsistencyTest,MonitoringAssetsSmokeTest,ManagementMetricsIntegrationTest
           test
 
       - name: Run focused regression tests (Windows)
         if: runner.os == 'Windows'
         run: >
           .\mvnw.cmd -B
-          -Dtest=PublicTrackCompanyScopeIntegrationTest,PublicOrderTokenIntegrationTest,PublicErrorStatusIntegrationTest,PublicUploadReferenceIntegrationTest,PublicMessagesConsistencyTest,MonitoringAssetsSmokeTest,ManagementMetricsIntegrationTest
+          -Dtest=PublicTrackCompanyScopeIntegrationTest,PublicTrackPageIntegrationTest,PublicOrderTokenIntegrationTest,PublicErrorStatusIntegrationTest,PublicUploadReferenceIntegrationTest,PublicMessagesConsistencyTest,MonitoringAssetsSmokeTest,ManagementMetricsIntegrationTest
           test

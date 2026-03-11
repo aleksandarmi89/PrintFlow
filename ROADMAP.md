@@ -23,6 +23,7 @@
 : Added CI workflow `quality-gates.yml` to run focused regression smoke tests on push/PR (Linux + Windows matrix).
 : Expanded `quality-gates.yml` test set with `PublicErrorStatusIntegrationTest` and `PublicUploadReferenceIntegrationTest`.
 : Expanded `quality-gates.yml` test set with `PublicOrderTokenIntegrationTest` for public token/locale flow coverage.
+: Expanded `quality-gates.yml` test set with `PublicTrackPageIntegrationTest` to cover public track page render regressions.
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).
