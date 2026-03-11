@@ -187,22 +187,7 @@ public class AttachmentService {
         dto.setUploadedAt(attachment.getUploadedAt());
         dto.setThumbnailPath(attachment.getThumbnailPath());
         dto.setActive(attachment.isActive());
-        dto.setFormattedSize(formatFileSize(attachment.getFileSize()));
-        dto.setIsImage(attachment.getMimeType() != null && attachment.getMimeType().startsWith("image/"));
-        
         return dto;
-    }
-
-    private String formatFileSize(long size) {
-        if (size < 1024) {
-            return size + " B";
-        } else if (size < 1024 * 1024) {
-            return String.format("%.1f KB", size / 1024.0);
-        } else if (size < 1024 * 1024 * 1024) {
-            return String.format("%.1f MB", size / (1024.0 * 1024.0));
-        } else {
-            return String.format("%.1f GB", size / (1024.0 * 1024.0 * 1024.0));
-        }
     }
     
     public static class AttachmentStatsDTO {
