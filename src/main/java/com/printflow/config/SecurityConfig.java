@@ -14,6 +14,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity // Ovo će automatski napraviti konstruktor za final polja
@@ -112,11 +113,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        if (!corsEnabled || corsAllowedOrigins == null || corsAllowedOrigins.isEmpty()) {
+        List<String> allowedOrigins = corsAllowedOrigins == null
+            ? List.of()
+            : corsAllowedOrigins.stream()
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .collect(Collectors.toList());
+        if (!corsEnabled || allowedOrigins.isEmpty()) {
             return source;
         }
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(corsAllowedOrigins);
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "X-CSRF-TOKEN"));
         config.setAllowCredentials(true);
