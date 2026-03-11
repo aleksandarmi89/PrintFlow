@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -38,6 +39,7 @@ class EmailServiceTest {
             true,
             "no-reply@printflow.local",
             2,
+            0L,
             Optional.empty()
         );
 
@@ -67,6 +69,7 @@ class EmailServiceTest {
             true,
             "no-reply@printflow.local",
             2,
+            0L,
             Optional.empty()
         );
 
@@ -105,6 +108,7 @@ class EmailServiceTest {
             true,
             "no-reply@printflow.local",
             2,
+            0L,
             Optional.empty()
         );
 
@@ -141,6 +145,7 @@ class EmailServiceTest {
             true,
             "no-reply@printflow.local",
             1,
+            0L,
             Optional.of(registry)
         );
 
@@ -156,5 +161,48 @@ class EmailServiceTest {
         double retries = registry.get("printflow_email_send_retries_total").counter().count();
         assertEquals(1.0d, failures);
         assertEquals(0.0d, retries);
+    }
+
+    @Test
+    void sendNowAppliesBackoffBetweenRetries() {
+        MailSenderResolver resolver = mock(MailSenderResolver.class);
+        EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
+        TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
+        when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(outboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
+        MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(sender.createMimeMessage()).thenReturn(mimeMessage);
+        doThrow(new RuntimeException("temporary smtp failure"))
+            .doNothing()
+            .when(sender)
+            .send(any(MimeMessage.class));
+        when(resolver.resolve(any())).thenReturn(new MailSenderResolver.ResolvedMailSender(sender, null));
+
+        EmailService service = new EmailService(
+            resolver,
+            outboxRepository,
+            rateLimiter,
+            true,
+            "no-reply@printflow.local",
+            2,
+            30L,
+            Optional.empty()
+        );
+
+        EmailMessage msg = new EmailMessage();
+        msg.setTo("customer@example.com");
+        msg.setSubject("Subject");
+        msg.setTextBody("Body");
+        Company company = new Company();
+        company.setId(1L);
+
+        long startNs = System.nanoTime();
+        assertDoesNotThrow(() -> service.sendNow(msg, company, "test-template"));
+        long elapsedMs = (System.nanoTime() - startNs) / 1_000_000L;
+
+        verify(sender, times(2)).send(any(MimeMessage.class));
+        assertTrue(elapsedMs >= 25, "Expected retry backoff to add delay, elapsedMs=" + elapsedMs);
     }
 }

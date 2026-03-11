@@ -38,6 +38,7 @@ public class EmailService {
     private final boolean emailEnabled;
     private final String defaultFrom;
     private final int sendAttempts;
+    private final long retryBackoffMs;
     private final Counter retryCounter;
     private final Counter failedCounter;
 
@@ -47,6 +48,7 @@ public class EmailService {
                         @Value("${app.notification.email.enabled:false}") boolean emailEnabled,
                         @Value("${app.notification.email.from:no-reply@printflow.local}") String defaultFrom,
                         @Value("${app.notification.email.send-attempts:2}") int sendAttempts,
+                        @Value("${app.notification.email.retry-backoff-ms:0}") long retryBackoffMs,
                         Optional<MeterRegistry> meterRegistry) {
         this.mailSenderResolver = mailSenderResolver;
         this.outboxRepository = outboxRepository;
@@ -54,6 +56,7 @@ public class EmailService {
         this.emailEnabled = emailEnabled;
         this.defaultFrom = defaultFrom;
         this.sendAttempts = Math.max(1, sendAttempts);
+        this.retryBackoffMs = Math.max(0L, retryBackoffMs);
         this.retryCounter = meterRegistry.map(registry ->
             Counter.builder("printflow_email_send_retries_total")
                 .description("Total number of email send retries")
@@ -192,6 +195,14 @@ public class EmailService {
                         to, subject, attempt, sendAttempts, ex.getClass().getSimpleName());
                     log.debug("Email send retry failure details for to={} subject={} attempt={}/{}",
                         to, subject, attempt, sendAttempts, ex);
+                    if (retryBackoffMs > 0) {
+                        try {
+                            Thread.sleep(retryBackoffMs);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("Email retry backoff interrupted", ie);
+                        }
+                    }
                 }
             }
         }

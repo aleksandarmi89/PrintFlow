@@ -5,7 +5,7 @@
 1. Stabilization and hardening
 - [x] Resolve async email outbox FK race conditions seen in integration logs.
 - [x] Add retry behavior for transient SMTP failures before outbox failure state.
-- [ ] Add optional backoff between retries (if needed after production telemetry).
+- [x] Add optional backoff between retries (`app.notification.email.retry-backoff-ms`).
 
 2. Observability and operations
 - [x] Add structured logging around public request, pricing, and billing flows.

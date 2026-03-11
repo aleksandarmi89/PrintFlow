@@ -80,6 +80,10 @@ Emails are sent using SMTP configured on the company profile.
 Fallback to global mail sender can be enabled with:
 `APP_EMAIL_FALLBACK=true` (default: false in prod, true in dev)
 
+Email retry tuning:
+`app.notification.email.send-attempts` (default `2`)
+`app.notification.email.retry-backoff-ms` (default `0`)
+
 ## Plans and Limits
 Plan limits (defaults, configurable in `app.plans.*`):
 
