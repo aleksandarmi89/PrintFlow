@@ -116,16 +116,8 @@ public class AttachmentDTO {
         }
     }
     
-    public void setFormattedSize(String formattedSize) {
-        // computed from fileSize
-    }
-    
     public boolean getIsImage() { 
         return mimeType != null && mimeType.startsWith("image/");
-    }
-    
-    public void setIsImage(boolean isImage) {
-        // computed from mimeType
     }
     
     public String getUploadedByName() {
