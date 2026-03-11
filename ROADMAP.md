@@ -16,6 +16,7 @@
 - [ ] Wire dashboards/alerts for the new counters in the target monitoring stack.
 : Added starter Prometheus alert rules in `ops/monitoring/prometheus-alerts.yml` for handoff.
 : Added starter Grafana dashboard in `ops/monitoring/grafana-dashboard.json` for handoff.
+: Added deployment checklist in `ops/monitoring/README.md`.
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).

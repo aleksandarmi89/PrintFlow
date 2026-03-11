@@ -157,3 +157,4 @@ Prometheus starter rule file:
 Grafana starter dashboard:
 - Import `ops/monitoring/grafana-dashboard.json` into Grafana.
 - Set datasource to your Prometheus instance.
+- Deployment notes/checklist: `ops/monitoring/README.md`
