@@ -6,7 +6,7 @@ import com.printflow.pricing.dto.ProductSyncResult;
 
 public interface ProductExternalSyncFacade {
     /**
-     * TODO: implement when external provider sync is introduced (pull/webhook/scheduled).
+     * Implementations may support pull/webhook/scheduled provider synchronization.
      */
     ProductSyncResult syncFromExternalProvider(Company company);
 

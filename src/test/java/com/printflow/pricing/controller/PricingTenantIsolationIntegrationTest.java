@@ -158,7 +158,7 @@ class PricingTenantIsolationIntegrationTest {
             .andReturn();
 
         Map<?, ?> response = objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
-        List<Map<String, Object>> breakdown = (List<Map<String, Object>>) response.get("breakdown");
+        List<Map<String, Object>> breakdown = extractBreakdownRows(response.get("breakdown"));
         BigDecimal sum = BigDecimal.ZERO;
         if (breakdown != null) {
             for (Map<String, Object> row : breakdown) {
@@ -170,6 +170,20 @@ class PricingTenantIsolationIntegrationTest {
         }
         BigDecimal totalCost = new BigDecimal(response.get("totalCost").toString());
         org.assertj.core.api.Assertions.assertThat(sum).isEqualByComparingTo(totalCost);
+    }
+
+    private List<Map<String, Object>> extractBreakdownRows(Object rawBreakdown) {
+        if (!(rawBreakdown instanceof List<?> rows)) {
+            return List.of();
+        }
+        return rows.stream()
+            .filter(Map.class::isInstance)
+            .map(row -> {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> typed = (Map<String, Object>) row;
+                return typed;
+            })
+            .toList();
     }
 
     @Test
