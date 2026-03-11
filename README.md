@@ -153,3 +153,7 @@ Operational note:
 
 Prometheus starter rule file:
 - `ops/monitoring/prometheus-alerts.yml`
+
+Grafana starter dashboard:
+- Import `ops/monitoring/grafana-dashboard.json` into Grafana.
+- Set datasource to your Prometheus instance.

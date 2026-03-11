@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - `README.md` extended with observability/Actuator usage and metric query examples.
 - Added baseline alert thresholds for email failure spikes and rate-limit auto-ban spikes.
 - Added starter Prometheus alert rules at `ops/monitoring/prometheus-alerts.yml`.
+- Added starter Grafana dashboard at `ops/monitoring/grafana-dashboard.json`.
 
 ## [1.2.3] - 2026-03-10
 
