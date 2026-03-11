@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- Runtime metrics for email and rate-limiter flows:
+  - `printflow_email_send_retries_total`
+  - `printflow_email_send_failures_total`
+  - `printflow_rate_limit_denied_total`
+  - `printflow_rate_limit_auto_ban_total`
+- Unit tests for the new metrics counters in email and rate-limit services.
+
+### Changed
+- Email pipeline reliability improved:
+  - async notifications are now emitted after transaction commit,
+  - transient SMTP send failures are retried before marking outbox as failed.
+- Structured logs expanded for:
+  - public request lifecycle,
+  - pricing calculation start/end,
+  - billing checkout/webhook/subscription upsert,
+  - rate-limit denials and auto-ban events.
+- Maven/test encoding hardened to UTF-8 in `pom.xml` (Surefire + project encodings).
+- `README.md` extended with observability/Actuator usage and metric query examples.
+
 ## [1.2.3] - 2026-03-10
 
 ### Added
@@ -38,4 +60,3 @@ All notable changes to this project will be documented in this file.
 
 ### Tags
 - Release tag: `v1.2.3`
-
