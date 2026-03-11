@@ -112,7 +112,7 @@ public class NotificationService {
                 trackingCode,
                 link,
                 link);
-        sendEmailInternal(order.getClient().getEmail(), subject, body, true, resolveCompanyFrom(order.getCompany()), order.getCompany());
+        sendEmailInternal(order.getClient().getEmail(), subject, body, true, order.getCompany());
     }
 
     public void notifyClientStatusChanged(WorkOrder order) {
@@ -157,7 +157,7 @@ public class NotificationService {
               <p><strong>Company:</strong> %s</p>
             </div>
             """.formatted(company.getName() != null ? company.getName() : "PrintFlow");
-        sendEmailInternal(toEmail, subject, body, true, resolveCompanyFrom(company), company);
+        sendEmailInternal(toEmail, subject, body, true, company);
     }
 
     private void sendClientEmail(String to, String subject, String body, Company company) {
@@ -169,7 +169,7 @@ public class NotificationService {
             return;
         }
         log.info("[CLIENT_EMAIL] to={} subject={} body={}", to, subject, body);
-        sendEmailInternal(to, subject, body, false, resolveCompanyFrom(company), company);
+        sendEmailInternal(to, subject, body, false, company);
     }
     
     // ==================== USER NOTIFICATIONS ====================
@@ -586,7 +586,7 @@ public class NotificationService {
         if (preview == null) {
             throw new RuntimeException("Preview is missing");
         }
-        sendEmailInternal(toEmail, preview.getSubject(), preview.getHtml(), true, null, null);
+        sendEmailInternal(toEmail, preview.getSubject(), preview.getHtml(), true, null);
     }
 
     private String buildDesignFeedbackMessage(String result, String orderNumber, String comment) {
@@ -680,15 +680,15 @@ public class NotificationService {
     // ==================== PRIVATE METHODS ====================
     
     private void sendEmail(String to, String subject, String body) {
-        sendEmailInternal(to, subject, body, false, null, null);
+        sendEmailInternal(to, subject, body, false, null);
     }
 
     private void sendHtmlEmail(String to, String subject, String htmlBody) {
-        sendEmailInternal(to, subject, htmlBody, true, null, null);
+        sendEmailInternal(to, subject, htmlBody, true, null);
     }
 
     private void sendHtmlEmail(String to, String subject, String htmlBody, Company company) {
-        sendEmailInternal(to, subject, htmlBody, true, resolveCompanyFrom(company), company);
+        sendEmailInternal(to, subject, htmlBody, true, company);
     }
 
     private void sendTaskEmail(User user, String subject, String taskTitle, String link) {
@@ -802,7 +802,7 @@ public class NotificationService {
         }
     }
 
-    private void sendEmailInternal(String to, String subject, String body, boolean html, String fromOverride, Company company) {
+    private void sendEmailInternal(String to, String subject, String body, boolean html, Company company) {
         com.printflow.dto.EmailMessage message = new com.printflow.dto.EmailMessage();
         message.setTo(to);
         message.setSubject(subject);
@@ -812,21 +812,6 @@ public class NotificationService {
             message.setTextBody(body);
         }
         emailService.send(message, company, null);
-    }
-
-    private String resolveCompanyFrom(Company company) {
-        if (company == null) {
-            return null;
-        }
-        String email = company.getEmail();
-        if (email != null && !email.isBlank()) {
-            return email.trim();
-        }
-        String smtpUser = company.getSmtpUser();
-        if (smtpUser != null && !smtpUser.isBlank()) {
-            return smtpUser.trim();
-        }
-        return null;
     }
 
     public void sendPasswordResetEmail(User user, String resetUrl, String token) {
@@ -855,12 +840,12 @@ public class NotificationService {
               <p style="font-size:12px;color:#555;word-break:break-all;">%s</p>
             </div>
             """.formatted(renderLogoHtml(logoUrl), resetUrl, resetUrl);
-        sendEmailInternal(user.getEmail(), subject, body, true, resolveCompanyFrom(company), company);
+        sendEmailInternal(user.getEmail(), subject, body, true, company);
     }
     
     private void sendEmailNotification(WorkOrder order, String message) {
         if (order.getClient() != null && order.getClient().getEmail() != null) {
-            sendEmailInternal(order.getClient().getEmail(), "Order Update", message, false, resolveCompanyFrom(order.getCompany()), order.getCompany());
+            sendEmailInternal(order.getClient().getEmail(), "Order Update", message, false, order.getCompany());
         }
     }
 
