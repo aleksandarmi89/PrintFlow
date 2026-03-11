@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Email pipeline reliability improved:
   - async notifications are now emitted after transaction commit,
   - transient SMTP send failures are retried before marking outbox as failed.
+  - test profile uses synchronous email executor for deterministic integration runs.
 - Structured logs expanded for:
   - public request lifecycle,
   - pricing calculation start/end,

@@ -20,6 +20,7 @@ app:
   notification:
     email:
       enabled: false
+      async: false
   seed:
     enabled: false
     sample:
