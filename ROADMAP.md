@@ -6,6 +6,7 @@
 - [x] Resolve async email outbox FK race conditions seen in integration logs.
 - [x] Add retry behavior for transient SMTP failures before outbox failure state.
 - [x] Add optional backoff between retries (`app.notification.email.retry-backoff-ms`).
+: Maven build now enforces Java/Maven minimum versions (`maven-enforcer-plugin`).
 
 2. Observability and operations
 - [x] Add structured logging around public request, pricing, and billing flows.
