@@ -137,3 +137,12 @@ Custom counters added:
 Quick checks:
 `curl http://localhost:8088/management/metrics/printflow_email_send_retries_total`
 `curl http://localhost:8088/management/metrics/printflow_rate_limit_denied_total`
+
+Alert baseline (recommended):
+- Email failure spike (warning): `increase(printflow_email_send_failures_total[5m]) > 5`
+- Email failure spike (critical): `increase(printflow_email_send_failures_total[5m]) > 20`
+- Rate-limit abuse spike (warning): `increase(printflow_rate_limit_auto_ban_total[10m]) > 3`
+- Rate-limit abuse spike (critical): `increase(printflow_rate_limit_auto_ban_total[10m]) > 10`
+
+Operational note:
+- Track `printflow_email_send_retries_total` alongside failures. Rising retries with low failures usually indicates upstream SMTP instability before user-visible impact.

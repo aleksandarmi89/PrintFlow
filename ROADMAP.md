@@ -12,6 +12,7 @@
 - [x] Add structured logging for rate-limit denials and auto-ban activity.
 - [x] Add lightweight counters for email failures/retries and rate-limit events.
 - [x] Add smoke test for custom counter presence on `/management/metrics`.
+- [x] Define baseline alert thresholds for email failures and auto-ban spikes.
 - [ ] Wire dashboards/alerts for the new counters in the target monitoring stack.
 
 3. UX and workflow polish
@@ -20,4 +21,4 @@
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).
-- Define alert thresholds (example): 5xx email failures/min and repeated auto-ban spikes.
+- Wire dashboard and alert rules in your monitoring stack (Prometheus/Grafana or equivalent).
