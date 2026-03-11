@@ -22,6 +22,7 @@
 : Added `MonitoringAssetsSmokeTest` to guard handoff file presence and key metric references.
 : Added CI workflow `quality-gates.yml` to run focused regression smoke tests on push/PR (Linux + Windows matrix).
 : Expanded `quality-gates.yml` test set with `PublicErrorStatusIntegrationTest` and `PublicUploadReferenceIntegrationTest`.
+: Expanded `quality-gates.yml` test set with `PublicOrderTokenIntegrationTest` for public token/locale flow coverage.
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).
