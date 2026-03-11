@@ -14,6 +14,7 @@
 - [x] Add smoke test for custom counter presence on `/management/metrics`.
 - [x] Define baseline alert thresholds for email failures and auto-ban spikes.
 - [ ] Wire dashboards/alerts for the new counters in the target monitoring stack.
+: Added starter Prometheus alert rules in `ops/monitoring/prometheus-alerts.yml` for handoff.
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).

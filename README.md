@@ -146,3 +146,6 @@ Alert baseline (recommended):
 
 Operational note:
 - Track `printflow_email_send_retries_total` alongside failures. Rising retries with low failures usually indicates upstream SMTP instability before user-visible impact.
+
+Prometheus starter rule file:
+- `ops/monitoring/prometheus-alerts.yml`

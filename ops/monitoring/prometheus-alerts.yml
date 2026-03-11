@@ -1,0 +1,42 @@
+groups:
+  - name: printflow-observability
+    rules:
+      - alert: PrintFlowEmailFailuresWarning
+        expr: increase(printflow_email_send_failures_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: printflow
+        annotations:
+          summary: "PrintFlow email failures are elevated"
+          description: "Email send failures exceeded 5 in the last 5 minutes."
+
+      - alert: PrintFlowEmailFailuresCritical
+        expr: increase(printflow_email_send_failures_total[5m]) > 20
+        for: 3m
+        labels:
+          severity: critical
+          service: printflow
+        annotations:
+          summary: "PrintFlow email failures are critical"
+          description: "Email send failures exceeded 20 in the last 5 minutes."
+
+      - alert: PrintFlowRateLimitAutoBanWarning
+        expr: increase(printflow_rate_limit_auto_ban_total[10m]) > 3
+        for: 10m
+        labels:
+          severity: warning
+          service: printflow
+        annotations:
+          summary: "PrintFlow auto-ban activity is elevated"
+          description: "Auto-ban events exceeded 3 in the last 10 minutes."
+
+      - alert: PrintFlowRateLimitAutoBanCritical
+        expr: increase(printflow_rate_limit_auto_ban_total[10m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          service: printflow
+        annotations:
+          summary: "PrintFlow auto-ban activity is critical"
+          description: "Auto-ban events exceeded 10 in the last 10 minutes."
