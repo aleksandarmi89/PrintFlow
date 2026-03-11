@@ -1245,7 +1245,7 @@ public class TaskService {
         dto.setId(task.getId());
         dto.setTitle(task.getTitle());
         dto.setDescription(task.getDescription());
-        dto.setStatus(task.getStatus().name());
+        dto.setStatus(statusName(task.getStatus()));
         dto.setPriority(task.getPriority() != null ? task.getPriority().name() : "MEDIUM");
         dto.setProgress(task.getProgress() != null ? task.getProgress() : 0);
         dto.setDueDate(task.getDueDate());
@@ -1318,7 +1318,7 @@ public class TaskService {
             dto.setId(task.getId());
             dto.setTitle(task.getTitle());
             dto.setDescription(task.getDescription());
-            dto.setStatus(task.getStatus().name());
+            dto.setStatus(statusName(task.getStatus()));
             dto.setPriority(task.getPriority() != null ? task.getPriority().name() : "MEDIUM");
             dto.setDueDate(task.getDueDate());
             dto.setCreatedAt(task.getCreatedAt());
