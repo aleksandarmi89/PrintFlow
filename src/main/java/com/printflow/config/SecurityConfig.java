@@ -103,6 +103,8 @@ public class SecurityConfig {
                         .includeSubDomains(true)
                         .preload(true)
                         .maxAgeInSeconds(31536000));
+                } else {
+                    headers.httpStrictTransportSecurity(hsts -> hsts.disable());
                 }
             })
             .userDetailsService(userDetailsService);
