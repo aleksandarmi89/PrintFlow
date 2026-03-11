@@ -137,6 +137,7 @@ public class PublicController extends BaseController {
 	// Glavna stranica za praćenje naloga
     @GetMapping("/order/{token}")
     public String trackOrder(@PathVariable String token,
+                             @RequestParam(required = false) String lang,
                              @RequestParam(required = false) String uploadError,
                              @RequestParam(required = false) String uploadErrorKey,
                              HttpServletRequest request,
@@ -148,13 +149,13 @@ public class PublicController extends BaseController {
                 return renderOrderNotFound(model, response, "order_not_found.message", HttpServletResponse.SC_NOT_FOUND);
             }
             if (!normalizedToken.equals(token)) {
-                return "redirect:/public/order/" + normalizedToken;
+                return redirectToPublicOrder(normalizedToken, lang);
             }
             if (normalizedToken != null && !normalizedToken.isBlank()) {
                 try {
                     String resolvedToken = workOrderService.resolvePublicTokenFromOrderNumber(normalizedToken);
                     if (!resolvedToken.equals(normalizedToken)) {
-                        return "redirect:/public/order/" + resolvedToken;
+                        return redirectToPublicOrder(resolvedToken, lang);
                     }
                 } catch (Exception ignored) {
                     // Not an order number or not resolvable, continue with token lookup
@@ -387,7 +388,7 @@ public class PublicController extends BaseController {
                 MultipartFile file = files[match];
                 fileStorageService.uploadPublicFile(file, order.getId(), normalizedToken, AttachmentType.CLIENT_FILE, desc);
             }
-            return "redirect:/public/order/" + normalizedToken;
+            return redirectToPublicOrder(normalizedToken, lang);
         } catch (BillingRequiredException e) {
             logBillingBlockedPublic("upload-reference", token);
             return redirectWithUploadErrorKey(normalizePublicTokenOrFallback(token), "public.upload.error.unavailable", lang);
@@ -407,6 +408,14 @@ public class PublicController extends BaseController {
             return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey;
         }
         return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey + "&lang=" + normalizedLang;
+    }
+
+    private String redirectToPublicOrder(String token, String lang) {
+        String normalizedLang = normalizePublicLang(lang);
+        if (normalizedLang == null) {
+            return "redirect:/public/order/" + token;
+        }
+        return "redirect:/public/order/" + token + "?lang=" + normalizedLang;
     }
 
     private String normalizePublicLang(String lang) {

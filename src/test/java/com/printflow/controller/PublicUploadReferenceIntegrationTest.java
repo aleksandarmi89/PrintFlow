@@ -218,9 +218,10 @@ class PublicUploadReferenceIntegrationTest {
         mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
                 .file(file)
                 .param("fileMetaJson", okMetaJson)
+                .param("lang", "en")
                 .with(csrf()))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/public/order/" + token));
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
 
         List<Attachment> clientFiles = attachmentRepository
             .findByWorkOrderIdAndCompany_IdAndAttachmentTypeAndActiveTrueOrderByUploadedAtDesc(

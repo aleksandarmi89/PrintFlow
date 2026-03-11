@@ -131,6 +131,20 @@ class PublicOrderTokenIntegrationTest {
     }
 
     @Test
+    void canonicalOrderRedirectPreservesNormalizedSupportedLang() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        order.setPublicToken("canonical-token-lang");
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusHours(1));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(get("/public/order/{token}", "  canonical-token-lang  ")
+                .param("lang", "  EN  "))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/canonical-token-lang?lang=en"));
+    }
+
+    @Test
     void tooLongTokenIsRejectedAsNotFound() throws Exception {
         String tooLongToken = "x".repeat(200);
 

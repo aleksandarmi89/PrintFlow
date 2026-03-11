@@ -27,6 +27,8 @@
 : Added track-page regression checks for EN rendering and hidden `lang` fallback to `sr` on unsupported locale input.
 : Added upload redirect regression for trimmed locale normalization (`\"  EN  \"` => `en`).
 : Added track redirect regression for trimmed locale normalization (`\"  EN  \"` => `en`).
+: Public order canonical redirect now keeps supported locale (`sr`/`en`) when token is normalized.
+: Public upload success redirect now keeps supported locale (`sr`/`en`) after successful file upload.
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).
