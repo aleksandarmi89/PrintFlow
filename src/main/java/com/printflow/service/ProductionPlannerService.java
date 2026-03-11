@@ -14,7 +14,6 @@ import com.printflow.entity.enums.PrintType;
 import com.printflow.repository.WorkOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
@@ -31,24 +30,15 @@ public class ProductionPlannerService {
     private final TenantContextService tenantContextService;
     private final UserService userService;
     private final com.printflow.repository.AuditLogRepository auditLogRepository;
-    private final double marginRateDtf;
-    private final double marginRateLaser;
-    private final double marginRateOther;
 
     public ProductionPlannerService(WorkOrderRepository workOrderRepository,
                                     TenantContextService tenantContextService,
                                     UserService userService,
-                                    com.printflow.repository.AuditLogRepository auditLogRepository,
-                                    @Value("${app.profit.margin-rate.dtf:0.35}") double marginRateDtf,
-                                    @Value("${app.profit.margin-rate.laser:0.3}") double marginRateLaser,
-                                    @Value("${app.profit.margin-rate.other:0.25}") double marginRateOther) {
+                                    com.printflow.repository.AuditLogRepository auditLogRepository) {
         this.workOrderRepository = workOrderRepository;
         this.tenantContextService = tenantContextService;
         this.userService = userService;
         this.auditLogRepository = auditLogRepository;
-        this.marginRateDtf = marginRateDtf;
-        this.marginRateLaser = marginRateLaser;
-        this.marginRateOther = marginRateOther;
     }
 
     public PlannerStatsDTO getStats(java.time.YearMonth month) {

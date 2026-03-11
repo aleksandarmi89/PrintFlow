@@ -20,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class AttachmentService {
@@ -194,22 +193,6 @@ public class AttachmentService {
         return dto;
     }
 
-    private void assertAttachmentAccess(Attachment attachment) {
-        if (tenantGuard.isSuperAdmin()) {
-            return;
-        }
-        Long companyId = attachment.getCompany() != null ? attachment.getCompany().getId() : null;
-        if (companyId == null && attachment.getWorkOrder() != null && attachment.getWorkOrder().getCompany() != null) {
-            companyId = attachment.getWorkOrder().getCompany().getId();
-        }
-        if (companyId == null && attachment.getTask() != null && attachment.getTask().getCompany() != null) {
-            companyId = attachment.getTask().getCompany().getId();
-        }
-        if (companyId == null || !companyId.equals(tenantGuard.requireCompanyId())) {
-            throw new AccessDeniedException("Attachment does not belong to your company.");
-        }
-    }
-    
     private String formatFileSize(long size) {
         if (size < 1024) {
             return size + " B";
