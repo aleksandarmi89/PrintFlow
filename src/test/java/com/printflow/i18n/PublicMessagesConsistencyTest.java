@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,18 @@ class PublicMessagesConsistencyTest {
         "order_not_found.public_home"
     );
 
+    private static final Map<String, List<String>> CONSISTENT_ERROR_GROUPS = Map.of(
+        "too_many_requests", List.of(
+            "track.error.too_many_requests",
+            "public.error.too_many_requests",
+            "public.upload.error.too_many_requests"
+        ),
+        "access_denied", List.of(
+            "public.error.access_denied",
+            "public.upload.error.access_denied"
+        )
+    );
+
     @Test
     void publicErrorKeysExistInEnglishAndSerbianBundles() throws Exception {
         Properties en = loadProperties("messages/messages.properties");
@@ -67,6 +80,24 @@ class PublicMessagesConsistencyTest {
             assertFalse(srValue.isBlank(), "Empty SR key: " + key);
             assertEquals(countPlaceholders(enValue), countPlaceholders(srValue),
                 "Placeholder count mismatch for key: " + key);
+        }
+    }
+
+    @Test
+    void sharedPublicErrorsStayTextConsistentInsideEachLocale() throws Exception {
+        Properties en = loadProperties("messages/messages.properties");
+        Properties sr = loadProperties("messages/messages_sr.properties");
+
+        for (Map.Entry<String, List<String>> group : CONSISTENT_ERROR_GROUPS.entrySet()) {
+            List<String> keys = group.getValue();
+            String enBase = en.getProperty(keys.get(0));
+            String srBase = sr.getProperty(keys.get(0));
+            assertNotNull(enBase, "Missing EN key in group " + group.getKey() + ": " + keys.get(0));
+            assertNotNull(srBase, "Missing SR key in group " + group.getKey() + ": " + keys.get(0));
+            for (String key : keys) {
+                assertEquals(enBase, en.getProperty(key), "EN mismatch in group " + group.getKey() + " for key: " + key);
+                assertEquals(srBase, sr.getProperty(key), "SR mismatch in group " + group.getKey() + " for key: " + key);
+            }
         }
     }
 

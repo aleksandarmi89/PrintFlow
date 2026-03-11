@@ -42,6 +42,7 @@ All notable changes to this project will be documented in this file.
 - Public upload-reference form now preserves selected `lang` across error redirects (`uploadErrorKey`) to avoid locale fallback.
 - Public design approval feedback now uses i18n message keys and has a dedicated `public/design-feedback` template.
 - Public order tracking approval form now also includes hidden `lang` to preserve selected locale on POST.
+- Added i18n regression checks to keep shared public error texts consistent across related keys (within EN and SR bundles).
 
 ## [1.2.3] - 2026-03-10
 

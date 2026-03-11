@@ -34,6 +34,7 @@
 : Public upload-reference POST now carries `lang` so upload validation errors keep selected locale after redirect.
 : Public design feedback response is now fully localized via message keys and dedicated template.
 : Public design approval POST form now carries `lang` and has regression coverage in `PublicOrderTokenIntegrationTest`.
+: Added locale-level consistency checks so shared public errors (`too_many_requests`, `access_denied`) stay aligned across key variants.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).
