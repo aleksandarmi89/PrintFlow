@@ -76,6 +76,7 @@
                     </div>
                 </div>
                 <form th:action="@{/public/track}" method="post" class="space-y-6">
+                    <input type="hidden" name="lang" th:value="${#locale.language}" />
                     <input type="hidden" name="company" th:value="${companyParam}" />
                     <input type="hidden" name="token" th:value="${tokenParam}" />
                     <div>

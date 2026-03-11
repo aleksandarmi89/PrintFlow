@@ -30,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -125,5 +126,26 @@ class PublicTrackCompanyScopeIntegrationTest {
             .andExpect(model().attribute("errorKey", "track.error.invalid_code"))
             .andExpect(model().attribute("submittedTrackingCode", tooLongCode))
             .andExpect(content().string(containsString("bg-red-50 border border-red-200")));
+    }
+
+    @Test
+    void trackFormCompanyMismatchUsesEnglishMessageWhenLangEn() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-en";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("lang", "en")
+                .param("trackingCode", token)
+                .param("company", String.valueOf(ids.company2Id())))
+            .andExpect(status().isOk())
+            .andExpect(view().name("public/track-order"))
+            .andExpect(model().attribute("errorKey", "track.error.company_mismatch"))
+            .andExpect(content().string(containsString("Selected company does not match this tracking code.")))
+            .andExpect(content().string(not(containsString("Izabrana kompanija ne odgovara ovom kodu za praćenje."))));
     }
 }
