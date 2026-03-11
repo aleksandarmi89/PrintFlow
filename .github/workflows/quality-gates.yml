@@ -8,7 +8,11 @@ on:
 
 jobs:
   regression-smoke:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
     steps:
@@ -22,8 +26,16 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Run focused regression tests
+      - name: Run focused regression tests (Unix)
+        if: runner.os != 'Windows'
         run: >
           ./mvnw -B
+          -Dtest=PublicTrackCompanyScopeIntegrationTest,PublicMessagesConsistencyTest,MonitoringAssetsSmokeTest,ManagementMetricsIntegrationTest
+          test
+
+      - name: Run focused regression tests (Windows)
+        if: runner.os == 'Windows'
+        run: >
+          .\mvnw.cmd -B
           -Dtest=PublicTrackCompanyScopeIntegrationTest,PublicMessagesConsistencyTest,MonitoringAssetsSmokeTest,ManagementMetricsIntegrationTest
           test

@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 - `PublicMessagesConsistencyTest` now also validates placeholder-count parity between SR/EN public keys.
 - `PublicMessagesConsistencyTest` now covers public track-form validation keys (`track.error.required`, `track.error.company_mismatch`, `track.error.invalid_code`).
 - `MonitoringAssetsSmokeTest` to verify monitoring handoff files and key metric rules are present.
-- GitHub Actions workflow `.github/workflows/quality-gates.yml` for focused regression smoke tests on push/PR.
+- GitHub Actions workflow `.github/workflows/quality-gates.yml` for focused regression smoke tests on push/PR (Linux + Windows matrix).
 
 ### Changed
 - Email pipeline reliability improved:

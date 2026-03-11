@@ -18,7 +18,7 @@
 : Added starter Grafana dashboard in `ops/monitoring/grafana-dashboard.json` for handoff.
 : Added deployment checklist in `ops/monitoring/README.md`.
 : Added `MonitoringAssetsSmokeTest` to guard handoff file presence and key metric references.
-: Added CI workflow `quality-gates.yml` to run focused regression smoke tests on push/PR.
+: Added CI workflow `quality-gates.yml` to run focused regression smoke tests on push/PR (Linux + Windows matrix).
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).
