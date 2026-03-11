@@ -27,6 +27,8 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     
     List<TimeEntry> findByTaskId(Long taskId);
     Page<TimeEntry> findByTaskId(Long taskId, Pageable pageable);
+    Page<TimeEntry> findByUserIdOrderByDateDesc(Long userId, Pageable pageable);
+    Page<TimeEntry> findByTaskIdOrderByDateDesc(Long taskId, Pageable pageable);
     
     List<TimeEntry> findByUserIdAndTaskId(Long userId, Long taskId);
 
@@ -100,11 +102,15 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     
     // ==================== RECENT ENTRIES ====================
     
-    @Query(value = "SELECT * FROM time_entries WHERE user_id = :userId ORDER BY date DESC LIMIT :limit", nativeQuery = true)
-    List<TimeEntry> findRecentByUserId(@Param("userId") Long userId, @Param("limit") int limit);
-    
-    @Query(value = "SELECT * FROM time_entries WHERE task_id = :taskId ORDER BY date DESC LIMIT :limit", nativeQuery = true)
-    List<TimeEntry> findRecentByTaskId(@Param("taskId") Long taskId, @Param("limit") int limit);
+    default List<TimeEntry> findRecentByUserId(Long userId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByUserIdOrderByDateDesc(userId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
+
+    default List<TimeEntry> findRecentByTaskId(Long taskId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByTaskIdOrderByDateDesc(taskId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
     
     // ==================== BULK OPERATIONS ====================
     

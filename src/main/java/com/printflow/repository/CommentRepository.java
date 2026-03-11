@@ -59,11 +59,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Object[]> countCommentsPerTaskByUserId(@Param("userId") Long userId);
     
     // Najnovjih N komentara
-    @Query(value = "SELECT * FROM comments WHERE task_id = :taskId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<Comment> findTopNByTaskId(@Param("taskId") Long taskId, @Param("limit") int limit);
-    
-    @Query(value = "SELECT * FROM comments WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<Comment> findTopNByUserId(@Param("userId") Long userId, @Param("limit") int limit);
+    default List<Comment> findTopNByTaskId(Long taskId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByTaskIdOrderByCreatedAtDesc(taskId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
+
+    default List<Comment> findTopNByUserId(Long userId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByUserIdOrderByCreatedAtDesc(userId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
     
     // Bulk operacije
     @Modifying

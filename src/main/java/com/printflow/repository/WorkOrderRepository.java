@@ -112,6 +112,7 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     
     @EntityGraph(attributePaths = {"client", "assignedTo", "createdBy"})
     Page<WorkOrder> findByAssignedToId(Long userId, Pageable pageable);
+    Page<WorkOrder> findByAssignedToIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"client", "assignedTo", "createdBy"})
     Page<WorkOrder> findByAssignedToIdAndCompany_Id(Long userId, Long companyId, Pageable pageable);
@@ -282,8 +283,10 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
                                                                          Pageable pageable);
     
     // Recent orders - native query
-    @Query(value = "SELECT * FROM work_orders WHERE assigned_to_id = :userId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<WorkOrder> findRecentByUser(@Param("userId") Long userId, @Param("limit") int limit);
+    default List<WorkOrder> findRecentByUser(Long userId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByAssignedToIdOrderByCreatedAtDesc(userId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
     
     // Additional useful methods
     @Query("SELECT wo FROM WorkOrder wo WHERE wo.completedAt BETWEEN :startDate AND :endDate")

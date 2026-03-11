@@ -63,8 +63,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countByUserIdAndCreatedAtAfter(@Param("userId") Long userId, @Param("date") LocalDateTime date);
     
     // Custom query za najnovjih N notifikacija - OVO JE ISPRAVLJENO IME METODE
-    @Query(value = "SELECT * FROM notifications WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<Notification> findTopNByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("limit") int limit);
+    default List<Notification> findTopNByUserIdOrderByCreatedAtDesc(Long userId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByUserIdOrderByCreatedAtDesc(userId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
     
     // Metode za bulk operacije
     @Query("SELECT n FROM Notification n WHERE n.user.id = :userId AND n.read = false AND n.createdAt < :date")

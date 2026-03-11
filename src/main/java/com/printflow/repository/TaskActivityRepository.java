@@ -64,11 +64,15 @@ public interface TaskActivityRepository extends JpaRepository<TaskActivity, Long
     void deleteByTaskId(Long taskId);
     
     // Najnovjih N aktivnosti
-    @Query(value = "SELECT * FROM task_activities WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<TaskActivity> findTopNByUserId(@Param("userId") Long userId, @Param("limit") int limit);
-    
-    @Query(value = "SELECT * FROM task_activities WHERE task_id = :taskId ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<TaskActivity> findTopNByTaskId(@Param("taskId") Long taskId, @Param("limit") int limit);
+    default List<TaskActivity> findTopNByUserId(Long userId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByUserIdOrderByCreatedAtDesc(userId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
+
+    default List<TaskActivity> findTopNByTaskId(Long taskId, int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return findByTaskIdOrderByCreatedAtDesc(taskId, org.springframework.data.domain.PageRequest.of(0, safeLimit)).getContent();
+    }
     
     // Aktivnosti za više taskova
     @Query("SELECT ta FROM TaskActivity ta WHERE ta.task.id IN :taskIds ORDER BY ta.createdAt DESC")
