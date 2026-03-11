@@ -25,9 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -135,5 +137,21 @@ class PublicOrderTokenIntegrationTest {
         mockMvc.perform(get("/public/order/{token}", tooLongToken))
             .andExpect(status().isNotFound())
             .andExpect(view().name("public/order-not-found"));
+    }
+
+    @Test
+    void orderTrackingPageIncludesLangHiddenFieldForPostFormsWhenLangEn() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "approve-lang-token";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusHours(1));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(get("/public/order/{token}", token)
+                .param("lang", "en"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("public/order-tracking"))
+            .andExpect(content().string(containsString("name=\"lang\" value=\"en\"")));
     }
 }

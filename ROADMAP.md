@@ -33,6 +33,7 @@
 : Public order error page now switches heading by error context (`order_not_found.*` vs `public.error.*`).
 : Public upload-reference POST now carries `lang` so upload validation errors keep selected locale after redirect.
 : Public design feedback response is now fully localized via message keys and dedicated template.
+: Public design approval POST form now carries `lang` and has regression coverage in `PublicOrderTokenIntegrationTest`.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).
