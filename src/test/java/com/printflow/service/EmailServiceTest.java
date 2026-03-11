@@ -3,6 +3,7 @@ package com.printflow.service;
 import com.printflow.dto.EmailMessage;
 import com.printflow.entity.Company;
 import com.printflow.repository.EmailOutboxRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -115,5 +117,44 @@ class EmailServiceTest {
 
         assertDoesNotThrow(() -> service.sendNow(msg, company, "test-template"));
         verify(sender, times(2)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void sendNowIncrementsFailureMetricWhenSmtpFails() {
+        MailSenderResolver resolver = mock(MailSenderResolver.class);
+        EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
+        TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
+        when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(outboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
+        MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(sender.createMimeMessage()).thenReturn(mimeMessage);
+        doThrow(new RuntimeException("smtp down")).when(sender).send(any(MimeMessage.class));
+        when(resolver.resolve(any())).thenReturn(new MailSenderResolver.ResolvedMailSender(sender, null));
+
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        EmailService service = new EmailService(
+            resolver,
+            outboxRepository,
+            rateLimiter,
+            true,
+            "no-reply@printflow.local",
+            1,
+            Optional.of(registry)
+        );
+
+        EmailMessage msg = new EmailMessage();
+        msg.setTo("customer@example.com");
+        msg.setSubject("Subject");
+        msg.setTextBody("Body");
+        Company company = new Company();
+        company.setId(1L);
+
+        assertThrows(RuntimeException.class, () -> service.sendNow(msg, company, "test-template"));
+        double failures = registry.get("printflow_email_send_failures_total").counter().count();
+        double retries = registry.get("printflow_email_send_retries_total").counter().count();
+        assertEquals(1.0d, failures);
+        assertEquals(0.0d, retries);
     }
 }
