@@ -596,8 +596,7 @@ public class TaskService {
     // =============== AVAILABLE TASKS ===============
     
     public Page<TaskDTO> getAvailableTasks(Long userId, String priority, String skill, Pageable pageable) {
-        // Get user to check skills
-        User user = userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId()).orElseThrow();
+        userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId()).orElseThrow();
         Long companyId = tenantGuard.isSuperAdmin() ? null : tenantGuard.requireCompanyId();
         
         // Query for unassigned tasks
