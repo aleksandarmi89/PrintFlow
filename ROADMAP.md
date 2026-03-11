@@ -19,6 +19,7 @@
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).
 - [ ] Finish edge-case handling in public upload/request forms and pricing bulk flows.
+: Added regression test `PublicMessagesConsistencyTest` to enforce SR/EN key presence for public error flows.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).
