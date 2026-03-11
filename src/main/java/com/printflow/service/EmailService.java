@@ -105,7 +105,9 @@ public class EmailService {
             outbox.setStatus(EmailOutboxStatus.PENDING);
             outbox = outboxRepository.save(outbox);
         } catch (Exception ex) {
-            log.warn("Unable to persist email outbox row for to={} subject={}", message.getTo(), message.getSubject(), ex);
+            log.warn("Unable to persist email outbox row for to={} subject={} cause={}",
+                message.getTo(), message.getSubject(), ex.getClass().getSimpleName());
+            log.debug("Outbox persistence failure details for to={} subject={}", message.getTo(), message.getSubject(), ex);
             if (throwOnError) {
                 throw new RuntimeException(ex);
             }
@@ -162,7 +164,9 @@ public class EmailService {
             } catch (Exception outboxEx) {
                 log.warn("Unable to persist FAILED outbox state for to={} subject={}", message.getTo(), message.getSubject(), outboxEx);
             }
-            log.warn("Failed to send email to: {} - Subject: {}", message.getTo(), message.getSubject(), ex);
+            log.warn("Failed to send email to: {} - Subject: {} cause={}",
+                message.getTo(), message.getSubject(), ex.getClass().getSimpleName());
+            log.debug("Email send failure details for to={} subject={}", message.getTo(), message.getSubject(), ex);
             if (throwOnError) {
                 throw new RuntimeException(ex);
             }
@@ -184,7 +188,9 @@ public class EmailService {
                     if (retryCounter != null) {
                         retryCounter.increment();
                     }
-                    log.warn("Email send attempt failed for to={} subject={} attempt={}/{}",
+                    log.warn("Email send attempt failed for to={} subject={} attempt={}/{} cause={}",
+                        to, subject, attempt, sendAttempts, ex.getClass().getSimpleName());
+                    log.debug("Email send retry failure details for to={} subject={} attempt={}/{}",
                         to, subject, attempt, sendAttempts, ex);
                 }
             }
