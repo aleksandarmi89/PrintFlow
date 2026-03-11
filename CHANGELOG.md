@@ -52,6 +52,7 @@ All notable changes to this project will be documented in this file.
 - Added regression coverage for track submit locale handling: unsupported values are ignored, uppercase values are normalized.
 - Public templates now force hidden locale fields to supported values (`en` or fallback `sr`) to avoid propagating unsupported locales.
 - CI quality workflow now includes `PublicTrackPageIntegrationTest` in the focused regression set.
+- Extended `PublicTrackPageIntegrationTest` with EN rendering and unsupported-locale hidden-lang fallback checks.
 
 ## [1.2.3] - 2026-03-10
 

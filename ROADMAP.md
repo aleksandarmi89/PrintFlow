@@ -24,6 +24,7 @@
 : Expanded `quality-gates.yml` test set with `PublicErrorStatusIntegrationTest` and `PublicUploadReferenceIntegrationTest`.
 : Expanded `quality-gates.yml` test set with `PublicOrderTokenIntegrationTest` for public token/locale flow coverage.
 : Expanded `quality-gates.yml` test set with `PublicTrackPageIntegrationTest` to cover public track page render regressions.
+: Added track-page regression checks for EN rendering and hidden `lang` fallback to `sr` on unsupported locale input.
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).

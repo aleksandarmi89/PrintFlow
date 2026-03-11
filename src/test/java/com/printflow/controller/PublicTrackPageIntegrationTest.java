@@ -30,4 +30,21 @@ class PublicTrackPageIntegrationTest {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("ORD-123456-789")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("Koristi broj naloga")));
     }
+
+    @Test
+    void publicTrackPageRendersEnglishCopyWhenLangEn() throws Exception {
+        mockMvc.perform(get("/public/track").param("lang", "en"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Tracking Code")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Enter your tracking code")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Example:")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"lang\" value=\"en\"")));
+    }
+
+    @Test
+    void publicTrackPageClampsHiddenLangToSrForUnsupportedLocale() throws Exception {
+        mockMvc.perform(get("/public/track").param("lang", "de"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"lang\" value=\"sr\"")));
+    }
 }
