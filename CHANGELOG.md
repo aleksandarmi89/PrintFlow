@@ -37,6 +37,7 @@ All notable changes to this project will be documented in this file.
 - Maven build now enforces minimum Java/Maven versions via `maven-enforcer-plugin`.
 - Maven enforcer now blocks duplicate dependency declarations in `pom.xml`.
 - Public track form now preserves selected UI language on submit via hidden `lang` field (prevents locale fallback on validation errors).
+- CI quality workflow now also runs `PublicErrorStatusIntegrationTest` and `PublicUploadReferenceIntegrationTest`.
 
 ## [1.2.3] - 2026-03-10
 
