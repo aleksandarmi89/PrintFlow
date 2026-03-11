@@ -229,6 +229,7 @@ public class PublicController extends BaseController {
     public String approveDesign(@PathVariable String token,
                                @RequestParam boolean approved,
                                @RequestParam(required = false) String comment,
+                               @RequestParam(required = false) String lang,
                                HttpServletRequest request,
                                HttpServletResponse response,
                                Model model) {
@@ -262,6 +263,8 @@ public class PublicController extends BaseController {
             }
             }
             WorkOrderDTO order = workOrderService.getWorkOrderByPublicToken(normalizedToken);
+            String normalizedLang = normalizePublicLang(lang);
+            model.addAttribute("langParam", normalizedLang != null ? normalizedLang : "sr");
             
             // Procesuiraj odobrenje
             workOrderService.approveDesign(order.getId(), normalizedToken, approved, comment);
