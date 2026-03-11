@@ -40,6 +40,7 @@
 : `public/order-not-found` now preserves locale on action links (`/public/track`, `/public/`) via `lang` parameter.
 : Public upload redirect language param is now whitelisted (`sr`, `en`) to avoid propagating unsupported values.
 : Added regression test for uppercase locale normalization in upload redirect flow (`EN` => `en`).
+: Public track submit now preserves locale on successful redirect to `/public/order/{token}` (for supported locales).
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).

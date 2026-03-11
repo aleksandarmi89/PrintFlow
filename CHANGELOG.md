@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - Public order-not-found page action links now preserve selected locale via `lang` query parameter.
 - Upload redirect locale is now normalized to supported values (`sr`, `en`) before appending to URL.
 - Added regression coverage for uppercase locale normalization on upload error redirects (`EN` -> `en`).
+- Public track submit success redirect now preserves supported locale via `?lang=` when provided.
 
 ## [1.2.3] - 2026-03-10
 

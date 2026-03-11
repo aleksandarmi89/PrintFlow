@@ -563,6 +563,7 @@ public class PublicController extends BaseController {
     public String trackOrderSubmit(@RequestParam String trackingCode,
                                    @RequestParam(required = false) Long company,
                                    @RequestParam(required = false) String token,
+                                   @RequestParam(required = false) String lang,
                                    HttpServletRequest request,
                                    Model model) {
         model.addAttribute("submittedTrackingCode", trackingCode);
@@ -612,7 +613,11 @@ public class PublicController extends BaseController {
             return renderTrackFormError(model, "track.error.company_mismatch", company, token, trimmedCode, true);
         }
 
-        return "redirect:/public/order/" + resolvedToken;
+        String normalizedLang = normalizePublicLang(lang);
+        if (normalizedLang == null) {
+            return "redirect:/public/order/" + resolvedToken;
+        }
+        return "redirect:/public/order/" + resolvedToken + "?lang=" + normalizedLang;
     }
     
     // Landing page za PrintFlow
