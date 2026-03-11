@@ -167,6 +167,7 @@
                                 <requireMavenVersion>
                                     <version>[3.8.6,)</version>
                                 </requireMavenVersion>
+                                <banDuplicatePomDependencyVersions/>
                             </rules>
                         </configuration>
                     </execution>

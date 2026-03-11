@@ -7,6 +7,7 @@
 - [x] Add retry behavior for transient SMTP failures before outbox failure state.
 - [x] Add optional backoff between retries (`app.notification.email.retry-backoff-ms`).
 : Maven build now enforces Java/Maven minimum versions (`maven-enforcer-plugin`).
+: Maven enforcer now guards against duplicate dependency declarations in `pom.xml`.
 
 2. Observability and operations
 - [x] Add structured logging around public request, pricing, and billing flows.

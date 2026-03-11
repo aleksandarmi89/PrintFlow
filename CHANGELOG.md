@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Added starter Grafana dashboard at `ops/monitoring/grafana-dashboard.json`.
 - Added monitoring handoff guide at `ops/monitoring/README.md`.
 - Maven build now enforces minimum Java/Maven versions via `maven-enforcer-plugin`.
+- Maven enforcer now blocks duplicate dependency declarations in `pom.xml`.
 
 ## [1.2.3] - 2026-03-10
 
