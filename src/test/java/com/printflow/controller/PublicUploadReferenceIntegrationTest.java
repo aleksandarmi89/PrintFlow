@@ -240,6 +240,46 @@ class PublicUploadReferenceIntegrationTest {
     }
 
     @Test
+    void uploadReferenceSuccessRedirectOmitsUnsupportedLang() throws Exception {
+        String token = assignPublicToken("upload-metadata-success-bad-lang");
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "brief.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+        String okMetaJson = "[{\"index\":0,\"name\":\"brief.pdf\",\"size\":5,\"type\":\"application/pdf\",\"description\":\"Client brief\"}]";
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("fileMetaJson", okMetaJson)
+                .param("lang", "de")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void uploadReferenceSuccessRedirectNormalizesTrimmedSupportedLang() throws Exception {
+        String token = assignPublicToken("upload-metadata-success-trimmed-lang");
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "brief.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+        String okMetaJson = "[{\"index\":0,\"name\":\"brief.pdf\",\"size\":5,\"type\":\"application/pdf\",\"description\":\"Client brief\"}]";
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("fileMetaJson", okMetaJson)
+                .param("lang", "  EN  ")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
+    }
+
+    @Test
     void uploadReferenceRejectsOversizedMetadataPayload() throws Exception {
         String token = assignPublicToken("upload-metadata-4");
         MockMultipartFile file = new MockMultipartFile(

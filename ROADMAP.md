@@ -30,6 +30,7 @@
 : Public order canonical redirect now keeps supported locale (`sr`/`en`) when token is normalized.
 : Public upload success redirect now keeps supported locale (`sr`/`en`) after successful file upload.
 : Added regression coverage for order-number redirect locale handling (trim+normalize supported values, drop unsupported values).
+: Added regression coverage for upload success redirect locale handling (unsupported omitted, supported trimmed/normalized).
 
 3. UX and workflow polish
 - [ ] Improve admin/public validation messages and i18n consistency (SR/EN).

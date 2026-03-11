@@ -58,6 +58,9 @@ All notable changes to this project will be documented in this file.
 - Public order canonical redirects now preserve supported `lang` (`sr`/`en`) when normalizing token input.
 - Public upload success redirect now preserves supported `lang` so UI locale stays consistent after upload.
 - Public order-number to token canonical redirect now also preserves normalized supported locale (`"  EN  "` -> `lang=en`).
+- Added upload success redirect regression coverage for locale handling:
+  - unsupported locale is omitted,
+  - trimmed uppercase supported locale is normalized (`"  EN  "` -> `lang=en`).
 
 ## [1.2.3] - 2026-03-10
 
