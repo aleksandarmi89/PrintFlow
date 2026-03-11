@@ -142,6 +142,27 @@ class PublicUploadReferenceIntegrationTest {
     }
 
     @Test
+    void uploadReferenceIgnoresUnsupportedLangInErrorRedirect() throws Exception {
+        String token = assignPublicToken("upload-metadata-bad-lang");
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "proof.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("lang", "de")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?uploadErrorKey=public.upload.error.metadata_mismatch"));
+
+        assertClientFileCount(0L);
+    }
+
+    @Test
     void uploadReferenceStoresClientFileWhenMetadataMatches() throws Exception {
         String token = assignPublicToken("upload-metadata-3");
         MockMultipartFile file = new MockMultipartFile(

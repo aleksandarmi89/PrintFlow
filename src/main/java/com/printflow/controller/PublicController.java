@@ -399,11 +399,22 @@ public class PublicController extends BaseController {
         if (safeToken == null || safeToken.isBlank()) {
             return "public/order-not-found";
         }
-        String normalizedLang = (lang == null || lang.isBlank()) ? null : lang.trim();
+        String normalizedLang = normalizePublicLang(lang);
         if (normalizedLang == null) {
             return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey;
         }
         return "redirect:/public/order/" + safeToken + "?uploadErrorKey=" + errorKey + "&lang=" + normalizedLang;
+    }
+
+    private String normalizePublicLang(String lang) {
+        if (lang == null) {
+            return null;
+        }
+        String value = lang.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("sr".equals(value) || "en".equals(value)) {
+            return value;
+        }
+        return null;
     }
 
     private String renderOrderNotFound(Model model, HttpServletResponse response, String errorKey, int statusCode) {

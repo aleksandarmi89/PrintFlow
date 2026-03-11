@@ -38,6 +38,7 @@
 : Added locale-level consistency checks so shared public errors (`too_many_requests`, `access_denied`) stay aligned across key variants.
 : i18n regression keyset now also explicitly includes `public.error.heading`.
 : `public/order-not-found` now preserves locale on action links (`/public/track`, `/public/`) via `lang` parameter.
+: Public upload redirect language param is now whitelisted (`sr`, `en`) to avoid propagating unsupported values.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).
