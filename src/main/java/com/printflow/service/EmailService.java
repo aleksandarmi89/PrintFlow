@@ -6,11 +6,14 @@ import com.printflow.entity.EmailOutbox;
 import com.printflow.entity.MailSettings;
 import com.printflow.entity.enums.EmailOutboxStatus;
 import com.printflow.repository.EmailOutboxRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.mail.internet.MimeMessage;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -35,19 +38,32 @@ public class EmailService {
     private final boolean emailEnabled;
     private final String defaultFrom;
     private final int sendAttempts;
+    private final Counter retryCounter;
+    private final Counter failedCounter;
 
     public EmailService(MailSenderResolver mailSenderResolver,
                         EmailOutboxRepository outboxRepository,
                         TenantEmailRateLimiter rateLimiter,
                         @Value("${app.notification.email.enabled:false}") boolean emailEnabled,
                         @Value("${app.notification.email.from:no-reply@printflow.local}") String defaultFrom,
-                        @Value("${app.notification.email.send-attempts:2}") int sendAttempts) {
+                        @Value("${app.notification.email.send-attempts:2}") int sendAttempts,
+                        Optional<MeterRegistry> meterRegistry) {
         this.mailSenderResolver = mailSenderResolver;
         this.outboxRepository = outboxRepository;
         this.rateLimiter = rateLimiter;
         this.emailEnabled = emailEnabled;
         this.defaultFrom = defaultFrom;
         this.sendAttempts = Math.max(1, sendAttempts);
+        this.retryCounter = meterRegistry.map(registry ->
+            Counter.builder("printflow_email_send_retries_total")
+                .description("Total number of email send retries")
+                .register(registry))
+            .orElse(null);
+        this.failedCounter = meterRegistry.map(registry ->
+            Counter.builder("printflow_email_send_failures_total")
+                .description("Total number of email send failures")
+                .register(registry))
+            .orElse(null);
     }
 
     @Async("emailExecutor")
@@ -136,6 +152,9 @@ public class EmailService {
             outbox.setSentAt(LocalDateTime.now());
             outboxRepository.save(outbox);
         } catch (Exception ex) {
+            if (failedCounter != null) {
+                failedCounter.increment();
+            }
             try {
                 outbox.setStatus(EmailOutboxStatus.FAILED);
                 outbox.setErrorMessage(ex.getMessage());
@@ -162,6 +181,9 @@ public class EmailService {
             } catch (Exception ex) {
                 last = ex;
                 if (attempt < sendAttempts) {
+                    if (retryCounter != null) {
+                        retryCounter.increment();
+                    }
                     log.warn("Email send attempt failed for to={} subject={} attempt={}/{}",
                         to, subject, attempt, sendAttempts, ex);
                 }

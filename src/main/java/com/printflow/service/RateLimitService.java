@@ -4,11 +4,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +34,8 @@ public class RateLimitService {
     private final long dashboardWindowMillis;
     private final com.printflow.repository.BannedIpRepository bannedIpRepository;
     private final com.printflow.repository.WhitelistedIpRepository whitelistedIpRepository;
+    private final Counter deniedCounter;
+    private final Counter autoBanCounter;
 
     public RateLimitService(@Value("${app.rate-limit.ban-list.enabled:false}") boolean banListEnabled,
                             @Value("${app.rate-limit.ban-list.ips:}") String banListIps,
@@ -42,7 +47,8 @@ public class RateLimitService {
                             @Value("${app.rate-limit.auto-ban.ban-seconds:3600}") int autoBanBanSeconds,
                             @Value("${app.rate-limit.dashboard.window-seconds:3600}") int dashboardWindowSeconds,
                             com.printflow.repository.BannedIpRepository bannedIpRepository,
-                            com.printflow.repository.WhitelistedIpRepository whitelistedIpRepository) {
+                            com.printflow.repository.WhitelistedIpRepository whitelistedIpRepository,
+                            Optional<MeterRegistry> meterRegistry) {
         this.banListEnabled = banListEnabled;
         this.banListIps = banListIps;
         this.whitelistEnabled = whitelistEnabled;
@@ -54,6 +60,16 @@ public class RateLimitService {
         this.dashboardWindowMillis = dashboardWindowSeconds * 1000L;
         this.bannedIpRepository = bannedIpRepository;
         this.whitelistedIpRepository = whitelistedIpRepository;
+        this.deniedCounter = meterRegistry.map(registry ->
+            Counter.builder("printflow_rate_limit_denied_total")
+                .description("Total number of denied requests by rate limiter")
+                .register(registry))
+            .orElse(null);
+        this.autoBanCounter = meterRegistry.map(registry ->
+            Counter.builder("printflow_rate_limit_auto_ban_total")
+                .description("Total number of auto-banned IPs")
+                .register(registry))
+            .orElse(null);
     }
 
     @PostConstruct
@@ -205,6 +221,9 @@ public class RateLimitService {
                 queue.pollFirst();
             }
             if (queue.size() >= maxRequests) {
+                if (deniedCounter != null) {
+                    deniedCounter.increment();
+                }
                 log.warn("rate_limit_denied key={} maxRequests={} windowMs={} currentSize={}",
                     key, maxRequests, windowMillis, queue.size());
                 recordViolation(key);
@@ -234,6 +253,9 @@ public class RateLimitService {
                 java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now()
                     .plusSeconds(autoBanBanMillis / 1000L);
                 ban(ip, "auto-ban: rate limit exceeded", expiresAt);
+                if (autoBanCounter != null) {
+                    autoBanCounter.increment();
+                }
                 log.warn("rate_limit_auto_ban ip={} threshold={} windowMs={} banMs={} expiresAt={}",
                     ip, autoBanThreshold, autoBanWindowMillis, autoBanBanMillis, expiresAt);
             }

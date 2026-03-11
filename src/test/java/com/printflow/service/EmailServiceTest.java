@@ -7,6 +7,7 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -34,7 +35,8 @@ class EmailServiceTest {
             rateLimiter,
             true,
             "no-reply@printflow.local",
-            2
+            2,
+            Optional.empty()
         );
 
         EmailMessage msg = new EmailMessage();
@@ -62,7 +64,8 @@ class EmailServiceTest {
             rateLimiter,
             true,
             "no-reply@printflow.local",
-            2
+            2,
+            Optional.empty()
         );
 
         EmailMessage msg = new EmailMessage();
@@ -99,7 +102,8 @@ class EmailServiceTest {
             rateLimiter,
             true,
             "no-reply@printflow.local",
-            2
+            2,
+            Optional.empty()
         );
 
         EmailMessage msg = new EmailMessage();
