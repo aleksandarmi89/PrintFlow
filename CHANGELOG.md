@@ -57,6 +57,7 @@ All notable changes to this project will be documented in this file.
 - Added track redirect regression for trimmed locale input (`\"  EN  \"` -> `lang=en`).
 - Public order canonical redirects now preserve supported `lang` (`sr`/`en`) when normalizing token input.
 - Public upload success redirect now preserves supported `lang` so UI locale stays consistent after upload.
+- Public order-number to token canonical redirect now also preserves normalized supported locale (`"  EN  "` -> `lang=en`).
 
 ## [1.2.3] - 2026-03-10
 

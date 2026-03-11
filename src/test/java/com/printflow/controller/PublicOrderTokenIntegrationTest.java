@@ -145,6 +145,34 @@ class PublicOrderTokenIntegrationTest {
     }
 
     @Test
+    void orderNumberRedirectPreservesNormalizedSupportedLang() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        order.setPublicToken("resolved-token-lang");
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusHours(1));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(get("/public/order/{token}", order.getOrderNumber())
+                .param("lang", "  EN  "))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/resolved-token-lang?lang=en"));
+    }
+
+    @Test
+    void orderNumberRedirectOmitsUnsupportedLang() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        order.setPublicToken("resolved-token-no-lang");
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusHours(1));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(get("/public/order/{token}", order.getOrderNumber())
+                .param("lang", "de"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/resolved-token-no-lang"));
+    }
+
+    @Test
     void tooLongTokenIsRejectedAsNotFound() throws Exception {
         String tooLongToken = "x".repeat(200);
 
