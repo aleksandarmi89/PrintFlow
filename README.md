@@ -118,3 +118,22 @@ Public order tracking tokens:
 `app.public-order.token.ttl-days` (default 30)
 `app.public-order.token.bytes` (default 32; URL-safe token length)
 Admins can rotate a tracking link from the order details page to invalidate the old token.
+
+## Observability
+Actuator base path:
+`/management`
+
+Useful endpoints:
+- `GET /management/health`
+- `GET /management/info`
+- `GET /management/metrics`
+
+Custom counters added:
+- `printflow_email_send_retries_total`
+- `printflow_email_send_failures_total`
+- `printflow_rate_limit_denied_total`
+- `printflow_rate_limit_auto_ban_total`
+
+Quick checks:
+`curl http://localhost:8088/management/metrics/printflow_email_send_retries_total`
+`curl http://localhost:8088/management/metrics/printflow_rate_limit_denied_total`
