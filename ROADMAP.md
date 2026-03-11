@@ -11,6 +11,7 @@
 - [x] Add structured logging around public request, pricing, and billing flows.
 - [x] Add structured logging for rate-limit denials and auto-ban activity.
 - [x] Add lightweight counters for email failures/retries and rate-limit events.
+- [x] Add smoke test for custom counter presence on `/management/metrics`.
 - [ ] Wire dashboards/alerts for the new counters in the target monitoring stack.
 
 3. UX and workflow polish
@@ -19,5 +20,4 @@
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).
-- Add one smoke test for metrics endpoint presence on custom counters.
 - Define alert thresholds (example): 5xx email failures/min and repeated auto-ban spikes.
