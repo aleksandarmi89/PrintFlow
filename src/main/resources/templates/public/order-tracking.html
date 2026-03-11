@@ -365,7 +365,7 @@
                   method="post"
                   class="space-y-4">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                <input type="hidden" name="lang" th:value="${#locale.language}" />
+                <input type="hidden" name="lang" th:value="${#locale.language == 'en' ? 'en' : 'sr'}" />
 
                 <div>
                     <label class="flex items-center space-x-3 cursor-pointer">
@@ -413,7 +413,7 @@
             <form th:action="@{/public/order/{token}/upload-reference(token=${token})}" method="post" enctype="multipart/form-data"
                   class="space-y-4">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                <input type="hidden" name="lang" th:value="${#locale.language}" />
+                <input type="hidden" name="lang" th:value="${#locale.language == 'en' ? 'en' : 'sr'}" />
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2" th:text="#{files.upload}">Files</label>

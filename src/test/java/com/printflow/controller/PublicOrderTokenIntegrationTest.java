@@ -154,4 +154,20 @@ class PublicOrderTokenIntegrationTest {
             .andExpect(view().name("public/order-tracking"))
             .andExpect(content().string(containsString("name=\"lang\" value=\"en\"")));
     }
+
+    @Test
+    void orderTrackingPageFallsBackToSerbianLangFieldForUnsupportedLocale() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "approve-lang-token-fallback";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusHours(1));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(get("/public/order/{token}", token)
+                .param("lang", "de"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("public/order-tracking"))
+            .andExpect(content().string(containsString("name=\"lang\" value=\"sr\"")));
+    }
 }

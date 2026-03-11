@@ -105,6 +105,17 @@ class PublicErrorStatusIntegrationTest {
     }
 
     @Test
+    void orderNotFoundLinksFallbackToSerbianForUnsupportedLocale() throws Exception {
+        mockMvc.perform(get("/public/order/{token}", "missing-token")
+                .param("lang", "de")
+                .header("X-Forwarded-For", "198.51.100.22"))
+            .andExpect(status().isNotFound())
+            .andExpect(view().name("public/order-not-found"))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("/public/track?lang=sr")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("/public/?lang=sr")));
+    }
+
+    @Test
     void bannedIpReturns403WithAccessDeniedKey() throws Exception {
         String token = assignPublicToken("status-token-1");
         rateLimitService.ban("198.51.100.10");

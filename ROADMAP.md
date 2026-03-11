@@ -42,6 +42,7 @@
 : Added regression test for uppercase locale normalization in upload redirect flow (`EN` => `en`).
 : Public track submit now preserves locale on successful redirect to `/public/order/{token}` (for supported locales).
 : Track submit locale handling now has explicit tests for unsupported locale ignore and uppercase normalization.
+: Hidden locale fields in public forms now clamp to supported values (`en` / `sr` fallback), with regression coverage for unsupported locale fallback.
 
 ## Next Focus (recommended)
 - Standardize SR/EN public error texts (rate limit, invalid token, upload validation).

@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -94,6 +95,14 @@ class PublicTrackCompanyScopeIntegrationTest {
             .andExpect(content().string(containsString("value=\"" + token + "\"")))
             .andExpect(content().string(containsString("name=\"company\" value=\"" + ids.company2Id() + "\"")))
             .andExpect(content().string(containsString("bg-red-50 border border-red-200")));
+    }
+
+    @Test
+    void trackFormFallsBackToSerbianLangHiddenFieldForUnsupportedLocale() throws Exception {
+        mockMvc.perform(get("/public/track").param("lang", "de"))
+            .andExpect(status().isOk())
+            .andExpect(view().name("public/track-order"))
+            .andExpect(content().string(containsString("name=\"lang\" value=\"sr\"")));
     }
 
     @Test
