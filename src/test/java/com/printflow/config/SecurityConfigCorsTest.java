@@ -49,4 +49,3 @@ class SecurityConfigCorsTest {
         assertThat(cors.getAllowedOrigins()).containsExactly("https://a.example.com", "https://b.example.com");
     }
 }
-
