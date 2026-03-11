@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -37,5 +38,12 @@ class SecurityLogoutIntegrationTest {
         mockMvc.perform(post("/logout")
                 .with(user("test-admin").roles("ADMIN")))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void logoutViaGetIsRejected() throws Exception {
+        mockMvc.perform(get("/logout")
+                .with(user("test-admin").roles("ADMIN")))
+            .andExpect(status().isNotFound());
     }
 }

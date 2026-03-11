@@ -20,6 +20,7 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
@@ -41,6 +42,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
         logClientError("NOT_FOUND", ex, request);
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        logClientError("NO_RESOURCE", ex, request);
+        return error(HttpStatus.NOT_FOUND, "Not found", request);
     }
 
     @ExceptionHandler({IllegalArgumentException.class, BindException.class, MethodArgumentNotValidException.class})
