@@ -24,10 +24,6 @@ public class AttachmentDTO {
     private String thumbnailPath;
     private boolean active;
     
-    // Dodaj ova nova polja
-    private String formattedSize;
-    private boolean isImage;
-    
     // Konstruktori
     public AttachmentDTO() {}
     
@@ -121,7 +117,7 @@ public class AttachmentDTO {
     }
     
     public void setFormattedSize(String formattedSize) {
-        this.formattedSize = formattedSize;
+        // computed from fileSize
     }
     
     public boolean getIsImage() { 
@@ -129,7 +125,7 @@ public class AttachmentDTO {
     }
     
     public void setIsImage(boolean isImage) {
-        this.isImage = isImage;
+        // computed from mimeType
     }
     
     public String getUploadedByName() {

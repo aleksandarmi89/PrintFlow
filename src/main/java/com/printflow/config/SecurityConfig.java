@@ -12,7 +12,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -44,10 +43,9 @@ public class SecurityConfig {
         this.hstsEnabled = hstsEnabled;
 	}
 
-	@Bean
+    @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService); // Bez zagrada, koristimo polje
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder);       // Bez zagrada, koristimo polje
         return authProvider;
     }
@@ -103,7 +101,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout=true")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
@@ -117,7 +115,7 @@ public class SecurityConfig {
                 headers.frameOptions(frame -> frame.sameOrigin());
                 headers.contentTypeOptions(cto -> {});
                 headers.referrerPolicy(ref -> ref.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
-                headers.permissionsPolicy(pp -> pp.policy("geolocation=(), microphone=(), camera=()"));
+                headers.permissionsPolicyHeader(pp -> pp.policy("geolocation=(), microphone=(), camera=()"));
                 if (hstsEnabled) {
                     headers.httpStrictTransportSecurity(hsts -> hsts
                         .includeSubDomains(true)

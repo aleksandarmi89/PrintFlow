@@ -7,9 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.mockito.Mockito.times;
@@ -28,13 +28,13 @@ class NotificationCacheTest {
     @Autowired private NotificationService notificationService;
     @Autowired private CacheManager cacheManager;
 
-    @MockBean private NotificationRepository notificationRepository;
-    @MockBean private UserRepository userRepository;
-    @MockBean private TenantGuard tenantGuard;
-    @MockBean private EmailService emailService;
-    @MockBean private EmailTemplateService emailTemplateService;
-    @MockBean private CompanyBrandingService companyBrandingService;
-    @MockBean private ApplicationEventPublisher applicationEventPublisher;
+    @MockitoBean private NotificationRepository notificationRepository;
+    @MockitoBean private UserRepository userRepository;
+    @MockitoBean private TenantGuard tenantGuard;
+    @MockitoBean private EmailService emailService;
+    @MockitoBean private EmailTemplateService emailTemplateService;
+    @MockitoBean private CompanyBrandingService companyBrandingService;
+    @MockitoBean private ApplicationEventPublisher applicationEventPublisher;
 
     @BeforeEach
     void setUp() {
