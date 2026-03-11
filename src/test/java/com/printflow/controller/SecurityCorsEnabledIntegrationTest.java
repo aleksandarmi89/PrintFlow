@@ -9,6 +9,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -37,6 +38,26 @@ class SecurityCorsEnabledIntegrationTest {
     void disallowedOriginDoesNotGetCorsHeader() throws Exception {
         mockMvc.perform(get("/public/")
                 .header("Origin", "https://blocked.example.com"))
+            .andExpect(status().isForbidden())
+            .andExpect(content().string("Invalid CORS request"))
+            .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    void allowedPreflightReturnsCorsHeaders() throws Exception {
+        mockMvc.perform(options("/public/")
+                .header("Origin", "https://allowed.example.com")
+                .header("Access-Control-Request-Method", "GET"))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Access-Control-Allow-Origin", "https://allowed.example.com"))
+            .andExpect(header().exists("Access-Control-Allow-Methods"));
+    }
+
+    @Test
+    void disallowedPreflightIsForbidden() throws Exception {
+        mockMvc.perform(options("/public/")
+                .header("Origin", "https://blocked.example.com")
+                .header("Access-Control-Request-Method", "GET"))
             .andExpect(status().isForbidden())
             .andExpect(content().string("Invalid CORS request"))
             .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
