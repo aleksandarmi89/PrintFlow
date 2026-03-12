@@ -318,9 +318,17 @@
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <span th:text="#{nav.tasks}">Tasks</span>
                             </a>
+                            <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/pricing/products}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.pricing}">Pricing</span>
+                            </a>
                             <a th:href="@{/products}"
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <span th:text="#{nav.products}">Products</span>
+                            </a>
+                            <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/pricing/calculate}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.calculator}">Calculator</span>
                             </a>
                             <a th:href="@{/admin/planner}"
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
@@ -333,6 +341,10 @@
                             <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/company}"
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <span th:text="#{nav.company_settings}">Company</span>
+                            </a>
+                            <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/settings/email}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{nav.email_settings}">Email</span>
                             </a>
                             <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/companies}" 
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
