@@ -11,6 +11,7 @@ import com.printflow.repository.UserRepository;
 import com.printflow.repository.WorkOrderRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class TaskServiceNotificationGuardTest {
 
@@ -66,5 +68,49 @@ class TaskServiceNotificationGuardTest {
 
         assertDoesNotThrow(() -> service.updateTaskStatus(201L, TaskStatus.IN_PROGRESS, null, 7L));
         verify(notificationService, never()).sendTaskStatusNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void updateTaskStatusDoesNotFailWhenActorUserIsMissing() {
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        TaskActivityRepository taskActivityRepository = mock(TaskActivityRepository.class);
+        TimeEntryRepository timeEntryRepository = mock(TimeEntryRepository.class);
+        CommentRepository commentRepository = mock(CommentRepository.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
+        TenantGuard tenantGuard = mock(TenantGuard.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        Task task = new Task();
+        task.setId(202L);
+        task.setStatus(TaskStatus.NEW);
+        task.setCreatedBy(null);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(1L);
+        when(taskRepository.findByIdAndCompany_Id(202L, 1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.findByIdAndCompany_Id(999L, 1L)).thenReturn(Optional.empty());
+
+        TaskService service = new TaskService(
+            taskRepository,
+            userRepository,
+            workOrderRepository,
+            taskActivityRepository,
+            timeEntryRepository,
+            commentRepository,
+            fileStorageService,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            2000
+        );
+
+        assertDoesNotThrow(() -> service.updateTaskStatus(202L, TaskStatus.IN_PROGRESS, null, 999L));
+        ArgumentCaptor<com.printflow.entity.TaskActivity> captor =
+            ArgumentCaptor.forClass(com.printflow.entity.TaskActivity.class);
+        verify(taskActivityRepository).save(captor.capture());
+        assertNull(captor.getValue().getUser());
     }
 }

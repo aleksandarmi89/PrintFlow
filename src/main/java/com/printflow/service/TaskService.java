@@ -1115,7 +1115,11 @@ public class TaskService {
     private void createTaskActivity(Task task, String action, String description, Long userId) {
         TaskActivity activity = new TaskActivity();
         activity.setTask(task);
-        activity.setUser(userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId()).orElseThrow());
+        User activityUser = null;
+        if (userId != null) {
+            activityUser = userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId()).orElse(null);
+        }
+        activity.setUser(activityUser);
         activity.setAction(action);
         activity.setDescription(description);
         activity.setCreatedAt(LocalDateTime.now());
