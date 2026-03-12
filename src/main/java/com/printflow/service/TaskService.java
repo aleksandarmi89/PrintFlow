@@ -568,11 +568,14 @@ public class TaskService {
             && !task.getCompany().getId().equals(user.getCompany().getId())) {
             return false;
         }
-        if (task.getAssignedTo() != null && task.getAssignedTo().getId().equals(userId)) {
+        Long directAssigneeId = task.getAssignedTo() != null ? task.getAssignedTo().getId() : null;
+        if (directAssigneeId != null && directAssigneeId.equals(userId)) {
             return true;
         }
-        if (task.getWorkOrder() != null && task.getWorkOrder().getAssignedTo() != null
-            && task.getWorkOrder().getAssignedTo().getId().equals(userId)) {
+        Long orderAssigneeId = task.getWorkOrder() != null && task.getWorkOrder().getAssignedTo() != null
+            ? task.getWorkOrder().getAssignedTo().getId()
+            : null;
+        if (orderAssigneeId != null && orderAssigneeId.equals(userId)) {
             return true;
         }
         return false;
