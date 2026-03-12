@@ -271,6 +271,119 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    void updateWorkOrder_rejectsBlankTitle() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company company = new Company();
+        company.setId(10L);
+        WorkOrder order = new WorkOrder();
+        order.setId(90L);
+        order.setCompany(company);
+        order.setPrintType(PrintType.OTHER);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(10L);
+        when(workOrderRepository.findWithRelationsByIdAndCompany_Id(90L, 10L)).thenReturn(Optional.of(order));
+
+        com.printflow.dto.WorkOrderDTO dto = new com.printflow.dto.WorkOrderDTO();
+        dto.setTitle("   ");
+        dto.setPrintType(PrintType.OTHER);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.updateWorkOrder(90L, dto));
+        assertEquals("Work order title is required", ex.getMessage());
+        verify(workOrderRepository, never()).save(any(WorkOrder.class));
+    }
+
+    @Test
+    void updateWorkOrder_trimsTitleBeforePersist() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company company = new Company();
+        company.setId(11L);
+        WorkOrder order = new WorkOrder();
+        order.setId(91L);
+        order.setCompany(company);
+        order.setPrintType(PrintType.OTHER);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(11L);
+        when(workOrderRepository.findWithRelationsByIdAndCompany_Id(91L, 11L)).thenReturn(Optional.of(order));
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.printflow.dto.WorkOrderDTO dto = new com.printflow.dto.WorkOrderDTO();
+        dto.setTitle("  Updated title  ");
+        dto.setPrintType(PrintType.OTHER);
+
+        service.updateWorkOrder(91L, dto);
+
+        ArgumentCaptor<WorkOrder> captor = ArgumentCaptor.forClass(WorkOrder.class);
+        verify(workOrderRepository).save(captor.capture());
+        assertEquals("Updated title", captor.getValue().getTitle());
+    }
+
+    @Test
     void createWorkOrder_rejectsBlankTitle() {
         WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
         ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
