@@ -153,6 +153,9 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/create").session(adminSession))
             .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/dashboard").session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("/public/companies"))));
         mockMvc.perform(get("/admin/users").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("??common."))))

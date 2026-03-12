@@ -86,7 +86,7 @@
                     
                     <!-- Desktop Navigation -->
                     <div class="hidden md:flex items-center gap-2 min-w-0">
-                        <a sec:authorize="!hasAuthority('SUPER_ADMIN')" th:href="@{/public/companies}"
+                        <a sec:authorize="!isAuthenticated()" th:href="@{/public/companies}"
                            class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium shrink-0">
                             <span th:text="#{public.companies.nav}">Companies</span>
                         </a>
@@ -291,7 +291,7 @@
                 
                 <!-- Mobile menu -->
                 <div id="mobile-menu" class="hidden md:hidden py-2 border-t border-gray-200">
-                    <a sec:authorize="!hasAuthority('SUPER_ADMIN')" th:href="@{/public/companies}"
+                    <a sec:authorize="!isAuthenticated()" th:href="@{/public/companies}"
                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <span th:text="#{public.companies.nav}">Companies</span>
                     </a>
