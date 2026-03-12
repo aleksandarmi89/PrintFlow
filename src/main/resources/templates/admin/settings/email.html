@@ -25,7 +25,7 @@
                 <div th:if="${successKey != null}" class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
                      th:text="#{${successKey}}">Saved</div>
                 <div th:if="${cleanupCount != null}" class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
-                     th:text="|Obrisano neuspešnih stavki: ${cleanupCount}|">Cleanup done</div>
+                     th:text="#{email.settings.outbox.cleanup_done(${cleanupCount})}">Cleanup done</div>
                 <div th:if="${smtpConfigured == false}"
                      class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
                     <span th:text="#{email.settings.not_configured}">
@@ -133,17 +133,18 @@
                 </form>
                 </div>
 
-                <div class="mt-10 border-t border-gray-200 pt-6">
+                    <div class="mt-10 border-t border-gray-200 pt-6">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900">Email outbox</h3>
-                            <p class="text-sm text-gray-600">Pregled uspešno/neudspešno poslatih email poruka za ovu kompaniju.</p>
+                            <h3 class="text-lg font-semibold text-gray-900" th:text="#{email.settings.outbox.title}">Email outbox</h3>
+                            <p class="text-sm text-gray-600" th:text="#{email.settings.outbox.subtitle}">Pregled uspešno/neudspešno poslatih email poruka za ovu kompaniju.</p>
                         </div>
                         <form th:action="@{/settings/email/outbox/cleanup-failed}" method="post" class="flex items-center gap-2">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <input type="number" name="days" min="0" value="30"
                                    class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <button type="submit" class="px-3 py-2 text-sm border border-red-300 text-red-700 rounded-lg hover:bg-red-50">
+                            <button type="submit" class="px-3 py-2 text-sm border border-red-300 text-red-700 rounded-lg hover:bg-red-50"
+                                    th:text="#{email.settings.outbox.delete_failed}">
                                 Obriši FAILED
                             </button>
                         </form>
@@ -151,29 +152,29 @@
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
                         <div class="rounded-lg border border-gray-200 p-3">
-                            <div class="text-gray-500">Ukupno</div>
+                            <div class="text-gray-500" th:text="#{email.settings.outbox.total}">Ukupno</div>
                             <div class="text-lg font-semibold text-gray-900" th:text="${outboxTotal}">0</div>
                         </div>
                         <div class="rounded-lg border border-gray-200 p-3">
-                            <div class="text-gray-500">Poslato</div>
+                            <div class="text-gray-500" th:text="#{email.settings.outbox.sent}">Poslato</div>
                             <div class="text-lg font-semibold text-emerald-700" th:text="${outboxSent}">0</div>
                         </div>
                         <div class="rounded-lg border border-gray-200 p-3">
-                            <div class="text-gray-500">Na čekanju</div>
+                            <div class="text-gray-500" th:text="#{email.settings.outbox.pending}">Na čekanju</div>
                             <div class="text-lg font-semibold text-amber-700" th:text="${outboxPending}">0</div>
                         </div>
                         <div class="rounded-lg border border-gray-200 p-3">
-                            <div class="text-gray-500">Neuspešno</div>
+                            <div class="text-gray-500" th:text="#{email.settings.outbox.failed}">Neuspešno</div>
                             <div class="text-lg font-semibold text-red-700" th:text="${outboxFailed}">0</div>
                         </div>
                     </div>
 
                     <form method="get" th:action="@{/settings/email}" class="mb-3 flex items-center gap-2">
-                        <label for="outboxStatus" class="text-sm text-gray-700">Filter status:</label>
+                        <label for="outboxStatus" class="text-sm text-gray-700" th:text="#{email.settings.outbox.filter_status}">Filter status:</label>
                         <select id="outboxStatus" name="outboxStatus"
                                 class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                 onchange="this.form.submit()">
-                            <option th:selected="${outboxStatus == null}" value="">Svi</option>
+                            <option th:selected="${outboxStatus == null}" value="" th:text="#{common.all}">Svi</option>
                             <option th:each="s : ${outboxStatuses}"
                                     th:value="${s.name()}"
                                     th:selected="${outboxStatus != null && outboxStatus.name() == s.name()}"
@@ -185,17 +186,17 @@
                         <table class="min-w-full text-sm">
                             <thead class="bg-gray-50 text-gray-600">
                             <tr>
-                                <th class="px-3 py-2 text-left">Vreme</th>
-                                <th class="px-3 py-2 text-left">To</th>
-                                <th class="px-3 py-2 text-left">Subject</th>
-                                <th class="px-3 py-2 text-left">Template</th>
-                                <th class="px-3 py-2 text-left">Status</th>
-                                <th class="px-3 py-2 text-left">Greška</th>
+                                <th class="px-3 py-2 text-left" th:text="#{common.time}">Vreme</th>
+                                <th class="px-3 py-2 text-left" th:text="#{email.settings.outbox.to}">To</th>
+                                <th class="px-3 py-2 text-left" th:text="#{email.settings.outbox.subject}">Subject</th>
+                                <th class="px-3 py-2 text-left" th:text="#{email.settings.outbox.template}">Template</th>
+                                <th class="px-3 py-2 text-left" th:text="#{common.status}">Status</th>
+                                <th class="px-3 py-2 text-left" th:text="#{email.settings.outbox.error}">Greška</th>
                             </tr>
                             </thead>
                             <tbody>
                             <tr th:if="${outboxEntries == null || outboxEntries.isEmpty()}">
-                                <td colspan="6" class="px-3 py-6 text-center text-gray-500">Nema zapisa.</td>
+                                <td colspan="6" class="px-3 py-6 text-center text-gray-500" th:text="#{email.settings.outbox.empty}">Nema zapisa.</td>
                             </tr>
                             <tr th:each="e : ${outboxEntries.content}" class="border-t border-gray-100">
                                 <td class="px-3 py-2 whitespace-nowrap" th:text="${#temporals.format(e.createdAt, 'yyyy-MM-dd HH:mm')}">-</td>
