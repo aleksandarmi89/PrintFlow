@@ -775,8 +775,9 @@ public class TaskService {
             task.setCompany(currentCompany);
         }
 
+        Long taskCompanyId = requireTaskCompanyId(task);
         if (assignedToId != null) {
-            User assigned = userRepository.findByIdAndCompany_Id(assignedToId, tenantGuard.requireCompanyId())
+            User assigned = userRepository.findByIdAndCompany_Id(assignedToId, taskCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             task.setAssignedTo(assigned);
             task.setStatus(TaskStatus.ASSIGNED);
@@ -790,7 +791,7 @@ public class TaskService {
         }
 
         if (createdById != null) {
-            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
+            User createdBy = userRepository.findByIdAndCompany_Id(createdById, taskCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             task.setCreatedBy(createdBy);
         }
@@ -802,6 +803,13 @@ public class TaskService {
         }
 
         return convertToTaskDTO(saved);
+    }
+
+    private Long requireTaskCompanyId(Task task) {
+        if (task == null || task.getCompany() == null || task.getCompany().getId() == null) {
+            throw new RuntimeException("Company context is required");
+        }
+        return task.getCompany().getId();
     }
 
     // =============== TIME TRACKING ===============
