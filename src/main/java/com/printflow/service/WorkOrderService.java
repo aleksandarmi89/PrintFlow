@@ -84,7 +84,8 @@ public class WorkOrderService {
     public WorkOrderDTO createWorkOrder(WorkOrderDTO workOrderDTO) {
         Long companyId = tenantGuard.requireCompanyId();
         String normalizedTitle = requireTitle(workOrderDTO.getTitle());
-        Client client = getClientOrThrow(workOrderDTO.getClientId(), companyId);
+        Long clientId = requireClientId(workOrderDTO.getClientId());
+        Client client = getClientOrThrow(clientId, companyId);
         billingAccessService.assertBillingActiveForPremiumAction(client.getCompany().getId());
         planLimitService.assertMonthlyOrdersLimit(client.getCompany());
         
@@ -743,6 +744,13 @@ public class WorkOrderService {
             throw new RuntimeException("Work order title is required");
         }
         return title.trim();
+    }
+
+    private Long requireClientId(Long clientId) {
+        if (clientId == null) {
+            throw new RuntimeException("Client is required");
+        }
+        return clientId;
     }
 
     private String buildReorderReason(String sourceOrderNumber, String sourceLabel) {

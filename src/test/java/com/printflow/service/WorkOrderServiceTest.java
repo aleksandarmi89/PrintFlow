@@ -317,6 +317,53 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    void createWorkOrder_rejectsMissingClient() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        when(tenantGuard.requireCompanyId()).thenReturn(9L);
+
+        com.printflow.dto.WorkOrderDTO dto = new com.printflow.dto.WorkOrderDTO();
+        dto.setTitle("Order");
+        dto.setClientId(null);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.createWorkOrder(dto));
+        assertEquals("Client is required", ex.getMessage());
+        verifyNoInteractions(clientRepository, workOrderRepository);
+    }
+
+    @Test
     void createWorkOrder_rejectsUnknownAssignee() {
         WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
         ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
