@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class CompanyControllerTest {
@@ -57,5 +58,55 @@ class CompanyControllerTest {
         verify(companyService).updateCompany(eq(11L), any(CompanyDTO.class));
         assertEquals(true, incoming.isBillingOverrideActive());
         assertEquals(until, incoming.getBillingOverrideUntil());
+    }
+
+    @Test
+    void disableCompanyIsForbiddenForNonSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.disableCompany(22L, model);
+
+        assertEquals("redirect:/admin/companies", view);
+        verifyNoInteractions(companyService);
+    }
+
+    @Test
+    void enableCompanyIsForbiddenForNonSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.enableCompany(23L, model);
+
+        assertEquals("redirect:/admin/companies", view);
+        verifyNoInteractions(companyService);
     }
 }

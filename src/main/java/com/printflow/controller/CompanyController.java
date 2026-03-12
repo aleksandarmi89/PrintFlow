@@ -153,6 +153,9 @@ public class CompanyController extends BaseController {
 
     @PostMapping("/disable/{id}")
     public String disableCompany(@PathVariable Long id, Model model) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return redirectWithError("/admin/companies", "billing.override.forbidden", model);
+        }
         try {
             companyService.disableCompany(id);
             return redirectWithSuccess("/admin/companies", "Company disabled successfully", model);
@@ -163,6 +166,9 @@ public class CompanyController extends BaseController {
 
     @PostMapping("/enable/{id}")
     public String enableCompany(@PathVariable Long id, Model model) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return redirectWithError("/admin/companies", "billing.override.forbidden", model);
+        }
         try {
             companyService.enableCompany(id);
             return redirectWithSuccess("/admin/companies", "Company enabled successfully", model);
