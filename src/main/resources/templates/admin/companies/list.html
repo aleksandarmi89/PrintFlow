@@ -206,29 +206,35 @@
             <div class="px-6 py-4 border-t border-gray-200">
                 <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="text-sm text-gray-700">
-                        Page <span class="font-medium" th:text="${currentPage + 1}">1</span>
-                        of <span class="font-medium" th:text="${totalPages}">1</span>
+                        <span th:text="#{pagination.page}">Page</span>
+                        <span class="font-medium" th:text="${currentPage + 1}">1</span>
+                        <span th:text="#{pagination.of}">of</span>
+                        <span class="font-medium" th:text="${totalPages == 0 ? 1 : totalPages}">1</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <a th:href="@{/admin/companies(page=0,size=${size},search=${search},plan=${plan},override=${override})}"
                            class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
-                           th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''">First</a>
+                           th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.first}">First</a>
                         <a th:href="@{/admin/companies(page=${currentPage-1},size=${size},search=${search},plan=${plan},override=${override})}"
                            class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
-                           th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''">Prev</a>
+                           th:classappend="${currentPage == 0} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.prev}">Prev</a>
                         <a th:href="@{/admin/companies(page=${currentPage+1},size=${size},search=${search},plan=${plan},override=${override})}"
                            class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
-                           th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''">Next</a>
+                           th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.next}">Next</a>
                         <a th:href="@{/admin/companies(page=${lastPage},size=${size},search=${search},plan=${plan},override=${override})}"
                            class="px-3 py-1 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
-                           th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''">Last</a>
+                           th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
+                           th:text="#{pagination.last}">Last</a>
                     </div>
                     <form th:action="@{/admin/companies}" method="get" class="flex items-center gap-2">
                         <input type="hidden" name="page" value="0">
                         <input type="hidden" name="search" th:value="${search}">
                         <input type="hidden" name="plan" th:value="${plan}">
                         <input type="hidden" name="override" th:value="${override}">
-                        <label class="text-sm text-gray-600">Size</label>
+                        <label class="text-sm text-gray-600" th:text="#{pagination.size}">Size</label>
                         <select name="size" class="border rounded px-2 py-1 text-sm" onchange="this.form.submit()">
                             <option th:each="opt : ${allowedSizes}"
                                     th:value="${opt}"

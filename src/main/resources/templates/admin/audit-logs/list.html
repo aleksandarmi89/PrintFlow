@@ -143,18 +143,21 @@
 
         <div class="mt-6 flex items-center justify-between" th:if="${logsPage != null}">
             <div class="text-sm text-gray-600">
-                Page <span th:text="${page + 1}">1</span> of <span th:text="${totalPages}">1</span>
+                <span th:text="#{pagination.page}">Page</span>
+                <span th:text="${page + 1}">1</span>
+                <span th:text="#{pagination.of}">of</span>
+                <span th:text="${totalPages == 0 ? 1 : totalPages}">1</span>
             </div>
             <div class="flex gap-2">
                 <a th:if="${page > 0}"
                    th:href="@{/admin/audit-logs(pageNumber=${page},size=${size},companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType})}"
                    class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
-                    Prev
+                    <span th:text="#{pagination.prev}">Prev</span>
                 </a>
                 <a th:if="${page + 1 < totalPages}"
                    th:href="@{/admin/audit-logs(pageNumber=${page + 2},size=${size},companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType})}"
                    class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
-                    Next
+                    <span th:text="#{pagination.next}">Next</span>
                 </a>
             </div>
         </div>
