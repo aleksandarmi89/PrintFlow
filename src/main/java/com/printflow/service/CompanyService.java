@@ -169,10 +169,8 @@ public class CompanyService {
             company.setSmtpTls(dto.getSmtpTls());
         }
         company.setActive(dto.isActive());
-        if (dto.isBillingOverrideActive()) {
-            company.setBillingOverrideActive(true);
-            company.setBillingOverrideUntil(dto.getBillingOverrideUntil());
-        }
+        company.setBillingOverrideActive(dto.isBillingOverrideActive());
+        company.setBillingOverrideUntil(dto.isBillingOverrideActive() ? dto.getBillingOverrideUntil() : null);
         Company saved = companyRepository.save(company);
         return toDTO(saved);
     }
