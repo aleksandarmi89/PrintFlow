@@ -3,6 +3,7 @@ package com.printflow.service;
 import com.printflow.entity.Company;
 import com.printflow.entity.User;
 import com.printflow.entity.WorkOrder;
+import com.printflow.entity.enums.OrderStatus;
 import com.printflow.entity.enums.PrintType;
 import com.printflow.repository.AttachmentRepository;
 import com.printflow.repository.ClientRepository;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -381,6 +383,104 @@ class WorkOrderServiceTest {
         ArgumentCaptor<WorkOrder> captor = ArgumentCaptor.forClass(WorkOrder.class);
         verify(workOrderRepository).save(captor.capture());
         assertEquals("Updated title", captor.getValue().getTitle());
+    }
+
+    @Test
+    void updateWorkOrderStatus_rejectsNullStatus() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.updateWorkOrderStatus(10L, null, null));
+        assertEquals("Status is required", ex.getMessage());
+        verifyNoInteractions(workOrderRepository);
+    }
+
+    @Test
+    void updateWorkOrderStatus_setsCompletedAtWhenCompleted() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company company = new Company();
+        company.setId(12L);
+        WorkOrder order = new WorkOrder();
+        order.setId(92L);
+        order.setCompany(company);
+        order.setStatus(OrderStatus.SENT);
+        order.setPrintType(PrintType.OTHER);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(12L);
+        when(workOrderRepository.findWithRelationsByIdAndCompany_Id(92L, 12L)).thenReturn(Optional.of(order));
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tenantGuard.getCurrentUser()).thenReturn(null);
+
+        com.printflow.dto.WorkOrderDTO result = service.updateWorkOrderStatus(92L, OrderStatus.COMPLETED, "done");
+
+        assertEquals(OrderStatus.COMPLETED, result.getStatus());
+        ArgumentCaptor<WorkOrder> captor = ArgumentCaptor.forClass(WorkOrder.class);
+        verify(workOrderRepository).save(captor.capture());
+        assertNotNull(captor.getValue().getCompletedAt());
     }
 
     @Test
