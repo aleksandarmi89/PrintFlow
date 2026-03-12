@@ -177,6 +177,7 @@ class RegressionPagesIntegrationTest {
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("/public/companies"))))
+            .andExpect(content().string(containsString("ProPrintFlow")))
             .andExpect(content().string(containsString("/admin/pricing/products")))
             .andExpect(content().string(containsString("/pricing/calculate")));
         mockMvc.perform(get("/admin/users").session(adminSession))
