@@ -449,6 +449,10 @@ public class WorkOrderService {
         if (workOrder.getPublicToken() == null || workOrder.getPublicToken().isBlank()) {
             throw workOrderNotFound();
         }
+        if (workOrder.getPublicTokenExpiresAt() == null) {
+            workOrder.setPublicTokenExpiresAt(publicTokenService.expiresAtFromNow());
+            workOrderRepository.save(workOrder);
+        }
         if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
             throw workOrderNotFound();
         }
