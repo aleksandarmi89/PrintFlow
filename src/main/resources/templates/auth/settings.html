@@ -13,26 +13,26 @@
                 <p class="text-gray-600" th:text="#{auth.settings_subtitle}">Configure your account preferences.</p>
 
                 <div class="mt-6 border-t border-gray-200 pt-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{auth.settings.change_password}">Change Password</h2>
                     <form th:action="@{/settings/password}" method="post" class="space-y-4">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Current password</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.current_password}">Current password</label>
                             <input type="password" name="currentPassword" required
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">New password</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.new_password}">New password</label>
                             <input type="password" name="newPassword" required
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Confirm new password</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.confirm_new_password}">Confirm new password</label>
                             <input type="password" name="confirmPassword" required
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div class="flex justify-end">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Update password</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg" th:text="#{auth.settings.update_password}">Update password</button>
                         </div>
                     </form>
                 </div>
