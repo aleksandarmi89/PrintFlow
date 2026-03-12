@@ -431,52 +431,26 @@ public class WorkOrderService {
     }
     
     public WorkOrderDTO getWorkOrderByPublicToken(String token) {
-        if (token == null || token.isBlank()) {
-            throw new RuntimeException("Work order not found");
-        }
-        WorkOrder workOrder = workOrderRepository
-            .findWithClientAndCompanyByPublicToken(token.trim())
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
-        if (workOrder.getPublicTokenExpiresAt() == null) {
-            workOrder.setPublicTokenExpiresAt(publicTokenService.expiresAtFromNow());
-            workOrderRepository.save(workOrder);
-        }
-        if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
-            throw new RuntimeException("Work order not found");
-        }
+        WorkOrder workOrder = getPublicWorkOrderOrThrow(token);
         return convertToDTO(workOrder);
     }
 
     public WorkOrder getWorkOrderEntityByPublicToken(String token) {
-        if (token == null || token.isBlank()) {
-            throw new RuntimeException("Work order not found");
-        }
-        WorkOrder workOrder = workOrderRepository
-            .findWithClientAndCompanyByPublicToken(token.trim())
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
-        if (workOrder.getPublicTokenExpiresAt() == null) {
-            workOrder.setPublicTokenExpiresAt(publicTokenService.expiresAtFromNow());
-            workOrderRepository.save(workOrder);
-        }
-        if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
-            throw new RuntimeException("Work order not found");
-        }
-        return workOrder;
+        return getPublicWorkOrderOrThrow(token);
     }
 
     public String resolvePublicTokenFromOrderNumber(String orderNumber) {
         if (orderNumber == null || orderNumber.isBlank()) {
-            throw new RuntimeException("Work order not found");
+            throw workOrderNotFound();
         }
         String normalized = orderNumber.trim().toUpperCase();
         WorkOrder workOrder = workOrderRepository.findByOrderNumberIgnoreCase(normalized)
-            .orElseThrow(() -> new RuntimeException("Work order not found"));
+            .orElseThrow(this::workOrderNotFound);
         if (workOrder.getPublicToken() == null || workOrder.getPublicToken().isBlank()) {
-            throw new RuntimeException("Work order not found");
+            throw workOrderNotFound();
         }
-        if (workOrder.getPublicTokenExpiresAt() != null &&
-            workOrder.getPublicTokenExpiresAt().isBefore(publicTokenService.now())) {
-            throw new RuntimeException("Work order not found");
+        if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
+            throw workOrderNotFound();
         }
         return workOrder.getPublicToken();
     }
@@ -760,6 +734,32 @@ public class WorkOrderService {
     private User resolveCreatedByForClone(Long createdById) {
         return userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    private WorkOrder getPublicWorkOrderOrThrow(String token) {
+        String normalizedToken = normalizeTokenOrThrow(token);
+        WorkOrder workOrder = workOrderRepository
+            .findWithClientAndCompanyByPublicToken(normalizedToken)
+            .orElseThrow(this::workOrderNotFound);
+        if (workOrder.getPublicTokenExpiresAt() == null) {
+            workOrder.setPublicTokenExpiresAt(publicTokenService.expiresAtFromNow());
+            workOrderRepository.save(workOrder);
+        }
+        if (publicTokenService.isExpired(workOrder.getPublicTokenExpiresAt())) {
+            throw workOrderNotFound();
+        }
+        return workOrder;
+    }
+
+    private String normalizeTokenOrThrow(String token) {
+        if (token == null || token.isBlank()) {
+            throw workOrderNotFound();
+        }
+        return token.trim();
+    }
+
+    private RuntimeException workOrderNotFound() {
+        return new RuntimeException("Work order not found");
     }
     
     public Page<WorkOrderDTO> getUnassignedWorkOrders(Pageable pageable) {

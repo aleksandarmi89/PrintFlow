@@ -880,4 +880,104 @@ class WorkOrderServiceTest {
         assertEquals("User not found", ex.getMessage());
         verify(workOrderRepository, never()).save(any(WorkOrder.class));
     }
+
+    @Test
+    void getWorkOrderByPublicToken_trimsTokenBeforeLookup() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        WorkOrder order = new WorkOrder();
+        order.setId(101L);
+        order.setTitle("Order");
+        order.setPublicToken("abc");
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusHours(2));
+
+        when(workOrderRepository.findWithClientAndCompanyByPublicToken("abc")).thenReturn(Optional.of(order));
+        when(publicTokenService.isExpired(order.getPublicTokenExpiresAt())).thenReturn(false);
+
+        com.printflow.dto.WorkOrderDTO dto = service.getWorkOrderByPublicToken("  abc  ");
+
+        assertEquals(101L, dto.getId());
+        verify(workOrderRepository).findWithClientAndCompanyByPublicToken("abc");
+    }
+
+    @Test
+    void resolvePublicTokenFromOrderNumber_rejectsExpiredToken() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        WorkOrder order = new WorkOrder();
+        order.setOrderNumber("WO-900");
+        order.setPublicToken("pub-900");
+        order.setPublicTokenExpiresAt(LocalDateTime.now().minusMinutes(1));
+
+        when(workOrderRepository.findByOrderNumberIgnoreCase("WO-900")).thenReturn(Optional.of(order));
+        when(publicTokenService.isExpired(order.getPublicTokenExpiresAt())).thenReturn(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.resolvePublicTokenFromOrderNumber(" wo-900 "));
+        assertEquals("Work order not found", ex.getMessage());
+    }
 }
