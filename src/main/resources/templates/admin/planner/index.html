@@ -566,6 +566,7 @@
 
         function bindTooltip(el) {
             if (!tooltip || el.dataset.tooltipBound) return;
+            let hideTimeoutId = null;
 
             el.addEventListener('mouseenter', () => {
                 tooltip.textContent = el.getAttribute('data-tooltip');
@@ -577,6 +578,18 @@
             });
             el.addEventListener('mouseleave', () => {
                 tooltip.classList.add('hidden');
+            });
+            el.addEventListener('click', (e) => {
+                const text = el.getAttribute('data-tooltip');
+                if (!text) return;
+                tooltip.textContent = text;
+                tooltip.classList.remove('hidden');
+                tooltip.style.left = (e.clientX + 12) + 'px';
+                tooltip.style.top = (e.clientY + 12) + 'px';
+                if (hideTimeoutId) {
+                    clearTimeout(hideTimeoutId);
+                }
+                hideTimeoutId = setTimeout(() => tooltip.classList.add('hidden'), 1800);
             });
             el.dataset.tooltipBound = '1';
         }
