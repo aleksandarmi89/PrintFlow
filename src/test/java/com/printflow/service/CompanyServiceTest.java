@@ -20,6 +20,53 @@ import static org.mockito.Mockito.when;
 class CompanyServiceTest {
 
     @Test
+    void createCompanyNormalizesBlankContactFieldsToNull() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        when(companyRepository.existsByName("Gamma")).thenReturn(false);
+        when(companyRepository.findBySlug(any())).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenAnswer(inv -> {
+            Company c = inv.getArgument(0);
+            c.setId(100L);
+            return c;
+        });
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("Gamma");
+        dto.setEmail("   ");
+        dto.setPhone(" ");
+        dto.setAddress("   ");
+        dto.setWebsite(" ");
+        dto.setPrimaryColor(" ");
+        dto.setActive(true);
+
+        CompanyDTO created = service.createCompany(dto);
+
+        assertNull(created.getEmail());
+        assertNull(created.getPhone());
+        assertNull(created.getAddress());
+        assertNull(created.getWebsite());
+        assertNull(created.getPrimaryColor());
+    }
+
+    @Test
     void updateCompanyClearsBillingOverrideWhenDisabledInDto() {
         CompanyRepository companyRepository = mock(CompanyRepository.class);
         UserRepository userRepository = mock(UserRepository.class);
@@ -105,5 +152,58 @@ class CompanyServiceTest {
 
         assertTrue(updated.isBillingOverrideActive());
         assertEquals(until, updated.getBillingOverrideUntil());
+    }
+
+    @Test
+    void updateCompanyNormalizesBlankContactFieldsToNull() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        Company existing = new Company();
+        existing.setId(14L);
+        existing.setName("Delta");
+        existing.setSlug("delta");
+        existing.setEmail("old@example.com");
+        existing.setPhone("123");
+        existing.setAddress("old address");
+        existing.setWebsite("https://old.example.com");
+        existing.setPrimaryColor("#000000");
+
+        when(companyRepository.findById(14L)).thenReturn(Optional.of(existing));
+        when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(companyRepository.findBySlug(any())).thenReturn(Optional.empty());
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("Delta");
+        dto.setEmail(" ");
+        dto.setPhone(" ");
+        dto.setAddress(" ");
+        dto.setWebsite(" ");
+        dto.setPrimaryColor(" ");
+        dto.setActive(true);
+
+        CompanyDTO updated = service.updateCompany(14L, dto);
+
+        assertNull(updated.getEmail());
+        assertNull(updated.getPhone());
+        assertNull(updated.getAddress());
+        assertNull(updated.getWebsite());
+        assertNull(updated.getPrimaryColor());
     }
 }

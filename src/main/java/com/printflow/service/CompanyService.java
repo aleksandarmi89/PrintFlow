@@ -118,11 +118,11 @@ public class CompanyService {
         String companyName = dto.getName().trim();
         company.setName(companyName);
         company.setSlug(generateUniqueSlug(companyName, null));
-        company.setEmail(dto.getEmail() != null ? dto.getEmail().trim() : null);
-        company.setPhone(dto.getPhone());
-        company.setAddress(dto.getAddress());
-        company.setWebsite(dto.getWebsite());
-        company.setPrimaryColor(dto.getPrimaryColor());
+        company.setEmail(normalizeNullable(dto.getEmail()));
+        company.setPhone(normalizeNullable(dto.getPhone()));
+        company.setAddress(normalizeNullable(dto.getAddress()));
+        company.setWebsite(normalizeNullable(dto.getWebsite()));
+        company.setPrimaryColor(normalizeNullable(dto.getPrimaryColor()));
         company.setCurrency(normalizeCurrency(dto.getCurrency()));
         company.setActive(dto.isActive());
         LocalDateTime now = LocalDateTime.now();
@@ -147,11 +147,11 @@ public class CompanyService {
 
         company.setName(newName);
         company.setSlug(generateUniqueSlug(newName, company.getId()));
-        company.setEmail(dto.getEmail() != null ? dto.getEmail().trim() : null);
-        company.setPhone(dto.getPhone());
-        company.setAddress(dto.getAddress());
-        company.setWebsite(dto.getWebsite());
-        company.setPrimaryColor(dto.getPrimaryColor());
+        company.setEmail(normalizeNullable(dto.getEmail()));
+        company.setPhone(normalizeNullable(dto.getPhone()));
+        company.setAddress(normalizeNullable(dto.getAddress()));
+        company.setWebsite(normalizeNullable(dto.getWebsite()));
+        company.setPrimaryColor(normalizeNullable(dto.getPrimaryColor()));
         company.setCurrency(normalizeCurrency(dto.getCurrency()));
         if (dto.getSmtpHost() != null && !dto.getSmtpHost().isBlank()) {
             company.setSmtpHost(dto.getSmtpHost().trim());
@@ -306,5 +306,13 @@ public class CompanyService {
             return "RSD";
         }
         return currency.trim().toUpperCase();
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
