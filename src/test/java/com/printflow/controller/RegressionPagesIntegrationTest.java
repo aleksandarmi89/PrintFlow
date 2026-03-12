@@ -168,6 +168,12 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/create").session(adminSession))
             .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/planner").session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Production Planner"),
+                containsString("Planer proizvodnje")
+            )));
         mockMvc.perform(get("/admin/company").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(anyOf(

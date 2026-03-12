@@ -18,7 +18,8 @@
         </p>
     </div>
 
-    <form method="get" class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-3">
+    <div class="overflow-x-auto">
+    <form method="get" class="min-w-[980px] bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-3">
         <label class="text-xs text-gray-500" th:text="#{planner.filter.month}">Month</label>
         <input type="month" name="month" th:value="${monthFilter}"
                class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
@@ -73,6 +74,7 @@
             Clear
         </a>
     </form>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl border border-gray-200 p-4">
@@ -134,12 +136,12 @@
 
         <!-- Profit Snapshot -->
         <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-900" th:text="#{planner.profit_snapshot.title}">
                     Profit Snapshot
                 </h2>
-
-                <form method="get" class="flex items-center gap-2">
+                <div class="overflow-x-auto">
+                <form method="get" class="min-w-[760px] flex items-center gap-2">
                     <label class="text-xs text-gray-500" th:text="#{planner.filter.month}">Month</label>
                     <input type="month" name="month" th:value="${monthFilter}"
                            class="px-2 py-1 border border-gray-300 rounded-lg text-xs">
@@ -185,6 +187,7 @@
                         Filter
                     </button>
                 </form>
+                </div>
             </div>
 
             <div class="space-y-3 text-sm text-gray-700 mb-4">
@@ -378,7 +381,8 @@
             </div>
         </div>
 
-        <div class="space-y-3">
+        <div class="overflow-x-auto">
+        <div class="min-w-[760px] space-y-3">
             <div th:each="p : ${statusTimeline}" class="flex items-center gap-4"
                  th:with="newPct=${maxStatusCount == 0 ? 0 : (p.newCount / maxStatusCount * 100)},
                           designPct=${maxStatusCount == 0 ? 0 : (p.designCount / maxStatusCount * 100)},
@@ -419,6 +423,7 @@
                 No data for status timeline.
             </div>
         </div>
+        </div>
     </div>
 
     <!-- Heatmap -->
@@ -433,28 +438,32 @@
             </span>
         </div>
 
-        <div class="grid grid-cols-7 gap-2 text-xs text-gray-700">
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.mon}">Mon</div>
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.tue}">Tue</div>
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.wed}">Wed</div>
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.thu}">Thu</div>
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.fri}">Fri</div>
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.sat}">Sat</div>
-            <div class="text-center text-gray-400" th:text="#{planner.weekday.sun}">Sun</div>
-        </div>
+        <div class="overflow-x-auto">
+            <div class="min-w-[420px]">
+                <div class="grid grid-cols-7 gap-2 text-xs text-gray-700">
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.mon}">Mon</div>
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.tue}">Tue</div>
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.wed}">Wed</div>
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.thu}">Thu</div>
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.fri}">Fri</div>
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.sat}">Sat</div>
+                    <div class="text-center text-gray-400" th:text="#{planner.weekday.sun}">Sun</div>
+                </div>
 
-        <div class="grid grid-cols-7 gap-2 mt-2">
-            <div th:if="${heatmapOffset > 0}"
-                 th:each="i : ${#numbers.sequence(1, heatmapOffset)}"
-                 class="h-10 rounded-md bg-transparent"></div>
+                <div class="grid grid-cols-7 gap-2 mt-2">
+                    <div th:if="${heatmapOffset > 0}"
+                         th:each="i : ${#numbers.sequence(1, heatmapOffset)}"
+                         class="h-10 rounded-md bg-transparent"></div>
 
-            <div th:each="h : ${heatmapDays}"
-                 th:with="opacity=${maxHeatmapCount == 0 ? 0.1 : (h.count / maxHeatmapCount * 0.8 + 0.1)},
-                          pct=${maxHeatmapCount == 0 ? 0 : (h.count / maxHeatmapCount * 100)}"
-                 class="h-10 rounded-md flex items-center justify-center text-xs text-gray-800"
-                 th:attr="data-tooltip=${#temporals.format(h.date, 'dd.MM.yyyy') + ': ' + h.count + ' (' + #numbers.formatDecimal(pct,1,0) + '%)'}"
-                 th:style="'background-color: rgba(59, 130, 246, ' + ${opacity} + ');'">
-                <span th:text="${h.day}">1</span>
+                    <div th:each="h : ${heatmapDays}"
+                         th:with="opacity=${maxHeatmapCount == 0 ? 0.1 : (h.count / maxHeatmapCount * 0.8 + 0.1)},
+                                  pct=${maxHeatmapCount == 0 ? 0 : (h.count / maxHeatmapCount * 100)}"
+                         class="h-10 rounded-md flex items-center justify-center text-xs text-gray-800"
+                         th:attr="data-tooltip=${#temporals.format(h.date, 'dd.MM.yyyy') + ': ' + h.count + ' (' + #numbers.formatDecimal(pct,1,0) + '%)'}"
+                         th:style="'background-color: rgba(59, 130, 246, ' + ${opacity} + ');'">
+                        <span th:text="${h.day}">1</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -484,7 +493,8 @@
             </a>
         </div>
 
-        <div class="space-y-3">
+        <div class="overflow-x-auto">
+        <div class="min-w-[720px] space-y-3">
             <div th:each="p : ${profitByType}" class="flex items-center gap-3"
                  th:with="grossScale=${scale == 'linear' ? (profitMaxGross == 0 ? 0 : (p.gross / profitMaxGross * 100)) : (profitMaxGrossLog == 0 ? 0 : (T(java.lang.Math).log1p(p.gross) / profitMaxGrossLog * 100))},
                           costPct=${p.gross == 0 ? 0 : ((p.gross - p.margin) / p.gross * 100)},
@@ -512,6 +522,7 @@
                  th:text="#{planner.no_margin_data}">
                 No margin data.
             </div>
+        </div>
         </div>
 
         <div class="mt-3 text-xs text-gray-500">
