@@ -135,8 +135,9 @@ public class CompanyController extends BaseController {
                                 Model model) {
         try {
             if (!tenantContextService.isSuperAdmin()) {
-                companyDTO.setBillingOverrideActive(false);
-                companyDTO.setBillingOverrideUntil(null);
+                CompanyDTO existing = companyService.getCompanyById(id);
+                companyDTO.setBillingOverrideActive(existing.isBillingOverrideActive());
+                companyDTO.setBillingOverrideUntil(existing.getBillingOverrideUntil());
             }
             companyService.updateCompany(id, companyDTO);
             if (logo != null && !logo.isEmpty()) {
