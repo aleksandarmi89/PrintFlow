@@ -261,7 +261,7 @@
 
                 <!-- Activity Timeline -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{common.activity}">Activity</h2>
                     <div class="space-y-4">
                         <div th:each="activity : ${activityFeed}" class="flex items-start">
                             <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
@@ -271,7 +271,7 @@
                             </div>
                         </div>
                         <div th:if="${activityFeed == null || activityFeed.isEmpty()}" class="text-sm text-gray-500">
-                            No recent activity.
+                            <span th:text="#{orders.details.no_recent_activity}">No recent activity.</span>
                         </div>
                     </div>
                 </div>
@@ -407,21 +407,22 @@
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit"
                                     class="w-full text-left px-4 py-3 border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50">
-                                <div class="font-medium">Reorder</div>
-                                <div class="text-sm">Create a new order from this one.</div>
+                                <div class="font-medium" th:text="#{orders.details.reorder}">Reorder</div>
+                                <div class="text-sm" th:text="#{orders.details.reorder_help}">Create a new order from this one.</div>
                             </button>
                         </form>
                         <form th:action="@{/admin/orders/{id}/duplicate(id=${order.id})}" method="post"
                               class="block w-full px-4 py-3 border border-gray-300 rounded-lg">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <div class="font-medium text-gray-900">Duplicate Order</div>
-                            <div class="text-sm text-gray-500 mb-2">Clone items and optionally attachments.</div>
+                            <div class="font-medium text-gray-900" th:text="#{orders.details.duplicate_order}">Duplicate Order</div>
+                            <div class="text-sm text-gray-500 mb-2" th:text="#{orders.details.duplicate_order_help}">Clone items and optionally attachments.</div>
                             <label class="inline-flex items-center text-sm text-gray-600 mb-2">
                                 <input type="checkbox" name="includeAttachments" value="true" class="mr-2">
-                                Include attachments metadata
+                                <span th:text="#{orders.details.include_attachments_metadata}">Include attachments metadata</span>
                             </label>
                             <button type="submit"
-                                    class="w-full text-left px-4 py-2 bg-gray-900 text-white rounded-lg">
+                                    class="w-full text-left px-4 py-2 bg-gray-900 text-white rounded-lg"
+                                    th:text="#{orders.details.duplicate}">
                                 Duplicate
                             </button>
                         </form>
@@ -489,7 +490,7 @@
                                 Send this link to the client to track the order.
                             </div>
                             <div class="text-xs text-gray-500 mt-1" th:if="${publicTokenExpiresAt != null}">
-                                Važi do:
+                                <span th:text="#{orders.details.valid_until}">Valid until:</span>
                                 <span th:text="${#temporals.format(publicTokenExpiresAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 12:00</span>
                             </div>
                         </div>
@@ -511,8 +512,8 @@
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit"
                                     class="w-full text-left px-4 py-3 border border-amber-300 text-amber-800 rounded-lg hover:bg-amber-50">
-                                <div class="font-medium">Rotate Public Link</div>
-                                <div class="text-sm text-amber-700">Invalidate old link, generate new one, and auto-send to client email.</div>
+                                <div class="font-medium" th:text="#{orders.details.rotate_public_link}">Rotate Public Link</div>
+                                <div class="text-sm text-amber-700" th:text="#{orders.details.rotate_public_link_help}">Invalidate old link, generate new one, and auto-send to client email.</div>
                             </button>
                         </form>
 
@@ -522,8 +523,8 @@
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit"
                                     class="w-full text-left px-4 py-3 border border-indigo-300 text-indigo-800 rounded-lg hover:bg-indigo-50">
-                                <div class="font-medium">Rotate + Copy New Link</div>
-                                <div class="text-sm text-indigo-700">Generate fresh link and auto-copy it to clipboard.</div>
+                                <div class="font-medium" th:text="#{orders.details.rotate_copy_new_link}">Rotate + Copy New Link</div>
+                                <div class="text-sm text-indigo-700" th:text="#{orders.details.rotate_copy_new_link_help}">Generate fresh link and auto-copy it to clipboard.</div>
                             </button>
                         </form>
 
