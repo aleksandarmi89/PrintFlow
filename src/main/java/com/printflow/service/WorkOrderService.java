@@ -282,9 +282,7 @@ public class WorkOrderService {
         newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
         newOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
         if (createdById != null) {
-            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
-                .orElse(null);
-            newOrder.setCreatedBy(createdBy);
+            newOrder.setCreatedBy(resolveCreatedByForClone(createdById));
         }
 
         WorkOrder saved = workOrderRepository.save(newOrder);
@@ -341,9 +339,7 @@ public class WorkOrderService {
         newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
         newOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
         if (createdById != null) {
-            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
-                .orElse(null);
-            newOrder.setCreatedBy(createdBy);
+            newOrder.setCreatedBy(resolveCreatedByForClone(createdById));
         }
 
         WorkOrder saved = workOrderRepository.save(newOrder);
@@ -759,6 +755,11 @@ public class WorkOrderService {
             return base;
         }
         return base + " (" + sourceLabel.trim() + ")";
+    }
+
+    private User resolveCreatedByForClone(Long createdById) {
+        return userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
+            .orElseThrow(() -> new RuntimeException("User not found"));
     }
     
     public Page<WorkOrderDTO> getUnassignedWorkOrders(Pageable pageable) {
