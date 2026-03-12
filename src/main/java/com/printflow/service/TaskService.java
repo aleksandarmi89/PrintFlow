@@ -545,15 +545,22 @@ public class TaskService {
     // =============== TASK ASSIGNMENT ===============
     
     public boolean isTaskAssignedToUser(Long taskId, Long userId) {
+        if (taskId == null || userId == null) {
+            return false;
+        }
         return taskRepository.existsByIdAndAssignedToId(taskId, userId);
     }
 
     public boolean canUserAccessTask(Long taskId, Long userId) {
-        Task task = taskRepository.findByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId()).orElse(null);
+        if (taskId == null || userId == null) {
+            return false;
+        }
+        Long companyId = tenantGuard.requireCompanyId();
+        Task task = taskRepository.findByIdAndCompany_Id(taskId, companyId).orElse(null);
         if (task == null) {
             return false;
         }
-        User user = userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId()).orElse(null);
+        User user = userRepository.findByIdAndCompany_Id(userId, companyId).orElse(null);
         if (user == null) {
             return false;
         }
@@ -572,6 +579,9 @@ public class TaskService {
     }
 
     public boolean isTaskAvailable(Long taskId) {
+        if (taskId == null) {
+            return false;
+        }
         Task task = taskRepository.findByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId()).orElse(null);
         return task != null && task.getAssignedTo() == null && 
                task.getStatus() == TaskStatus.PENDING;
