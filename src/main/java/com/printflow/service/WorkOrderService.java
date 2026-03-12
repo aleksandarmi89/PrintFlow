@@ -153,7 +153,7 @@ public class WorkOrderService {
         
         if (workOrderDTO.getAssignedToId() != null) {
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), tenantGuard.requireCompanyId())
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("User not found"));
             workOrder.setAssignedTo(assignedTo);
         } else {
             workOrder.setAssignedTo(null);
