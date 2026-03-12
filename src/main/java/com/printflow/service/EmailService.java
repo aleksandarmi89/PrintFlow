@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -102,22 +103,8 @@ public class EmailService {
             return;
         }
 
-        EmailOutbox outbox;
-        try {
-            outbox = new EmailOutbox();
-            outbox.setCompany(resolveOutboxCompany(company));
-            outbox.setToEmail(message.getTo());
-            outbox.setSubject(message.getSubject());
-            outbox.setTemplate(templateName);
-            outbox.setStatus(EmailOutboxStatus.PENDING);
-            outbox = outboxRepository.save(outbox);
-        } catch (Exception ex) {
-            log.warn("Unable to persist email outbox row for to={} subject={} cause={}",
-                message.getTo(), message.getSubject(), ex.getClass().getSimpleName());
-            log.debug("Outbox persistence failure details for to={} subject={}", message.getTo(), message.getSubject(), ex);
-            if (throwOnError) {
-                throw new RuntimeException(ex);
-            }
+        EmailOutbox outbox = createPendingOutbox(message, company, templateName, throwOnError);
+        if (outbox == null) {
             return;
         }
 
@@ -188,6 +175,42 @@ public class EmailService {
             return company;
         }
         log.warn("Skipping stale company reference on email outbox persist. companyId={}", company.getId());
+        return null;
+    }
+
+    private EmailOutbox createPendingOutbox(EmailMessage message, Company company, String templateName, boolean throwOnError) {
+        EmailOutbox outbox = new EmailOutbox();
+        outbox.setCompany(resolveOutboxCompany(company));
+        outbox.setToEmail(message.getTo());
+        outbox.setSubject(message.getSubject());
+        outbox.setTemplate(templateName);
+        outbox.setStatus(EmailOutboxStatus.PENDING);
+        try {
+            return outboxRepository.save(outbox);
+        } catch (DataIntegrityViolationException ex) {
+            if (outbox.getCompany() == null) {
+                return handleOutboxPersistFailure(message, throwOnError, ex);
+            }
+            Long staleCompanyId = outbox.getCompany().getId();
+            log.warn("Outbox persist failed with company reference, retrying without company. companyId={}", staleCompanyId);
+            outbox.setCompany(null);
+            try {
+                return outboxRepository.save(outbox);
+            } catch (Exception retryEx) {
+                return handleOutboxPersistFailure(message, throwOnError, retryEx);
+            }
+        } catch (Exception ex) {
+            return handleOutboxPersistFailure(message, throwOnError, ex);
+        }
+    }
+
+    private EmailOutbox handleOutboxPersistFailure(EmailMessage message, boolean throwOnError, Exception ex) {
+        log.warn("Unable to persist email outbox row for to={} subject={} cause={}",
+            message.getTo(), message.getSubject(), ex.getClass().getSimpleName());
+        log.debug("Outbox persistence failure details for to={} subject={}", message.getTo(), message.getSubject(), ex);
+        if (throwOnError) {
+            throw new RuntimeException(ex);
+        }
         return null;
     }
 

@@ -9,9 +9,13 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -264,5 +268,54 @@ class EmailServiceTest {
         verify(outboxRepository, times(2)).save(captor.capture());
         EmailOutbox firstSaved = captor.getAllValues().get(0);
         assertNull(firstSaved.getCompany());
+    }
+
+    @Test
+    void sendNowRetriesOutboxPersistWithoutCompanyOnForeignKeyViolation() {
+        MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
+        TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
+        when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(9L)).thenReturn(true);
+        AtomicInteger saveAttempt = new AtomicInteger(0);
+        List<Long> companyIdsBySaveAttempt = new ArrayList<>();
+        when(outboxRepository.save(any())).thenAnswer(inv -> {
+            EmailOutbox outbox = inv.getArgument(0);
+            companyIdsBySaveAttempt.add(outbox.getCompany() == null ? null : outbox.getCompany().getId());
+            if (saveAttempt.getAndIncrement() == 0) {
+                throw new DataIntegrityViolationException("fk violation");
+            }
+            return outbox;
+        });
+
+        var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
+        MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(sender.createMimeMessage()).thenReturn(mimeMessage);
+        when(resolver.resolve(any())).thenReturn(new MailSenderResolver.ResolvedMailSender(sender, null));
+
+        EmailService service = new EmailService(
+            resolver,
+            companyRepository,
+            outboxRepository,
+            rateLimiter,
+            true,
+            "no-reply@printflow.local",
+            1,
+            0L,
+            Optional.empty()
+        );
+
+        EmailMessage msg = new EmailMessage();
+        msg.setTo("customer@example.com");
+        msg.setSubject("Subject");
+        msg.setTextBody("Body");
+        Company company = new Company();
+        company.setId(9L);
+
+        assertDoesNotThrow(() -> service.sendNow(msg, company, "test-template"));
+        verify(outboxRepository, times(3)).save(any(EmailOutbox.class));
+        assertEquals(9L, companyIdsBySaveAttempt.get(0));
+        assertNull(companyIdsBySaveAttempt.get(1));
     }
 }
