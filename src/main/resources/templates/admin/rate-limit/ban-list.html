@@ -8,21 +8,21 @@
 
     <main class="container mx-auto px-4 py-8">
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Ban List</h1>
-            <p class="text-gray-600 mt-1">Block abusive IPs from public endpoints.</p>
+            <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.rate_limit.title}">Ban List</h1>
+            <p class="text-gray-600 mt-1" th:text="#{admin.rate_limit.subtitle}">Block abusive IPs from public endpoints.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white rounded-xl border border-gray-200 p-4">
-                <div class="text-xs text-gray-500">Total Violations (window)</div>
+                <div class="text-xs text-gray-500" th:text="#{admin.rate_limit.stats.total_violations}">Total Violations (window)</div>
                 <div class="text-2xl font-bold text-gray-900" th:text="${totalViolations}">0</div>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-4">
-                <div class="text-xs text-gray-500">Banned IPs</div>
+                <div class="text-xs text-gray-500" th:text="#{admin.rate_limit.stats.banned_ips}">Banned IPs</div>
                 <div class="text-2xl font-bold text-gray-900" th:text="${#lists.size(bannedEntities)}">0</div>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 p-4">
-                <div class="text-xs text-gray-500">Whitelisted IPs</div>
+                <div class="text-xs text-gray-500" th:text="#{admin.rate_limit.stats.whitelisted_ips}">Whitelisted IPs</div>
                 <div class="text-2xl font-bold text-gray-900" th:text="${#lists.size(whitelistedEntities)}">0</div>
             </div>
         </div>
@@ -31,26 +31,28 @@
             <form th:action="@{/admin/rate-limit/ban}" method="post" class="flex flex-wrap gap-2 items-center">
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <div class="flex flex-col">
-                    <input type="text" name="ip" placeholder="IP or CIDR (e.g. 1.2.3.4 or 2001:db8::/32)"
+                    <input type="text" name="ip" th:placeholder="#{admin.rate_limit.form.ip_placeholder}"
                            class="px-4 py-2 border border-gray-300 rounded-lg w-72 ip-input">
-                    <span class="text-xs text-red-600 mt-1 hidden ip-error">Invalid IP/CIDR format.</span>
+                    <span class="text-xs text-red-600 mt-1 hidden ip-error" th:text="#{admin.rate_limit.form.invalid_ip}">Invalid IP/CIDR format.</span>
                 </div>
-                <input type="text" name="reason" placeholder="Reason (optional)"
+                <input type="text" name="reason" th:placeholder="#{admin.rate_limit.form.reason_placeholder}"
                        class="px-4 py-2 border border-gray-300 rounded-lg w-72">
-                <input type="number" name="durationMinutes" placeholder="Duration (min, optional)"
+                <input type="number" name="durationMinutes" th:placeholder="#{admin.rate_limit.form.duration_placeholder}"
                        class="px-4 py-2 border border-gray-300 rounded-lg w-56">
-                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        th:text="#{admin.rate_limit.form.ban_ip}">
                     Ban IP
                 </button>
             </form>
             <form th:action="@{/admin/rate-limit/whitelist}" method="post" class="flex gap-2 items-center">
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <div class="flex flex-col">
-                    <input type="text" name="ip" placeholder="IP or CIDR (e.g. 1.2.3.4 or 2001:db8::/32)"
+                    <input type="text" name="ip" th:placeholder="#{admin.rate_limit.form.ip_placeholder}"
                            class="px-4 py-2 border border-gray-300 rounded-lg w-72 ip-input">
-                    <span class="text-xs text-red-600 mt-1 hidden ip-error">Invalid IP/CIDR format.</span>
+                    <span class="text-xs text-red-600 mt-1 hidden ip-error" th:text="#{admin.rate_limit.form.invalid_ip}">Invalid IP/CIDR format.</span>
                 </div>
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        th:text="#{admin.rate_limit.form.whitelist_ip}">
                     Whitelist IP
                 </button>
             </form>
@@ -58,63 +60,71 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900">Banned IPs</div>
+                <div class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900" th:text="#{admin.rate_limit.banned.title}">Banned IPs</div>
                 <div class="divide-y divide-gray-200">
                     <div th:each="ban : ${bannedEntities}" class="p-4 flex items-center justify-between">
                         <div>
                             <div class="text-sm font-medium text-gray-900" th:text="${ban.ip}">1.2.3.4</div>
-                            <div class="text-xs text-gray-500" th:text="${ban.reason ?: 'No reason'}">Reason</div>
+                            <div class="text-xs text-gray-500" th:text="${ban.reason ?: #messages.msg('admin.rate_limit.no_reason')}">Reason</div>
                             <div class="text-xs text-gray-500" th:if="${ban.expiresAt != null}"
-                                 th:text="'Expires: ' + ${#temporals.format(ban.expiresAt, 'dd.MM.yyyy HH:mm')}"></div>
+                                 th:text="#{admin.rate_limit.expires_at(${#temporals.format(ban.expiresAt, 'dd.MM.yyyy HH:mm')})}"></div>
                         </div>
                         <form th:action="@{/admin/rate-limit/unban}" method="post">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <input type="hidden" name="ip" th:value="${ban.ip}">
-                            <button type="submit" class="text-sm text-blue-600 hover:text-blue-800">
+                            <button type="submit" class="text-sm text-blue-600 hover:text-blue-800" th:text="#{admin.rate_limit.actions.unban}">
                                 Unban
                             </button>
                         </form>
                     </div>
                     <div th:if="${bannedEntities == null || bannedEntities.size() == 0}" class="p-6 text-gray-500">
-                        No banned IPs.
+                        <span th:text="#{admin.rate_limit.banned.empty}">No banned IPs.</span>
                     </div>
                 </div>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900">Whitelisted IPs</div>
+                <div class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900" th:text="#{admin.rate_limit.whitelist.title}">Whitelisted IPs</div>
                 <div class="divide-y divide-gray-200">
                     <div th:each="ip : ${whitelistedEntities}" class="p-4 flex items-center justify-between">
                         <div class="text-sm font-medium text-gray-900" th:text="${ip.ip}">1.2.3.4</div>
                         <form th:action="@{/admin/rate-limit/unwhitelist}" method="post">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <input type="hidden" name="ip" th:value="${ip.ip}">
-                            <button type="submit" class="text-sm text-blue-600 hover:text-blue-800">
+                            <button type="submit" class="text-sm text-blue-600 hover:text-blue-800" th:text="#{common.remove}">
                                 Remove
                             </button>
                         </form>
                     </div>
                     <div th:if="${whitelistedEntities == null || whitelistedEntities.size() == 0}" class="p-6 text-gray-500">
-                        No whitelisted IPs.
+                        <span th:text="#{admin.rate_limit.whitelist.empty}">No whitelisted IPs.</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900">Top Offending IPs</div>
+            <div class="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900" th:text="#{admin.rate_limit.top_offenders.title}">Top Offending IPs</div>
             <div class="divide-y divide-gray-200">
                 <div th:each="item : ${topViolations}" class="p-4 flex items-center justify-between">
                     <div class="text-sm font-medium text-gray-900" th:text="${item.ip}">1.2.3.4</div>
                     <div class="text-sm text-gray-500" th:text="${item.count}">0</div>
                 </div>
                 <div th:if="${topViolations == null || topViolations.size() == 0}" class="p-6 text-gray-500">
-                    No violations in the current window.
+                    <span th:text="#{admin.rate_limit.top_offenders.empty}">No violations in the current window.</span>
                 </div>
             </div>
         </div>
     </main>
-    <script>
+    <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function () {
+            const msg = {
+                ipRequired: /*[[#{admin.rate_limit.form.ip_required}]]*/ 'IP is required',
+                confirmBan: /*[[#{admin.rate_limit.confirm.ban}]]*/ 'Ban this IP?',
+                confirmWhitelist: /*[[#{admin.rate_limit.confirm.whitelist}]]*/ 'Whitelist this IP?',
+                confirmUnban: /*[[#{admin.rate_limit.confirm.unban}]]*/ 'Unban this IP?',
+                confirmRemove: /*[[#{admin.rate_limit.confirm.remove_whitelist}]]*/ 'Remove this IP?'
+            };
+
             function isValidIp(ip) {
                 if (!ip) return false;
                 const ipv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
@@ -145,7 +155,7 @@
                         const error = form.querySelector('.ip-error');
                         if (input && !input.value) {
                             e.preventDefault();
-                            alert('IP is required');
+                            alert(msg.ipRequired);
                             return;
                         }
                         if (input && !isValidIpOrCidr(input.value.trim())) {
@@ -156,8 +166,8 @@
                             input.classList.add('border-red-500');
                             return;
                         }
-                        const action = form.action.includes('/ban') ? 'Ban' : 'Whitelist';
-                        if (!confirm(action + ' this IP?')) {
+                        const confirmMessage = form.action.includes('/ban') ? msg.confirmBan : msg.confirmWhitelist;
+                        if (!confirm(confirmMessage)) {
                             e.preventDefault();
                         }
                     });
@@ -175,8 +185,8 @@
                 }
                 if (form.action.includes('/unban') || form.action.includes('/unwhitelist')) {
                     form.addEventListener('submit', function (e) {
-                        const action = form.action.includes('/unban') ? 'Unban' : 'Remove';
-                        if (!confirm(action + ' this IP?')) {
+                        const confirmMessage = form.action.includes('/unban') ? msg.confirmUnban : msg.confirmRemove;
+                        if (!confirm(confirmMessage)) {
                             e.preventDefault();
                         }
                     });
