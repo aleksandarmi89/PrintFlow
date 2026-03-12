@@ -5,6 +5,7 @@ import com.printflow.entity.Company;
 import com.printflow.entity.EmailOutbox;
 import com.printflow.entity.MailSettings;
 import com.printflow.entity.enums.EmailOutboxStatus;
+import com.printflow.repository.CompanyRepository;
 import com.printflow.repository.EmailOutboxRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,6 +34,7 @@ public class EmailService {
         Pattern.compile("src=[\"']data:([^;]+);base64,([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
     private final MailSenderResolver mailSenderResolver;
+    private final CompanyRepository companyRepository;
     private final EmailOutboxRepository outboxRepository;
     private final TenantEmailRateLimiter rateLimiter;
     private final boolean emailEnabled;
@@ -43,6 +45,7 @@ public class EmailService {
     private final Counter failedCounter;
 
     public EmailService(MailSenderResolver mailSenderResolver,
+                        CompanyRepository companyRepository,
                         EmailOutboxRepository outboxRepository,
                         TenantEmailRateLimiter rateLimiter,
                         @Value("${app.notification.email.enabled:false}") boolean emailEnabled,
@@ -51,6 +54,7 @@ public class EmailService {
                         @Value("${app.notification.email.retry-backoff-ms:0}") long retryBackoffMs,
                         Optional<MeterRegistry> meterRegistry) {
         this.mailSenderResolver = mailSenderResolver;
+        this.companyRepository = companyRepository;
         this.outboxRepository = outboxRepository;
         this.rateLimiter = rateLimiter;
         this.emailEnabled = emailEnabled;
@@ -101,7 +105,7 @@ public class EmailService {
         EmailOutbox outbox;
         try {
             outbox = new EmailOutbox();
-            outbox.setCompany(company);
+            outbox.setCompany(resolveOutboxCompany(company));
             outbox.setToEmail(message.getTo());
             outbox.setSubject(message.getSubject());
             outbox.setTemplate(templateName);
@@ -174,6 +178,17 @@ public class EmailService {
                 throw new RuntimeException(ex);
             }
         }
+    }
+
+    private Company resolveOutboxCompany(Company company) {
+        if (company == null || company.getId() == null) {
+            return company;
+        }
+        if (companyRepository.existsById(company.getId())) {
+            return company;
+        }
+        log.warn("Skipping stale company reference on email outbox persist. companyId={}", company.getId());
+        return null;
     }
 
     private void sendWithRetry(JavaMailSender sender, MimeMessage mimeMessage, String to, String subject) throws Exception {

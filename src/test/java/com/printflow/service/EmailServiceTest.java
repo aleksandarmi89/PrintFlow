@@ -2,6 +2,8 @@ package com.printflow.service;
 
 import com.printflow.dto.EmailMessage;
 import com.printflow.entity.Company;
+import com.printflow.entity.EmailOutbox;
+import com.printflow.repository.CompanyRepository;
 import com.printflow.repository.EmailOutboxRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.mail.Session;
@@ -13,9 +15,11 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -27,13 +31,16 @@ class EmailServiceTest {
     @Test
     void asyncSendSwallowsOutboxPersistenceFailure() {
         MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
         EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
         TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
         when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(any())).thenReturn(true);
         when(outboxRepository.save(any())).thenThrow(new RuntimeException("fk failure"));
 
         EmailService service = new EmailService(
             resolver,
+            companyRepository,
             outboxRepository,
             rateLimiter,
             true,
@@ -57,13 +64,16 @@ class EmailServiceTest {
     @Test
     void sendNowPropagatesOutboxPersistenceFailure() {
         MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
         EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
         TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
         when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(any())).thenReturn(true);
         when(outboxRepository.save(any())).thenThrow(new RuntimeException("fk failure"));
 
         EmailService service = new EmailService(
             resolver,
+            companyRepository,
             outboxRepository,
             rateLimiter,
             true,
@@ -87,9 +97,11 @@ class EmailServiceTest {
     @Test
     void sendNowRetriesTransientMailFailure() {
         MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
         EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
         TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
         when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(any())).thenReturn(true);
         when(outboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
@@ -103,6 +115,7 @@ class EmailServiceTest {
 
         EmailService service = new EmailService(
             resolver,
+            companyRepository,
             outboxRepository,
             rateLimiter,
             true,
@@ -126,9 +139,11 @@ class EmailServiceTest {
     @Test
     void sendNowIncrementsFailureMetricWhenSmtpFails() {
         MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
         EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
         TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
         when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(any())).thenReturn(true);
         when(outboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
@@ -140,6 +155,7 @@ class EmailServiceTest {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         EmailService service = new EmailService(
             resolver,
+            companyRepository,
             outboxRepository,
             rateLimiter,
             true,
@@ -166,9 +182,11 @@ class EmailServiceTest {
     @Test
     void sendNowAppliesBackoffBetweenRetries() {
         MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
         EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
         TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
         when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(any())).thenReturn(true);
         when(outboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
@@ -182,6 +200,7 @@ class EmailServiceTest {
 
         EmailService service = new EmailService(
             resolver,
+            companyRepository,
             outboxRepository,
             rateLimiter,
             true,
@@ -204,5 +223,46 @@ class EmailServiceTest {
 
         verify(sender, times(2)).send(any(MimeMessage.class));
         assertTrue(elapsedMs >= 25, "Expected retry backoff to add delay, elapsedMs=" + elapsedMs);
+    }
+
+    @Test
+    void sendNowDropsStaleCompanyReferenceFromOutbox() {
+        MailSenderResolver resolver = mock(MailSenderResolver.class);
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        EmailOutboxRepository outboxRepository = mock(EmailOutboxRepository.class);
+        TenantEmailRateLimiter rateLimiter = mock(TenantEmailRateLimiter.class);
+        when(rateLimiter.tryAcquire(any())).thenReturn(true);
+        when(companyRepository.existsById(5L)).thenReturn(false);
+        when(outboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var sender = mock(org.springframework.mail.javamail.JavaMailSender.class);
+        MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
+        when(sender.createMimeMessage()).thenReturn(mimeMessage);
+        when(resolver.resolve(any())).thenReturn(new MailSenderResolver.ResolvedMailSender(sender, null));
+
+        EmailService service = new EmailService(
+            resolver,
+            companyRepository,
+            outboxRepository,
+            rateLimiter,
+            true,
+            "no-reply@printflow.local",
+            1,
+            0L,
+            Optional.empty()
+        );
+
+        EmailMessage msg = new EmailMessage();
+        msg.setTo("customer@example.com");
+        msg.setSubject("Subject");
+        msg.setTextBody("Body");
+        Company company = new Company();
+        company.setId(5L);
+
+        assertDoesNotThrow(() -> service.sendNow(msg, company, "test-template"));
+        var captor = forClass(EmailOutbox.class);
+        verify(outboxRepository, times(2)).save(captor.capture());
+        EmailOutbox firstSaved = captor.getAllValues().get(0);
+        assertNull(firstSaved.getCompany());
     }
 }
