@@ -443,7 +443,7 @@ public class WorkOrderService {
         if (orderNumber == null || orderNumber.isBlank()) {
             throw workOrderNotFound();
         }
-        String normalized = orderNumber.trim().toUpperCase();
+        String normalized = orderNumber.trim();
         WorkOrder workOrder = workOrderRepository.findByOrderNumberIgnoreCase(normalized)
             .orElseThrow(this::workOrderNotFound);
         if (workOrder.getPublicToken() == null || workOrder.getPublicToken().isBlank()) {

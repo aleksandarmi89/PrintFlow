@@ -973,7 +973,7 @@ class WorkOrderServiceTest {
         order.setPublicToken("pub-900");
         order.setPublicTokenExpiresAt(LocalDateTime.now().minusMinutes(1));
 
-        when(workOrderRepository.findByOrderNumberIgnoreCase("WO-900")).thenReturn(Optional.of(order));
+        when(workOrderRepository.findByOrderNumberIgnoreCase("wo-900")).thenReturn(Optional.of(order));
         when(publicTokenService.isExpired(order.getPublicTokenExpiresAt())).thenReturn(true);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
@@ -1119,7 +1119,7 @@ class WorkOrderServiceTest {
         order.setPublicTokenExpiresAt(null);
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(1);
 
-        when(workOrderRepository.findByOrderNumberIgnoreCase("WO-777")).thenReturn(Optional.of(order));
+        when(workOrderRepository.findByOrderNumberIgnoreCase("wo-777")).thenReturn(Optional.of(order));
         when(publicTokenService.expiresAtFromNow()).thenReturn(expiresAt);
         when(publicTokenService.isExpired(expiresAt)).thenReturn(false);
         when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(inv -> inv.getArgument(0));
