@@ -144,7 +144,11 @@ class RegressionPagesIntegrationTest {
                 containsString("Save")
             )));
         mockMvc.perform(get("/pricing/calculate").session(adminSession))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Width/Height are used for m"),
+                containsString("Širina/visina se koriste za m")
+            )));
         mockMvc.perform(get("/admin/orders").session(adminSession))
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/" + tenantIds.workOrderId()).session(adminSession))
