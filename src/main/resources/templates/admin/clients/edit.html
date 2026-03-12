@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title th:text="'Edit ' + ${client.companyName} + ' - PrintFlow Admin'"></title>
+    <title th:text="#{admin.clients.edit.title(${client.companyName})}"></title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
@@ -11,11 +11,12 @@
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Edit Client</h1>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.clients.edit.heading}">Edit Client</h1>
                     <p class="text-gray-600 mt-2" th:text="${client.companyName}"></p>
                 </div>
                 <a th:href="@{/admin/clients}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:text="#{admin.clients.edit.back_to_clients}">
                     ← Back to Clients
                 </a>
             </div>
@@ -85,7 +86,7 @@
         <div class="max-w-4xl mx-auto">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Edit Client Information</h2>
+                    <h2 class="text-lg font-semibold text-gray-900" th:text="#{admin.clients.edit.section.edit_client_information}">Edit Client Information</h2>
                 </div>
                 
                 <form th:action="@{/admin/clients/edit/{id}(id=${client.id})}" 
@@ -95,12 +96,12 @@
                     
                     <!-- Company Information -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Company Information</h3>
+                        <h3 class="text-lg font-medium text-gray-900" th:text="#{admin.clients.edit.section.company_information}">Company Information</h3>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="companyName" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Company Name *
+                                    <span th:text="#{admin.clients.edit.field.company_name_required}">Company Name *</span>
                                 </label>
                                 <input type="text" 
                                        id="companyName" 
@@ -112,7 +113,7 @@
                             
                             <div>
                                 <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Contact Person *
+                                    <span th:text="#{admin.clients.edit.field.contact_person_required}">Contact Person *</span>
                                 </label>
                                 <input type="text" 
                                        id="contactPerson" 
@@ -126,7 +127,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Phone *
+                                    <span th:text="#{admin.clients.edit.field.phone_required}">Phone *</span>
                                 </label>
                                 <input type="tel" 
                                        id="phone" 
@@ -138,7 +139,7 @@
                             
                             <div>
                                 <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Email
+                                    <span th:text="#{common.email}">Email</span>
                                 </label>
                                 <input type="email" 
                                        id="email" 
@@ -151,11 +152,11 @@
                     
                     <!-- Address Information -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Address Information</h3>
+                        <h3 class="text-lg font-medium text-gray-900" th:text="#{admin.clients.edit.section.address_information}">Address Information</h3>
                         
                         <div>
                             <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
-                                Address
+                                <span th:text="#{admin.clients.edit.field.address}">Address</span>
                             </label>
                             <input type="text" 
                                    id="address" 
@@ -167,7 +168,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
-                                    City
+                                    <span th:text="#{common.city}">City</span>
                                 </label>
                                 <input type="text" 
                                        id="city" 
@@ -178,7 +179,7 @@
                             
                             <div>
                                 <label for="country" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Country
+                                    <span th:text="#{admin.clients.edit.field.country}">Country</span>
                                 </label>
                                 <input type="text" 
                                        id="country" 
@@ -189,7 +190,7 @@
                             
                             <div>
                                 <label for="taxId" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Tax ID
+                                    <span th:text="#{admin.clients.edit.field.tax_id}">Tax ID</span>
                                 </label>
                                 <input type="text" 
                                        id="taxId" 
@@ -201,7 +202,7 @@
                         
                         <div>
                             <label for="companyId" class="block text-sm font-medium text-gray-700 mb-2">
-                                Company ID (Registration Number)
+                                <span th:text="#{admin.clients.edit.field.company_registration_id}">Company ID (Registration Number)</span>
                             </label>
                             <input type="text" 
                                    id="companyId" 
@@ -213,11 +214,11 @@
                     
                     <!-- Additional Information -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Additional Information</h3>
+                        <h3 class="text-lg font-medium text-gray-900" th:text="#{admin.clients.edit.section.additional_information}">Additional Information</h3>
                         
                         <div>
                             <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
-                                Notes
+                                <span th:text="#{admin.clients.edit.field.notes}">Notes</span>
                             </label>
                             <textarea id="notes" 
                                       name="notes" 
@@ -233,7 +234,7 @@
                                    th:checked="${client.active}"
                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                             <label for="active" class="ml-2 block text-sm text-gray-900">
-                                Client is active (can place new orders)
+                                <span th:text="#{admin.clients.edit.field.active_help}">Client is active (can place new orders)</span>
                             </label>
                         </div>
                     </div>
@@ -242,11 +243,13 @@
                     <div class="pt-6 border-t border-gray-200">
                         <div class="flex justify-end space-x-3">
                             <a th:href="@{/admin/clients}" 
-                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                               th:text="#{common.cancel}">
                                 Cancel
                             </a>
                             <button type="submit" 
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    th:text="#{admin.clients.edit.submit}">
                                 Update Client
                             </button>
                         </div>
@@ -256,25 +259,26 @@
             
             <!-- Client Statistics -->
             <div class="mt-6 bg-gray-50 rounded-xl border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Client Statistics</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.clients.edit.stats.title}">Client Statistics</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-sm text-gray-600">Total Orders</div>
+                        <div class="text-sm text-gray-600" th:text="#{admin.clients.edit.stats.total_orders}">Total Orders</div>
                         <div class="text-2xl font-bold text-gray-900" th:text="${client.totalOrders}">0</div>
                     </div>
                     <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-sm text-gray-600">Completed Orders</div>
+                        <div class="text-sm text-gray-600" th:text="#{admin.clients.edit.stats.completed_orders}">Completed Orders</div>
                         <div class="text-2xl font-bold text-green-600" th:text="${client.completedOrders}">0</div>
                     </div>
                     <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <div class="text-sm text-gray-600">Pending Orders</div>
+                        <div class="text-sm text-gray-600" th:text="#{admin.clients.edit.stats.pending_orders}">Pending Orders</div>
                         <div class="text-2xl font-bold text-yellow-600" th:text="${client.pendingOrders}">0</div>
                     </div>
                 </div>
                 
                 <div class="mt-4">
                     <a th:href="@{/admin/orders?clientId={id}(id=${client.id})}" 
-                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                       class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                       th:text="#{admin.clients.edit.view_all_orders}">
                         View all orders for this client →
                     </a>
                 </div>
