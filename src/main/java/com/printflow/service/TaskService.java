@@ -744,7 +744,7 @@ public class TaskService {
             throw new IllegalArgumentException("Task title is required");
         }
         Task task = new Task();
-        task.setTitle(dto.getTitle());
+        task.setTitle(dto.getTitle().trim());
         task.setDescription(dto.getDescription());
         task.setDueDate(dto.getDueDate());
         task.setEstimatedHours(dto.getEstimatedHours());
@@ -786,7 +786,8 @@ public class TaskService {
         }
 
         if (createdById != null) {
-            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId()).orElse(null);
+            User createdBy = userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
             task.setCreatedBy(createdBy);
         }
 
