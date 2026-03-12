@@ -155,6 +155,8 @@ public class WorkOrderService {
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), tenantGuard.requireCompanyId())
                 .orElse(null);
             workOrder.setAssignedTo(assignedTo);
+        } else {
+            workOrder.setAssignedTo(null);
         }
         
         if (workOrderDTO.getStatus() != null) {
@@ -199,10 +201,12 @@ public class WorkOrderService {
                 String.valueOf(oldCost), String.valueOf(newCost), "Order cost updated", workOrder.getCompany());
         }
         Long newAssignedId = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getId() : null;
-        if (oldAssignedId != null && newAssignedId != null && !oldAssignedId.equals(newAssignedId)) {
+        if (!java.util.Objects.equals(oldAssignedId, newAssignedId)) {
             auditLogService.log(AuditAction.UPDATE, "WorkOrder", workOrder.getId(),
                 "assignedToId:" + oldAssignedId, "assignedToId:" + newAssignedId, "Order assignment updated", workOrder.getCompany());
-            notificationService.sendOrderAssignedNotification(workOrder, workOrder.getAssignedTo());
+            if (workOrder.getAssignedTo() != null) {
+                notificationService.sendOrderAssignedNotification(workOrder, workOrder.getAssignedTo());
+            }
         }
         return convertToDTO(updatedOrder);
     }
