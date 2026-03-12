@@ -23,18 +23,33 @@
 
     <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.component.add_title}">Add Component</h2>
-        <form th:action="@{/admin/pricing/variants/{id}/components(id=${variant.id})}" th:object="${componentForm}" method="post" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <p class="text-sm text-gray-600 mb-4" th:text="#{pricing.component.form.help}">
+            Type = cost source, Model = how cost is calculated, Amount = base unit cost.
+        </p>
+        <form th:action="@{/admin/pricing/variants/{id}/components(id=${variant.id})}" th:object="${componentForm}" method="post" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <select th:field="*{type}" class="border rounded px-3 py-2" required>
-                <option value="" th:text="#{pricing.component.type}">Type</option>
-                <option th:each="t : ${componentTypes}" th:value="${t}" th:text="${t}"></option>
-            </select>
-            <select th:field="*{model}" class="border rounded px-3 py-2" required>
-                <option value="" th:text="#{pricing.component.model}">Model</option>
-                <option th:each="m : ${pricingModels}" th:value="${m}" th:text="${m}"></option>
-            </select>
-            <input type="number" step="0.01" th:field="*{amount}" th:placeholder="#{pricing.component.amount}" class="border rounded px-3 py-2" required>
-            <input type="text" th:field="*{notes}" th:placeholder="#{pricing.component.notes}" class="border rounded px-3 py-2">
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.component.type}">Type</label>
+                <select th:field="*{type}" class="w-full border rounded px-3 py-2" required>
+                    <option value="" th:text="#{pricing.component.type}">Type</option>
+                    <option th:each="t : ${componentTypes}" th:value="${t}" th:text="${t}"></option>
+                </select>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.component.model}">Model</label>
+                <select th:field="*{model}" class="w-full border rounded px-3 py-2" required>
+                    <option value="" th:text="#{pricing.component.model}">Model</option>
+                    <option th:each="m : ${pricingModels}" th:value="${m}" th:text="${m}"></option>
+                </select>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.component.amount}">Amount</label>
+                <input type="number" step="0.01" th:field="*{amount}" th:placeholder="#{pricing.component.amount}" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.component.notes}">Notes</label>
+                <input type="text" th:field="*{notes}" th:placeholder="#{pricing.component.notes}" class="w-full border rounded px-3 py-2">
+            </div>
             <button type="submit"
                     th:disabled="${billingExpired}"
                     th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
@@ -47,78 +62,67 @@
         <div th:if="${pricingError != null}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span th:text="#{${pricingError}}">Validation error</span>
         </div>
-        <table class="min-w-full text-sm">
+        <div class="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+        <table class="min-w-[920px] w-full text-sm">
             <thead class="text-gray-500">
             <tr class="text-left border-b">
                 <th class="py-2" th:text="#{pricing.component.type}">Type</th>
                 <th class="py-2" th:text="#{pricing.component.model}">Model</th>
                 <th class="py-2" th:text="#{pricing.component.amount}">Amount</th>
                 <th class="py-2" th:text="#{pricing.component.notes}">Notes</th>
-                <th class="py-2" th:text="#{pricing.component.delete}">Delete</th>
+                <th class="py-2 whitespace-nowrap" th:text="#{pricing.products.actions}">Actions</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="c : ${components}"
-                th:with="cid=${c != null ? c.id : null}"
-                th:if="${cid != null}"
-                th:replace="~{admin/pricing/variant-edit :: componentRow(component=${c}, form=${componentForms != null ? componentForms[cid] : null}, saved=${false}, variantId=${variant.id})}">
+                class="border-b"
+                th:with="componentId=${c != null ? c.id : null}, cform=${(c != null and componentForms != null) ? componentForms[c.id] : null}">
+                <td class="py-2" th:text="${c.type}">Type</td>
+                <td class="py-2" th:text="${c.model}">Model</td>
+                <td class="py-2">
+                    <input type="number" step="0.01" name="amount"
+                           th:value="${cform != null ? cform.amount : c.amount}"
+                           th:attr="form=${componentId != null ? 'component-form-' + componentId : ''}"
+                           class="border rounded px-2 py-1 w-28">
+                </td>
+                <td class="py-2">
+                    <div class="flex items-center gap-2">
+                        <span th:text="${c.notes}">-</span>
+                        <span th:if="${c.notes != null and #strings.containsIgnoreCase(c.notes, 'default')}"
+                              class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+                              th:attr="title=#{pricing.default.tooltip}"
+                              th:text="#{pricing.component.default_badge}">Default</span>
+                    </div>
+                </td>
+                <td class="py-2 whitespace-nowrap">
+                    <form th:if="${componentId != null}"
+                          th:id="${'component-form-' + componentId}"
+                          th:action="@{/admin/pricing/components/{id}(id=${componentId})}"
+                          method="post"
+                          th:attr="hx-post=${'/admin/pricing/components/' + componentId}"
+                          hx-target="closest tr"
+                          hx-swap="outerHTML"
+                          class="flex flex-wrap items-center gap-2">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button class="px-2 py-1 text-xs font-medium rounded border border-blue-200 text-blue-700 hover:bg-blue-50" th:text="#{actions.save}">Save</button>
+                        <button formmethod="post"
+                                th:formaction="@{/admin/pricing/variants/{variantId}/components/{componentId}/delete(variantId=${variant.id}, componentId=${componentId})}"
+                                th:disabled="${billingExpired}"
+                                th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                                class="px-2 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50"
+                                onclick="return confirm([[#{pricing.component.delete_confirm}]]);"
+                                th:text="#{actions.delete}">Delete</button>
+                    </form>
+                    <span th:if="${componentId == null}" class="text-xs text-gray-400">-</span>
+                </td>
             </tr>
             <tr th:if="${components.empty}">
                 <td colspan="5" class="py-4 text-gray-500" th:text="#{pricing.component.empty}">No components yet.</td>
             </tr>
             </tbody>
         </table>
+        </div>
     </div>
 </main>
 </body>
 </html>
-
-<th:block th:fragment="componentRow (component, form, saved, variantId)">
-    <tr class="border-b"
-        th:with="cid=${component != null ? component.id : null}, cform=${form != null ? form : updateComponentFallback}, errors=${fieldErrors}">
-        <td class="py-2" th:text="${component?.type}">Type</td>
-        <td class="py-2" th:text="${component?.model}">Model</td>
-        <td class="py-2">
-            <input type="number" step="0.01"
-                   th:name="amount"
-                   th:value="${cform != null ? cform.amount : ''}"
-                   th:attr="form=${cid != null ? 'component-form-' + cid : ''}"
-                   class="border rounded px-2 py-1 w-28">
-            <div class="text-xs text-red-600"
-                 th:if="${errors != null and errors['amount'] != null}"
-                 th:text="${errors['amount']}">Error</div>
-        </td>
-        <td class="py-2">
-            <div class="flex items-center gap-2">
-                <span th:text="${component?.notes}">-</span>
-                <span th:if="${component != null and component.notes != null and #strings.containsIgnoreCase(component.notes, 'default')}"
-                      class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
-                      th:attr="title=#{pricing.default.tooltip}"
-                      th:text="#{pricing.component.default_badge}">Default</span>
-            </div>
-        </td>
-        <td class="py-2">
-            <form th:if="${cid != null}"
-                  th:id="${'component-form-' + cid}"
-                  th:action="@{/admin/pricing/components/{id}(id=${cid})}"
-                  method="post"
-                  th:attr="hx-post=${'/admin/pricing/components/' + cid}"
-                  hx-target="closest tr"
-                  hx-swap="outerHTML"
-                  class="inline">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <button class="text-blue-600 mr-3" th:text="#{actions.save}">Save</button>
-                <button formmethod="post"
-                        th:if="${cid != null}"
-                        th:formaction="@{/admin/pricing/variants/{variantId}/components/{componentId}/delete(variantId=${variantId}, componentId=${cid})}"
-                        th:disabled="${billingExpired}"
-                        th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
-                        class="text-red-600"
-                        onclick="return confirm([[#{pricing.component.delete_confirm}]]);"
-                        th:text="#{actions.delete}">Delete</button>
-                <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
-            </form>
-            <span th:if="${saved}" class="text-green-600 text-xs ml-2" th:text="#{actions.saved}">Saved</span>
-        </td>
-    </tr>
-</th:block>

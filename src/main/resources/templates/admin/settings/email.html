@@ -114,30 +114,24 @@
 
                 <div class="mt-6">
                     <div class="text-sm font-semibold text-gray-900 mb-2" th:text="#{email.settings.test_title}">Test email</div>
-                <form th:action="@{/settings/email/test}" method="post" class="flex flex-col gap-2">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <input type="email" name="toEmail" required th:placeholder="#{company.settings.smtp_test_placeholder}"
-                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <button type="submit"
-                            th:disabled="${smtpConfigured == false}"
-                            th:classappend="${smtpConfigured == false} ? 'opacity-60 cursor-not-allowed' : ''"
-                            class="block w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                        <span th:text="#{company.settings.smtp_test_send}">Send test email</span>
-                    </button>
-                    <input type="submit"
-                           th:disabled="${smtpConfigured == false}"
-                           th:classappend="${smtpConfigured == false} ? 'opacity-60 cursor-not-allowed' : ''"
-                           class="block w-full px-4 py-2 border border-emerald-600 text-emerald-700 rounded-lg hover:bg-emerald-50"
-                           th:value="#{company.settings.smtp_test_send}"
-                           value="Send test email"/>
-                </form>
+                    <form th:action="@{/settings/email/test}" method="post" class="flex flex-col gap-2">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <input type="email" name="toEmail" required th:placeholder="#{company.settings.smtp_test_placeholder}"
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <button type="submit"
+                                th:disabled="${smtpConfigured == false}"
+                                th:classappend="${smtpConfigured == false} ? 'opacity-60 cursor-not-allowed' : ''"
+                                class="block w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                            <span th:text="#{company.settings.smtp_test_send}">Send test email</span>
+                        </button>
+                    </form>
                 </div>
 
                     <div class="mt-10 border-t border-gray-200 pt-6">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900" th:text="#{email.settings.outbox.title}">Email outbox</h3>
-                            <p class="text-sm text-gray-600" th:text="#{email.settings.outbox.subtitle}">Pregled uspešno/neudspešno poslatih email poruka za ovu kompaniju.</p>
+                            <p class="text-sm text-gray-600" th:text="#{email.settings.outbox.subtitle}">Overview of successfully/failed sent email messages for this company.</p>
                         </div>
                         <form th:action="@{/settings/email/outbox/cleanup-failed}" method="post" class="flex items-center gap-2">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -145,7 +139,7 @@
                                    class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <button type="submit" class="px-3 py-2 text-sm border border-red-300 text-red-700 rounded-lg hover:bg-red-50"
                                     th:text="#{email.settings.outbox.delete_failed}">
-                                Obriši FAILED
+                                Delete FAILED
                             </button>
                         </form>
                     </div>

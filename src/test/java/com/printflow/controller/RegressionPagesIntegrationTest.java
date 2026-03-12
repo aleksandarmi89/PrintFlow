@@ -119,12 +119,24 @@ class RegressionPagesIntegrationTest {
         mockMvc.perform(get("/admin/pricing/products").session(adminSession))
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/pricing/products/" + variant.getProduct().getId()).session(adminSession))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Akcije"),
+                containsString("Actions")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Sačuvaj"),
+                containsString("Save")
+            )));
         mockMvc.perform(get("/admin/pricing/variants/" + variant.getId()).session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(anyOf(
                 containsString("Add Component"),
                 containsString("Dodaj komponentu")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Sačuvaj"),
+                containsString("Save")
             )));
         mockMvc.perform(get("/pricing/calculate").session(adminSession))
             .andExpect(status().isOk());

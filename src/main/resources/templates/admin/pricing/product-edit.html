@@ -28,16 +28,36 @@
 
     <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.variant.add_title}">Add Variant</h2>
-        <form th:action="@{/admin/pricing/products/{id}/variants(id=${product.id})}" th:object="${variantForm}" method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <p class="text-sm text-gray-600 mb-4" th:text="#{pricing.variant.form.help}">
+            Variants let you define pricing rules per production mode (e.g. DTF, UV, Laser).
+        </p>
+        <form th:action="@{/admin/pricing/products/{id}/variants(id=${product.id})}" th:object="${variantForm}" method="post" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <input type="text" th:field="*{name}" th:placeholder="#{pricing.variant.name}" class="border rounded px-3 py-2" required>
-            <input type="number" step="0.01" th:field="*{defaultMarkupPercent}" th:placeholder="#{pricing.variant.markup}" class="border rounded px-3 py-2" required>
-            <input type="number" step="0.01" th:field="*{wastePercent}" th:placeholder="#{pricing.variant.waste}" class="border rounded px-3 py-2" required>
-            <input type="number" step="0.01" th:field="*{minPrice}" th:placeholder="#{pricing.variant.min_price}" class="border rounded px-3 py-2">
-            <button type="submit"
-                    th:disabled="${billingExpired}"
-                    th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
-                    class="bg-blue-600 text-white rounded px-4 py-2" th:text="#{pricing.variant.add}">+ Add Variant</button>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.variant.name}">Variant name</label>
+                <input type="text" th:field="*{name}" th:placeholder="#{pricing.variant.name}" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.variant.markup}">Markup %</label>
+                <input type="number" step="0.01" th:field="*{defaultMarkupPercent}" th:placeholder="#{pricing.variant.markup}" class="w-full border rounded px-3 py-2" required>
+                <div class="mt-1 text-xs text-gray-500" th:text="#{pricing.variant.help.markup}">Percent added above base component cost.</div>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.variant.waste}">Waste %</label>
+                <input type="number" step="0.01" th:field="*{wastePercent}" th:placeholder="#{pricing.variant.waste}" class="w-full border rounded px-3 py-2" required>
+                <div class="mt-1 text-xs text-gray-500" th:text="#{pricing.variant.help.waste}">Extra material reserve in percent.</div>
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.variant.min_price}">Min price</label>
+                <input type="number" step="0.01" th:field="*{minPrice}" th:placeholder="#{pricing.variant.min_price}" class="w-full border rounded px-3 py-2">
+                <div class="mt-1 text-xs text-gray-500" th:text="#{pricing.variant.help.min_price}">Final price will not go below this value.</div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="submit"
+                        th:disabled="${billingExpired}"
+                        th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                        class="bg-blue-600 text-white rounded px-4 py-2 whitespace-nowrap" th:text="#{pricing.variant.add}">+ Add Variant</button>
+            </div>
             <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
         </form>
     </div>
@@ -46,96 +66,77 @@
         <div th:if="${pricingError != null}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span th:text="#{${pricingError}}">Validation error</span>
         </div>
-        <table class="min-w-full text-sm">
+        <div class="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+        <table class="min-w-[980px] w-full text-sm">
             <thead class="text-gray-500">
             <tr class="text-left border-b">
                 <th class="py-2" th:text="#{pricing.variant.column}">Variant</th>
                 <th class="py-2" th:text="#{pricing.variant.markup}">Markup %</th>
                 <th class="py-2" th:text="#{pricing.variant.waste}">Waste %</th>
                 <th class="py-2" th:text="#{pricing.variant.min_price}">Min price</th>
-                <th class="py-2" th:text="#{pricing.products.actions}">Actions</th>
+                <th class="py-2 whitespace-nowrap" th:text="#{pricing.products.actions}">Actions</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="v : ${variants}"
-                th:with="vid=${v != null ? v.id : null}"
-                th:if="${vid != null}"
-                th:replace="~{admin/pricing/product-edit :: variantRow(variant=${v}, form=${variantForms[vid]}, saved=${false})}">
+                class="border-b"
+                th:with="variantId=${v != null ? v.id : null}, vform=${(v != null and variantForms != null) ? variantForms[v.id] : null}">
+                <td class="py-2">
+                    <div class="flex items-center gap-2">
+                        <span th:text="${v != null and !#strings.isEmpty(v.name) ? v.name : #messages.msg('pricing.variant.unnamed')}">Variant</span>
+                        <span th:if="${variantId != null and variantHasDefault != null and T(java.lang.Boolean).TRUE.equals(variantHasDefault[variantId])}"
+                              class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
+                              th:attr="title=#{pricing.default.tooltip}"
+                              th:text="#{pricing.component.default_badge}">Default</span>
+                    </div>
+                </td>
+                <td class="py-2">
+                    <input type="number" step="0.01" name="defaultMarkupPercent"
+                           th:value="${vform != null ? vform.defaultMarkupPercent : v.defaultMarkupPercent}"
+                           th:attr="form=${variantId != null ? 'variant-form-' + variantId : ''}"
+                           class="border rounded px-2 py-1 w-28">
+                </td>
+                <td class="py-2">
+                    <input type="number" step="0.01" name="wastePercent"
+                           th:value="${vform != null ? vform.wastePercent : v.wastePercent}"
+                           th:attr="form=${variantId != null ? 'variant-form-' + variantId : ''}"
+                           class="border rounded px-2 py-1 w-24">
+                </td>
+                <td class="py-2">
+                    <input type="number" step="0.01" name="minPrice"
+                           th:value="${vform != null ? vform.minPrice : v.minPrice}"
+                           th:attr="form=${variantId != null ? 'variant-form-' + variantId : ''}"
+                           class="border rounded px-2 py-1 w-28">
+                </td>
+                <td class="py-2 whitespace-nowrap">
+                    <form th:if="${variantId != null}"
+                          th:id="${'variant-form-' + variantId}"
+                          th:action="@{/admin/pricing/variants/{id}(id=${variantId})}"
+                          method="post"
+                          th:attr="hx-post=${'/admin/pricing/variants/' + variantId}"
+                          hx-target="closest tr"
+                          hx-swap="outerHTML"
+                          class="flex flex-wrap items-center gap-2">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button class="px-2 py-1 text-xs font-medium rounded border border-blue-200 text-blue-700 hover:bg-blue-50" th:text="#{actions.save}">Save</button>
+                        <a th:href="@{/admin/pricing/variants/{id}(id=${variantId})}" class="px-2 py-1 text-xs font-medium rounded border border-gray-200 text-gray-700 hover:bg-gray-50" th:text="#{pricing.variant.pricing}">Pricing</a>
+                        <button formmethod="post"
+                                th:formaction="@{/admin/pricing/variants/{id}/delete(id=${variantId})}"
+                                th:disabled="${billingExpired}"
+                                th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                                onclick="return confirm([[#{pricing.variant.delete_confirm}]]);"
+                                class="px-2 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50" th:text="#{actions.delete}">Delete</button>
+                    </form>
+                    <span th:if="${variantId == null}" class="text-xs text-gray-400">-</span>
+                </td>
             </tr>
             <tr th:if="${variants.empty}">
                 <td colspan="5" class="py-4 text-gray-500" th:text="#{pricing.variant.empty}">No variants yet.</td>
             </tr>
             </tbody>
         </table>
+        </div>
     </div>
 </main>
 </body>
 </html>
-
-<th:block th:fragment="variantRow (variant, form, saved)">
-    <tr class="border-b"
-        th:with="vid=${variant != null ? variant.id : null}, vform=${form != null ? form : updateVariantFallback}, errors=${fieldErrors != null ? fieldErrors : (variantFieldErrors != null ? variantFieldErrors[vid] : null)}">
-        <td class="py-2">
-            <div class="flex items-center gap-2">
-                <span th:text="${variant?.name}">Variant</span>
-                <span th:if="${vid != null and variantHasDefault != null and T(java.lang.Boolean).TRUE.equals(variantHasDefault[vid])}"
-                      class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
-                      th:attr="title=#{pricing.default.tooltip}"
-                      th:text="#{pricing.component.default_badge}">Default</span>
-            </div>
-        </td>
-        <td class="py-2">
-            <input type="number" step="0.01"
-                   th:name="defaultMarkupPercent"
-                   th:value="${vform != null ? vform.defaultMarkupPercent : ''}"
-                   th:attr="form=${vid != null ? 'variant-form-' + vid : ''}"
-                   class="border rounded px-2 py-1 w-28">
-            <div class="text-xs text-red-600"
-                 th:if="${errors != null and errors['defaultMarkupPercent'] != null}"
-                 th:text="${errors['defaultMarkupPercent']}">Error</div>
-        </td>
-        <td class="py-2">
-            <input type="number" step="0.01"
-                   th:name="wastePercent"
-                   th:value="${vform != null ? vform.wastePercent : ''}"
-                   th:attr="form=${vid != null ? 'variant-form-' + vid : ''}"
-                   class="border rounded px-2 py-1 w-24">
-            <div class="text-xs text-red-600"
-                 th:if="${errors != null and errors['wastePercent'] != null}"
-                 th:text="${errors['wastePercent']}">Error</div>
-        </td>
-        <td class="py-2">
-            <input type="number" step="0.01"
-                   th:name="minPrice"
-                   th:value="${vform != null ? vform.minPrice : ''}"
-                   th:attr="form=${vid != null ? 'variant-form-' + vid : ''}"
-                   class="border rounded px-2 py-1 w-28">
-            <div class="text-xs text-red-600"
-                 th:if="${errors != null and errors['minPrice'] != null}"
-                 th:text="${errors['minPrice']}">Error</div>
-        </td>
-        <td class="py-2">
-            <form th:if="${vid != null}"
-                  th:id="${'variant-form-' + vid}"
-                  th:action="@{/admin/pricing/variants/{id}(id=${vid})}"
-                  method="post"
-                  th:attr="hx-post=${'/admin/pricing/variants/' + vid}"
-                  hx-target="closest tr"
-                  hx-swap="outerHTML"
-                  class="inline">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <button class="text-blue-600 mr-3" th:text="#{actions.save}">Save</button>
-                <a th:if="${vid != null}" th:href="@{/admin/pricing/variants/{id}(id=${vid})}" class="text-blue-600 mr-3" th:text="#{pricing.variant.pricing}">Pricing</a>
-                <button formmethod="post"
-                        th:if="${vid != null}"
-                        th:formaction="@{/admin/pricing/variants/{id}/delete(id=${vid})}"
-                        th:disabled="${billingExpired}"
-                        th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
-                        onclick="return confirm([[#{pricing.variant.delete_confirm}]]);"
-                        class="text-red-600" th:text="#{actions.delete}">Delete</button>
-                <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
-            </form>
-            <span th:if="${saved}" class="text-green-600 text-xs ml-2" th:text="#{actions.saved}">Saved</span>
-        </td>
-    </tr>
-</th:block>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="variantRow (variant, form, saved)">
+    <tr class="border-b"
+        th:with="variantId=${variant != null ? variant.id : null}, vform=${form != null ? form : updateVariantFallback}, errors=${fieldErrors != null ? fieldErrors : (variantFieldErrors != null ? variantFieldErrors[variantId] : null)}">
+        <td class="py-2">
+            <div class="flex items-center gap-2">
+                <span th:text="${variant != null and !#strings.isEmpty(variant.name) ? variant.name : #messages.msg('pricing.variant.unnamed')}">Variant</span>
+                <span th:if="${variantId != null and variantHasDefault != null and T(java.lang.Boolean).TRUE.equals(variantHasDefault[variantId])}"
+                      class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
+                      th:attr="title=#{pricing.default.tooltip}"
+                      th:text="#{pricing.component.default_badge}">Default</span>
+            </div>
+        </td>
+        <td class="py-2">
+            <input type="number" step="0.01"
+                   th:name="defaultMarkupPercent"
+                   th:value="${vform != null ? vform.defaultMarkupPercent : ''}"
+                   th:attr="form=${variantId != null ? 'variant-form-' + variantId : ''}"
+                   class="border rounded px-2 py-1 w-28">
+            <div class="text-xs text-red-600"
+                 th:if="${errors != null and errors['defaultMarkupPercent'] != null}"
+                 th:text="${errors['defaultMarkupPercent']}">Error</div>
+        </td>
+        <td class="py-2">
+            <input type="number" step="0.01"
+                   th:name="wastePercent"
+                   th:value="${vform != null ? vform.wastePercent : ''}"
+                   th:attr="form=${variantId != null ? 'variant-form-' + variantId : ''}"
+                   class="border rounded px-2 py-1 w-24">
+            <div class="text-xs text-red-600"
+                 th:if="${errors != null and errors['wastePercent'] != null}"
+                 th:text="${errors['wastePercent']}">Error</div>
+        </td>
+        <td class="py-2">
+            <input type="number" step="0.01"
+                   th:name="minPrice"
+                   th:value="${vform != null ? vform.minPrice : ''}"
+                   th:attr="form=${variantId != null ? 'variant-form-' + variantId : ''}"
+                   class="border rounded px-2 py-1 w-28">
+            <div class="text-xs text-red-600"
+                 th:if="${errors != null and errors['minPrice'] != null}"
+                 th:text="${errors['minPrice']}">Error</div>
+        </td>
+        <td class="py-2 whitespace-nowrap">
+            <form th:if="${variantId != null}"
+                  th:id="${'variant-form-' + variantId}"
+                  th:action="@{/admin/pricing/variants/{id}(id=${variantId})}"
+                  method="post"
+                  th:attr="hx-post=${'/admin/pricing/variants/' + variantId}"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML"
+                  class="flex flex-wrap items-center gap-2">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="px-2 py-1 text-xs font-medium rounded border border-blue-200 text-blue-700 hover:bg-blue-50" th:text="#{actions.save}">Save</button>
+                <a th:href="@{/admin/pricing/variants/{id}(id=${variantId})}" class="px-2 py-1 text-xs font-medium rounded border border-gray-200 text-gray-700 hover:bg-gray-50" th:text="#{pricing.variant.pricing}">Pricing</a>
+                <button formmethod="post"
+                        th:formaction="@{/admin/pricing/variants/{id}/delete(id=${variantId})}"
+                        th:disabled="${billingExpired}"
+                        th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                        onclick="return confirm([[#{pricing.variant.delete_confirm}]]);"
+                        class="px-2 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50" th:text="#{actions.delete}">Delete</button>
+                <span th:if="${billingExpired}" class="text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
+            </form>
+            <span th:if="${variantId == null}" class="text-xs text-gray-400">-</span>
+            <span th:if="${saved}" class="text-green-600 text-xs ml-2" th:text="#{actions.saved}">Saved</span>
+        </td>
+    </tr>
+</th:block>
+
+<th:block th:fragment="componentRow (component, form, saved, variantId)">
+    <tr class="border-b"
+        th:with="componentId=${component != null ? component.id : null}, cform=${form != null ? form : updateComponentFallback}, errors=${fieldErrors}">
+        <td class="py-2" th:text="${component?.type}">Type</td>
+        <td class="py-2" th:text="${component?.model}">Model</td>
+        <td class="py-2">
+            <input type="number" step="0.01"
+                   th:name="amount"
+                   th:value="${cform != null ? cform.amount : ''}"
+                   th:attr="form=${componentId != null ? 'component-form-' + componentId : ''}"
+                   class="border rounded px-2 py-1 w-28">
+            <div class="text-xs text-red-600"
+                 th:if="${errors != null and errors['amount'] != null}"
+                 th:text="${errors['amount']}">Error</div>
+        </td>
+        <td class="py-2">
+            <div class="flex items-center gap-2">
+                <span th:text="${component?.notes}">-</span>
+                <span th:if="${component != null and component.notes != null and #strings.containsIgnoreCase(component.notes, 'default')}"
+                      class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+                      th:attr="title=#{pricing.default.tooltip}"
+                      th:text="#{pricing.component.default_badge}">Default</span>
+            </div>
+        </td>
+        <td class="py-2 whitespace-nowrap">
+            <form th:if="${componentId != null}"
+                  th:id="${'component-form-' + componentId}"
+                  th:action="@{/admin/pricing/components/{id}(id=${componentId})}"
+                  method="post"
+                  th:attr="hx-post=${'/admin/pricing/components/' + componentId}"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML"
+                  class="flex flex-wrap items-center gap-2">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="px-2 py-1 text-xs font-medium rounded border border-blue-200 text-blue-700 hover:bg-blue-50" th:text="#{actions.save}">Save</button>
+                <button formmethod="post"
+                        th:formaction="@{/admin/pricing/variants/{variantId}/components/{componentId}/delete(variantId=${variantId}, componentId=${componentId})}"
+                        th:disabled="${billingExpired}"
+                        th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                        class="px-2 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50"
+                        onclick="return confirm([[#{pricing.component.delete_confirm}]]);"
+                        th:text="#{actions.delete}">Delete</button>
+                <span th:if="${billingExpired}" class="text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
+            </form>
+            <span th:if="${componentId == null}" class="text-xs text-gray-400">-</span>
+            <span th:if="${saved}" class="text-green-600 text-xs ml-2" th:text="#{actions.saved}">Saved</span>
+        </td>
+    </tr>
+</th:block>
+</body>
+</html>
