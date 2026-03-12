@@ -768,7 +768,11 @@ public class TaskService {
             if (tenantGuard.isSuperAdmin()) {
                 throw new RuntimeException("Work order is required for super admin task creation");
             }
-            task.setCompany(tenantGuard.getCurrentCompany());
+            Company currentCompany = tenantGuard.getCurrentCompany();
+            if (currentCompany == null) {
+                throw new RuntimeException("Company context is required");
+            }
+            task.setCompany(currentCompany);
         }
 
         if (assignedToId != null) {

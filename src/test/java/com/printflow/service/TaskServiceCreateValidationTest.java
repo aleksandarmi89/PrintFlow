@@ -114,4 +114,43 @@ class TaskServiceCreateValidationTest {
         verify(taskRepository).save(captor.capture());
         assertEquals("New Task", captor.getValue().getTitle());
     }
+
+    @Test
+    void createTask_rejectsMissingCompanyContextForNonSuperAdmin() {
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        TaskActivityRepository taskActivityRepository = mock(TaskActivityRepository.class);
+        TimeEntryRepository timeEntryRepository = mock(TimeEntryRepository.class);
+        CommentRepository commentRepository = mock(CommentRepository.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
+        TenantGuard tenantGuard = mock(TenantGuard.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        TaskService service = new TaskService(
+            taskRepository,
+            userRepository,
+            workOrderRepository,
+            taskActivityRepository,
+            timeEntryRepository,
+            commentRepository,
+            fileStorageService,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            2000
+        );
+
+        when(tenantGuard.isSuperAdmin()).thenReturn(false);
+        when(tenantGuard.getCurrentCompany()).thenReturn(null);
+
+        TaskDTO dto = new TaskDTO();
+        dto.setTitle("Task");
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.createTask(dto, null, null, null));
+        assertEquals("Company context is required", ex.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
 }
