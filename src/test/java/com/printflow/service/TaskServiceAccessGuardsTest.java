@@ -211,4 +211,55 @@ class TaskServiceAccessGuardsTest {
         assertDoesNotThrow(() -> service.canUserAccessTask(99L, 77L));
         assertFalse(service.canUserAccessTask(99L, 77L));
     }
+
+    @Test
+    void canUserAccessTask_rejectsWhenTaskOrUserCompanyMissing() {
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        TaskActivityRepository taskActivityRepository = mock(TaskActivityRepository.class);
+        TimeEntryRepository timeEntryRepository = mock(TimeEntryRepository.class);
+        CommentRepository commentRepository = mock(CommentRepository.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
+        TenantGuard tenantGuard = mock(TenantGuard.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        TaskService service = new TaskService(
+            taskRepository,
+            userRepository,
+            workOrderRepository,
+            taskActivityRepository,
+            timeEntryRepository,
+            commentRepository,
+            fileStorageService,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            2000
+        );
+
+        Company company = new Company();
+        company.setId(1L);
+
+        Task taskWithoutCompany = new Task();
+        taskWithoutCompany.setId(101L);
+        taskWithoutCompany.setCompany(null);
+
+        Task taskWithCompany = new Task();
+        taskWithCompany.setId(102L);
+        taskWithCompany.setCompany(company);
+
+        User userWithoutCompany = new User();
+        userWithoutCompany.setId(77L);
+        userWithoutCompany.setCompany(null);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(1L);
+        when(taskRepository.findByIdAndCompany_Id(101L, 1L)).thenReturn(Optional.of(taskWithoutCompany));
+        when(taskRepository.findByIdAndCompany_Id(102L, 1L)).thenReturn(Optional.of(taskWithCompany));
+        when(userRepository.findByIdAndCompany_Id(77L, 1L)).thenReturn(Optional.of(userWithoutCompany));
+
+        assertFalse(service.canUserAccessTask(101L, 77L));
+        assertFalse(service.canUserAccessTask(102L, 77L));
+    }
 }

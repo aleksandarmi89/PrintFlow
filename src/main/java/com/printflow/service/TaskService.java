@@ -564,8 +564,13 @@ public class TaskService {
         if (user == null) {
             return false;
         }
-        if (task.getCompany() != null && user.getCompany() != null
-            && !task.getCompany().getId().equals(user.getCompany().getId())) {
+        if (task.getCompany() == null || task.getCompany().getId() == null) {
+            return false;
+        }
+        if (user.getCompany() == null || user.getCompany().getId() == null) {
+            return false;
+        }
+        if (!task.getCompany().getId().equals(user.getCompany().getId())) {
             return false;
         }
         Long directAssigneeId = task.getAssignedTo() != null ? task.getAssignedTo().getId() : null;
