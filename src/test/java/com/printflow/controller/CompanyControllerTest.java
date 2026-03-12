@@ -109,4 +109,54 @@ class CompanyControllerTest {
         assertEquals("redirect:/admin/companies", view);
         verifyNoInteractions(companyService);
     }
+
+    @Test
+    void disableCompanyCallsServiceForSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.disableCompany(24L, model);
+
+        assertEquals("redirect:/admin/companies", view);
+        verify(companyService).disableCompany(24L);
+    }
+
+    @Test
+    void enableCompanyCallsServiceForSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.enableCompany(25L, model);
+
+        assertEquals("redirect:/admin/companies", view);
+        verify(companyService).enableCompany(25L);
+    }
 }
