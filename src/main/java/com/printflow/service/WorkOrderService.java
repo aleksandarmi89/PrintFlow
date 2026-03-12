@@ -256,6 +256,7 @@ public class WorkOrderService {
 
     public WorkOrderDTO reorderWorkOrder(Long sourceId, Long createdById, String sourceLabel) {
         WorkOrder source = getWorkOrderWithRelationsOrThrow(sourceId);
+        String reorderReason = buildReorderReason(source.getOrderNumber(), sourceLabel);
         WorkOrder newOrder = new WorkOrder();
         newOrder.setOrderNumber(orderNumberGenerator.generateOrderNumber());
         newOrder.setTitle(source.getTitle());
@@ -268,7 +269,7 @@ public class WorkOrderService {
         newOrder.setClient(source.getClient());
         newOrder.setCompany(source.getCompany());
         newOrder.setPrintType(source.getPrintType());
-        newOrder.setInternalNotes("Reordered from WorkOrder #" + source.getOrderNumber());
+        newOrder.setInternalNotes(reorderReason);
         PublicTokenService.TokenInfo tokenInfo = publicTokenService.newToken();
         newOrder.setPublicToken(tokenInfo.token());
         newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
@@ -304,10 +305,10 @@ public class WorkOrderService {
             pricingProfileService.recordPrice(saved.getClient(), item.getVariant(), item.getCalculatedPrice());
         }
         auditLogService.log(AuditAction.CREATE, "WorkOrder", saved.getId(), null, null,
-            "Reordered from WorkOrder #" + source.getOrderNumber(), saved.getCompany());
+            reorderReason, saved.getCompany());
         activityLogService.log(saved,
             "ORDER_DUPLICATED",
-            "Reordered from WorkOrder #" + source.getOrderNumber(),
+            reorderReason,
             createdById);
         eventPublisher.publishEvent(new OrderCreatedEvent(saved.getId()));
         return convertToDTO(saved);
@@ -729,6 +730,14 @@ public class WorkOrderService {
 
     private String orderStatusName(OrderStatus status) {
         return status != null ? status.name() : "UNKNOWN";
+    }
+
+    private String buildReorderReason(String sourceOrderNumber, String sourceLabel) {
+        String base = "Reordered from WorkOrder #" + sourceOrderNumber;
+        if (sourceLabel == null || sourceLabel.isBlank()) {
+            return base;
+        }
+        return base + " (" + sourceLabel.trim() + ")";
     }
     
     public Page<WorkOrderDTO> getUnassignedWorkOrders(Pageable pageable) {
