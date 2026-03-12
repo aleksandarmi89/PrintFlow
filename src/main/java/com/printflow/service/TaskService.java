@@ -1233,7 +1233,11 @@ public class TaskService {
         if (task.getCreatedBy() == null || nextStatus == null) {
             return false;
         }
-        if (task.getCreatedBy().getId().equals(actorId)) {
+        Long creatorId = task.getCreatedBy().getId();
+        if (creatorId == null) {
+            return false;
+        }
+        if (creatorId.equals(actorId)) {
             return false;
         }
         if (nextStatus == TaskStatus.AWAITING_REVIEW && isAdminRole(task.getCreatedBy().getRole())) {
