@@ -9,11 +9,12 @@
     <main class="container mx-auto px-4 py-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Audit Logs</h1>
-                <p class="text-gray-600 mt-1">System activity tracking</p>
+                <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.audit.title}">Audit Logs</h1>
+                <p class="text-gray-600 mt-1" th:text="#{admin.audit.subtitle}">System activity tracking</p>
             </div>
             <a th:href="@{/admin/audit-logs/export(companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType},page=${page},size=${size})}"
-               class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+               class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+               th:text="#{admin.audit.export_csv}">
                 Export CSV
             </a>
         </div>
@@ -21,7 +22,7 @@
         <form th:action="@{/admin/audit-logs}" method="get" class="flex flex-wrap gap-3 mb-6">
             <div th:if="${companies}">
                 <select name="companyId" class="px-3 py-2 border border-gray-300 rounded-lg">
-                    <option value="">All companies</option>
+                    <option value="" th:text="#{admin.audit.filter.all_companies}">All companies</option>
                     <option th:each="c : ${companies}"
                             th:value="${c.id}"
                             th:selected="${companyId == c.id}"
@@ -30,7 +31,7 @@
                 </select>
             </div>
             <select name="action" class="px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="">All actions</option>
+                <option value="" th:text="#{admin.audit.filter.all_actions}">All actions</option>
                 <option th:each="a : ${actions}"
                         th:value="${a.name()}"
                         th:selected="${action == a.name()}"
@@ -40,23 +41,25 @@
             <select name="size" class="px-3 py-2 border border-gray-300 rounded-lg">
                 <option th:each="opt : ${allowedSizes}"
                         th:value="${opt}"
-                        th:text="${opt}"
+                        th:text="#{pagination.size.option(${opt})}"
                         th:selected="${size == opt}">20</option>
             </select>
-            <input type="number" name="pageNumber" min="1" th:value="${pageNumber}" placeholder="Page"
+            <input type="number" name="pageNumber" min="1" th:value="${pageNumber}" th:placeholder="#{pagination.page}"
                    class="px-3 py-2 border border-gray-300 rounded-lg w-24">
-            <input type="text" name="entityType" th:value="${entityType}" placeholder="Entity type"
+            <input type="text" name="entityType" th:value="${entityType}" th:placeholder="#{admin.audit.filter.entity_type}"
                    class="px-3 py-2 border border-gray-300 rounded-lg">
-            <input type="number" name="entityId" th:value="${entityId}" placeholder="Entity ID"
+            <input type="number" name="entityId" th:value="${entityId}" th:placeholder="#{admin.audit.filter.entity_id}"
                    class="px-3 py-2 border border-gray-300 rounded-lg w-36">
-            <input type="number" name="userId" th:value="${userId}" placeholder="User ID"
+            <input type="number" name="userId" th:value="${userId}" th:placeholder="#{admin.audit.filter.user_id}"
                    class="px-3 py-2 border border-gray-300 rounded-lg w-28">
-            <input type="text" name="query" th:value="${query}" placeholder="Search (user, entity, description)"
+            <input type="text" name="query" th:value="${query}" th:placeholder="#{admin.audit.filter.query}"
                    class="px-3 py-2 border border-gray-300 rounded-lg">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    th:text="#{common.filter}">
                 Filter
             </button>
-            <a th:href="@{/admin/audit-logs}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            <a th:href="@{/admin/audit-logs}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+               th:text="#{common.clear}">
                 Clear
             </a>
         </form>
@@ -66,12 +69,12 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{common.time}">Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{common.action}">Action</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{admin.audit.table.entity}">Entity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{common.user}">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{common.company}">Company</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{admin.audit.table.details}">Details</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -85,15 +88,15 @@
                                 <div class="text-xs text-gray-500" th:text="${log.entityId}">1</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-700"
-                                th:text="${log.user != null ? log.user.fullName : 'System'}">User</td>
+                                th:text="${log.user != null ? log.user.fullName : #messages.msg('audit.system')}">User</td>
                             <td class="px-6 py-4 text-sm text-gray-700"
                                 th:text="${log.company != null ? log.company.name : '-'}">Company</td>
                             <td class="px-6 py-4 text-sm text-gray-700">
-                                <div class="text-xs text-gray-500">Description</div>
+                                <div class="text-xs text-gray-500" th:text="#{common.description}">Description</div>
                                 <div class="text-sm text-gray-900" th:text="${log.description}">Description</div>
-                                <div class="text-xs text-gray-500 mt-1">IP</div>
+                                <div class="text-xs text-gray-500 mt-1" th:text="#{common.ip}">IP</div>
                                 <div class="text-sm text-gray-900" th:text="${log.ipAddress != null ? log.ipAddress : '—'}">—</div>
-                                <div class="text-xs text-gray-500 mt-1" th:if="${log.oldValue != null || log.newValue != null}">Diff</div>
+                                <div class="text-xs text-gray-500 mt-1" th:if="${log.oldValue != null || log.newValue != null}" th:text="#{common.diff}">Diff</div>
                                 <div class="text-sm text-gray-900" th:if="${log.oldValue != null || log.newValue != null}">
                                     <span th:text="${log.oldValue != null ? log.oldValue : '—'}"></span>
                                     <span class="text-gray-400">→</span>
@@ -106,35 +109,37 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <div class="flex items-center justify-between">
-                                            <div class="text-xs text-gray-500">Old Value</div>
+                                            <div class="text-xs text-gray-500" th:text="#{admin.audit.old_value}">Old Value</div>
                                             <button type="button" class="text-xs text-blue-600 hover:text-blue-800"
-                                                    th:attr="data-copy=${log.oldValue}">Copy</button>
+                                                    th:attr="data-copy=${log.oldValue}"
+                                                    th:text="#{common.copy}">Copy</button>
                                         </div>
                                         <pre class="mt-1 text-xs text-gray-900 bg-white border border-gray-200 rounded-lg p-2 whitespace-pre-wrap audit-json"
                                              th:attr="data-json=${log.oldValue}">-</pre>
                                     </div>
                                     <div>
                                         <div class="flex items-center justify-between">
-                                            <div class="text-xs text-gray-500">New Value</div>
+                                            <div class="text-xs text-gray-500" th:text="#{admin.audit.new_value}">New Value</div>
                                             <button type="button" class="text-xs text-blue-600 hover:text-blue-800"
-                                                    th:attr="data-copy=${log.newValue}">Copy</button>
+                                                    th:attr="data-copy=${log.newValue}"
+                                                    th:text="#{common.copy}">Copy</button>
                                         </div>
                                         <pre class="mt-1 text-xs text-gray-900 bg-white border border-gray-200 rounded-lg p-2 whitespace-pre-wrap audit-json"
                                              th:attr="data-json=${log.newValue}">-</pre>
                                     </div>
                                     <div>
-                                        <div class="text-xs text-gray-500">User Agent</div>
+                                        <div class="text-xs text-gray-500" th:text="#{common.user_agent}">User Agent</div>
                                         <div class="text-sm text-gray-900 break-words" th:text="${log.userAgent ?: '-'}">-</div>
                                     </div>
                                     <div>
-                                        <div class="text-xs text-gray-500">IP Address</div>
+                                        <div class="text-xs text-gray-500" th:text="#{common.ip_address}">IP Address</div>
                                         <div class="text-sm text-gray-900" th:text="${log.ipAddress ?: '-'}">-</div>
                                     </div>
                                 </div>
                             </td>
                         </tr>
                         <tr th:if="${logs == null || logs.size() == 0}">
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">No audit logs.</td>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500" th:text="#{admin.audit.empty}">No audit logs.</td>
                         </tr>
                     </tbody>
                 </table>

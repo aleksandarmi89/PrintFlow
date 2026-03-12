@@ -10,11 +10,12 @@
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Companies</h1>
-                    <p class="text-gray-600 mt-2">Manage tenant companies</p>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.companies.title}">Companies</h1>
+                    <p class="text-gray-600 mt-2" th:text="#{admin.companies.subtitle}">Manage tenant companies</p>
                 </div>
                 <a th:href="@{/admin/companies/create}"
-                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                   th:text="#{admin.companies.add}">
                     + Add Company
                 </a>
             </div>
@@ -26,12 +27,12 @@
                         <input type="text"
                                name="search"
                                th:value="${search}"
-                               placeholder="Search companies by name..."
+                               th:placeholder="#{admin.companies.search.placeholder}"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <select name="plan"
                             class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All Plans</option>
+                        <option value="" th:text="#{admin.companies.filter.all_plans}">All Plans</option>
                         <option th:each="p : ${planOptions}"
                                 th:value="${p}"
                                 th:text="${p}"
@@ -39,16 +40,18 @@
                     </select>
                     <select name="override"
                             class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Override (all)</option>
-                        <option value="on" th:selected="${override == 'on'}">Override ON</option>
-                        <option value="off" th:selected="${override == 'off'}">Override OFF</option>
+                        <option value="" th:text="#{admin.companies.filter.override_all}">Override (all)</option>
+                        <option value="on" th:selected="${override == 'on'}" th:text="#{admin.companies.filter.override_on}">Override ON</option>
+                        <option value="off" th:selected="${override == 'off'}" th:text="#{admin.companies.filter.override_off}">Override OFF</option>
                     </select>
                     <button type="submit"
-                            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
+                            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                            th:text="#{common.search}">
                         Search
                     </button>
                     <a th:href="@{/admin/companies}"
-                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                       th:text="#{common.clear}">
                         Clear
                     </a>
                 </form>
@@ -57,16 +60,16 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Total Companies</div>
+                <div class="text-sm text-gray-600" th:text="#{admin.companies.stats.total}">Total Companies</div>
                 <div class="text-2xl font-bold text-gray-900" th:text="${totalCompanies}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Active</div>
+                <div class="text-sm text-gray-600" th:text="#{common.active}">Active</div>
                 <div class="text-2xl font-bold text-gray-900"
                      th:text="${#lists.size(companies.?[active])}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600">Inactive</div>
+                <div class="text-sm text-gray-600" th:text="#{common.inactive}">Inactive</div>
                 <div class="text-2xl font-bold text-gray-900"
                      th:text="${#lists.size(companies.?[!active])}">0</div>
             </div>
@@ -78,28 +81,28 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Company
+                                <span th:text="#{common.company}">Company</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
+                                <span th:text="#{common.status}">Status</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Plan
+                                <span th:text="#{admin.companies.table.plan}">Plan</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Users
+                                <span th:text="#{admin.companies.table.users}">Users</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Clients
+                                <span th:text="#{admin.companies.table.clients}">Clients</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Orders
+                                <span th:text="#{admin.companies.table.orders}">Orders</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created
+                                <span th:text="#{common.created}">Created</span>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
+                                <span th:text="#{common.actions}">Actions</span>
                             </th>
                         </tr>
                     </thead>
@@ -124,11 +127,11 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span th:if="${company.active}"
                                       class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                    Active
+                                    <span th:text="#{common.active}">Active</span>
                                 </span>
                                 <span th:unless="${company.active}"
                                       class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                                    Disabled
+                                    <span th:text="#{common.disabled}">Disabled</span>
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -137,13 +140,14 @@
                                           th:text="${company.plan != null ? company.plan : 'FREE'}">FREE</span>
                                     <span th:if="${company.billingOverrideActive}"
                                           class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700">
-                                        PRO OVERRIDE
+                                        <span th:text="#{admin.companies.override_badge}">PRO OVERRIDE</span>
                                     </span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900" th:text="${company.usersCount}">0</div>
-                                <div class="text-xs text-gray-500" th:text="${company.activeUsersCount + ' active'}">0 active</div>
+                                <div class="text-xs text-gray-500"
+                                     th:text="#{admin.companies.table.active_users(${company.activeUsersCount})}">0 active</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900" th:text="${company.clientsCount}">0</div>
@@ -160,40 +164,42 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     <a th:href="@{/admin/companies/edit/{id}(id=${company.id})}"
-                                       class="text-blue-600 hover:text-blue-900">Edit</a>
+                                       class="text-blue-600 hover:text-blue-900"
+                                       th:text="#{common.edit}">Edit</a>
                                     <form th:if="${company.active}"
                                           th:action="@{/admin/companies/disable/{id}(id=${company.id})}"
                                           method="post"
-                                          onsubmit="return confirm('Disable this company?');"
+                                          th:attr="onsubmit=|return confirm('${#messages.msg('admin.companies.confirm_disable')}');|"
                                           class="inline">
                                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                         <button type="submit" class="text-red-600 hover:text-red-900">
-                                            Disable
+                                            <span th:text="#{common.disable}">Disable</span>
                                         </button>
                                     </form>
                                     <form th:unless="${company.active}"
                                           th:action="@{/admin/companies/enable/{id}(id=${company.id})}"
                                           method="post"
-                                          onsubmit="return confirm('Enable this company?');"
+                                          th:attr="onsubmit=|return confirm('${#messages.msg('admin.companies.confirm_enable')}');|"
                                           class="inline">
                                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                         <button type="submit" class="text-green-600 hover:text-green-900">
-                                            Enable
+                                            <span th:text="#{common.enable}">Enable</span>
                                         </button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                         <tr th:if="${companies.empty}">
-                            <td colspan="4" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="text-gray-500">
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No companies</h3>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{admin.companies.empty.title}">No companies</h3>
                                     <p class="mt-1 text-sm text-gray-500">
-                                        Get started by creating a new company.
+                                        <span th:text="#{admin.companies.empty.subtitle}">Get started by creating a new company.</span>
                                     </p>
                                     <div class="mt-6">
                                         <a th:href="@{/admin/companies/create}"
-                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                                           th:text="#{admin.companies.add}">
                                             + Add Company
                                         </a>
                                     </div>
