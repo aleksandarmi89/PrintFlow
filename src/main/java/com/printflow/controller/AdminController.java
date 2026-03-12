@@ -934,6 +934,11 @@ public class AdminController extends BaseController {
         }
     }
 
+    @GetMapping("/users/permissions/{id}")
+    public String legacyUserPermissionsRedirect(@PathVariable Long id) {
+        return "redirect:/admin/users/edit/" + id;
+    }
+
     // ==================== TASK REVIEW ====================
 
     @GetMapping("/tasks")

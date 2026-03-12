@@ -33,6 +33,7 @@ import java.util.Arrays;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.not;
@@ -152,6 +153,11 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/create").session(adminSession))
             .andExpect(status().isOk());
+
+        Long adminId = userRepository.findByUsername("tenant1_admin").orElseThrow().getId();
+        mockMvc.perform(get("/admin/users/permissions/" + adminId).session(adminSession))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/users/edit/" + adminId));
     }
 
     @Test
