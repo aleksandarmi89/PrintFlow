@@ -35,7 +35,7 @@ public class PublicTokenService {
         if (expiresAt == null) {
             return true;
         }
-        return expiresAt.isBefore(LocalDateTime.now(clock));
+        return !expiresAt.isAfter(LocalDateTime.now(clock));
     }
 
     public LocalDateTime expiresAtFromNow() {
