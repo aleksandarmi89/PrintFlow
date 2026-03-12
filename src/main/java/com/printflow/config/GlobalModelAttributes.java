@@ -1,6 +1,7 @@
 package com.printflow.config;
 
 import com.printflow.repository.MailSettingsRepository;
+import com.printflow.service.MailSettingsService;
 import com.printflow.service.NotificationService;
 import com.printflow.service.TenantContextService;
 import com.printflow.service.BillingAccessService;
@@ -18,15 +19,18 @@ public class GlobalModelAttributes {
     private final NotificationService notificationService;
     private final BillingAccessService billingAccessService;
     private final MailSettingsRepository mailSettingsRepository;
+    private final MailSettingsService mailSettingsService;
 
     public GlobalModelAttributes(TenantContextService tenantContextService,
                                  NotificationService notificationService,
                                  BillingAccessService billingAccessService,
-                                 MailSettingsRepository mailSettingsRepository) {
+                                 MailSettingsRepository mailSettingsRepository,
+                                 MailSettingsService mailSettingsService) {
         this.tenantContextService = tenantContextService;
         this.notificationService = notificationService;
         this.billingAccessService = billingAccessService;
         this.mailSettingsRepository = mailSettingsRepository;
+        this.mailSettingsService = mailSettingsService;
     }
 
     @ModelAttribute
@@ -54,12 +58,8 @@ public class GlobalModelAttributes {
             model.addAttribute("companyPlan", company.getPlan());
         }
         boolean smtpConfigured = mailSettingsRepository.findByCompany_Id(companyId)
-            .filter(s -> Boolean.TRUE.equals(s.getEnabled()))
-            .filter(s -> s.getSmtpHost() != null && !s.getSmtpHost().isBlank())
-            .filter(s -> s.getSmtpPort() != null)
-            .filter(s -> s.getSmtpUsername() != null && !s.getSmtpUsername().isBlank())
-            .filter(s -> s.getSmtpPasswordEnc() != null && !s.getSmtpPasswordEnc().isBlank())
-            .isPresent();
+            .map(mailSettingsService::isConfigured)
+            .orElse(false);
         model.addAttribute("smtpConfigured", smtpConfigured);
         if (tenantContextService.isSuperAdmin()) {
             model.addAttribute("billingActive", true);
