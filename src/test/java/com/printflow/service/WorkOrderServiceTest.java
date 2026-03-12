@@ -882,6 +882,143 @@ class WorkOrderServiceTest {
     }
 
     @Test
+    void reorderWorkOrder_usesSourceCompanyForCreatorLookup() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company sourceCompany = new Company();
+        sourceCompany.setId(3L);
+        WorkOrder source = new WorkOrder();
+        source.setId(15L);
+        source.setCompany(sourceCompany);
+        source.setOrderNumber("WO-15");
+        source.setTitle("Source");
+
+        User creator = new User();
+        creator.setId(500L);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(99L);
+        when(workOrderRepository.findWithRelationsByIdAndCompany_Id(15L, 99L)).thenReturn(Optional.of(source));
+        when(orderNumberGenerator.generateOrderNumber()).thenReturn("WO-199");
+        PublicTokenService.TokenInfo tokenInfo =
+            new PublicTokenService.TokenInfo("tok", LocalDateTime.now(), LocalDateTime.now().plusDays(1));
+        when(publicTokenService.newToken()).thenReturn(tokenInfo);
+        when(userRepository.findByIdAndCompany_Id(500L, 3L)).thenReturn(Optional.of(creator));
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(inv -> {
+            WorkOrder wo = inv.getArgument(0);
+            if (wo.getId() == null) {
+                wo.setId(199L);
+            }
+            return wo;
+        });
+        when(workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(15L, 99L)).thenReturn(List.of());
+
+        service.reorderWorkOrder(15L, 500L, "portal");
+
+        verify(userRepository).findByIdAndCompany_Id(500L, 3L);
+    }
+
+    @Test
+    void duplicateWorkOrder_usesSourceCompanyForCreatorLookup() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company sourceCompany = new Company();
+        sourceCompany.setId(4L);
+        WorkOrder source = new WorkOrder();
+        source.setId(16L);
+        source.setCompany(sourceCompany);
+        source.setOrderNumber("WO-16");
+        source.setTitle("Source");
+        source.setPrintType(PrintType.OTHER);
+
+        User creator = new User();
+        creator.setId(501L);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(88L);
+        when(workOrderRepository.findWithRelationsByIdAndCompany_Id(16L, 88L)).thenReturn(Optional.of(source));
+        when(orderNumberGenerator.generateOrderNumber()).thenReturn("WO-200");
+        PublicTokenService.TokenInfo tokenInfo =
+            new PublicTokenService.TokenInfo("tok", LocalDateTime.now(), LocalDateTime.now().plusDays(1));
+        when(publicTokenService.newToken()).thenReturn(tokenInfo);
+        when(userRepository.findByIdAndCompany_Id(501L, 4L)).thenReturn(Optional.of(creator));
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(inv -> {
+            WorkOrder wo = inv.getArgument(0);
+            if (wo.getId() == null) {
+                wo.setId(200L);
+            }
+            return wo;
+        });
+        when(workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(16L, 88L)).thenReturn(List.of());
+
+        service.duplicateWorkOrder(16L, 501L, false);
+
+        verify(userRepository).findByIdAndCompany_Id(501L, 4L);
+    }
+
+    @Test
     void getWorkOrderByPublicToken_trimsTokenBeforeLookup() {
         WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
         ClientRepository clientRepository = Mockito.mock(ClientRepository.class);

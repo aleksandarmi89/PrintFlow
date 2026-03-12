@@ -282,7 +282,8 @@ public class WorkOrderService {
         newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
         newOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
         if (createdById != null) {
-            newOrder.setCreatedBy(resolveCreatedByForClone(createdById));
+            Long sourceCompanyId = source.getCompany() != null ? source.getCompany().getId() : tenantGuard.requireCompanyId();
+            newOrder.setCreatedBy(resolveCreatedByForClone(createdById, sourceCompanyId));
         }
 
         WorkOrder saved = workOrderRepository.save(newOrder);
@@ -339,7 +340,8 @@ public class WorkOrderService {
         newOrder.setPublicTokenCreatedAt(tokenInfo.createdAt());
         newOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
         if (createdById != null) {
-            newOrder.setCreatedBy(resolveCreatedByForClone(createdById));
+            Long sourceCompanyId = source.getCompany() != null ? source.getCompany().getId() : tenantGuard.requireCompanyId();
+            newOrder.setCreatedBy(resolveCreatedByForClone(createdById, sourceCompanyId));
         }
 
         WorkOrder saved = workOrderRepository.save(newOrder);
@@ -735,8 +737,8 @@ public class WorkOrderService {
         return base + " (" + sourceLabel.trim() + ")";
     }
 
-    private User resolveCreatedByForClone(Long createdById) {
-        return userRepository.findByIdAndCompany_Id(createdById, tenantGuard.requireCompanyId())
+    private User resolveCreatedByForClone(Long createdById, Long companyId) {
+        return userRepository.findByIdAndCompany_Id(createdById, companyId)
             .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
