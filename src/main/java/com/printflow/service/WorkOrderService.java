@@ -83,13 +83,14 @@ public class WorkOrderService {
 
     public WorkOrderDTO createWorkOrder(WorkOrderDTO workOrderDTO) {
         Long companyId = tenantGuard.requireCompanyId();
+        String normalizedTitle = requireTitle(workOrderDTO.getTitle());
         Client client = getClientOrThrow(workOrderDTO.getClientId(), companyId);
         billingAccessService.assertBillingActiveForPremiumAction(client.getCompany().getId());
         planLimitService.assertMonthlyOrdersLimit(client.getCompany());
         
         WorkOrder workOrder = new WorkOrder();
         workOrder.setOrderNumber(orderNumberGenerator.generateOrderNumber());
-        workOrder.setTitle(workOrderDTO.getTitle());
+        workOrder.setTitle(normalizedTitle);
         workOrder.setDescription(workOrderDTO.getDescription());
         workOrder.setSpecifications(workOrderDTO.getSpecifications());
         workOrder.setStatus(OrderStatus.NEW);
@@ -108,13 +109,13 @@ public class WorkOrderService {
         
         if (workOrderDTO.getAssignedToId() != null) {
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), companyId)
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("User not found"));
             workOrder.setAssignedTo(assignedTo);
         }
         
         if (workOrderDTO.getCreatedById() != null) {
             User createdBy = userRepository.findByIdAndCompany_Id(workOrderDTO.getCreatedById(), companyId)
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("User not found"));
             workOrder.setCreatedBy(createdBy);
         }
         
@@ -125,6 +126,7 @@ public class WorkOrderService {
     
     public WorkOrderDTO updateWorkOrder(Long id, WorkOrderDTO workOrderDTO) {
         WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
+        String normalizedTitle = requireTitle(workOrderDTO.getTitle());
         Long oldClientId = workOrder.getClient() != null ? workOrder.getClient().getId() : null;
         String oldPrintType = workOrder.getPrintType() != null ? workOrder.getPrintType().name() : null;
         OrderStatus oldStatusEnum = workOrder.getStatus();
@@ -133,7 +135,7 @@ public class WorkOrderService {
         Double oldCost = workOrder.getCost();
         Long oldAssignedId = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getId() : null;
         
-        workOrder.setTitle(workOrderDTO.getTitle());
+        workOrder.setTitle(normalizedTitle);
         workOrder.setDescription(workOrderDTO.getDescription());
         workOrder.setSpecifications(workOrderDTO.getSpecifications());
         workOrder.setPriority(workOrderDTO.getPriority());
@@ -734,6 +736,13 @@ public class WorkOrderService {
 
     private String orderStatusName(OrderStatus status) {
         return status != null ? status.name() : "UNKNOWN";
+    }
+
+    private String requireTitle(String title) {
+        if (title == null || title.isBlank()) {
+            throw new RuntimeException("Work order title is required");
+        }
+        return title.trim();
     }
 
     private String buildReorderReason(String sourceOrderNumber, String sourceLabel) {
