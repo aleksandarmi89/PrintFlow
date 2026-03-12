@@ -4,6 +4,7 @@ import com.printflow.entity.Company;
 import com.printflow.entity.Task;
 import com.printflow.entity.User;
 import com.printflow.entity.User.Role;
+import com.printflow.entity.MailSettings;
 import com.printflow.entity.enums.ProductCategory;
 import com.printflow.entity.enums.UnitType;
 import com.printflow.pricing.entity.Product;
@@ -16,6 +17,7 @@ import com.printflow.repository.TaskRepository;
 import com.printflow.repository.UserRepository;
 import com.printflow.repository.WorkOrderRepository;
 import com.printflow.repository.AttachmentRepository;
+import com.printflow.repository.MailSettingsRepository;
 import com.printflow.testsupport.TenantTestFixture;
 import com.printflow.testsupport.TenantTestFixture.TenantIds;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,7 @@ class RegressionPagesIntegrationTest {
     @Autowired private TaskRepository taskRepository;
     @Autowired private WorkOrderRepository workOrderRepository;
     @Autowired private AttachmentRepository attachmentRepository;
+    @Autowired private MailSettingsRepository mailSettingsRepository;
     @Autowired private ProductRepository productRepository;
     @Autowired private ProductVariantRepository productVariantRepository;
     @Autowired private PasswordEncoder passwordEncoder;
@@ -74,6 +77,14 @@ class RegressionPagesIntegrationTest {
         tenantIds = fixture.createTenantData();
 
         Company company = companyRepository.findById(tenantIds.company1Id()).orElseThrow();
+        MailSettings smtp = mailSettingsRepository.findByCompany_Id(company.getId()).orElseGet(MailSettings::new);
+        smtp.setCompany(company);
+        smtp.setEnabled(true);
+        smtp.setSmtpHost("smtp.example.com");
+        smtp.setSmtpPort(587);
+        smtp.setSmtpUsername("noreply@example.com");
+        smtp.setSmtpPasswordEnc("enc-test");
+        mailSettingsRepository.save(smtp);
 
         Product product = new Product();
         product.setCompany(company);
@@ -157,6 +168,12 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/create").session(adminSession))
             .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/company").session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("SMTP OK"),
+                containsString("SMTP JE PODEŠEN")
+            )));
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("/public/companies"))))

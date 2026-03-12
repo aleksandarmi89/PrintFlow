@@ -5,6 +5,7 @@ import com.printflow.entity.Company;
 import com.printflow.service.CompanyBrandingService;
 import com.printflow.service.CompanyService;
 import com.printflow.service.CurrentContextService;
+import com.printflow.service.MailSettingsService;
 import com.printflow.service.TenantContextService;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
@@ -25,16 +26,19 @@ public class AdminCompanySettingsController extends BaseController {
     private final CompanyBrandingService companyBrandingService;
     private final CurrentContextService currentContextService;
     private final TenantContextService tenantContextService;
+    private final MailSettingsService mailSettingsService;
     private final boolean emailFallbackEnabled;
 
     public AdminCompanySettingsController(CompanyService companyService,
                                           CompanyBrandingService companyBrandingService,
                                           CurrentContextService currentContextService,
+                                          MailSettingsService mailSettingsService,
                                           TenantContextService tenantContextService,
                                           @org.springframework.beans.factory.annotation.Value("${app.notification.email.fallback-enabled:false}") boolean emailFallbackEnabled) {
         this.companyService = companyService;
         this.companyBrandingService = companyBrandingService;
         this.currentContextService = currentContextService;
+        this.mailSettingsService = mailSettingsService;
         this.tenantContextService = tenantContextService;
         this.emailFallbackEnabled = emailFallbackEnabled;
     }
@@ -45,8 +49,9 @@ public class AdminCompanySettingsController extends BaseController {
                            Model model) {
         Company company = currentContextService.currentCompany();
         CompanyDTO dto = companyService.getCompanyById(company.getId());
+        var mailSettings = mailSettingsService.getOrCreate(company);
         model.addAttribute("company", dto);
-        model.addAttribute("smtpPasswordSet", company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank());
+        model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
         model.addAttribute("smtpConfigured", isSmtpConfigured(company));
         model.addAttribute("smtpFallbackEnabled", emailFallbackEnabled);
         model.addAttribute("errorKey", errorKey);
@@ -92,8 +97,9 @@ public class AdminCompanySettingsController extends BaseController {
         dto.setActive(company.isActive());
         String validationError = validateSmtpSettings(company, smtpHost, smtpPort, smtpUser, smtpPassword);
         if (validationError != null) {
+            var mailSettings = mailSettingsService.getOrCreate(company);
             model.addAttribute("company", dto);
-            model.addAttribute("smtpPasswordSet", company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank());
+            model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
             model.addAttribute("errorKey", validationError);
             return "admin/company/settings";
         }
@@ -104,8 +110,9 @@ public class AdminCompanySettingsController extends BaseController {
             }
             return redirectWithSuccess("/admin/company", "Company settings updated", model);
         } catch (Exception e) {
+            var mailSettings = mailSettingsService.getOrCreate(company);
             model.addAttribute("company", dto);
-            model.addAttribute("smtpPasswordSet", company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank());
+            model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
             model.addAttribute("errorMessage", e.getMessage());
             return "admin/company/settings";
         }
@@ -146,7 +153,9 @@ public class AdminCompanySettingsController extends BaseController {
             return "company.smtp.error.user_required";
         }
         boolean hasPassword = password != null && !password.isBlank();
-        boolean existingPassword = company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank();
+        var mailSettings = mailSettingsService.getOrCreate(company);
+        boolean existingPassword = mailSettings.getSmtpPasswordEnc() != null
+            && !mailSettings.getSmtpPasswordEnc().isBlank();
         if (!hasPassword && !existingPassword) {
             return "company.smtp.error.password_required";
         }
@@ -156,6 +165,10 @@ public class AdminCompanySettingsController extends BaseController {
     private boolean isSmtpConfigured(Company company) {
         if (company == null) {
             return false;
+        }
+        var settings = mailSettingsService.getOrCreate(company);
+        if (mailSettingsService.isConfigured(settings)) {
+            return true;
         }
         return company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
             && company.getSmtpPort() != null
