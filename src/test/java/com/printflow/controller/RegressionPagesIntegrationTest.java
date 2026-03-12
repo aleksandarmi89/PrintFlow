@@ -153,6 +153,17 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/create").session(adminSession))
             .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/users").session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??common."))))
+            .andExpect(content().string(anyOf(
+                containsString("Phone"),
+                containsString("Telefon")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Active"),
+                containsString("Aktivan")
+            )));
 
         Long adminId = userRepository.findByUsername("tenant1_admin").orElseThrow().getId();
         mockMvc.perform(get("/admin/users/permissions/" + adminId).session(adminSession))
