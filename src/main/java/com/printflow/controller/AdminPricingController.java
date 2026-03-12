@@ -263,7 +263,7 @@ public class AdminPricingController extends BaseController {
             model.addAttribute("pricingError", "pricing.validation_error");
             model.addAttribute("variantHasDefault", java.util.Collections.singletonMap(variant.getId(), false));
             if (hxRequest != null) {
-                return "admin/pricing/product-edit :: variantRow";
+                return "admin/pricing/fragments :: variantRow";
             }
             List<ProductVariant> variants = variantRepository.findAllByProductIdAndCompanyIdFetchProduct(variant.getProduct().getId(), company.getId())
                 .stream()
@@ -288,7 +288,7 @@ public class AdminPricingController extends BaseController {
         model.addAttribute("saved", true);
         model.addAttribute("variantHasDefault", java.util.Collections.singletonMap(updated.getId(), false));
         if (hxRequest != null) {
-            return "admin/pricing/product-edit :: variantRow";
+            return "admin/pricing/fragments :: variantRow";
         }
         return "redirect:/admin/pricing/products/" + updated.getProduct().getId();
     }
@@ -423,7 +423,7 @@ public class AdminPricingController extends BaseController {
             model.addAttribute("fieldErrors", fieldErrors);
             model.addAttribute("pricingError", "pricing.validation_error");
             if (hxRequest != null) {
-                return "admin/pricing/variant-edit :: componentRow";
+                return "admin/pricing/fragments :: componentRow";
             }
             return "redirect:/admin/pricing/variants/" + component.getVariant().getId();
         }
@@ -434,7 +434,7 @@ public class AdminPricingController extends BaseController {
         model.addAttribute("form", refreshed);
         model.addAttribute("saved", true);
         if (hxRequest != null) {
-            return "admin/pricing/variant-edit :: componentRow";
+            return "admin/pricing/fragments :: componentRow";
         }
         return "redirect:/admin/pricing/variants/" + updated.getVariant().getId();
     }

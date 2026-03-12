@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Companies - PrintFlow Admin</title>
+    <title th:text="#{admin.companies.title} + ' - PrintFlow Admin'">Companies - PrintFlow Admin</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
@@ -36,7 +36,7 @@
                         <option th:each="p : ${planOptions}"
                                 th:value="${p}"
                                 th:text="${p}"
-                                th:selected="${plan == p.name()}">PLAN</option>
+                                th:selected="${plan == p.name()}">Plan</option>
                     </select>
                     <select name="override"
                             class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">

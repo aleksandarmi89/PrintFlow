@@ -144,7 +144,7 @@
                                 <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/companies}" 
                                    class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">
                                     <span class="hidden xl:inline" th:text="#{nav.companies}">Companies</span>
-                                    <span class="xl:hidden">Komp.</span>
+                                    <span class="xl:hidden" th:text="#{nav.companies_short}">Komp.</span>
                                 </a>
                                 <a sec:authorize="hasAuthority('SUPER_ADMIN')" th:href="@{/admin/audit-logs}" 
                                    class="text-gray-700 hover:text-primary-600 px-2 py-2 rounded-md text-xs font-medium">

@@ -1,32 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Product Catalog</title>
+    <title th:text="#{pricing.products.header}">Product Catalog</title>
 </head>
 <body>
 <div th:replace="~{layout/header :: header}"></div>
 
 <main class="container mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">Product Catalog</h1>
+        <h1 class="text-2xl font-bold" th:text="#{pricing.products.header}">Product Catalog</h1>
     </div>
 
     <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Add Product</h2>
+        <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.products.add_title}">Add Product</h2>
         <form th:action="@{/pricing/products}" th:object="${productForm}" method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <input type="text" th:field="*{name}" placeholder="Name" class="border rounded px-3 py-2" required>
+            <input type="text" th:field="*{name}" th:placeholder="#{pricing.products.name}" class="border rounded px-3 py-2" required>
             <select th:field="*{category}" class="border rounded px-3 py-2" required>
-                <option value="">Category</option>
+                <option value="" th:text="#{pricing.products.category}">Category</option>
                 <option th:each="c : ${T(com.printflow.entity.enums.ProductCategory).values()}"
                         th:value="${c}" th:text="${c}"></option>
             </select>
             <select th:field="*{unitType}" class="border rounded px-3 py-2" required>
-                <option value="">Unit</option>
+                <option value="" th:text="#{pricing.products.unit}">Unit</option>
                 <option th:each="u : ${T(com.printflow.entity.enums.UnitType).values()}"
                         th:value="${u}" th:text="${u}"></option>
             </select>
-            <button type="submit" class="bg-blue-600 text-white rounded px-4 py-2">+ Add Product</button>
+            <button type="submit" class="bg-blue-600 text-white rounded px-4 py-2" th:text="#{pricing.products.add_button}">+ Add Product</button>
         </form>
     </div>
 
@@ -34,12 +34,12 @@
         <table class="min-w-full text-sm">
             <thead class="text-gray-500">
             <tr class="text-left border-b">
-                <th class="py-2">Name</th>
-                <th class="py-2">Category</th>
-                <th class="py-2">Unit</th>
-                <th class="py-2">Active</th>
-                <th class="py-2">Variants</th>
-                <th class="py-2">Actions</th>
+                <th class="py-2" th:text="#{pricing.products.name}">Name</th>
+                <th class="py-2" th:text="#{pricing.products.category}">Category</th>
+                <th class="py-2" th:text="#{pricing.products.unit}">Unit</th>
+                <th class="py-2" th:text="#{pricing.products.active}">Active</th>
+                <th class="py-2" th:text="#{pricing.products.variants}">Variants</th>
+                <th class="py-2" th:text="#{pricing.products.actions}">Actions</th>
             </tr>
             </thead>
             <tbody>
@@ -48,11 +48,11 @@
                 <td class="py-2" th:text="${p.category}">Category</td>
                 <td class="py-2" th:text="${p.unitType}">Unit</td>
                 <td class="py-2" th:text="${p.active}">true</td>
-                <td class="py-2"><a th:href="@{/pricing/products/{id}/variants(id=${p.id})}" class="text-blue-600">View</a></td>
-                <td class="py-2"><a th:href="@{/pricing/products/{id}/variants(id=${p.id})}" class="text-blue-600">Manage</a></td>
+                <td class="py-2"><a th:href="@{/pricing/products/{id}/variants(id=${p.id})}" class="text-blue-600" th:text="#{common.view}">View</a></td>
+                <td class="py-2"><a th:href="@{/pricing/products/{id}/variants(id=${p.id})}" class="text-blue-600" th:text="#{common.manage}">Manage</a></td>
             </tr>
             <tr th:if="${products.empty}">
-                <td colspan="6" class="py-4 text-gray-500">No products yet.</td>
+                <td colspan="6" class="py-4 text-gray-500" th:text="#{pricing.products.empty}">No products yet.</td>
             </tr>
             </tbody>
         </table>

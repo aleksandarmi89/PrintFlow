@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title th:text="#{public.order.success.title}">Zahtev je poslat</title>
+    <title th:text="#{public.order.success.title}">Request submitted</title>
 </head>
 <body class="bg-gray-50">
 <main class="max-w-xl mx-auto px-4 py-16">
@@ -19,12 +19,12 @@
                 </a>
             </div>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900" th:text="#{public.order.success.heading}">Zahtev je uspešno poslat</h1>
+        <h1 class="text-2xl font-bold text-gray-900" th:text="#{public.order.success.heading}">Request sent successfully</h1>
         <p class="text-gray-600 mt-3" th:utext="#{public.order.success.description(${company.name})}">
-            Hvala! Kompanija <strong>PrintFlow</strong> je primila vaš zahtev. Kontaktiraćemo vas uskoro.
+            Thank you! <strong>PrintFlow</strong> received your request. We will contact you soon.
         </p>
         <a th:href="@{/p/{slug}/order(slug=${companySlug})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
-            <span th:text="#{public.order.success.new_request}">Pošalji novi zahtev</span>
+            <span th:text="#{public.order.success.new_request}">Send new request</span>
         </a>
     </div>
 </main>

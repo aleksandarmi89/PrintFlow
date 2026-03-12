@@ -22,7 +22,7 @@
                 </div>
             </div>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Create your company
+                <span th:text="#{auth.register_heading}">Create your company</span>
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
                 <span th:text="#{auth.or}">Or</span>
@@ -62,10 +62,10 @@
             <!-- Form Fields -->
             <div class="space-y-4">
                 <div>
-                    <label for="companyName" class="block text-sm font-medium text-gray-700">Company Name *</label>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700" th:text="#{auth.company_name_required}">Company Name *</label>
                     <input id="companyName" name="companyName" type="text" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                           placeholder="Acme Printing">
+                           th:placeholder="#{auth.company_name_placeholder}">
                 </div>
                 <div>
                     <label for="username" class="block text-sm font-medium text-gray-700" th:text="#{auth.username} + ' *'">Username *</label>
@@ -110,7 +110,7 @@
                 </div>
                 
                 <div class="text-xs text-gray-500">
-                    This will create your company and the first admin user.
+                    <span th:text="#{auth.register_create_company_note}">This will create your company and the first admin user.</span>
                 </div>
             </div>
             

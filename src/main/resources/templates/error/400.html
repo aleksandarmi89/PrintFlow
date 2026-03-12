@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Bad Request - PrintFlow</title>
+    <title th:text="${errorTitle} + ' - PrintFlow'">Bad Request - PrintFlow</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
@@ -10,10 +10,10 @@
         <div class="max-w-xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <h1 class="text-3xl font-bold text-gray-900" th:text="${errorTitle}">Bad Request</h1>
             <p class="mt-3 text-gray-600" th:text="${errorMessage}">Invalid request.</p>
-            <p class="mt-4 text-sm text-gray-400">Status <span th:text="${status}">400</span></p>
+            <p class="mt-4 text-sm text-gray-400"><span th:text="#{common.status}">Status</span> <span th:text="${status}">400</span></p>
             <div class="mt-6 flex justify-center gap-3">
-                <a th:href="@{/}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Go Home</a>
-                <button type="button" onclick="history.back()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Go Back</button>
+                <a th:href="@{/}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{auth.go_home}">Go Home</a>
+                <button type="button" onclick="history.back()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50" th:text="#{common.back}">Go Back</button>
             </div>
         </div>
     </main>
