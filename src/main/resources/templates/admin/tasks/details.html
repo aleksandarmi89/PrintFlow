@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title th:text="'Task: ' + ${task.orderNumber} + ' - PrintFlow Admin'"></title>
+    <title th:text="#{admin.tasks.details.title(${task.orderNumber})}"></title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
@@ -10,23 +10,26 @@
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900" th:text="'Task: ' + ${task.orderNumber}"></h1>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.tasks.details.heading(${task.orderNumber})}"></h1>
                     <p class="text-gray-600 mt-2" th:text="${task.title}"></p>
                 </div>
                 <div class="flex space-x-3">
                     <a th:href="@{/admin/tasks}"
-                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                       th:text="#{admin.tasks.details.back_to_tasks}">
                         ← Back to Tasks
                     </a>
                     <a th:href="@{/admin/tasks/edit/{id}(id=${task.id})}"
-                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                       th:text="#{admin.tasks.details.edit_task}">
                         Edit Task
                     </a>
                     <form th:action="@{/admin/tasks/{id}/delete(id=${task.id})}" method="post"
-                          onsubmit="return confirm('Delete this task?');">
+                          th:attr="onsubmit=|return confirm('${#messages.msg('admin.tasks.details.confirm_delete')}');|">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <button type="submit"
-                                class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">
+                                class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50"
+                                th:text="#{admin.tasks.details.delete_task}">
                             Delete Task
                         </button>
                     </form>
@@ -34,21 +37,23 @@
                         <form th:if="${!proofAttachments.empty}"
                               th:action="@{/admin/tasks/{id}/approve(id=${task.id})}"
                               method="post"
-                              onsubmit="return confirm('Approve this task and notify client?');">
+                              th:attr="onsubmit=|return confirm('${#messages.msg('admin.tasks.details.confirm_approve')}');|">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit"
-                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                    th:text="#{admin.tasks.details.approve_task}">
                                 Approve Task
                             </button>
                         </form>
                         <button th:if="${proofAttachments.empty}" type="button"
                                 class="px-4 py-2 bg-green-600 text-white rounded-lg opacity-60 cursor-not-allowed"
-                                title="No proof uploaded yet">
+                                th:title="#{admin.tasks.details.no_proof}">
                             Approve Task
                         </button>
                         <button type="button"
                                 onclick="document.getElementById('reject-box').classList.toggle('hidden')"
-                                class="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+                                class="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
+                                th:text="#{common.reject}">
                             Reject
                         </button>
                     </div>
@@ -60,13 +65,13 @@
             <div class="lg:col-span-2 space-y-8">
                 <div th:if="${task.status == 'AWAITING_REVIEW'}" id="reject-box"
                      class="bg-white rounded-xl shadow-sm border border-red-200 p-6 hidden">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Reject Proof</h2>
-                    <p class="text-sm text-gray-600 mb-4">Add a reason so the worker knows what to fix.</p>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2" th:text="#{admin.tasks.details.reject_proof}">Reject Proof</h2>
+                    <p class="text-sm text-gray-600 mb-4" th:text="#{admin.tasks.details.reject_reason_help}">Add a reason so the worker knows what to fix.</p>
                     <form th:action="@{/admin/tasks/{id}/reject(id=${task.id})}" method="post" class="space-y-3">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <textarea name="reason" rows="3" required
                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                  placeholder="Reason for rejection"></textarea>
+                                  th:placeholder="#{admin.tasks.details.reject_reason_placeholder}"></textarea>
                         <div class="flex items-center justify-end gap-2">
                             <button type="button"
                                     onclick="document.getElementById('reject-box').classList.add('hidden')"
@@ -74,7 +79,8 @@
                                 Cancel
                             </button>
                             <button type="submit"
-                                    class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                                    class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                    th:text="#{admin.tasks.details.reject_task}">
                                 Reject Task
                             </button>
                         </div>
@@ -82,38 +88,38 @@
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Task Information</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.tasks.details.task_information}">Task Information</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-500">Client</h3>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{common.client}">Client</h3>
                             <p class="mt-1 text-sm text-gray-900" th:text="${task.clientName}"></p>
                             <p class="text-xs text-gray-500" th:text="${task.clientPhone}"></p>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-gray-500">Deadline</h3>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{admin.tasks.edit.field.due_date}">Deadline</h3>
                             <p class="mt-1 text-sm" th:class="${task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-900'}">
                                 <span th:text="${#temporals.format(task.deadline, 'dd.MM.yyyy HH:mm')}"></span>
                             </p>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-gray-500">Assigned To</h3>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{admin.tasks.edit.field.assign_to}">Assigned To</h3>
                             <p class="mt-1 text-sm text-gray-900" th:text="${task.assignedToName}"></p>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-gray-500">Status</h3>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{common.status}">Status</h3>
                             <span class="mt-1 inline-block px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800"
                                   th:text="${task.status != null ? (#messages.msgOrNull('task.status.' + task.status) != null ? #messages.msg('task.status.' + task.status) : task.status) : ''}">AWAITING_REVIEW</span>
                         </div>
                     </div>
 
                     <div class="mb-6">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Description</h3>
+                        <h3 class="text-sm font-medium text-gray-500 mb-2" th:text="#{common.description}">Description</h3>
                         <p class="text-gray-900 whitespace-pre-line" th:text="${task.description}"></p>
                     </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Proof Attachments</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.tasks.details.proof_attachments}">Proof Attachments</h2>
                     <div class="space-y-4">
                         <div th:each="attachment : ${proofAttachments}"
                              class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
@@ -127,19 +133,20 @@
                             </div>
                             <div class="flex space-x-2">
                                 <a th:href="@{/api/files/download/{id}(id=${attachment.id})}"
-                                   class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                                   class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                                   th:text="#{common.download}">
                                     Download
                                 </a>
                             </div>
                         </div>
                         <div th:if="${proofAttachments.empty}" class="text-center py-8">
-                            <p class="text-sm text-gray-500">No proof uploaded yet.</p>
+                            <p class="text-sm text-gray-500" th:text="#{admin.tasks.details.no_proof}">No proof uploaded yet.</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Attachments</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.tasks.details.order_attachments}">Order Attachments</h2>
                     <div class="space-y-4">
                         <div th:each="attachment : ${orderAttachments}"
                              class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
@@ -153,13 +160,14 @@
                             </div>
                             <div class="flex space-x-2">
                                 <a th:href="@{/api/files/download/{id}(id=${attachment.id})}"
-                                   class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                                   class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                                   th:text="#{common.download}">
                                     Download
                                 </a>
                             </div>
                         </div>
                         <div th:if="${orderAttachments.empty}" class="text-center py-8">
-                            <p class="text-sm text-gray-500">No order attachments.</p>
+                            <p class="text-sm text-gray-500" th:text="#{admin.tasks.details.no_order_attachments}">No order attachments.</p>
                         </div>
                     </div>
                 </div>
@@ -167,14 +175,14 @@
 
             <div class="space-y-8">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{common.activity}">Activity</h2>
                     <div class="space-y-4">
                         <div th:each="activity : ${activities}">
                             <p class="text-sm text-gray-900" th:text="${activity.description}"></p>
                             <p class="text-xs text-gray-500" th:text="${#temporals.format(activity.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
                         </div>
                         <div th:if="${activities.empty}" class="text-center py-4">
-                            <p class="text-sm text-gray-500">No activity yet.</p>
+                            <p class="text-sm text-gray-500" th:text="#{admin.tasks.details.no_activity}">No activity yet.</p>
                         </div>
                     </div>
                 </div>
