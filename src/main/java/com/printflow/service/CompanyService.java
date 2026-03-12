@@ -153,15 +153,9 @@ public class CompanyService {
         company.setWebsite(normalizeNullable(dto.getWebsite()));
         company.setPrimaryColor(normalizeNullable(dto.getPrimaryColor()));
         company.setCurrency(normalizeCurrency(dto.getCurrency()));
-        if (dto.getSmtpHost() != null && !dto.getSmtpHost().isBlank()) {
-            company.setSmtpHost(dto.getSmtpHost().trim());
-        }
-        if (dto.getSmtpPort() != null) {
-            company.setSmtpPort(dto.getSmtpPort());
-        }
-        if (dto.getSmtpUser() != null && !dto.getSmtpUser().isBlank()) {
-            company.setSmtpUser(dto.getSmtpUser().trim());
-        }
+        company.setSmtpHost(normalizeNullable(dto.getSmtpHost()));
+        company.setSmtpPort(dto.getSmtpPort());
+        company.setSmtpUser(normalizeNullable(dto.getSmtpUser()));
         if (dto.getSmtpPassword() != null && !dto.getSmtpPassword().isBlank()) {
             company.setSmtpPassword(dto.getSmtpPassword());
         }

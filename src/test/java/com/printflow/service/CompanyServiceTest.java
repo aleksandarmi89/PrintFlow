@@ -206,4 +206,55 @@ class CompanyServiceTest {
         assertNull(updated.getWebsite());
         assertNull(updated.getPrimaryColor());
     }
+
+    @Test
+    void updateCompanyClearsSmtpHostPortUserAndKeepsPasswordWhenBlankProvided() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        Company existing = new Company();
+        existing.setId(15L);
+        existing.setName("Epsilon");
+        existing.setSlug("epsilon");
+        existing.setSmtpHost("smtp.old.local");
+        existing.setSmtpPort(587);
+        existing.setSmtpUser("old-user");
+        existing.setSmtpPassword("secret-old");
+
+        when(companyRepository.findById(15L)).thenReturn(Optional.of(existing));
+        when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(companyRepository.findBySlug(any())).thenReturn(Optional.empty());
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("Epsilon");
+        dto.setActive(true);
+        dto.setSmtpHost("  ");
+        dto.setSmtpPort(null);
+        dto.setSmtpUser(" ");
+        dto.setSmtpPassword(" ");
+
+        CompanyDTO updated = service.updateCompany(15L, dto);
+
+        assertNull(updated.getSmtpHost());
+        assertNull(updated.getSmtpPort());
+        assertNull(updated.getSmtpUser());
+        // Password should not be overwritten by blank value.
+        assertEquals("secret-old", existing.getSmtpPassword());
+    }
 }
