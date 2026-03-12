@@ -676,19 +676,26 @@ public class TaskService {
     }
 
     public void updateTaskFromAdmin(Long taskId, TaskDTO dto, Long assignedToId) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Task payload is required");
+        }
         Task task = getTaskOrThrow(taskId);
 
         String oldTitle = task.getTitle();
         String oldDescription = task.getDescription();
         LocalDateTime oldDueDate = task.getDueDate();
         TaskPriority oldPriority = task.getPriority();
-        task.setTitle(dto.getTitle());
+        task.setTitle(requireTaskTitle(dto.getTitle()));
         task.setDescription(dto.getDescription());
         task.setDueDate(dto.getDueDate());
         task.setEstimatedHours(dto.getEstimatedHours());
 
         if (dto.getPriority() != null && !dto.getPriority().isBlank()) {
-            task.setPriority(TaskPriority.valueOf(dto.getPriority().toUpperCase()));
+            try {
+                task.setPriority(TaskPriority.valueOf(dto.getPriority().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Invalid task priority");
+            }
         }
 
         Long previousAssignedId = task.getAssignedTo() != null ? task.getAssignedTo().getId() : null;
@@ -740,11 +747,8 @@ public class TaskService {
         if (dto == null) {
             throw new IllegalArgumentException("Task payload is required");
         }
-        if (dto.getTitle() == null || dto.getTitle().isBlank()) {
-            throw new IllegalArgumentException("Task title is required");
-        }
         Task task = new Task();
-        task.setTitle(dto.getTitle().trim());
+        task.setTitle(requireTaskTitle(dto.getTitle()));
         task.setDescription(dto.getDescription());
         task.setDueDate(dto.getDueDate());
         task.setEstimatedHours(dto.getEstimatedHours());
@@ -803,6 +807,13 @@ public class TaskService {
         }
 
         return convertToTaskDTO(saved);
+    }
+
+    private String requireTaskTitle(String title) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Task title is required");
+        }
+        return title.trim();
     }
 
     private Long requireTaskCompanyId(Task task) {
