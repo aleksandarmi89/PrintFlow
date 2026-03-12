@@ -217,6 +217,9 @@ public class TaskService {
         
         TaskStatus oldStatus = task.getStatus();
         TaskStatus nextStatus = normalizeTaskStatus(status);
+        if (nextStatus == null) {
+            throw new RuntimeException("Status is required");
+        }
         validateTaskTransition(oldStatus, nextStatus, false);
         task.setStatus(nextStatus);
         task.setUpdatedAt(LocalDateTime.now());
@@ -265,6 +268,9 @@ public class TaskService {
         }
 
         TaskStatus nextStatus = normalizeTaskStatus(requestedStatus);
+        if (nextStatus == null) {
+            throw new RuntimeException("Status is required");
+        }
 
         validateTaskTransition(task.getStatus(), nextStatus, true);
         if (nextStatus == TaskStatus.BLOCKED && (notes == null || notes.trim().isEmpty())) {
