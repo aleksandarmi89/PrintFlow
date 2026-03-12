@@ -16,12 +16,12 @@
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">First name</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.first_name}">First name</label>
                             <input type="text" name="firstName" th:value="${user.firstName}"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Last name</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.last_name}">Last name</label>
                             <input type="text" name="lastName" th:value="${user.lastName}"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
@@ -29,12 +29,12 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{common.email}">Email</label>
                             <input type="email" name="email" th:value="${user.email}"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Phone</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.phone}">Phone</label>
                             <input type="text" name="phone" th:value="${user.phone}"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
@@ -42,26 +42,26 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Department</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.department}">Department</label>
                             <input type="text" name="department" th:value="${user.department}"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Position</label>
+                            <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.position}">Position</label>
                             <input type="text" name="position" th:value="${user.position}"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Notes</label>
+                        <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.notes}">Notes</label>
                         <textarea name="notes" rows="3"
                                   class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2"
                                   th:text="${user.notes}"></textarea>
                     </div>
 
                     <div class="flex justify-end">
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg" th:text="#{common.save}">Save</button>
                     </div>
                 </form>
             </div>

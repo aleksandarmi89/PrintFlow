@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Pricing Components</title>
+    <title th:text="#{pricing.variant.title}">Pricing Components</title>
 </head>
 <body>
 <div th:replace="~{layout/header :: header}"></div>
@@ -9,24 +9,24 @@
 <main class="container mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold" th:text="${variant.name}">Variant</h1>
-        <a th:href="@{/pricing/products/{id}/variants(id=${variant.product.id})}" class="text-blue-600">Back to Variants</a>
+        <a th:href="@{/pricing/products/{id}/variants(id=${variant.product.id})}" class="text-blue-600" th:text="#{pricing.variant.back}">Back to Variants</a>
     </div>
 
     <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Add Component</h2>
+        <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.component.add_title}">Add Component</h2>
         <form th:action="@{/pricing/variants/{id}/pricing(id=${variant.id})}" th:object="${componentForm}" method="post" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <select th:field="*{type}" class="border rounded px-3 py-2" required>
-                <option value="">Type</option>
+                <option value="" th:text="#{pricing.component.type}">Type</option>
                 <option th:each="t : ${componentTypes}" th:value="${t}" th:text="${t}"></option>
             </select>
             <select th:field="*{model}" class="border rounded px-3 py-2" required>
-                <option value="">Model</option>
+                <option value="" th:text="#{pricing.component.model}">Model</option>
                 <option th:each="m : ${pricingModels}" th:value="${m}" th:text="${m}"></option>
             </select>
-            <input type="number" step="0.0001" th:field="*{amount}" placeholder="Amount" class="border rounded px-3 py-2" required>
-            <input type="text" th:field="*{notes}" placeholder="Notes" class="border rounded px-3 py-2">
-            <button type="submit" class="bg-blue-600 text-white rounded px-4 py-2">+ Add Component</button>
+            <input type="number" step="0.0001" th:field="*{amount}" th:placeholder="#{pricing.component.amount}" class="border rounded px-3 py-2" required>
+            <input type="text" th:field="*{notes}" th:placeholder="#{pricing.component.notes}" class="border rounded px-3 py-2">
+            <button type="submit" class="bg-blue-600 text-white rounded px-4 py-2" th:text="#{pricing.component.add}">+ Add Component</button>
         </form>
     </div>
 
@@ -34,11 +34,11 @@
         <table class="min-w-full text-sm">
             <thead class="text-gray-500">
             <tr class="text-left border-b">
-                <th class="py-2">Type</th>
-                <th class="py-2">Model</th>
-                <th class="py-2">Amount</th>
-                <th class="py-2">Notes</th>
-                <th class="py-2">Delete</th>
+                <th class="py-2" th:text="#{pricing.component.type}">Type</th>
+                <th class="py-2" th:text="#{pricing.component.model}">Model</th>
+                <th class="py-2" th:text="#{pricing.component.amount}">Amount</th>
+                <th class="py-2" th:text="#{pricing.component.notes}">Notes</th>
+                <th class="py-2" th:text="#{common.delete}">Delete</th>
             </tr>
             </thead>
             <tbody>
@@ -50,12 +50,12 @@
                 <td class="py-2">
                     <form th:action="@{/pricing/variants/{variantId}/pricing/{componentId}/delete(variantId=${variant.id},componentId=${c.id})}" method="post">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <button type="submit" class="text-red-600">Delete</button>
+                        <button type="submit" class="text-red-600" th:text="#{common.delete}">Delete</button>
                     </form>
                 </td>
             </tr>
             <tr th:if="${components.empty}">
-                <td colspan="5" class="py-4 text-gray-500">No components yet.</td>
+                <td colspan="5" class="py-4 text-gray-500" th:text="#{pricing.component.empty}">No components yet.</td>
             </tr>
             </tbody>
         </table>
