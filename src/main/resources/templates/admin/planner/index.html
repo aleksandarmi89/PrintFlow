@@ -567,29 +567,70 @@
         function bindTooltip(el) {
             if (!tooltip || el.dataset.tooltipBound) return;
             let hideTimeoutId = null;
-
-            el.addEventListener('mouseenter', () => {
-                tooltip.textContent = el.getAttribute('data-tooltip');
-                tooltip.classList.remove('hidden');
-            });
-            el.addEventListener('mousemove', (e) => {
-                tooltip.style.left = (e.clientX + 12) + 'px';
-                tooltip.style.top = (e.clientY + 12) + 'px';
-            });
-            el.addEventListener('mouseleave', () => {
-                tooltip.classList.add('hidden');
-            });
-            el.addEventListener('click', (e) => {
-                const text = el.getAttribute('data-tooltip');
+            const showTooltip = (text, x, y) => {
                 if (!text) return;
                 tooltip.textContent = text;
                 tooltip.classList.remove('hidden');
-                tooltip.style.left = (e.clientX + 12) + 'px';
-                tooltip.style.top = (e.clientY + 12) + 'px';
+                const offset = 12;
+                const tooltipWidth = tooltip.offsetWidth || 200;
+                const tooltipHeight = tooltip.offsetHeight || 40;
+                const maxX = window.innerWidth - tooltipWidth - 8;
+                const maxY = window.innerHeight - tooltipHeight - 8;
+                const safeX = Math.max(8, Math.min(x + offset, maxX));
+                const safeY = Math.max(8, Math.min(y + offset, maxY));
+                tooltip.style.left = safeX + 'px';
+                tooltip.style.top = safeY + 'px';
+            };
+            const hideTooltip = () => tooltip.classList.add('hidden');
+
+            if (!el.hasAttribute('tabindex')) {
+                el.setAttribute('tabindex', '0');
+            }
+            if (!el.hasAttribute('role')) {
+                el.setAttribute('role', 'img');
+            }
+            if (!el.hasAttribute('aria-label')) {
+                const label = el.getAttribute('data-tooltip');
+                if (label) {
+                    el.setAttribute('aria-label', label);
+                }
+            }
+
+            el.addEventListener('mouseenter', () => {
+                const rect = el.getBoundingClientRect();
+                showTooltip(el.getAttribute('data-tooltip'), rect.left + rect.width / 2, rect.top + rect.height / 2);
+            });
+            el.addEventListener('mousemove', (e) => {
+                showTooltip(el.getAttribute('data-tooltip'), e.clientX, e.clientY);
+            });
+            el.addEventListener('mouseleave', hideTooltip);
+            el.addEventListener('click', (e) => {
+                const text = el.getAttribute('data-tooltip');
+                if (!text) return;
+                showTooltip(text, e.clientX, e.clientY);
                 if (hideTimeoutId) {
                     clearTimeout(hideTimeoutId);
                 }
-                hideTimeoutId = setTimeout(() => tooltip.classList.add('hidden'), 1800);
+                hideTimeoutId = setTimeout(hideTooltip, 1800);
+            });
+            el.addEventListener('focus', () => {
+                const rect = el.getBoundingClientRect();
+                showTooltip(el.getAttribute('data-tooltip'), rect.left + rect.width / 2, rect.top + rect.height / 2);
+            });
+            el.addEventListener('blur', hideTooltip);
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    hideTooltip();
+                }
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const rect = el.getBoundingClientRect();
+                    showTooltip(el.getAttribute('data-tooltip'), rect.left + rect.width / 2, rect.top + rect.height / 2);
+                    if (hideTimeoutId) {
+                        clearTimeout(hideTimeoutId);
+                    }
+                    hideTimeoutId = setTimeout(hideTooltip, 1800);
+                }
             });
             el.dataset.tooltipBound = '1';
         }
