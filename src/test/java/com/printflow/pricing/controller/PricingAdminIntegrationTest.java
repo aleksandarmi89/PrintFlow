@@ -23,7 +23,10 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.anyOf;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -119,7 +122,15 @@ class PricingAdminIntegrationTest {
                 .param("defaultMarkupPercent", "30.00")
                 .param("wastePercent", "5.00")
                 .param("minPrice", "10.00"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Save"),
+                containsString("Sačuvaj")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Delete"),
+                containsString("Obriši")
+            )));
 
         ProductVariant updated = variantRepository.findById(variant.getId()).orElseThrow();
         assertThat(updated.getDefaultMarkupPercent()).isEqualByComparingTo("30.00");
@@ -146,7 +157,15 @@ class PricingAdminIntegrationTest {
                 .header("HX-Request", "true")
                 .with(csrf())
                 .param("amount", "7.50"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Save"),
+                containsString("Sačuvaj")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Delete"),
+                containsString("Obriši")
+            )));
 
         PricingComponent updated = componentRepository.findById(component.getId()).orElseThrow();
         assertThat(updated.getAmount()).isEqualByComparingTo("7.50");
