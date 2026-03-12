@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Import Clients - PrintFlow Admin</title>
+    <title th:text="#{admin.clients.import.title}">Import Clients - PrintFlow Admin</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
@@ -11,11 +11,12 @@
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Import Clients</h1>
-                    <p class="text-gray-600 mt-2">Import multiple clients from Excel/CSV file</p>
+                    <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.clients.import.heading}">Import Clients</h1>
+                    <p class="text-gray-600 mt-2" th:text="#{admin.clients.import.subtitle}">Import multiple clients from Excel/CSV file</p>
                 </div>
                 <a th:href="@{/admin/clients}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                   th:text="#{admin.clients.import.back}">
                     ← Back to Clients
                 </a>
             </div>
@@ -24,26 +25,26 @@
         <div class="max-w-4xl mx-auto">
             <!-- Import Instructions -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">How to Import</h2>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.clients.import.how_to}">How to Import</h2>
                 <div class="space-y-4">
                     <div class="flex items-start">
                         <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
                             <span class="text-blue-600 font-bold">1</span>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-900">Prepare Your Excel File</h3>
-                            <p class="text-gray-600 text-sm">
+                            <h3 class="font-medium text-gray-900" th:text="#{admin.clients.import.step1.title}">Prepare Your Excel File</h3>
+                            <p class="text-gray-600 text-sm" th:text="#{admin.clients.import.step1.desc}">
                                 Create an Excel file (.xlsx or .xls) with the following columns in the first row:
                             </p>
                             <ul class="mt-2 text-sm text-gray-600 list-disc list-inside">
-                                <li>Company Name</li>
-                                <li>Contact Person</li>
-                                <li>Phone</li>
-                                <li>Email</li>
-                                <li>Address</li>
-                                <li>City</li>
-                                <li>Country</li>
-                                <li>Tax ID (optional)</li>
+                                <li th:text="#{admin.clients.import.columns.company_name}">Company Name</li>
+                                <li th:text="#{admin.clients.import.columns.contact_person}">Contact Person</li>
+                                <li th:text="#{admin.clients.import.columns.phone}">Phone</li>
+                                <li th:text="#{admin.clients.import.columns.email}">Email</li>
+                                <li th:text="#{admin.clients.import.columns.address}">Address</li>
+                                <li th:text="#{admin.clients.import.columns.city}">City</li>
+                                <li th:text="#{admin.clients.import.columns.country}">Country</li>
+                                <li th:text="#{admin.clients.import.columns.tax_id_optional}">Tax ID (optional)</li>
                             </ul>
                         </div>
                     </div>
@@ -53,8 +54,8 @@
                             <span class="text-blue-600 font-bold">2</span>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-900">Download Template</h3>
-                            <p class="text-gray-600 text-sm">
+                            <h3 class="font-medium text-gray-900" th:text="#{admin.clients.import.step2.title}">Download Template</h3>
+                            <p class="text-gray-600 text-sm" th:text="#{admin.clients.import.step2.desc}">
                                 Download our template to ensure correct formatting:
                             </p>
                             <a th:href="@{/admin/clients/import-template}" 
@@ -62,7 +63,7 @@
                                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                 </svg>
-                                Download Template
+                                <span th:text="#{admin.clients.import.download_template}">Download Template</span>
                             </a>
                         </div>
                     </div>
@@ -72,8 +73,8 @@
                             <span class="text-blue-600 font-bold">3</span>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-900">Upload Your File</h3>
-                            <p class="text-gray-600 text-sm">
+                            <h3 class="font-medium text-gray-900" th:text="#{admin.clients.import.step3.title}">Upload Your File</h3>
+                            <p class="text-gray-600 text-sm" th:text="#{admin.clients.import.step3.desc}">
                                 Upload your prepared Excel file below. The system will process it and show you a preview before importing.
                             </p>
                         </div>
@@ -83,7 +84,7 @@
             
             <!-- Import Form -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Upload File</h2>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.clients.import.upload_file}">Upload File</h2>
                 
                 <form th:action="@{/admin/clients/import}" 
                       method="post" 
@@ -94,7 +95,7 @@
                     
                     <div>
                         <label for="file" class="block text-sm font-medium text-gray-700 mb-2">
-                            Select Excel File
+                            <span th:text="#{admin.clients.import.select_excel_file}">Select Excel File</span>
                         </label>
                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
                             <div class="space-y-1 text-center">
@@ -103,12 +104,12 @@
                                 </svg>
                                 <div class="flex text-sm text-gray-600">
                                     <label for="file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Upload a file</span>
+                                        <span th:text="#{admin.clients.import.upload_a_file}">Upload a file</span>
                                         <input id="file" name="file" type="file" class="sr-only" accept=".xlsx,.xls,.csv">
                                     </label>
-                                    <p class="pl-1">or drag and drop</p>
+                                    <p class="pl-1" th:text="#{admin.clients.import.or_drag_drop}">or drag and drop</p>
                                 </div>
-                                <p class="text-xs text-gray-500">
+                                <p class="text-xs text-gray-500" th:text="#{admin.clients.import.file_hint}">
                                     Excel files up to 10MB (.xlsx, .xls, .csv)
                                 </p>
                             </div>
@@ -123,11 +124,11 @@
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                 </svg>
                                 <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-green-800">Import Successful!</h3>
+                                    <h3 class="text-sm font-medium text-green-800" th:text="#{admin.clients.import.success.title}">Import Successful!</h3>
                                     <div class="mt-2 text-sm text-green-700">
-                                        <p>Total records: <span th:text="${importResult.totalRecords}"></span></p>
-                                        <p>Imported: <span th:text="${importResult.importedRecords}"></span></p>
-                                        <p>Skipped: <span th:text="${importResult.skippedRecords}"></span></p>
+                                        <p th:text="#{admin.clients.import.success.total_records(${importResult.totalRecords})}">Total records: 0</p>
+                                        <p th:text="#{admin.clients.import.success.imported(${importResult.importedRecords})}">Imported: 0</p>
+                                        <p th:text="#{admin.clients.import.success.skipped(${importResult.skippedRecords})}">Skipped: 0</p>
                                     </div>
                                 </div>
                             </div>
@@ -139,7 +140,7 @@
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                                 </svg>
                                 <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-red-800">Import Failed</h3>
+                                    <h3 class="text-sm font-medium text-red-800" th:text="#{admin.clients.import.error.title}">Import Failed</h3>
                                     <div class="mt-2 text-sm text-red-700">
                                         <p th:text="${importResult.errorMessage}"></p>
                                     </div>
@@ -152,11 +153,13 @@
                     <div class="pt-6 border-t border-gray-200">
                         <div class="flex justify-end space-x-3">
                             <a th:href="@{/admin/clients}" 
-                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                               th:text="#{common.cancel}">
                                 Cancel
                             </a>
                             <button type="submit" 
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    th:text="#{admin.clients.import.start_import}">
                                 Start Import
                             </button>
                         </div>
@@ -166,31 +169,31 @@
             
             <!-- Import Tips -->
             <div class="mt-6 bg-blue-50 rounded-xl border border-blue-200 p-6">
-                <h3 class="text-lg font-semibold text-blue-900 mb-4">📝 Import Tips</h3>
+                <h3 class="text-lg font-semibold text-blue-900 mb-4" th:text="#{admin.clients.import.tips.title}">📝 Import Tips</h3>
                 <ul class="space-y-3 text-blue-800">
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span><strong>Required columns:</strong> Company Name, Contact Person, and Phone must be filled for each row.</span>
+                        <span><strong th:text="#{admin.clients.import.tips.required_columns.label}">Required columns:</strong> <span th:text="#{admin.clients.import.tips.required_columns.desc}">Company Name, Contact Person, and Phone must be filled for each row.</span></span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span><strong>Email uniqueness:</strong> If an email already exists in the system, that row will be skipped.</span>
+                        <span><strong th:text="#{admin.clients.import.tips.email_uniqueness.label}">Email uniqueness:</strong> <span th:text="#{admin.clients.import.tips.email_uniqueness.desc}">If an email already exists in the system, that row will be skipped.</span></span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span><strong>Large files:</strong> For files with more than 1000 rows, consider splitting them into smaller batches.</span>
+                        <span><strong th:text="#{admin.clients.import.tips.large_files.label}">Large files:</strong> <span th:text="#{admin.clients.import.tips.large_files.desc}">For files with more than 1000 rows, consider splitting them into smaller batches.</span></span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span><strong>Data validation:</strong> Phone numbers should be in international format (e.g., +381 11 123 4567).</span>
+                        <span><strong th:text="#{admin.clients.import.tips.data_validation.label}">Data validation:</strong> <span th:text="#{admin.clients.import.tips.data_validation.desc}">Phone numbers should be in international format (e.g., +381 11 123 4567).</span></span>
                     </li>
                 </ul>
             </div>
