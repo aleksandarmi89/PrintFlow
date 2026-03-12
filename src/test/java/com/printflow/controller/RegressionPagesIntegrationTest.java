@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.not;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -117,9 +118,11 @@ class RegressionPagesIntegrationTest {
     @Test
     void adminKeyPagesRender() throws Exception {
         mockMvc.perform(get("/admin/pricing/products").session(adminSession))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??"))));
         mockMvc.perform(get("/admin/pricing/products/" + variant.getProduct().getId()).session(adminSession))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??"))))
             .andExpect(content().string(anyOf(
                 containsString("Akcije"),
                 containsString("Actions")
@@ -130,6 +133,7 @@ class RegressionPagesIntegrationTest {
             )));
         mockMvc.perform(get("/admin/pricing/variants/" + variant.getId()).session(adminSession))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??"))))
             .andExpect(content().string(anyOf(
                 containsString("Add Component"),
                 containsString("Dodaj komponentu")
