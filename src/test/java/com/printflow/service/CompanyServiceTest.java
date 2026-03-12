@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,7 +30,7 @@ class CompanyServiceTest {
         TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
         NotificationService notificationService = mock(NotificationService.class);
 
-        when(companyRepository.existsByName("Gamma")).thenReturn(false);
+        when(companyRepository.existsByNameIgnoreCase("Gamma")).thenReturn(false);
         when(companyRepository.findBySlug(any())).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(inv -> {
             Company c = inv.getArgument(0);
@@ -64,6 +65,37 @@ class CompanyServiceTest {
         assertNull(created.getAddress());
         assertNull(created.getWebsite());
         assertNull(created.getPrimaryColor());
+    }
+
+    @Test
+    void createCompanyRejectsNameCollisionIgnoringCase() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        when(companyRepository.existsByNameIgnoreCase("Acme")).thenReturn(true);
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("Acme");
+        dto.setActive(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.createCompany(dto));
+        assertEquals("Company name already exists", ex.getMessage());
     }
 
     @Test
@@ -152,6 +184,42 @@ class CompanyServiceTest {
 
         assertTrue(updated.isBillingOverrideActive());
         assertEquals(until, updated.getBillingOverrideUntil());
+    }
+
+    @Test
+    void updateCompanyRejectsNameCollisionIgnoringCase() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        Company existing = new Company();
+        existing.setId(16L);
+        existing.setName("Alpha");
+        existing.setSlug("alpha");
+        when(companyRepository.findById(16L)).thenReturn(Optional.of(existing));
+        when(companyRepository.existsByNameIgnoreCase("Beta")).thenReturn(true);
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("Beta");
+        dto.setActive(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.updateCompany(16L, dto));
+        assertEquals("Company name already exists", ex.getMessage());
     }
 
     @Test

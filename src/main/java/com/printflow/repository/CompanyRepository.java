@@ -17,6 +17,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     Optional<Company> findBySlug(String slug);
     Optional<Company> findBySlugAndActiveTrue(String slug);
     boolean existsByName(String name);
+    boolean existsByNameIgnoreCase(String name);
     boolean existsBySlug(String slug);
     List<Company> findByActiveTrue();
     List<Company> findByNameContainingIgnoreCase(String name);

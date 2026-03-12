@@ -111,7 +111,7 @@ public class CompanyService {
         if (dto.getName() == null || dto.getName().trim().isEmpty()) {
             throw new RuntimeException("Company name is required");
         }
-        if (companyRepository.existsByName(dto.getName().trim())) {
+        if (companyRepository.existsByNameIgnoreCase(dto.getName().trim())) {
             throw new RuntimeException("Company name already exists");
         }
         Company company = new Company();
@@ -141,7 +141,7 @@ public class CompanyService {
         if (newName.isEmpty()) {
             throw new RuntimeException("Company name is required");
         }
-        if (!company.getName().equalsIgnoreCase(newName) && companyRepository.existsByName(newName)) {
+        if (!company.getName().equalsIgnoreCase(newName) && companyRepository.existsByNameIgnoreCase(newName)) {
             throw new RuntimeException("Company name already exists");
         }
 
