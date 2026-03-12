@@ -376,4 +376,131 @@ class WorkOrderServiceTest {
         assertEquals("User not found", ex.getMessage());
         verify(workOrderRepository, never()).save(any(WorkOrder.class));
     }
+
+    @Test
+    void createWorkOrder_rejectsUnknownCreator() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company company = new Company();
+        company.setId(6L);
+        com.printflow.entity.Client client = new com.printflow.entity.Client();
+        client.setId(77L);
+        client.setCompany(company);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(6L);
+        when(clientRepository.findByIdAndCompany_Id(77L, 6L)).thenReturn(Optional.of(client));
+        when(userRepository.findByIdAndCompany_Id(405L, 6L)).thenReturn(Optional.empty());
+        when(orderNumberGenerator.generateOrderNumber()).thenReturn("WO-102");
+        PublicTokenService.TokenInfo tokenInfo =
+            new PublicTokenService.TokenInfo("tok", LocalDateTime.now(), LocalDateTime.now().plusDays(1));
+        when(publicTokenService.newToken()).thenReturn(tokenInfo);
+
+        com.printflow.dto.WorkOrderDTO dto = new com.printflow.dto.WorkOrderDTO();
+        dto.setTitle("Order");
+        dto.setClientId(77L);
+        dto.setCreatedById(405L);
+        dto.setPrintType(PrintType.OTHER);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.createWorkOrder(dto));
+        assertEquals("User not found", ex.getMessage());
+        verify(workOrderRepository, never()).save(any(WorkOrder.class));
+    }
+
+    @Test
+    void createWorkOrder_trimsTitleBeforePersist() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        Company company = new Company();
+        company.setId(7L);
+        com.printflow.entity.Client client = new com.printflow.entity.Client();
+        client.setId(88L);
+        client.setCompany(company);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(7L);
+        when(clientRepository.findByIdAndCompany_Id(88L, 7L)).thenReturn(Optional.of(client));
+        when(orderNumberGenerator.generateOrderNumber()).thenReturn("WO-103");
+        PublicTokenService.TokenInfo tokenInfo =
+            new PublicTokenService.TokenInfo("tok", LocalDateTime.now(), LocalDateTime.now().plusDays(1));
+        when(publicTokenService.newToken()).thenReturn(tokenInfo);
+        when(workOrderRepository.save(any(WorkOrder.class))).thenAnswer(inv -> {
+            WorkOrder wo = inv.getArgument(0);
+            wo.setId(103L);
+            return wo;
+        });
+
+        com.printflow.dto.WorkOrderDTO dto = new com.printflow.dto.WorkOrderDTO();
+        dto.setTitle("   New title   ");
+        dto.setClientId(88L);
+        dto.setPrintType(PrintType.OTHER);
+
+        service.createWorkOrder(dto);
+
+        ArgumentCaptor<WorkOrder> captor = ArgumentCaptor.forClass(WorkOrder.class);
+        verify(workOrderRepository).save(captor.capture());
+        assertEquals("New title", captor.getValue().getTitle());
+    }
 }
