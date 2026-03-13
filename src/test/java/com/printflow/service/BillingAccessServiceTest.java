@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.never;
 
 public class BillingAccessServiceTest {
 
@@ -75,6 +76,51 @@ public class BillingAccessServiceTest {
         verify(companyRepository).findBillingViewById(companyId);
     }
 
+    @Test
+    void billingOverrideActive_allowsBillingWithoutSubscription() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Long companyId = 2L;
+        when(companyRepository.findBillingViewById(companyId))
+            .thenReturn(Optional.of(viewWithOverride(true, LocalDateTime.of(2026, 3, 20, 0, 0))));
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertTrue(service.isBillingActive(companyId));
+        service.assertBillingActiveForPremiumAction(companyId);
+        verify(repo, never()).findByCompany_Id(companyId);
+    }
+
+    @Test
+    void billingEnforcementDisabled_allowsPremiumWithoutAnyChecks() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, false);
+
+        assertTrue(service.isBillingActive(5L));
+        assertTrue(service.isTrialActive(5L));
+        assertDoesNotThrow(() -> service.assertBillingActiveForPremiumAction(5L));
+        verifyNoMoreInteractions(repo, companyRepository, auditLogService);
+    }
+
+    @Test
+    void nullCompanyId_isTreatedAsAllowedForBackgroundPaths() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertTrue(service.isBillingActive(null));
+        assertFalse(service.isTrialActive(null));
+        assertDoesNotThrow(() -> service.assertBillingActiveForPremiumAction(null));
+        verifyNoMoreInteractions(repo, companyRepository, auditLogService);
+    }
+
     private CompanyBillingView viewWithTrialEnd(LocalDateTime trialEnd) {
         return new CompanyBillingView() {
             @Override
@@ -90,6 +136,25 @@ public class BillingAccessServiceTest {
             @Override
             public LocalDateTime getBillingOverrideUntil() {
                 return null;
+            }
+        };
+    }
+
+    private CompanyBillingView viewWithOverride(boolean overrideActive, LocalDateTime until) {
+        return new CompanyBillingView() {
+            @Override
+            public LocalDateTime getTrialEnd() {
+                return null;
+            }
+
+            @Override
+            public Boolean getBillingOverrideActive() {
+                return overrideActive;
+            }
+
+            @Override
+            public LocalDateTime getBillingOverrideUntil() {
+                return until;
             }
         };
     }
