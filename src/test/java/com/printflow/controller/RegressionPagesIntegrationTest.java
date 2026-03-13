@@ -208,6 +208,10 @@ class RegressionPagesIntegrationTest {
             .andExpect(content().string(anyOf(
                 containsString("Source:"),
                 containsString("Izvor:")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Pending"),
+                containsString("Na čekanju")
             )));
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())

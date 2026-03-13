@@ -193,7 +193,8 @@
                             <option th:each="s : ${outboxStatuses}"
                                     th:value="${s.name()}"
                                     th:selected="${outboxStatus != null && outboxStatus.name() == s.name()}"
-                                    th:text="${s.name()}">PENDING</option>
+                                    th:with="k=${'email.outbox.status.' + s.name()}, lbl=${#messages.msgOrNull(k)}"
+                                    th:text="${lbl != null ? lbl : s.name()}">PENDING</option>
                         </select>
                     </form>
 
@@ -220,7 +221,8 @@
                                 <td class="px-3 py-2" th:text="${e.template}">-</td>
                                 <td class="px-3 py-2 font-medium"
                                     th:classappend="${e.status.name() == 'SENT'} ? 'text-emerald-700' : (${e.status.name() == 'FAILED'} ? 'text-red-700' : 'text-amber-700')"
-                                    th:text="${e.status.name()}">-</td>
+                                    th:with="k=${'email.outbox.status.' + e.status.name()}, lbl=${#messages.msgOrNull(k)}"
+                                    th:text="${lbl != null ? lbl : e.status.name()}">-</td>
                                 <td class="px-3 py-2 text-xs text-red-700 break-all" th:text="${e.errorMessage}">-</td>
                             </tr>
                             </tbody>
