@@ -311,7 +311,7 @@
 
             <div class="space-y-3">
                 <div th:each="d : ${dailyLoad}" class="flex items-center gap-3"
-                     th:with="dailyPct=${maxDailyLoad == 0 ? 0 : (d.count / maxDailyLoad * 100)}">
+                     th:with="dailyPct=${maxDailyLoad == 0 ? 0 : (1.0 * d.count / maxDailyLoad * 100)}">
                     <div class="w-10 text-xs text-gray-500" th:text="${d.label}">MON</div>
                     <div class="flex-1 bg-gray-100 rounded-full h-3">
                         <div class="bg-indigo-600 h-3 rounded-full"
@@ -399,10 +399,10 @@
         <div class="overflow-x-auto">
         <div class="min-w-[640px] md:min-w-[760px] space-y-3">
             <div th:each="p : ${statusTimeline}" class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
-                 th:with="newPct=${maxStatusCount == 0 ? 0 : (p.newCount / maxStatusCount * 100)},
-                          designPct=${maxStatusCount == 0 ? 0 : (p.designCount / maxStatusCount * 100)},
-                          printPct=${maxStatusCount == 0 ? 0 : (p.printCount / maxStatusCount * 100)},
-                          readyPct=${maxStatusCount == 0 ? 0 : (p.readyCount / maxStatusCount * 100)}">
+                 th:with="newPct=${maxStatusCount == 0 ? 0 : (1.0 * p.newCount / maxStatusCount * 100)},
+                          designPct=${maxStatusCount == 0 ? 0 : (1.0 * p.designCount / maxStatusCount * 100)},
+                          printPct=${maxStatusCount == 0 ? 0 : (1.0 * p.printCount / maxStatusCount * 100)},
+                          readyPct=${maxStatusCount == 0 ? 0 : (1.0 * p.readyCount / maxStatusCount * 100)}">
                 <div class="w-full sm:w-10 text-xs text-gray-500" th:text="${p.label}">MON</div>
 
                 <div class="flex-1 flex items-center gap-2">
@@ -471,8 +471,8 @@
                          class="h-10 rounded-md bg-transparent"></div>
 
                     <div th:each="h : ${heatmapDays}"
-                         th:with="opacity=${maxHeatmapCount == 0 ? 0.1 : (h.count / maxHeatmapCount * 0.8 + 0.1)},
-                                  pct=${maxHeatmapCount == 0 ? 0 : (h.count / maxHeatmapCount * 100)}"
+                         th:with="opacity=${maxHeatmapCount == 0 ? 0.1 : (1.0 * h.count / maxHeatmapCount * 0.8 + 0.1)},
+                                  pct=${maxHeatmapCount == 0 ? 0 : (1.0 * h.count / maxHeatmapCount * 100)}"
                          class="h-10 rounded-md flex items-center justify-center text-xs text-gray-800"
                          th:attr="data-tooltip=${#temporals.format(h.date, 'dd.MM.yyyy') + ': ' + h.count + ' (' + #numbers.formatDecimal(pct,1,0) + '%)'}"
                          th:style="'background-color: rgba(59, 130, 246, ' + ${opacity} + ');'">
