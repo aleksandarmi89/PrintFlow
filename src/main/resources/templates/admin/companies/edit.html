@@ -30,10 +30,12 @@
                 <form th:action="@{/admin/companies/edit/{id}(id=${company.id})}" th:object="${company}" method="post" enctype="multipart/form-data" class="p-6 space-y-6">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div th:if="${errorMessage}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        <span th:text="#{${errorMessage}}">Error message</span>
+                        <span th:with="m=${#messages.msgOrNull(errorMessage)}"
+                              th:text="${m != null ? m : errorMessage}">Error message</span>
                     </div>
                     <div th:if="${successMessage}" class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                        <span th:text="#{${successMessage}}">Success</span>
+                        <span th:with="m=${#messages.msgOrNull(successMessage)}"
+                              th:text="${m != null ? m : successMessage}">Success</span>
                     </div>
 
                     <div>

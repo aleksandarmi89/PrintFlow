@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.containsString;
@@ -243,5 +244,17 @@ class PricingAdminIntegrationTest {
             .andExpect(status().isNotFound());
 
         assertThat(componentRepository.findById(component.getId())).isPresent();
+    }
+
+    @Test
+    void createTemplatesAddsSuccessFlashMessage() throws Exception {
+        setupPricingData();
+        MockHttpSession tenant1 = fixture.login("tenant1_admin", "password");
+
+        mockMvc.perform(post("/admin/pricing/products/templates")
+                .session(tenant1)
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(flash().attribute("successMessage", "pricing.flash.templates_added"));
     }
 }

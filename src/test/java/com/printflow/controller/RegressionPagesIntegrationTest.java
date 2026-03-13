@@ -146,6 +146,10 @@ class RegressionPagesIntegrationTest {
                 containsString("Actions")
             )))
             .andExpect(content().string(anyOf(
+                containsString("Prevucite horizontalno"),
+                containsString("Swipe horizontally")
+            )))
+            .andExpect(content().string(anyOf(
                 containsString("Sačuvaj"),
                 containsString("Save")
             )));
@@ -181,6 +185,8 @@ class RegressionPagesIntegrationTest {
                 containsString("Production Planner"),
                 containsString("Planer proizvodnje")
             )));
+        mockMvc.perform(get("/admin/rate-limit").session(adminSession))
+            .andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/company").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(anyOf(

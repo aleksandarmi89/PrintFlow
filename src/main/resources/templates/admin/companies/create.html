@@ -30,7 +30,8 @@
                 <form th:action="@{/admin/companies/create}" th:object="${company}" method="post" class="p-6 space-y-6">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div th:if="${errorMessage}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        <span th:text="${errorMessage}">Error message</span>
+                        <span th:with="m=${#messages.msgOrNull(errorMessage)}"
+                              th:text="${m != null ? m : errorMessage}">Error message</span>
                     </div>
 
                     <div>

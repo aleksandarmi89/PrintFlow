@@ -7,6 +7,12 @@
 <div th:replace="~{layout/header :: header}"></div>
 
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${successMessage}" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+             th:with="m=${#messages.msgOrNull(successMessage)}"
+             th:text="${m != null ? m : successMessage}"></div>
+        <div th:if="${errorMessage}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+             th:with="m=${#messages.msgOrNull(errorMessage)}"
+             th:text="${m != null ? m : errorMessage}"></div>
         <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
             <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
             <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
@@ -190,6 +196,7 @@
             </tbody>
         </table>
         </div>
+        <p class="mt-3 text-xs text-gray-500 sm:hidden" th:text="#{pricing.table.swipe_hint}">Swipe horizontally to see all columns and actions.</p>
     </div>
 </main>
 <script>

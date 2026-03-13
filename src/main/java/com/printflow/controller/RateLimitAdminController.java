@@ -39,7 +39,7 @@ public class RateLimitAdminController extends BaseController {
                       @RequestParam(required = false) Integer durationMinutes,
                       Model model) {
         if (!isValidIpOrCidr(ip)) {
-            return redirectWithError("/admin/rate-limit", "Invalid IP address", model);
+            return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
         java.time.LocalDateTime expiresAt = null;
         if (durationMinutes != null && durationMinutes > 0) {
@@ -48,40 +48,40 @@ public class RateLimitAdminController extends BaseController {
         rateLimitService.ban(ip, reason != null && !reason.isBlank() ? reason : "manual", expiresAt);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
             null, ip, "Banned IP " + ip + (reason != null ? " (" + reason + ")" : ""));
-        return redirectWithSuccess("/admin/rate-limit", "IP banned", model);
+        return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.banned", model);
     }
 
     @PostMapping("/unban")
     public String unban(@RequestParam String ip, Model model) {
         if (!isValidIpOrCidr(ip)) {
-            return redirectWithError("/admin/rate-limit", "Invalid IP address", model);
+            return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
         rateLimitService.unban(ip);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
             ip, null, "Unbanned IP " + ip);
-        return redirectWithSuccess("/admin/rate-limit", "IP unbanned", model);
+        return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.unbanned", model);
     }
 
     @PostMapping("/whitelist")
     public String whitelist(@RequestParam String ip, Model model) {
         if (!isValidIpOrCidr(ip)) {
-            return redirectWithError("/admin/rate-limit", "Invalid IP address", model);
+            return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
         rateLimitService.whitelist(ip);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
             null, ip, "Whitelisted IP " + ip);
-        return redirectWithSuccess("/admin/rate-limit", "IP whitelisted", model);
+        return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.whitelisted", model);
     }
 
     @PostMapping("/unwhitelist")
     public String unwhitelist(@RequestParam String ip, Model model) {
         if (!isValidIpOrCidr(ip)) {
-            return redirectWithError("/admin/rate-limit", "Invalid IP address", model);
+            return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
         rateLimitService.unwhitelist(ip);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
             ip, null, "Removed IP from whitelist " + ip);
-        return redirectWithSuccess("/admin/rate-limit", "IP removed from whitelist", model);
+        return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.unwhitelisted", model);
     }
 
     private boolean isValidIp(String ip) {

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +90,8 @@ public class AdminPricingController extends BaseController {
     @PostMapping("/products")
     public String createProduct(@Valid @ModelAttribute("productForm") Product product,
                                 BindingResult bindingResult,
-                                Model model) {
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         if (bindingResult.hasErrors()) {
@@ -100,21 +102,24 @@ public class AdminPricingController extends BaseController {
         Product saved = productRepository.save(product);
         auditLogService.log(AuditAction.CREATE, "Product", saved.getId(), null, saved.getName(),
             "Product created: " + saved.getName(), company);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.product_created");
         return "redirect:/admin/pricing/products";
     }
 
     @PostMapping("/products/templates")
-    public String createFromTemplates(Model model) {
+    public String createFromTemplates(RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         templateSeederService.seedDefaultTemplates(company);
-        return redirectWithSuccess("/admin/pricing/products", "Templates added.", model);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.templates_added");
+        return "redirect:/admin/pricing/products";
     }
 
     @PostMapping("/bulk-update")
     public String bulkUpdate(@Valid @ModelAttribute("bulkForm") BulkCategoryPricingUpdateRequest form,
                              BindingResult bindingResult,
-                             Model model) {
+                             Model model,
+                             RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         if (!form.isApplyAllCategories() && form.getCategory() == null) {
@@ -131,19 +136,23 @@ public class AdminPricingController extends BaseController {
         }
         try {
             pricingAdminService.bulkUpdateCategoryPricing(company, form);
-            return redirectWithSuccess("/admin/pricing/products", "Bulk update applied.", model);
+            redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.bulk_applied");
+            return "redirect:/admin/pricing/products";
         } catch (IllegalArgumentException ex) {
-            return redirectWithError("/admin/pricing/products", ex.getMessage(), model);
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/pricing/products";
         }
     }
 
     @PostMapping("/bulk-preview")
     public String bulkPreview(@ModelAttribute("bulkForm") BulkCategoryPricingUpdateRequest form,
-                              Model model) {
+                              Model model,
+                              RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         if (!form.isApplyAllCategories() && form.getCategory() == null) {
-            return redirectWithError("/admin/pricing/products", "Category is required.", model);
+            redirectAttributes.addFlashAttribute("errorMessage", "pricing.flash.category_required");
+            return "redirect:/admin/pricing/products";
         }
         var preview = pricingAdminService.previewBulkUpdate(company, form, 200);
         model.addAttribute("preview", preview);
@@ -221,7 +230,8 @@ public class AdminPricingController extends BaseController {
     public String createVariant(@PathVariable Long id,
                                 @Valid @ModelAttribute("variantForm") ProductVariant variant,
                                 BindingResult bindingResult,
-                                Model model) {
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
             Product product = productRepository.findByIdAndCompany_Id(id, company.getId())
@@ -239,6 +249,7 @@ public class AdminPricingController extends BaseController {
         ProductVariant saved = variantRepository.save(variant);
         auditLogService.log(AuditAction.UPDATE, "ProductVariant", saved.getId(), null, saved.getName(),
             "Pricing updated for variant " + saved.getName(), company);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.variant_added");
         return "redirect:/admin/pricing/products/" + id;
     }
 
@@ -247,7 +258,8 @@ public class AdminPricingController extends BaseController {
                                        @Valid @ModelAttribute("form") UpdateVariantPricingRequest form,
                                        BindingResult bindingResult,
                                        @RequestHeader(value = "HX-Request", required = false) String hxRequest,
-                                       Model model) {
+                                       Model model,
+                                       RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         ProductVariant variant = variantRepository.findWithProductByIdAndCompany_Id(id, company.getId())
@@ -290,6 +302,7 @@ public class AdminPricingController extends BaseController {
         if (hxRequest != null) {
             return "admin/pricing/fragments :: variantRow";
         }
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.variant_saved");
         return "redirect:/admin/pricing/products/" + updated.getProduct().getId();
     }
 
@@ -324,7 +337,7 @@ public class AdminPricingController extends BaseController {
     }
 
     @PostMapping("/products/{id}/delete")
-    public String deleteProduct(@PathVariable Long id) {
+    public String deleteProduct(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         Product product = productRepository.findByIdAndCompany_Id(id, company.getId())
@@ -332,11 +345,12 @@ public class AdminPricingController extends BaseController {
         pricingAdminService.deleteProduct(company, id);
         auditLogService.log(AuditAction.DELETE, "Product", id, null, product.getName(),
             "Product deleted: " + product.getName(), company);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.product_deleted");
         return "redirect:/admin/pricing/products";
     }
 
     @PostMapping("/variants/{id}/delete")
-    public String deleteVariant(@PathVariable Long id) {
+    public String deleteVariant(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         ProductVariant variant = variantRepository.findWithProductByIdAndCompany_Id(id, company.getId())
@@ -344,6 +358,7 @@ public class AdminPricingController extends BaseController {
         pricingAdminService.deleteVariant(company, id);
         auditLogService.log(AuditAction.DELETE, "ProductVariant", id, null, variant.getName(),
             "Variant deleted: " + variant.getName(), company);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.variant_deleted");
         return "redirect:/admin/pricing/products/" + variant.getProduct().getId();
     }
 
@@ -378,7 +393,8 @@ public class AdminPricingController extends BaseController {
     public String createComponent(@PathVariable Long id,
                                   @Valid @ModelAttribute("componentForm") PricingComponent component,
                                   BindingResult bindingResult,
-                                  Model model) {
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         ProductVariant variant = variantRepository.findWithProductByIdAndCompany_Id(id, company.getId())
@@ -400,6 +416,7 @@ public class AdminPricingController extends BaseController {
         PricingComponent saved = componentRepository.save(component);
         auditLogService.log(AuditAction.UPDATE, "PricingComponent", saved.getId(), null, saved.getType().name(),
             "Pricing updated for variant " + variant.getName(), company);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.component_added");
         return "redirect:/admin/pricing/variants/" + id;
     }
 
@@ -408,7 +425,8 @@ public class AdminPricingController extends BaseController {
                                   @Valid @ModelAttribute("form") UpdateComponentAmountRequest form,
                                   BindingResult bindingResult,
                                   @RequestHeader(value = "HX-Request", required = false) String hxRequest,
-                                  Model model) {
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         PricingComponent component = componentRepository.findByIdAndCompany_Id(componentId, company.getId())
@@ -425,6 +443,7 @@ public class AdminPricingController extends BaseController {
             if (hxRequest != null) {
                 return "admin/pricing/fragments :: componentRow";
             }
+            redirectAttributes.addFlashAttribute("errorMessage", "pricing.validation_error");
             return "redirect:/admin/pricing/variants/" + component.getVariant().getId();
         }
         PricingComponent updated = pricingAdminService.updateComponentAmount(company, componentId, form);
@@ -436,11 +455,13 @@ public class AdminPricingController extends BaseController {
         if (hxRequest != null) {
             return "admin/pricing/fragments :: componentRow";
         }
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.component_saved");
         return "redirect:/admin/pricing/variants/" + updated.getVariant().getId();
     }
 
     @PostMapping("/variants/{variantId}/components/{componentId}/delete")
-    public String deleteComponent(@PathVariable Long variantId, @PathVariable Long componentId) {
+    public String deleteComponent(@PathVariable Long variantId, @PathVariable Long componentId,
+                                  RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
         requireBilling(company);
         PricingComponent component = componentRepository
@@ -450,6 +471,7 @@ public class AdminPricingController extends BaseController {
         pricingAdminService.deleteComponent(company, componentId);
         auditLogService.log(AuditAction.DELETE, "PricingComponent", componentId, null, null,
             "Pricing updated for variant " + variantName, company);
+        redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.component_deleted");
         return "redirect:/admin/pricing/variants/" + variantId;
     }
 }

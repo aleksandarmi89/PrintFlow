@@ -95,7 +95,7 @@ public class CompanyController extends BaseController {
     public String createCompany(@ModelAttribute CompanyDTO companyDTO, Model model) {
         try {
             companyService.createCompany(companyDTO);
-            return redirectWithSuccess("/admin/companies", "Company created successfully", model);
+            return redirectWithSuccess("/admin/companies", "admin.companies.flash.created", model);
         } catch (Exception e) {
             model.addAttribute("company", companyDTO);
             model.addAttribute("errorMessage", e.getMessage());
@@ -124,7 +124,7 @@ public class CompanyController extends BaseController {
             model.addAttribute("overrideLogs", overrideLogs);
             return "admin/companies/edit";
         } catch (Exception e) {
-            return redirectWithError("/admin/companies", "Company not found", model);
+            return redirectWithError("/admin/companies", "admin.companies.flash.not_found", model);
         }
     }
 
@@ -143,7 +143,7 @@ public class CompanyController extends BaseController {
             if (logo != null && !logo.isEmpty()) {
                 companyService.updateLogo(id, logo);
             }
-            return redirectWithSuccess("/admin/companies", "Company updated successfully", model);
+            return redirectWithSuccess("/admin/companies", "admin.companies.flash.updated", model);
         } catch (Exception e) {
             model.addAttribute("company", companyDTO);
             model.addAttribute("errorMessage", e.getMessage());
@@ -158,7 +158,7 @@ public class CompanyController extends BaseController {
         }
         try {
             companyService.disableCompany(id);
-            return redirectWithSuccess("/admin/companies", "Company disabled successfully", model);
+            return redirectWithSuccess("/admin/companies", "admin.companies.flash.disabled", model);
         } catch (Exception e) {
             return redirectWithError("/admin/companies", e.getMessage(), model);
         }
@@ -171,7 +171,7 @@ public class CompanyController extends BaseController {
         }
         try {
             companyService.enableCompany(id);
-            return redirectWithSuccess("/admin/companies", "Company enabled successfully", model);
+            return redirectWithSuccess("/admin/companies", "admin.companies.flash.enabled", model);
         } catch (Exception e) {
             return redirectWithError("/admin/companies", e.getMessage(), model);
         }
@@ -190,7 +190,7 @@ public class CompanyController extends BaseController {
             try {
                 untilDate = java.time.LocalDateTime.parse(until);
             } catch (Exception ex) {
-                return redirectWithError("/admin/companies/edit/" + id, "Invalid date format", model);
+                return redirectWithError("/admin/companies/edit/" + id, "admin.companies.flash.invalid_date_format", model);
             }
         }
         companyService.setBillingOverride(id, active, untilDate);

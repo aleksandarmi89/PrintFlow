@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout/base :: head}">
-    <title>Ban List - PrintFlow Admin</title>
+    <title th:text="#{admin.rate_limit.title} + ' - PrintFlow Admin'">Ban List - PrintFlow Admin</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
 
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${successMessage}" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+             th:with="m=${#messages.msgOrNull(successMessage)}"
+             th:text="${m != null ? m : successMessage}"></div>
+        <div th:if="${errorMessage}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+             th:with="m=${#messages.msgOrNull(errorMessage)}"
+             th:text="${m != null ? m : errorMessage}"></div>
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.rate_limit.title}">Ban List</h1>
             <p class="text-gray-600 mt-1" th:text="#{admin.rate_limit.subtitle}">Block abusive IPs from public endpoints.</p>
