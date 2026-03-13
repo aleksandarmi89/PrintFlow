@@ -201,6 +201,38 @@ public class BillingAccessServiceTest {
         verifyNoMoreInteractions(companyRepository, auditLogService);
     }
 
+    @Test
+    void subscriptionStatusPastDueIsTreatedAsActive() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        BillingSubscription sub = new BillingSubscription();
+        sub.setStatus("past_due");
+        Long companyId = 43L;
+        when(repo.findByCompany_Id(companyId)).thenReturn(Optional.of(sub));
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertTrue(service.hasActiveSubscription(companyId));
+    }
+
+    @Test
+    void subscriptionStatusCanceledIsNotActive() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        BillingSubscription sub = new BillingSubscription();
+        sub.setStatus(" canceled ");
+        Long companyId = 44L;
+        when(repo.findByCompany_Id(companyId)).thenReturn(Optional.of(sub));
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertFalse(service.hasActiveSubscription(companyId));
+    }
+
     private CompanyBillingView viewWithTrialEnd(LocalDateTime trialEnd) {
         return new CompanyBillingView() {
             @Override
