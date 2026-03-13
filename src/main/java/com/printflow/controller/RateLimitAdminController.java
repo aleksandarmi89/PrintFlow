@@ -50,8 +50,15 @@ public class RateLimitAdminController extends BaseController {
         if (durationMinutes != null && durationMinutes > 0) {
             expiresAt = java.time.LocalDateTime.now().plusMinutes(durationMinutes);
         }
-        boolean customReason = reason != null && !reason.isBlank();
-        String normalizedReason = customReason ? reason.trim() : "manual";
+        String normalizedReason = "manual";
+        boolean customReason = false;
+        if (reason != null) {
+            String trimmedReason = reason.trim();
+            if (!trimmedReason.isEmpty()) {
+                normalizedReason = trimmedReason;
+                customReason = true;
+            }
+        }
         rateLimitService.ban(normalizedIp, normalizedReason, expiresAt);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
             null, normalizedIp, "Banned IP " + normalizedIp + (customReason ? " (" + normalizedReason + ")" : ""));
@@ -105,7 +112,7 @@ public class RateLimitAdminController extends BaseController {
             }
             try {
                 return InetAddress.getByName(value) instanceof Inet4Address;
-            } catch (Exception ex) {
+            } catch (java.net.UnknownHostException | SecurityException ex) {
                 return false;
             }
         }
@@ -115,7 +122,7 @@ public class RateLimitAdminController extends BaseController {
             }
             try {
                 return InetAddress.getByName(value) instanceof Inet6Address;
-            } catch (Exception ex) {
+            } catch (java.net.UnknownHostException | SecurityException ex) {
                 return false;
             }
         }
