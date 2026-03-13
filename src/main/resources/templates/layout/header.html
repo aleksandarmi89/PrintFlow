@@ -296,6 +296,22 @@
                         <span th:text="#{public.companies.nav}">Companies</span>
                     </a>
                     <div sec:authorize="isAuthenticated()">
+                        <div class="px-4 pb-3">
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span th:if="${companyPlan != null}" class="rounded-full bg-gray-100 px-2 py-1 font-semibold text-gray-700"
+                                      th:text="#{billing.header.plan(${companyPlan})}">Plan: PRO</span>
+                                <span th:if="${billingActive}" class="rounded-full bg-green-100 px-2 py-1 font-semibold text-green-700"
+                                      th:text="#{billing.header.status.active}">Active</span>
+                                <span th:if="${!billingActive}" class="rounded-full bg-red-100 px-2 py-1 font-semibold text-red-700"
+                                      th:text="#{billing.header.status.expired}">Expired</span>
+                                <span sec:authorize="hasAnyAuthority('ADMIN','MANAGER')" th:if="${smtpConfigured}"
+                                      class="rounded-full bg-emerald-100 px-2 py-1 font-semibold text-emerald-700"
+                                      th:text="#{email.header.smtp_ok}">SMTP OK</span>
+                                <span sec:authorize="hasAnyAuthority('ADMIN','MANAGER')" th:if="${!smtpConfigured}"
+                                      class="rounded-full bg-yellow-100 px-2 py-1 font-semibold text-yellow-800"
+                                      th:text="#{email.header.smtp_missing}">SMTP NOT CONFIGURED</span>
+                            </div>
+                        </div>
                         <!-- Admin Mobile Menu -->
                         <div sec:authorize="hasAnyAuthority('ADMIN', 'MANAGER', 'SUPER_ADMIN')" class="space-y-1">
                             <a th:href="@{/admin/dashboard}" 
