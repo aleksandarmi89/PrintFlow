@@ -52,11 +52,17 @@
                 </thead>
                 <tbody>
                 <tr th:each="c : ${preview.components}" class="border-b">
-                    <td class="py-2" th:text="${c.category}">-</td>
+                    <td class="py-2"
+                        th:with="k=${c.category != null ? 'pricing.product_category.' + c.category : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
+                        th:text="${lbl != null ? lbl : c.category}">-</td>
                     <td class="py-2" th:text="${c.productName}">-</td>
                     <td class="py-2" th:text="${c.variantName}">-</td>
-                    <td class="py-2" th:text="${c.componentType}">-</td>
-                    <td class="py-2" th:text="${c.pricingModel}">-</td>
+                    <td class="py-2"
+                        th:with="k=${c.componentType != null ? 'pricing.component_type.' + c.componentType : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
+                        th:text="${lbl != null ? lbl : c.componentType}">-</td>
+                    <td class="py-2"
+                        th:with="k=${c.pricingModel != null ? 'pricing.model.' + c.pricingModel : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
+                        th:text="${lbl != null ? lbl : c.pricingModel}">-</td>
                     <td class="py-2" th:text="${c.amount}">-</td>
                     <td class="py-2" th:text="${c.notes}">-</td>
                 </tr>
@@ -84,7 +90,9 @@
                 </thead>
                 <tbody>
                 <tr th:each="v : ${preview.variants}" class="border-b">
-                    <td class="py-2" th:text="${v.category}">-</td>
+                    <td class="py-2"
+                        th:with="k=${v.category != null ? 'pricing.product_category.' + v.category : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
+                        th:text="${lbl != null ? lbl : v.category}">-</td>
                     <td class="py-2" th:text="${v.productName}">-</td>
                     <td class="py-2" th:text="${v.variantName}">-</td>
                     <td class="py-2" th:text="${v.markupPercent}">-</td>

@@ -152,6 +152,7 @@ class RegressionPagesIntegrationTest {
         mockMvc.perform(get("/admin/pricing/variants/" + variant.getId()).session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("??"))))
+            .andExpect(content().string(not(containsString(">PER_SQM</option>"))))
             .andExpect(content().string(anyOf(
                 containsString("Add Component"),
                 containsString("Dodaj komponentu")

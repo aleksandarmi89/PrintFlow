@@ -32,14 +32,18 @@
                 <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.component.type}">Type</label>
                 <select th:field="*{type}" class="w-full border rounded px-3 py-2" required>
                     <option value="" th:text="#{pricing.component.type}">Type</option>
-                    <option th:each="t : ${componentTypes}" th:value="${t}" th:text="${t}"></option>
+                    <option th:each="t : ${componentTypes}" th:value="${t}"
+                            th:with="k=${'pricing.component_type.' + t.name()}, lbl=${#messages.msgOrNull(k)}"
+                            th:text="${lbl != null ? lbl : t.name()}"></option>
                 </select>
             </div>
             <div>
                 <label class="mb-1 block text-xs font-medium text-gray-700" th:text="#{pricing.component.model}">Model</label>
                 <select th:field="*{model}" class="w-full border rounded px-3 py-2" required>
                     <option value="" th:text="#{pricing.component.model}">Model</option>
-                    <option th:each="m : ${pricingModels}" th:value="${m}" th:text="${m}"></option>
+                    <option th:each="m : ${pricingModels}" th:value="${m}"
+                            th:with="k=${'pricing.model.' + m.name()}, lbl=${#messages.msgOrNull(k)}"
+                            th:text="${lbl != null ? lbl : m.name()}"></option>
                 </select>
             </div>
             <div>
@@ -78,8 +82,12 @@
             <tr th:each="c : ${components}"
                 class="border-b"
                 th:with="componentId=${c != null ? c.id : null}, cform=${(c != null and componentForms != null) ? componentForms[c.id] : null}">
-                <td class="py-2" th:text="${c.type}">Type</td>
-                <td class="py-2" th:text="${c.model}">Model</td>
+                <td class="py-2"
+                    th:with="k=${'pricing.component_type.' + c.type.name()}, lbl=${#messages.msgOrNull(k)}"
+                    th:text="${lbl != null ? lbl : c.type.name()}">Type</td>
+                <td class="py-2"
+                    th:with="k=${'pricing.model.' + c.model.name()}, lbl=${#messages.msgOrNull(k)}"
+                    th:text="${lbl != null ? lbl : c.model.name()}">Model</td>
                 <td class="py-2">
                     <input type="number" step="0.01" name="amount"
                            th:value="${cform != null ? cform.amount : c.amount}"

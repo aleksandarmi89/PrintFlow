@@ -72,8 +72,12 @@
 <th:block th:fragment="componentRow (component, form, saved, variantId)">
     <tr class="border-b"
         th:with="componentId=${component != null ? component.id : null}, cform=${form != null ? form : updateComponentFallback}, errors=${fieldErrors}">
-        <td class="py-2" th:text="${component?.type}">Type</td>
-        <td class="py-2" th:text="${component?.model}">Model</td>
+        <td class="py-2"
+            th:with="k=${component != null && component.type != null ? 'pricing.component_type.' + component.type.name() : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
+            th:text="${lbl != null ? lbl : (component != null && component.type != null ? component.type.name() : '')}">Type</td>
+        <td class="py-2"
+            th:with="k=${component != null && component.model != null ? 'pricing.model.' + component.model.name() : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
+            th:text="${lbl != null ? lbl : (component != null && component.model != null ? component.model.name() : '')}">Model</td>
         <td class="py-2">
             <input type="number" step="0.01"
                    th:name="amount"
