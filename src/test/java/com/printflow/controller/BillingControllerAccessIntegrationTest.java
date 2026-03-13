@@ -149,6 +149,46 @@ class BillingControllerAccessIntegrationTest {
     }
 
     @Test
+    void adminCheckoutRedirectsToStripeConfigErrorWhenStripeIsNotConfigured() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        fixture.createTenantData();
+
+        MockHttpSession tenant1 = fixture.login("tenant1_admin", "password");
+        mockMvc.perform(post("/admin/billing/checkout")
+                .session(tenant1)
+                .with(csrf())
+                .param("priceId", "price_pro_m"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/billing?error=billing.checkout.stripe_not_configured"));
+    }
+
+    @Test
+    void workerCannotStartCheckout() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        TenantTestFixture.TenantIds ids = fixture.createTenantData();
+        Company company1 = companyRepository.findById(ids.company1Id()).orElseThrow();
+
+        User worker = new User();
+        worker.setUsername("tenant1_worker_checkout");
+        worker.setPassword(passwordEncoder.encode("password"));
+        worker.setRole(User.Role.WORKER_GENERAL);
+        worker.setCompany(company1);
+        worker.setFirstName("Worker");
+        worker.setLastName("Checkout");
+        worker.setActive(true);
+        userRepository.save(worker);
+
+        MockHttpSession session = fixture.login("tenant1_worker_checkout", "password");
+        mockMvc.perform(post("/admin/billing/checkout")
+                .session(session)
+                .with(csrf())
+                .param("priceId", "price_pro_m"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
     void billingPageStillRendersWhenPriceConfigEntriesAreMissing() throws Exception {
         fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
             workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
