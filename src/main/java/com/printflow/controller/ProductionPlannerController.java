@@ -1,6 +1,7 @@
 package com.printflow.controller;
 
 import com.printflow.service.ProductionPlannerService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,13 +30,7 @@ public class ProductionPlannerController extends BaseController {
                           @RequestParam(required = false, defaultValue = "6") int profitMonths,
                           @RequestParam(required = false, defaultValue = "log") String scale,
                           Model model) {
-        java.time.YearMonth ym = null;
-        if (month != null && !month.isBlank()) {
-            try {
-                ym = java.time.YearMonth.parse(month);
-            } catch (Exception ignored) {
-            }
-        }
+        java.time.YearMonth ym = parseYearMonth(month);
         model.addAttribute("stats", productionPlannerService.getStats(ym));
         model.addAttribute("dueSoonOrders", productionPlannerService.getDueSoonOrders(8));
         var dailyLoad = productionPlannerService.getDailyLoad(7, workerId);
@@ -75,7 +70,7 @@ public class ProductionPlannerController extends BaseController {
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             model.addAttribute("statusTimelineJson", mapper.writeValueAsString(statusTimeline));
             model.addAttribute("profitTrendJson", mapper.writeValueAsString(profitTrend));
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             model.addAttribute("statusTimelineJson", "[]");
             model.addAttribute("profitTrendJson", "[]");
         }
@@ -86,13 +81,7 @@ public class ProductionPlannerController extends BaseController {
     public ResponseEntity<String> exportMargins(@RequestParam(required = false) String printType,
                                                 @RequestParam(required = false) String month,
                                                 @RequestParam(required = false, defaultValue = "sr") String format) {
-        java.time.YearMonth ym = null;
-        if (month != null && !month.isBlank()) {
-            try {
-                ym = java.time.YearMonth.parse(month);
-            } catch (Exception ignored) {
-            }
-        }
+        java.time.YearMonth ym = parseYearMonth(month);
         var rows = productionPlannerService.getProfitByPrintType(printType, ym);
         StringBuilder sb = new StringBuilder();
         boolean sr = "sr".equalsIgnoreCase(format);
@@ -147,13 +136,7 @@ public class ProductionPlannerController extends BaseController {
                                                     @RequestParam(required = false) Long workerId,
                                                     @RequestParam(required = false, defaultValue = "6") int profitMonths,
                                                     @RequestParam(required = false, defaultValue = "sr") String format) {
-        java.time.YearMonth ym = null;
-        if (month != null && !month.isBlank()) {
-            try {
-                ym = java.time.YearMonth.parse(month);
-            } catch (Exception ignored) {
-            }
-        }
+        java.time.YearMonth ym = parseYearMonth(month);
         int safeMonths = Math.max(3, Math.min(profitMonths, 12));
         var rows = productionPlannerService.getProfitTrend(safeMonths, ym, printType, workerId);
         boolean sr = "sr".equalsIgnoreCase(format);
@@ -191,13 +174,7 @@ public class ProductionPlannerController extends BaseController {
                                                     @RequestParam(required = false) Long workerId,
                                                     @RequestParam(required = false, defaultValue = "7") int trendDays,
                                                     @RequestParam(required = false, defaultValue = "sr") String format) {
-        java.time.YearMonth ym = null;
-        if (month != null && !month.isBlank()) {
-            try {
-                ym = java.time.YearMonth.parse(month);
-            } catch (Exception ignored) {
-            }
-        }
+        java.time.YearMonth ym = parseYearMonth(month);
         int safeTrendDays = trendDays < 7 ? 7 : Math.min(trendDays, 60);
         var rows = productionPlannerService.getStatusTimeline(safeTrendDays, ym, workerId);
         boolean sr = "sr".equalsIgnoreCase(format);
@@ -222,5 +199,16 @@ public class ProductionPlannerController extends BaseController {
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"status-trend.csv\"")
             .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
             .body(csv);
+    }
+
+    private java.time.YearMonth parseYearMonth(String month) {
+        if (month == null || month.isBlank()) {
+            return null;
+        }
+        try {
+            return java.time.YearMonth.parse(month);
+        } catch (java.time.format.DateTimeParseException ignored) {
+            return null;
+        }
     }
 }
