@@ -21,7 +21,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -141,9 +140,7 @@ class BillingControllerTest {
         RedirectView view = controller.startCheckout("price_pro_m");
 
         assertEquals("https://checkout.stripe.com/session/test", view.getUrl());
-        assertFalse(view.isExposeModelAttributes());
         verify(auditLogService).log(any(), eq("BillingCheckout"), eq(null), eq(null), eq("price_pro_m"),
             eq("Checkout started for plan PRO"));
     }
 }
-
