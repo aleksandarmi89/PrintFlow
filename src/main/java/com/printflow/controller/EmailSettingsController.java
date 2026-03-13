@@ -55,12 +55,15 @@ public class EmailSettingsController extends BaseController {
         Company company = currentContextService.currentCompany();
         MailSettings settings = mailSettingsService.getOrCreate(company);
         String smtpSource = mailSettingsService.resolveSmtpSource(company, settings);
+        boolean smtpConfigured = !"none".equals(smtpSource);
+        boolean smtpTestEnabled = "mail_settings".equals(smtpSource) && Boolean.TRUE.equals(settings.getEnabled());
         int safeOutboxPage = Math.max(0, outboxPage);
         Page<com.printflow.entity.EmailOutbox> outboxEntries = emailOutboxService.listForCompany(company, outboxStatus, safeOutboxPage, 20);
         model.addAttribute("company", companyService.getCompanyById(company.getId()));
         model.addAttribute("settings", mailSettingsService.toDto(settings));
         model.addAttribute("passwordSet", settings.getSmtpPasswordEnc() != null && !settings.getSmtpPasswordEnc().isBlank());
-        model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
+        model.addAttribute("smtpConfigured", smtpConfigured);
+        model.addAttribute("smtpTestEnabled", smtpTestEnabled);
         model.addAttribute("smtpSource", smtpSource);
         model.addAttribute("errorKey", errorKey);
         model.addAttribute("errorMessage", errorMessage);
@@ -102,9 +105,20 @@ public class EmailSettingsController extends BaseController {
 
         String validationError = validate(dto, company);
         if (validationError != null) {
+            MailSettings existingSettings = mailSettingsService.getOrCreate(company);
+            String smtpSource = mailSettingsService.resolveSmtpSource(company, existingSettings);
             model.addAttribute("company", companyService.getCompanyById(company.getId()));
             model.addAttribute("settings", dto);
-            model.addAttribute("passwordSet", mailSettingsService.getOrCreate(company).getSmtpPasswordEnc() != null);
+            model.addAttribute("passwordSet", existingSettings.getSmtpPasswordEnc() != null);
+            model.addAttribute("smtpSource", smtpSource);
+            model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
+            model.addAttribute("smtpTestEnabled", "mail_settings".equals(smtpSource) && Boolean.TRUE.equals(existingSettings.getEnabled()));
+            model.addAttribute("outboxEntries", Page.empty());
+            model.addAttribute("outboxStatuses", EmailOutboxStatus.values());
+            model.addAttribute("outboxTotal", 0L);
+            model.addAttribute("outboxSent", 0L);
+            model.addAttribute("outboxFailed", 0L);
+            model.addAttribute("outboxPending", 0L);
             model.addAttribute("errorKey", validationError);
             return "admin/settings/email";
         }
@@ -120,7 +134,14 @@ public class EmailSettingsController extends BaseController {
             return "redirect:/settings/email?errorKey=company.smtp.error.invalid_email";
         }
         MailSettings settings = mailSettingsService.getOrCreate(company);
-        if (!mailSettingsService.isConfigured(settings) || !Boolean.TRUE.equals(settings.getEnabled())) {
+        if (!Boolean.TRUE.equals(settings.getEnabled())) {
+            return "redirect:/settings/email?errorKey=company.smtp.error.not_configured";
+        }
+        String smtpSource = mailSettingsService.resolveSmtpSource(company, settings);
+        if ("legacy_company".equals(smtpSource)) {
+            return "redirect:/settings/email?errorKey=company.smtp.error.legacy_source";
+        }
+        if ("none".equals(smtpSource) || !mailSettingsService.isConfigured(settings)) {
             return "redirect:/settings/email?errorKey=company.smtp.error.not_configured";
         }
         try {

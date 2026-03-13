@@ -17,7 +17,10 @@ import org.springframework.ui.Model;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +49,7 @@ class EmailSettingsControllerTest {
         settings.setSmtpPort(587);
         settings.setSmtpUsername("noreply@example.com");
         settings.setSmtpPasswordEnc("enc");
+        settings.setEnabled(true);
 
         when(contextService.currentCompany()).thenReturn(company);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
@@ -65,6 +69,7 @@ class EmailSettingsControllerTest {
         assertEquals("admin/settings/email", view);
         assertEquals("mail_settings", model.getAttribute("smtpSource"));
         assertEquals(true, model.getAttribute("smtpConfigured"));
+        assertEquals(true, model.getAttribute("smtpTestEnabled"));
     }
 
     @Test
@@ -91,6 +96,7 @@ class EmailSettingsControllerTest {
         dto.setName("Tenant 32");
         MailSettings settings = new MailSettings();
         settings.setCompany(company);
+        settings.setEnabled(true);
 
         when(contextService.currentCompany()).thenReturn(company);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
@@ -110,6 +116,7 @@ class EmailSettingsControllerTest {
         assertEquals("admin/settings/email", view);
         assertEquals("legacy_company", model.getAttribute("smtpSource"));
         assertEquals(true, model.getAttribute("smtpConfigured"));
+        assertEquals(false, model.getAttribute("smtpTestEnabled"));
     }
 
     @Test
@@ -149,5 +156,108 @@ class EmailSettingsControllerTest {
 
         assertEquals("admin/settings/email", view);
         verify(emailOutboxService).listForCompany(company, null, 0, 20);
+    }
+
+    @Test
+    void testEmailRejectsLegacySmtpSource() {
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        EmailService emailService = mock(EmailService.class);
+        EmailOutboxService emailOutboxService = mock(EmailOutboxService.class);
+
+        EmailSettingsController controller = new EmailSettingsController(
+            contextService, mailSettingsService, companyService, emailService, emailOutboxService
+        );
+        Company company = new Company();
+        company.setId(34L);
+        MailSettings settings = new MailSettings();
+        settings.setEnabled(true);
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("legacy_company");
+        when(mailSettingsService.isConfigured(settings)).thenReturn(false);
+
+        String result = controller.test("admin@printflow.test");
+
+        assertEquals("redirect:/settings/email?errorKey=company.smtp.error.legacy_source", result);
+        verify(emailService, never()).sendNow(any(), any(), any());
+    }
+
+    @Test
+    void testEmailSendsWhenMailSettingsConfiguredAndEnabled() {
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        EmailService emailService = mock(EmailService.class);
+        EmailOutboxService emailOutboxService = mock(EmailOutboxService.class);
+
+        EmailSettingsController controller = new EmailSettingsController(
+            contextService, mailSettingsService, companyService, emailService, emailOutboxService
+        );
+        Company company = new Company();
+        company.setId(35L);
+        company.setName("Tenant 35");
+        MailSettings settings = new MailSettings();
+        settings.setEnabled(true);
+        settings.setSmtpHost("smtp.example.com");
+        settings.setSmtpPort(587);
+        settings.setSmtpUsername("noreply@example.com");
+        settings.setSmtpPasswordEnc("enc");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("mail_settings");
+        when(mailSettingsService.isConfigured(settings)).thenReturn(true);
+
+        String result = controller.test("admin@printflow.test");
+
+        assertEquals("redirect:/settings/email?successKey=company.smtp.test_sent", result);
+        verify(emailService).sendNow(any(), eq(company), eq("smtp-test"));
+    }
+
+    @Test
+    void updateValidationErrorPopulatesSmtpStateForTemplate() {
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        EmailService emailService = mock(EmailService.class);
+        EmailOutboxService emailOutboxService = mock(EmailOutboxService.class);
+
+        EmailSettingsController controller = new EmailSettingsController(
+            contextService, mailSettingsService, companyService, emailService, emailOutboxService
+        );
+        Company company = new Company();
+        company.setId(36L);
+        CompanyDTO dto = new CompanyDTO();
+        dto.setId(36L);
+        dto.setName("Tenant 36");
+        MailSettings settings = new MailSettings();
+        settings.setEnabled(true);
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(companyService.getCompanyById(36L)).thenReturn(dto);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("legacy_company");
+
+        Model model = new ExtendedModelMap();
+        String view = controller.update(
+            true,
+            "",
+            null,
+            "smtp-user",
+            "",
+            true,
+            false,
+            "invalid-email",
+            "Tenant",
+            model
+        );
+
+        assertEquals("admin/settings/email", view);
+        assertEquals("legacy_company", model.getAttribute("smtpSource"));
+        assertEquals(true, model.getAttribute("smtpConfigured"));
+        assertEquals(false, model.getAttribute("smtpTestEnabled"));
     }
 }

@@ -53,6 +53,12 @@
                         SMTP is not configured. Emails will not be sent until you set SMTP.
                     </span>
                 </div>
+                <div th:if="${smtpSource == 'legacy_company'}"
+                     class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                    <span th:text="#{company.smtp.error.legacy_source}">
+                        Test email requires SMTP values in Email Settings. Legacy Company SMTP fields are read-only.
+                    </span>
+                </div>
 
                 <form th:action="@{/settings/email}" method="post" class="space-y-4">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
@@ -140,8 +146,8 @@
                         <input type="email" name="toEmail" required th:placeholder="#{company.settings.smtp_test_placeholder}"
                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <button type="submit"
-                                th:disabled="${smtpConfigured == false}"
-                                th:classappend="${smtpConfigured == false} ? 'opacity-60 cursor-not-allowed' : ''"
+                                th:disabled="${smtpTestEnabled == false}"
+                                th:classappend="${smtpTestEnabled == false} ? 'opacity-60 cursor-not-allowed' : ''"
                                 class="block w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                             <span th:text="#{company.settings.smtp_test_send}">Send test email</span>
                         </button>
