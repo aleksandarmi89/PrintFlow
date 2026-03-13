@@ -190,4 +190,88 @@ class CompanyControllerTest {
         assertEquals("admin.companies.error.name_exists", model.getAttribute("errorMessage"));
         assertTrue(model.containsAttribute("company"));
     }
+
+    @Test
+    void activateProTrialIsForbiddenForNonSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.activateProTrial(31L, model);
+
+        assertEquals("redirect:/admin/companies/edit/31", view);
+        verifyNoInteractions(companyService, auditLogService);
+    }
+
+    @Test
+    void activateProTrialCallsServiceAndAuditForSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.activateProTrial(32L, model);
+
+        assertEquals("redirect:/admin/companies/edit/32", view);
+        verify(companyService).activateProTrial(32L, 30);
+        verify(auditLogService).log(eq(com.printflow.entity.enums.AuditAction.UPDATE), eq("Company"), eq(32L),
+            eq(null), eq("trial_pro_30"), eq("Activated PRO trial for 30 days"));
+    }
+
+    @Test
+    void activateProOneYearCallsServiceAndAuditForSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.activateProOneYear(33L, model);
+
+        assertEquals("redirect:/admin/companies/edit/33", view);
+        verify(companyService).activateProOverrideForDays(33L, 365);
+        verify(auditLogService).log(eq(com.printflow.entity.enums.AuditAction.UPDATE), eq("Company"), eq(33L),
+            eq(null), eq("override_pro_365"), eq("Activated PRO override for 1 year"));
+    }
+
+    @Test
+    void setBillingOverrideRejectsInvalidDateFormat() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.setBillingOverride(34L, true, "2026/03/13", model);
+
+        assertEquals("redirect:/admin/companies/edit/34", view);
+        verifyNoInteractions(companyService, auditLogService);
+    }
 }
