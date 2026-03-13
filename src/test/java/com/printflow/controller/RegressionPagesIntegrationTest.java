@@ -199,12 +199,21 @@ class RegressionPagesIntegrationTest {
             .andExpect(content().string(not(containsString("??"))))
             .andExpect(content().string(containsString("SMTP")))
             .andExpect(content().string(anyOf(
+                containsString("Source:"),
+                containsString("Izvor:")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("company@example.com"),
+                containsString("kompanija@example.com")
+            )))
+            .andExpect(content().string(anyOf(
                 containsString("SMTP OK"),
                 containsString("SMTP NIJE PODEŠEN")
             )));
         mockMvc.perform(get("/settings/email").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("??"))))
+            .andExpect(content().string(containsString("smtp.example.com")))
             .andExpect(content().string(not(containsString(">PENDING</option>"))))
             .andExpect(content().string(not(containsString(">SENT</option>"))))
             .andExpect(content().string(not(containsString(">FAILED</option>"))))
