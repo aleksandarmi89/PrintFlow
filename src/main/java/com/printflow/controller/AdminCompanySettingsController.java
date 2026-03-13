@@ -2,6 +2,7 @@ package com.printflow.controller;
 
 import com.printflow.dto.CompanyDTO;
 import com.printflow.entity.Company;
+import com.printflow.entity.MailSettings;
 import com.printflow.service.CompanyBrandingService;
 import com.printflow.service.CompanyService;
 import com.printflow.service.CurrentContextService;
@@ -50,9 +51,11 @@ public class AdminCompanySettingsController extends BaseController {
         Company company = currentContextService.currentCompany();
         CompanyDTO dto = companyService.getCompanyById(company.getId());
         var mailSettings = mailSettingsService.getOrCreate(company);
+        String smtpSource = resolveSmtpSource(company, mailSettings);
         model.addAttribute("company", dto);
         model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
-        model.addAttribute("smtpConfigured", isSmtpConfigured(company));
+        model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
+        model.addAttribute("smtpSource", smtpSource);
         model.addAttribute("smtpFallbackEnabled", emailFallbackEnabled);
         model.addAttribute("errorKey", errorKey);
         model.addAttribute("successKey", successKey);
@@ -166,14 +169,21 @@ public class AdminCompanySettingsController extends BaseController {
         if (company == null) {
             return false;
         }
-        var settings = mailSettingsService.getOrCreate(company);
-        if (mailSettingsService.isConfigured(settings)) {
-            return true;
+        return !"none".equals(resolveSmtpSource(company, mailSettingsService.getOrCreate(company)));
+    }
+
+    private String resolveSmtpSource(Company company, MailSettings settings) {
+        if (company == null) {
+            return "none";
         }
-        return company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
+        if (mailSettingsService.isConfigured(settings)) {
+            return "mail_settings";
+        }
+        boolean legacyConfigured = company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
             && company.getSmtpPort() != null
             && company.getSmtpUser() != null && !company.getSmtpUser().isBlank()
             && company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank();
+        return legacyConfigured ? "legacy_company" : "none";
     }
 
     @GetMapping("/logo")

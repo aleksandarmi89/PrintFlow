@@ -1,5 +1,6 @@
 package com.printflow.controller;
 
+import com.printflow.dto.CompanyDTO;
 import com.printflow.entity.Company;
 import com.printflow.entity.MailSettings;
 import com.printflow.service.CompanyBrandingService;
@@ -79,5 +80,79 @@ class AdminCompanySettingsControllerTest {
 
         assertEquals("admin/company/settings", view);
         assertEquals("company.settings.update_failed", model.getAttribute("errorMessage"));
+    }
+
+    @Test
+    void settingsExposesMailSettingsSourceWhenConfigured() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+        );
+        Company company = new Company();
+        company.setId(17L);
+        company.setName("Tenant 17");
+        MailSettings settings = new MailSettings();
+        settings.setCompany(company);
+        settings.setSmtpHost("smtp.example.com");
+        settings.setSmtpPort(587);
+        settings.setSmtpUsername("noreply@example.com");
+        settings.setSmtpPasswordEnc("enc");
+        CompanyDTO dto = new CompanyDTO();
+        dto.setId(17L);
+        dto.setName("Tenant 17");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(companyService.getCompanyById(17L)).thenReturn(dto);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.isConfigured(settings)).thenReturn(true);
+
+        Model model = new ExtendedModelMap();
+        String view = controller.settings(null, null, model);
+
+        assertEquals("admin/company/settings", view);
+        assertEquals("mail_settings", model.getAttribute("smtpSource"));
+        assertEquals(true, model.getAttribute("smtpConfigured"));
+    }
+
+    @Test
+    void settingsExposesLegacySourceWhenMailSettingsMissingButLegacyExists() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+        );
+        Company company = new Company();
+        company.setId(18L);
+        company.setName("Tenant 18");
+        company.setSmtpHost("legacy.example.com");
+        company.setSmtpPort(587);
+        company.setSmtpUser("legacy-user");
+        company.setSmtpPassword("legacy-pass");
+        MailSettings settings = new MailSettings();
+        settings.setCompany(company);
+        CompanyDTO dto = new CompanyDTO();
+        dto.setId(18L);
+        dto.setName("Tenant 18");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(companyService.getCompanyById(18L)).thenReturn(dto);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.isConfigured(settings)).thenReturn(false);
+
+        Model model = new ExtendedModelMap();
+        String view = controller.settings(null, null, model);
+
+        assertEquals("admin/company/settings", view);
+        assertEquals("legacy_company", model.getAttribute("smtpSource"));
+        assertEquals(true, model.getAttribute("smtpConfigured"));
     }
 }
