@@ -191,7 +191,7 @@
                                     <p class="text-sm text-red-600 mt-1" th:text="${order.title}">Order Title</p>
                                     <p class="text-xs text-red-500 mt-2">
                                         <span th:text="#{orders.deadline}">Deadline</span>: 
-                                        <span th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : 'N/A'}">
+                                        <span th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy') : #messages.msg('common.na')}">
                                             01.01.2024
                                         </span>
                                     </p>

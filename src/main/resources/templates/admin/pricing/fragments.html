@@ -63,7 +63,7 @@
                         class="px-2 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50" th:text="#{actions.delete}">Delete</button>
                 <span th:if="${billingExpired}" class="text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
             </form>
-            <span th:if="${variantId == null}" class="text-xs text-gray-500">N/A</span>
+            <span th:if="${variantId == null}" class="text-xs text-gray-500" th:text="#{common.na}">N/A</span>
             <span th:if="${saved}" class="text-green-600 text-xs ml-2" th:text="#{actions.saved}">Saved</span>
         </td>
     </tr>
@@ -113,7 +113,7 @@
                         th:text="#{actions.delete}">Delete</button>
                 <span th:if="${billingExpired}" class="text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
             </form>
-            <span th:if="${componentId == null}" class="text-xs text-gray-500">N/A</span>
+            <span th:if="${componentId == null}" class="text-xs text-gray-500" th:text="#{common.na}">N/A</span>
             <span th:if="${saved}" class="text-green-600 text-xs ml-2" th:text="#{actions.saved}">Saved</span>
         </td>
     </tr>

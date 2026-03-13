@@ -127,7 +127,7 @@
                                 onclick="return confirm([[#{pricing.variant.delete_confirm}]]);"
                                 class="px-2 py-1 text-xs font-medium rounded border border-red-200 text-red-700 hover:bg-red-50" th:text="#{actions.delete}">Delete</button>
                     </form>
-                    <span th:if="${variantId == null}" class="text-xs text-gray-500">N/A</span>
+                    <span th:if="${variantId == null}" class="text-xs text-gray-500" th:text="#{common.na}">N/A</span>
                 </td>
             </tr>
             <tr th:if="${variants.empty}">

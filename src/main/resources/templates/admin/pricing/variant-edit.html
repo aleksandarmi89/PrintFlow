@@ -114,7 +114,7 @@
                                 onclick="return confirm([[#{pricing.component.delete_confirm}]]);"
                                 th:text="#{actions.delete}">Delete</button>
                     </form>
-                    <span th:if="${componentId == null}" class="text-xs text-gray-500">N/A</span>
+                    <span th:if="${componentId == null}" class="text-xs text-gray-500" th:text="#{common.na}">N/A</span>
                 </td>
             </tr>
             <tr th:if="${components.empty}">
