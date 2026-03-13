@@ -215,15 +215,22 @@ public class BillingController extends BaseController {
         if (!isSuperAdmin()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Forbidden");
         }
-        billingPlanConfigService.upsertPriceId(PlanTier.FREE, BillingInterval.MONTHLY, priceIdFreeMonthly);
-        billingPlanConfigService.upsertPriceId(PlanTier.FREE, BillingInterval.YEARLY, priceIdFreeYearly);
-        billingPlanConfigService.upsertPriceId(PlanTier.PRO, BillingInterval.MONTHLY, priceIdProMonthly);
-        billingPlanConfigService.upsertPriceId(PlanTier.PRO, BillingInterval.YEARLY, priceIdProYearly);
-        billingPlanConfigService.upsertPriceId(PlanTier.TEAM, BillingInterval.MONTHLY, priceIdTeamMonthly);
-        billingPlanConfigService.upsertPriceId(PlanTier.TEAM, BillingInterval.YEARLY, priceIdTeamYearly);
-        String newValue = "FREE_M=" + safe(priceIdFreeMonthly) + ", FREE_Y=" + safe(priceIdFreeYearly)
-            + ", PRO_M=" + safe(priceIdProMonthly) + ", PRO_Y=" + safe(priceIdProYearly)
-            + ", TEAM_M=" + safe(priceIdTeamMonthly) + ", TEAM_Y=" + safe(priceIdTeamYearly);
+        String freeMonthly = safe(priceIdFreeMonthly);
+        String freeYearly = safe(priceIdFreeYearly);
+        String proMonthly = safe(priceIdProMonthly);
+        String proYearly = safe(priceIdProYearly);
+        String teamMonthly = safe(priceIdTeamMonthly);
+        String teamYearly = safe(priceIdTeamYearly);
+
+        billingPlanConfigService.upsertPriceId(PlanTier.FREE, BillingInterval.MONTHLY, freeMonthly);
+        billingPlanConfigService.upsertPriceId(PlanTier.FREE, BillingInterval.YEARLY, freeYearly);
+        billingPlanConfigService.upsertPriceId(PlanTier.PRO, BillingInterval.MONTHLY, proMonthly);
+        billingPlanConfigService.upsertPriceId(PlanTier.PRO, BillingInterval.YEARLY, proYearly);
+        billingPlanConfigService.upsertPriceId(PlanTier.TEAM, BillingInterval.MONTHLY, teamMonthly);
+        billingPlanConfigService.upsertPriceId(PlanTier.TEAM, BillingInterval.YEARLY, teamYearly);
+        String newValue = "FREE_M=" + freeMonthly + ", FREE_Y=" + freeYearly
+            + ", PRO_M=" + proMonthly + ", PRO_Y=" + proYearly
+            + ", TEAM_M=" + teamMonthly + ", TEAM_Y=" + teamYearly;
         auditLogService.log(AuditAction.UPDATE, "BillingPlanConfig", null, null, newValue,
             "Updated Stripe plan price IDs");
         return new RedirectView("/admin/billing?success=billing.config.saved", true);

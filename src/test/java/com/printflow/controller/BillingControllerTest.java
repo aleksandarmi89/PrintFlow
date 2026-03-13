@@ -15,9 +15,16 @@ import com.printflow.service.PlanLimitService;
 import com.printflow.service.StripeBillingService;
 import com.printflow.service.TenantContextService;
 import com.stripe.exception.StripeException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,6 +36,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class BillingControllerTest {
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private BillingController createController(StripeBillingService stripeBillingService,
                                                TenantContextService tenantContextService,
@@ -171,5 +183,66 @@ class BillingControllerTest {
         verify(billingPlanConfigService).findPlanForPriceId("price_trimmed");
         verify(auditLogService).log(any(), eq("BillingCheckout"), eq(null), eq(null), eq("price_trimmed"),
             eq("Checkout started for plan PRO"));
+    }
+
+    @Test
+    void updateBillingConfigRejectsNonSuperAdmin() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken("admin", "n/a", List.of(new SimpleGrantedAuthority("ADMIN")))
+        );
+
+        ResponseStatusException ex = org.junit.jupiter.api.Assertions.assertThrows(ResponseStatusException.class,
+            () -> controller.updateBillingConfig("f_m", "f_y", "p_m", "p_y", "t_m", "t_y"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+        verifyNoInteractions(billingPlanConfigService, auditLogService);
+    }
+
+    @Test
+    void updateBillingConfigTrimsValuesAndAuditsForSuperAdmin() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                "super",
+                "n/a",
+                List.of(new SimpleGrantedAuthority("SUPER_ADMIN"))
+            )
+        );
+
+        RedirectView view = controller.updateBillingConfig(
+            " free_m ", " free_y ", " pro_m ", " pro_y ", " team_m ", " team_y "
+        );
+
+        assertEquals("/admin/billing?success=billing.config.saved", view.getUrl());
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.FREE, BillingInterval.MONTHLY, "free_m");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.FREE, BillingInterval.YEARLY, "free_y");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.PRO, BillingInterval.MONTHLY, "pro_m");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.PRO, BillingInterval.YEARLY, "pro_y");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.TEAM, BillingInterval.MONTHLY, "team_m");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.TEAM, BillingInterval.YEARLY, "team_y");
+        verify(auditLogService).log(
+            any(),
+            eq("BillingPlanConfig"),
+            eq(null),
+            eq(null),
+            eq("FREE_M=free_m, FREE_Y=free_y, PRO_M=pro_m, PRO_Y=pro_y, TEAM_M=team_m, TEAM_Y=team_y"),
+            eq("Updated Stripe plan price IDs")
+        );
     }
 }
