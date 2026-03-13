@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public class UserDTO {
+    private static final String NOT_AVAILABLE = "N/A";
+    private static final String NEVER = "Nikad";
     private Long id;
     
     @NotBlank(message = "Username is required")
@@ -368,13 +370,13 @@ public class UserDTO {
     
     // Formatirani datum kreiranja
     public String getFormattedCreatedAt() {
-        if (createdAt == null) return "N/A";
+        if (createdAt == null) return NOT_AVAILABLE;
         return createdAt.toString();
     }
     
     // Formatirani datum poslednje prijave
     public String getFormattedLastLogin() {
-        if (lastLogin == null) return "Nikad";
+        if (lastLogin == null) return NEVER;
         return lastLogin.toString();
     }
     

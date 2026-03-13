@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 public class UserTaskStats {
+    private static final String NOT_AVAILABLE = "N/A";
+    private static final String NEVER = "Nikad";
     // Order statistics
     private int assignedOrders;
     private int completedOrders;
@@ -362,7 +364,7 @@ public class UserTaskStats {
     
     // Vrati formatiranu vrednost prosečnog vremena završetka
     public String getAverageTaskCompletionFormatted() {
-        if (averageTaskCompletionHours == null) return "N/A";
+        if (averageTaskCompletionHours == null) return NOT_AVAILABLE;
         if (averageTaskCompletionHours < 1) {
             return String.format("%.0f min", averageTaskCompletionHours * 60);
         } else if (averageTaskCompletionHours < 24) {
@@ -374,7 +376,7 @@ public class UserTaskStats {
     
     // Vrati formatiranu vrednost za poslednju prijavu
     public String getLastLoginFormatted() {
-        if (lastLogin == null) return "Nikad";
+        if (lastLogin == null) return NEVER;
         
         LocalDateTime now = LocalDateTime.now();
         long days = ChronoUnit.DAYS.between(lastLogin, now);
