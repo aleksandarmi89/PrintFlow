@@ -215,6 +215,10 @@ class RegressionPagesIntegrationTest {
             .andExpect(content().string(anyOf(
                 containsString("Pending"),
                 containsString("Na čekanju")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Swipe horizontally to see all outbox columns."),
+                containsString("Prevucite horizontalno da vidite sve kolone outbox tabele.")
             )));
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())
