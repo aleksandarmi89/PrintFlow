@@ -99,6 +99,37 @@ class CompanyServiceTest {
     }
 
     @Test
+    void createCompanyRejectsNameCollisionIgnoringCaseAndWhitespace() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        when(companyRepository.existsByNormalizedName("AcMe")).thenReturn(true);
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("  AcMe  ");
+        dto.setActive(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.createCompany(dto));
+        assertEquals("Company name already exists", ex.getMessage());
+    }
+
+    @Test
     void updateCompanyClearsBillingOverrideWhenDisabledInDto() {
         CompanyRepository companyRepository = mock(CompanyRepository.class);
         UserRepository userRepository = mock(UserRepository.class);
@@ -219,6 +250,42 @@ class CompanyServiceTest {
         dto.setActive(true);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> service.updateCompany(16L, dto));
+        assertEquals("Company name already exists", ex.getMessage());
+    }
+
+    @Test
+    void updateCompanyRejectsNameCollisionIgnoringCaseAndWhitespace() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        Company existing = new Company();
+        existing.setId(17L);
+        existing.setName("Alpha");
+        existing.setSlug("alpha");
+        when(companyRepository.findById(17L)).thenReturn(Optional.of(existing));
+        when(companyRepository.existsByNormalizedNameAndIdNot("bEtA", 17L)).thenReturn(true);
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+
+        CompanyDTO dto = new CompanyDTO();
+        dto.setName("  bEtA  ");
+        dto.setActive(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.updateCompany(17L, dto));
         assertEquals("Company name already exists", ex.getMessage());
     }
 
