@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+
 
 @Controller
 @RequestMapping("/admin/rate-limit")
@@ -38,49 +42,55 @@ public class RateLimitAdminController extends BaseController {
                       @RequestParam(required = false) String reason,
                       @RequestParam(required = false) Integer durationMinutes,
                       Model model) {
-        if (!isValidIpOrCidr(ip)) {
+        String normalizedIp = normalizeIpOrCidr(ip);
+        if (!isValidIpOrCidr(normalizedIp)) {
             return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
         java.time.LocalDateTime expiresAt = null;
         if (durationMinutes != null && durationMinutes > 0) {
             expiresAt = java.time.LocalDateTime.now().plusMinutes(durationMinutes);
         }
-        rateLimitService.ban(ip, reason != null && !reason.isBlank() ? reason : "manual", expiresAt);
+        boolean customReason = reason != null && !reason.isBlank();
+        String normalizedReason = customReason ? reason.trim() : "manual";
+        rateLimitService.ban(normalizedIp, normalizedReason, expiresAt);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
-            null, ip, "Banned IP " + ip + (reason != null ? " (" + reason + ")" : ""));
+            null, normalizedIp, "Banned IP " + normalizedIp + (customReason ? " (" + normalizedReason + ")" : ""));
         return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.banned", model);
     }
 
     @PostMapping("/unban")
     public String unban(@RequestParam String ip, Model model) {
-        if (!isValidIpOrCidr(ip)) {
+        String normalizedIp = normalizeIpOrCidr(ip);
+        if (!isValidIpOrCidr(normalizedIp)) {
             return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
-        rateLimitService.unban(ip);
+        rateLimitService.unban(normalizedIp);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
-            ip, null, "Unbanned IP " + ip);
+            normalizedIp, null, "Unbanned IP " + normalizedIp);
         return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.unbanned", model);
     }
 
     @PostMapping("/whitelist")
     public String whitelist(@RequestParam String ip, Model model) {
-        if (!isValidIpOrCidr(ip)) {
+        String normalizedIp = normalizeIpOrCidr(ip);
+        if (!isValidIpOrCidr(normalizedIp)) {
             return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
-        rateLimitService.whitelist(ip);
+        rateLimitService.whitelist(normalizedIp);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
-            null, ip, "Whitelisted IP " + ip);
+            null, normalizedIp, "Whitelisted IP " + normalizedIp);
         return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.whitelisted", model);
     }
 
     @PostMapping("/unwhitelist")
     public String unwhitelist(@RequestParam String ip, Model model) {
-        if (!isValidIpOrCidr(ip)) {
+        String normalizedIp = normalizeIpOrCidr(ip);
+        if (!isValidIpOrCidr(normalizedIp)) {
             return redirectWithError("/admin/rate-limit", "admin.rate_limit.flash.invalid_ip", model);
         }
-        rateLimitService.unwhitelist(ip);
+        rateLimitService.unwhitelist(normalizedIp);
         auditLogService.log(com.printflow.entity.enums.AuditAction.UPDATE, "RateLimit", null,
-            ip, null, "Removed IP from whitelist " + ip);
+            normalizedIp, null, "Removed IP from whitelist " + normalizedIp);
         return redirectWithSuccess("/admin/rate-limit", "admin.rate_limit.flash.unwhitelisted", model);
     }
 
@@ -88,32 +98,58 @@ public class RateLimitAdminController extends BaseController {
         if (ip == null || ip.isBlank()) {
             return false;
         }
-        // IPv4
-        if (ip.matches("^(?:\\d{1,3}\\.){3}\\d{1,3}$")) {
-            return true;
+        String value = ip.trim();
+        if (value.contains(".")) {
+            if (!value.matches("^((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)$")) {
+                return false;
+            }
+            try {
+                return InetAddress.getByName(value) instanceof Inet4Address;
+            } catch (Exception ex) {
+                return false;
+            }
         }
-        // IPv6
-        return ip.matches("^([0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}$");
+        if (value.contains(":")) {
+            if (!value.matches("^[0-9a-fA-F:]+$")) {
+                return false;
+            }
+            try {
+                return InetAddress.getByName(value) instanceof Inet6Address;
+            } catch (Exception ex) {
+                return false;
+            }
+        }
+        return false;
     }
 
     private boolean isValidIpOrCidr(String ip) {
         if (ip == null || ip.isBlank()) {
             return false;
         }
-        if (isValidIp(ip)) {
+        String value = normalizeIpOrCidr(ip);
+        if (isValidIp(value)) {
             return true;
         }
-        if (ip.contains("/")) {
-            String[] parts = ip.split("/");
+        if (value.contains("/")) {
+            String[] parts = value.split("/");
             if (parts.length != 2) return false;
-            if (!isValidIp(parts[0])) return false;
+            String baseIp = parts[0].trim();
+            if (!isValidIp(baseIp)) return false;
             try {
-                int prefix = Integer.parseInt(parts[1]);
-                return prefix >= 0 && prefix <= 128;
+                int prefix = Integer.parseInt(parts[1].trim());
+                int maxPrefix = baseIp.contains(".") ? 32 : 128;
+                return prefix >= 0 && prefix <= maxPrefix;
             } catch (NumberFormatException ex) {
                 return false;
             }
         }
         return false;
+    }
+
+    private String normalizeIpOrCidr(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.trim().replaceAll("\\s*/\\s*", "/");
     }
 }

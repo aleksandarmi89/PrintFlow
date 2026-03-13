@@ -133,13 +133,11 @@
 
             function isValidIp(ip) {
                 if (!ip) return false;
-                const ipv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+                const ipv4 = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
                 if (ipv4.test(ip)) return true;
-                const ipv6 = /^([0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}$/;
+                const ipv6 = /^([0-9a-fA-F:]+)$/;
                 if (ipv6.test(ip)) return true;
-                // Allow compressed IPv6 with ::
-                const ipv6Compressed = /^([0-9a-fA-F]{0,4}:){2,7}:([0-9a-fA-F]{0,4})$/;
-                return ipv6Compressed.test(ip);
+                return false;
             }
 
             function isValidIpOrCidr(value) {
@@ -147,9 +145,11 @@
                 if (value.includes('/')) {
                     const parts = value.split('/');
                     if (parts.length !== 2) return false;
-                    if (!isValidIp(parts[0])) return false;
+                    const baseIp = parts[0].trim();
+                    if (!isValidIp(baseIp)) return false;
                     const prefix = Number(parts[1]);
-                    return Number.isInteger(prefix) && prefix >= 0 && prefix <= 128;
+                    const maxPrefix = baseIp.includes('.') ? 32 : 128;
+                    return Number.isInteger(prefix) && prefix >= 0 && prefix <= maxPrefix;
                 }
                 return isValidIp(value);
             }

@@ -12,9 +12,11 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -158,5 +160,34 @@ class CompanyControllerTest {
 
         assertEquals("redirect:/admin/companies", view);
         verify(companyService).enableCompany(25L);
+    }
+
+    @Test
+    void createCompanyMapsDuplicateNameErrorToMessageKey() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+        CompanyDTO incoming = new CompanyDTO();
+        incoming.setName("Acme");
+        Model model = new ExtendedModelMap();
+
+        doThrow(new RuntimeException("Company name already exists"))
+            .when(companyService).createCompany(any(CompanyDTO.class));
+
+        String view = controller.createCompany(incoming, model);
+
+        assertEquals("admin/companies/create", view);
+        assertEquals("admin.companies.error.name_exists", model.getAttribute("errorMessage"));
+        assertTrue(model.containsAttribute("company"));
     }
 }

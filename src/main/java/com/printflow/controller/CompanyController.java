@@ -98,7 +98,7 @@ public class CompanyController extends BaseController {
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.created", model);
         } catch (Exception e) {
             model.addAttribute("company", companyDTO);
-            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("errorMessage", mapCompanyErrorToKey(e.getMessage()));
             return "admin/companies/create";
         }
     }
@@ -146,7 +146,7 @@ public class CompanyController extends BaseController {
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.updated", model);
         } catch (Exception e) {
             model.addAttribute("company", companyDTO);
-            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("errorMessage", mapCompanyErrorToKey(e.getMessage()));
             return "admin/companies/edit";
         }
     }
@@ -160,7 +160,7 @@ public class CompanyController extends BaseController {
             companyService.disableCompany(id);
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.disabled", model);
         } catch (Exception e) {
-            return redirectWithError("/admin/companies", e.getMessage(), model);
+            return redirectWithError("/admin/companies", mapCompanyErrorToKey(e.getMessage()), model);
         }
     }
 
@@ -173,7 +173,7 @@ public class CompanyController extends BaseController {
             companyService.enableCompany(id);
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.enabled", model);
         } catch (Exception e) {
-            return redirectWithError("/admin/companies", e.getMessage(), model);
+            return redirectWithError("/admin/companies", mapCompanyErrorToKey(e.getMessage()), model);
         }
     }
 
@@ -232,5 +232,18 @@ public class CompanyController extends BaseController {
         } catch (Exception ex) {
             return org.springframework.http.ResponseEntity.notFound().build();
         }
+    }
+
+    private String mapCompanyErrorToKey(String message) {
+        if (message == null || message.isBlank()) {
+            return "admin.companies.error.generic";
+        }
+        return switch (message) {
+            case "Company not found" -> "admin.companies.flash.not_found";
+            case "Company name is required" -> "admin.companies.error.name_required";
+            case "Company name already exists" -> "admin.companies.error.name_exists";
+            case "Logo must be PNG, JPG or SVG" -> "admin.companies.error.logo_type";
+            default -> "admin.companies.error.generic";
+        };
     }
 }
