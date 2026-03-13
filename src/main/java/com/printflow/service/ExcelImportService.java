@@ -8,6 +8,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,8 +29,8 @@ public class ExcelImportService {
 	public ImportResultDTO importClientsFromExcel(MultipartFile file, Company company) {
         ImportResultDTO result = new ImportResultDTO();
         
-        try (InputStream inputStream = file.getInputStream()) {
-            Workbook workbook = WorkbookFactory.create(inputStream);
+        try (InputStream inputStream = file.getInputStream();
+             Workbook workbook = WorkbookFactory.create(inputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
             
@@ -56,7 +57,7 @@ public class ExcelImportService {
                     } else {
                         skippedRecords++;
                     }
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     skippedRecords++;
                 }
             }
@@ -66,14 +67,12 @@ public class ExcelImportService {
                 clientRepository.saveAll(clientsToImport);
             }
             
-            workbook.close();
-            
             result.setTotalRecords(totalRecords);
             result.setImportedRecords(importedRecords);
             result.setSkippedRecords(skippedRecords);
             result.setSuccess(true);
             
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             result.setSuccess(false);
             result.setErrorMessage("Import failed: " + e.getMessage());
         }
