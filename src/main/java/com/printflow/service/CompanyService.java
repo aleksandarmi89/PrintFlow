@@ -98,7 +98,7 @@ public class CompanyService {
         if (overrideActive != null) {
             return companyRepository.findByBillingOverrideActive(overrideActive, pageable).map(this::toDTO);
         }
-        return getCompanies(search, pageable);
+        return getCompanies(normalizedSearch, pageable);
     }
 
     public CompanyDTO getCompanyById(Long id) {
