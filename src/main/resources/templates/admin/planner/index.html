@@ -18,63 +18,74 @@
         </p>
     </div>
 
-    <div class="overflow-x-auto">
-    <form method="get" class="min-w-[980px] bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-3">
-        <label for="plannerMonth" class="text-sm text-gray-500" th:text="#{planner.filter.month}">Month</label>
-        <input id="plannerMonth" type="month" name="month" th:value="${monthFilter}"
-               class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+    <form method="get" class="bg-white rounded-xl border border-gray-200 p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
+        <div class="flex flex-col gap-1">
+            <label for="plannerMonth" class="text-sm text-gray-500" th:text="#{planner.filter.month}">Month</label>
+            <input id="plannerMonth" type="month" name="month" th:value="${monthFilter}"
+                   class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+        </div>
 
-        <label for="plannerWorker" class="text-sm text-gray-500" th:text="#{planner.filter.worker}">Worker</label>
-        <select id="plannerWorker" name="workerId" class="px-2 py-1 border border-gray-300 rounded-lg text-sm min-w-[180px]">
-            <option value="" th:selected="${workerFilter == null}" th:text="#{planner.filter.all_workers}">
-                All workers
-            </option>
-            <option th:each="w : ${workers}"
-                    th:value="${w.id}"
-                    th:selected="${workerFilter != null && workerFilter == w.id}"
-                    th:text="${w.fullName}">
-            </option>
-        </select>
+        <div class="flex flex-col gap-1">
+            <label for="plannerWorker" class="text-sm text-gray-500" th:text="#{planner.filter.worker}">Worker</label>
+            <select id="plannerWorker" name="workerId" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm min-w-[180px]">
+                <option value="" th:selected="${workerFilter == null}" th:text="#{planner.filter.all_workers}">
+                    All workers
+                </option>
+                <option th:each="w : ${workers}"
+                        th:value="${w.id}"
+                        th:selected="${workerFilter != null && workerFilter == w.id}"
+                        th:text="${w.fullName}">
+                </option>
+            </select>
+        </div>
 
-        <label for="plannerTrend" class="text-sm text-gray-500" th:text="#{planner.filter.trend}">Trend</label>
-        <select id="plannerTrend" name="trendDays" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
-            <option value="7" th:selected="${trendDays == 7}" th:text="#{planner.trend.7}">7d</option>
-            <option value="14" th:selected="${trendDays == 14}" th:text="#{planner.trend.14}">14d</option>
-            <option value="30" th:selected="${trendDays == 30}" th:text="#{planner.trend.30}">30d</option>
-            <option value="60" th:selected="${trendDays == 60}" th:text="#{planner.trend.60}">60d</option>
-        </select>
+        <div class="flex flex-col gap-1">
+            <label for="plannerTrend" class="text-sm text-gray-500" th:text="#{planner.filter.trend}">Trend</label>
+            <select id="plannerTrend" name="trendDays" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                <option value="7" th:selected="${trendDays == 7}" th:text="#{planner.trend.7}">7d</option>
+                <option value="14" th:selected="${trendDays == 14}" th:text="#{planner.trend.14}">14d</option>
+                <option value="30" th:selected="${trendDays == 30}" th:text="#{planner.trend.30}">30d</option>
+                <option value="60" th:selected="${trendDays == 60}" th:text="#{planner.trend.60}">60d</option>
+            </select>
+        </div>
 
-        <label for="plannerHeatmap" class="text-sm text-gray-500" th:text="#{planner.filter.heatmap}">Heatmap</label>
-        <select id="plannerHeatmap" name="heatmapMode" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
-            <option value="status"
-                    th:selected="${heatmapMode == null || heatmapMode == 'status'}"
-                    th:text="#{planner.heatmap.status}">
-                Status
-            </option>
-            <option value="deadline"
-                    th:selected="${heatmapMode == 'deadline'}"
-                    th:text="#{planner.heatmap.deadline}">
-                Deadline
-            </option>
-        </select>
+        <div class="flex flex-col gap-1">
+            <label for="plannerHeatmap" class="text-sm text-gray-500" th:text="#{planner.filter.heatmap}">Heatmap</label>
+            <select id="plannerHeatmap" name="heatmapMode" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                <option value="status"
+                        th:selected="${heatmapMode == null || heatmapMode == 'status'}"
+                        th:text="#{planner.heatmap.status}">
+                    Status
+                </option>
+                <option value="deadline"
+                        th:selected="${heatmapMode == 'deadline'}"
+                        th:text="#{planner.heatmap.deadline}">
+                    Deadline
+                </option>
+            </select>
+        </div>
 
-        <label for="plannerProfit" class="text-sm text-gray-500" th:text="#{planner.filter.profit}">Profit</label>
-        <select id="plannerProfit" name="profitMonths" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
-            <option value="6" th:selected="${profitMonths == 6}" th:text="#{planner.profit.6}">6m</option>
-            <option value="12" th:selected="${profitMonths == 12}" th:text="#{planner.profit.12}">12m</option>
-        </select>
+        <div class="flex flex-col gap-1">
+            <label for="plannerProfit" class="text-sm text-gray-500" th:text="#{planner.filter.profit}">Profit</label>
+            <select id="plannerProfit" name="profitMonths" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                <option value="6" th:selected="${profitMonths == 6}" th:text="#{planner.profit.6}">6m</option>
+                <option value="12" th:selected="${profitMonths == 12}" th:text="#{planner.profit.12}">12m</option>
+            </select>
+        </div>
 
-        <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm"
-                th:text="#{common.apply}">
-            Apply
-        </button>
-        <a th:href="@{/admin/planner}"
-           class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700"
-           th:text="#{common.clear}">
-            Clear
-        </a>
+        <div class="flex gap-2 sm:col-span-2 xl:col-span-1">
+            <button type="submit"
+                    class="w-full px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm"
+                    th:text="#{common.apply}">
+                Apply
+            </button>
+            <a th:href="@{/admin/planner}"
+               class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 text-center"
+               th:text="#{common.clear}">
+                Clear
+            </a>
+        </div>
     </form>
-    </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl border border-gray-200 p-4">
@@ -140,54 +151,58 @@
                 <h2 class="text-lg font-semibold text-gray-900" th:text="#{planner.profit_snapshot.title}">
                     Profit Snapshot
                 </h2>
-                <div class="overflow-x-auto">
-                <form method="get" class="min-w-[760px] flex items-center gap-2">
-                    <label for="snapshotMonth" class="text-sm text-gray-500" th:text="#{planner.filter.month}">Month</label>
-                    <input id="snapshotMonth" type="month" name="month" th:value="${monthFilter}"
-                           class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+                <form method="get" class="grid w-full lg:w-auto grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2 items-end">
+                    <div class="flex flex-col gap-1">
+                        <label for="snapshotMonth" class="text-sm text-gray-500" th:text="#{planner.filter.month}">Month</label>
+                        <input id="snapshotMonth" type="month" name="month" th:value="${monthFilter}"
+                               class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    </div>
 
                     <input type="hidden" name="workerId" th:value="${workerFilter}">
                     <input type="hidden" name="trendDays" th:value="${trendDays}">
                     <input type="hidden" name="heatmapMode" th:value="${heatmapMode}">
                     <input type="hidden" name="profitMonths" th:value="${profitMonths}">
 
-                    <label for="snapshotPrintType" class="text-sm text-gray-500" th:text="#{planner.profit_snapshot.type}">Type</label>
-                    <select id="snapshotPrintType" name="printType" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
-                        <option value="" th:selected="${printTypeFilter == null || printTypeFilter == ''}"
-                                th:text="#{common.all}">
-                            All
-                        </option>
-                        <option value="DTF" th:selected="${printTypeFilter == 'DTF'}">DTF</option>
-                        <option value="LASER" th:selected="${printTypeFilter == 'LASER'}"
-                                th:text="#{orders.create.print_type.laser}">Laser</option>
-                        <option value="OTHER" th:selected="${printTypeFilter == 'OTHER'}"
-                                th:text="#{orders.create.print_type.other}">Other</option>
-                    </select>
+                    <div class="flex flex-col gap-1">
+                        <label for="snapshotPrintType" class="text-sm text-gray-500" th:text="#{planner.profit_snapshot.type}">Type</label>
+                        <select id="snapshotPrintType" name="printType" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            <option value="" th:selected="${printTypeFilter == null || printTypeFilter == ''}"
+                                    th:text="#{common.all}">
+                                All
+                            </option>
+                            <option value="DTF" th:selected="${printTypeFilter == 'DTF'}">DTF</option>
+                            <option value="LASER" th:selected="${printTypeFilter == 'LASER'}"
+                                    th:text="#{orders.create.print_type.laser}">Laser</option>
+                            <option value="OTHER" th:selected="${printTypeFilter == 'OTHER'}"
+                                    th:text="#{orders.create.print_type.other}">Other</option>
+                        </select>
+                    </div>
 
-                    <label for="scaleSelect" class="text-sm text-gray-500" th:text="#{planner.profit_snapshot.scale}">Scale</label>
-                    <select id="scaleSelect" name="scale" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
-                        <option value="log" th:selected="${scale == null || scale == 'log'}"
-                                th:text="#{planner.scale.log}">
-                            Log
-                        </option>
-                        <option value="linear" th:selected="${scale == 'linear'}"
-                                th:text="#{planner.scale.linear}">
-                            Linear
-                        </option>
-                    </select>
+                    <div class="flex flex-col gap-1">
+                        <label for="scaleSelect" class="text-sm text-gray-500" th:text="#{planner.profit_snapshot.scale}">Scale</label>
+                        <select id="scaleSelect" name="scale" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            <option value="log" th:selected="${scale == null || scale == 'log'}"
+                                    th:text="#{planner.scale.log}">
+                                Log
+                            </option>
+                            <option value="linear" th:selected="${scale == 'linear'}"
+                                    th:text="#{planner.scale.linear}">
+                                Linear
+                            </option>
+                        </select>
+                    </div>
 
                     <button type="button" id="resetScaleBtn"
-                            class="px-2 py-1 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm"
+                            class="px-2 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm"
                             th:text="#{common.reset}">
                         Reset
                     </button>
 
-                    <button type="submit" class="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm"
+                    <button type="submit" class="px-2 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm"
                             th:text="#{common.filter}">
                         Filter
                     </button>
                 </form>
-                </div>
             </div>
 
             <div class="space-y-3 text-sm text-gray-700 mb-4">
