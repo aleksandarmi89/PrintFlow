@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,7 +51,7 @@ public class CompanyController extends BaseController {
         if (plan != null && !plan.isBlank()) {
             try {
                 planTier = com.printflow.entity.enums.PlanTier.valueOf(plan);
-            } catch (Exception ignored) {
+            } catch (IllegalArgumentException ignored) {
             }
         }
         Boolean overrideActive = null;
@@ -189,7 +190,7 @@ public class CompanyController extends BaseController {
         if (until != null && !until.isBlank()) {
             try {
                 untilDate = java.time.LocalDateTime.parse(until);
-            } catch (Exception ex) {
+            } catch (DateTimeParseException ex) {
                 return redirectWithError("/admin/companies/edit/" + id, "admin.companies.flash.invalid_date_format", model);
             }
         }

@@ -2,7 +2,6 @@ package com.printflow.controller;
 
 import com.printflow.dto.CompanyDTO;
 import com.printflow.entity.Company;
-import com.printflow.entity.MailSettings;
 import com.printflow.service.CompanyBrandingService;
 import com.printflow.service.CompanyService;
 import com.printflow.service.CurrentContextService;
