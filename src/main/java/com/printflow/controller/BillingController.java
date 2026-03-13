@@ -147,12 +147,12 @@ public class BillingController extends BaseController {
         model.addAttribute("storageUsedLabel", formatBytes(storageUsedBytes));
         model.addAttribute("storageLimitLabel", maxStorageBytes > 0 ? formatBytes(maxStorageBytes) : "∞");
         var priceIds = billingPlanConfigService.getPriceIdsByInterval();
-        String priceIdFreeMonthly = priceIds.get(PlanTier.FREE).get(BillingInterval.MONTHLY);
-        String priceIdFreeYearly = priceIds.get(PlanTier.FREE).get(BillingInterval.YEARLY);
-        String priceIdProMonthly = priceIds.get(PlanTier.PRO).get(BillingInterval.MONTHLY);
-        String priceIdProYearly = priceIds.get(PlanTier.PRO).get(BillingInterval.YEARLY);
-        String priceIdTeamMonthly = priceIds.get(PlanTier.TEAM).get(BillingInterval.MONTHLY);
-        String priceIdTeamYearly = priceIds.get(PlanTier.TEAM).get(BillingInterval.YEARLY);
+        String priceIdFreeMonthly = resolvePriceId(priceIds, PlanTier.FREE, BillingInterval.MONTHLY);
+        String priceIdFreeYearly = resolvePriceId(priceIds, PlanTier.FREE, BillingInterval.YEARLY);
+        String priceIdProMonthly = resolvePriceId(priceIds, PlanTier.PRO, BillingInterval.MONTHLY);
+        String priceIdProYearly = resolvePriceId(priceIds, PlanTier.PRO, BillingInterval.YEARLY);
+        String priceIdTeamMonthly = resolvePriceId(priceIds, PlanTier.TEAM, BillingInterval.MONTHLY);
+        String priceIdTeamYearly = resolvePriceId(priceIds, PlanTier.TEAM, BillingInterval.YEARLY);
         model.addAttribute("priceIdFreeMonthly", priceIdFreeMonthly);
         model.addAttribute("priceIdFreeYearly", priceIdFreeYearly);
         model.addAttribute("priceIdProMonthly", priceIdProMonthly);
@@ -236,6 +236,19 @@ public class BillingController extends BaseController {
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String resolvePriceId(java.util.Map<PlanTier, java.util.Map<BillingInterval, String>> priceIds,
+                                  PlanTier planTier,
+                                  BillingInterval interval) {
+        if (priceIds == null || planTier == null || interval == null) {
+            return "";
+        }
+        java.util.Map<BillingInterval, String> byInterval = priceIds.get(planTier);
+        if (byInterval == null) {
+            return "";
+        }
+        return safe(byInterval.get(interval));
     }
 
     private boolean isSuperAdmin() {

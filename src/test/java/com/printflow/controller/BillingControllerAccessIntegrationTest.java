@@ -147,4 +147,20 @@ class BillingControllerAccessIntegrationTest {
             .extracting(config -> config.getStripePriceId())
             .isEqualTo("price_pro_m");
     }
+
+    @Test
+    void billingPageStillRendersWhenPriceConfigEntriesAreMissing() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        fixture.createTenantData();
+        billingPlanConfigRepository.deleteAll();
+
+        MockHttpSession tenant1 = fixture.login("tenant1_admin", "password");
+        mockMvc.perform(get("/admin/billing").session(tenant1))
+            .andExpect(status().isOk())
+            .andExpect(view().name("admin/billing/index"))
+            .andExpect(model().attribute("priceIdProMonthly", ""))
+            .andExpect(model().attribute("priceIdProYearly", ""))
+            .andExpect(model().attribute("priceConfigMissing", true));
+    }
 }
