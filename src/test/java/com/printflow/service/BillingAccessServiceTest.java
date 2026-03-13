@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -119,6 +120,30 @@ public class BillingAccessServiceTest {
         assertFalse(service.isTrialActive(null));
         assertDoesNotThrow(() -> service.assertBillingActiveForPremiumAction(null));
         verifyNoMoreInteractions(repo, companyRepository, auditLogService);
+    }
+
+    @Test
+    void invalidateCompanyCacheForcesFreshBillingViewRead() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Long companyId = 9L;
+        when(repo.findByCompany_Id(companyId)).thenReturn(Optional.empty());
+        AtomicInteger reads = new AtomicInteger();
+        when(companyRepository.findBillingViewById(companyId))
+            .thenAnswer(invocation -> {
+                if (reads.getAndIncrement() == 0) {
+                    return Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 3, 20, 0, 0)));
+                }
+                return Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 3, 1, 0, 0)));
+            });
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertTrue(service.isBillingActive(companyId));
+        service.invalidateCompanyCache(companyId);
+        assertFalse(service.isBillingActive(companyId));
     }
 
     private CompanyBillingView viewWithTrialEnd(LocalDateTime trialEnd) {

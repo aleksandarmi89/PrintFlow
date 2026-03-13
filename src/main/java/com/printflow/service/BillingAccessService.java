@@ -136,6 +136,13 @@ public class BillingAccessService {
         return view != null ? view.getTrialEnd() : null;
     }
 
+    public void invalidateCompanyCache(Long companyId) {
+        if (companyId == null) {
+            return;
+        }
+        billingViewCache.remove(companyId);
+    }
+
     private CompanyBillingView getBillingView(Long companyId) {
         if (companyId == null) {
             return null;

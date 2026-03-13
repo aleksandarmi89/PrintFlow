@@ -37,6 +37,8 @@ public class StripeBillingService {
     private final StripeProperties stripeProperties;
     private final BillingCustomerRepository billingCustomerRepository;
     private final BillingSubscriptionRepository billingSubscriptionRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BillingAccessService billingAccessService;
 
     public StripeBillingService(StripeProperties stripeProperties,
                                 BillingCustomerRepository billingCustomerRepository,
@@ -183,6 +185,9 @@ public class StripeBillingService {
         billingSubscription.setStripePriceId(priceId);
 
         billingSubscriptionRepository.save(billingSubscription);
+        if (billingAccessService != null) {
+            billingAccessService.invalidateCompanyCache(billingCustomer.getCompany().getId());
+        }
         log.info("billing_subscription_upserted companyId={} stripeCustomerId={} status={} priceId={} periodEnd={} eventCreated={}",
             billingCustomer.getCompany().getId(),
             subscription.getCustomer(),

@@ -29,6 +29,8 @@ public class CompanyService {
     private final int trialDays;
     private final TemplateSeederService templateSeederService;
     private final NotificationService notificationService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BillingAccessService billingAccessService;
 
     public CompanyService(CompanyRepository companyRepository,
                           UserRepository userRepository,
@@ -166,6 +168,7 @@ public class CompanyService {
         company.setBillingOverrideActive(dto.isBillingOverrideActive());
         company.setBillingOverrideUntil(dto.isBillingOverrideActive() ? dto.getBillingOverrideUntil() : null);
         Company saved = companyRepository.save(company);
+        invalidateBillingCache(saved.getId());
         return toDTO(saved);
     }
 
@@ -179,6 +182,7 @@ public class CompanyService {
             company.setPlanUpdatedAt(LocalDateTime.now());
         }
         Company saved = companyRepository.save(company);
+        invalidateBillingCache(saved.getId());
         return toDTO(saved);
     }
 
@@ -193,6 +197,7 @@ public class CompanyService {
         company.setBillingOverrideActive(false);
         company.setBillingOverrideUntil(null);
         Company saved = companyRepository.save(company);
+        invalidateBillingCache(saved.getId());
         return toDTO(saved);
     }
 
@@ -205,6 +210,7 @@ public class CompanyService {
         company.setBillingOverrideActive(true);
         company.setBillingOverrideUntil(now.plusDays(Math.max(0, days)));
         Company saved = companyRepository.save(company);
+        invalidateBillingCache(saved.getId());
         return toDTO(saved);
     }
 
@@ -239,6 +245,7 @@ public class CompanyService {
             .orElseThrow(() -> new RuntimeException("Company not found"));
         company.setActive(false);
         companyRepository.save(company);
+        invalidateBillingCache(company.getId());
     }
 
     public void enableCompany(Long id) {
@@ -246,6 +253,13 @@ public class CompanyService {
             .orElseThrow(() -> new RuntimeException("Company not found"));
         company.setActive(true);
         companyRepository.save(company);
+        invalidateBillingCache(company.getId());
+    }
+
+    private void invalidateBillingCache(Long companyId) {
+        if (billingAccessService != null) {
+            billingAccessService.invalidateCompanyCache(companyId);
+        }
     }
 
     private CompanyDTO toDTO(Company company) {
