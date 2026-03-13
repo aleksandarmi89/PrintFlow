@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CompanyServiceTest {
@@ -391,5 +392,79 @@ class CompanyServiceTest {
         assertNull(updated.getSmtpUser());
         // Password should not be overwritten by blank value.
         assertEquals("secret-old", existing.getSmtpPassword());
+    }
+
+    @Test
+    void setBillingOverrideInvalidatesBillingAccessCache() throws Exception {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+
+        Company existing = new Company();
+        existing.setId(21L);
+        existing.setName("Omega");
+        existing.setSlug("omega");
+        when(companyRepository.findById(21L)).thenReturn(Optional.of(existing));
+        when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+        var field = CompanyService.class.getDeclaredField("billingAccessService");
+        field.setAccessible(true);
+        field.set(service, billingAccessService);
+
+        service.setBillingOverride(21L, true, LocalDateTime.now().plusDays(10));
+
+        verify(billingAccessService).invalidateCompanyCache(21L);
+    }
+
+    @Test
+    void activateProOverrideInvalidatesBillingAccessCache() throws Exception {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+
+        Company existing = new Company();
+        existing.setId(22L);
+        existing.setName("Sigma");
+        existing.setSlug("sigma");
+        when(companyRepository.findById(22L)).thenReturn(Optional.of(existing));
+        when(companyRepository.save(any(Company.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService
+        );
+        var field = CompanyService.class.getDeclaredField("billingAccessService");
+        field.setAccessible(true);
+        field.set(service, billingAccessService);
+
+        service.activateProOverrideForDays(22L, 365);
+
+        verify(billingAccessService).invalidateCompanyCache(22L);
     }
 }
