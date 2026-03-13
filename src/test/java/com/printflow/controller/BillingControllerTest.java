@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -125,6 +126,26 @@ class BillingControllerTest {
     }
 
     @Test
+    void startCheckoutThrowsForbiddenWhenTenantCompanyMissing() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(tenantContextService.getCurrentCompany()).thenReturn(null);
+
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> controller.startCheckout("price_pro_m"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+        verifyNoInteractions(stripeBillingService, billingPlanConfigService, auditLogService);
+    }
+
+    @Test
     void startCheckoutRedirectsToStripeUrlOnSuccess() throws StripeException {
         StripeBillingService stripeBillingService = mock(StripeBillingService.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
@@ -200,7 +221,26 @@ class BillingControllerTest {
             new UsernamePasswordAuthenticationToken("admin", "n/a", List.of(new SimpleGrantedAuthority("ADMIN")))
         );
 
-        ResponseStatusException ex = org.junit.jupiter.api.Assertions.assertThrows(ResponseStatusException.class,
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> controller.updateBillingConfig("f_m", "f_y", "p_m", "p_y", "t_m", "t_y"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+        verifyNoInteractions(billingPlanConfigService, auditLogService);
+    }
+
+    @Test
+    void updateBillingConfigRejectsMissingAuthentication() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        SecurityContextHolder.clearContext();
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
             () -> controller.updateBillingConfig("f_m", "f_y", "p_m", "p_y", "t_m", "t_y"));
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
         verifyNoInteractions(billingPlanConfigService, auditLogService);
