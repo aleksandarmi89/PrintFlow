@@ -110,6 +110,7 @@ class AdminCompanySettingsControllerTest {
         when(companyService.getCompanyById(17L)).thenReturn(dto);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(true);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("mail_settings");
 
         Model model = new ExtendedModelMap();
         String view = controller.settings(null, null, model);
@@ -147,6 +148,7 @@ class AdminCompanySettingsControllerTest {
         when(companyService.getCompanyById(18L)).thenReturn(dto);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(false);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("legacy_company");
 
         Model model = new ExtendedModelMap();
         String view = controller.settings(null, null, model);

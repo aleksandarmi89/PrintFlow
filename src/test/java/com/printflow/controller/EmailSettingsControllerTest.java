@@ -50,6 +50,7 @@ class EmailSettingsControllerTest {
         when(contextService.currentCompany()).thenReturn(company);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(true);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("mail_settings");
         when(mailSettingsService.toDto(settings)).thenReturn(new com.printflow.dto.MailSettingsDTO());
         when(companyService.getCompanyById(31L)).thenReturn(dto);
         when(emailOutboxService.listForCompany(company, null, 0, 20)).thenReturn(new PageImpl<>(List.of()));
@@ -94,6 +95,7 @@ class EmailSettingsControllerTest {
         when(contextService.currentCompany()).thenReturn(company);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(false);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("legacy_company");
         when(mailSettingsService.toDto(settings)).thenReturn(new com.printflow.dto.MailSettingsDTO());
         when(companyService.getCompanyById(32L)).thenReturn(dto);
         when(emailOutboxService.listForCompany(company, null, 0, 20)).thenReturn(new PageImpl<>(List.of()));
@@ -133,6 +135,7 @@ class EmailSettingsControllerTest {
         when(contextService.currentCompany()).thenReturn(company);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(false);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("none");
         when(mailSettingsService.toDto(settings)).thenReturn(new com.printflow.dto.MailSettingsDTO());
         when(companyService.getCompanyById(33L)).thenReturn(dto);
         when(emailOutboxService.listForCompany(company, null, 0, 20)).thenReturn(new PageImpl<>(List.of()));

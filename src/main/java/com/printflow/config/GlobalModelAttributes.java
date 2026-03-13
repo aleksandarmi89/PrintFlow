@@ -57,15 +57,8 @@ public class GlobalModelAttributes {
         if (company != null) {
             model.addAttribute("companyPlan", company.getPlan());
         }
-        boolean smtpConfigured = mailSettingsRepository.findByCompany_Id(companyId)
-            .map(mailSettingsService::isConfigured)
-            .orElse(false);
-        if (!smtpConfigured && company != null) {
-            smtpConfigured = company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
-                && company.getSmtpPort() != null
-                && company.getSmtpUser() != null && !company.getSmtpUser().isBlank()
-                && company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank();
-        }
+        var mailSettings = mailSettingsRepository.findByCompany_Id(companyId).orElse(null);
+        boolean smtpConfigured = mailSettingsService.isConfiguredWithLegacyFallback(company, mailSettings);
         model.addAttribute("smtpConfigured", smtpConfigured);
         if (tenantContextService.isSuperAdmin()) {
             model.addAttribute("billingActive", true);

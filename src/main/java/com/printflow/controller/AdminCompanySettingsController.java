@@ -51,7 +51,7 @@ public class AdminCompanySettingsController extends BaseController {
         Company company = currentContextService.currentCompany();
         CompanyDTO dto = companyService.getCompanyById(company.getId());
         var mailSettings = mailSettingsService.getOrCreate(company);
-        String smtpSource = resolveSmtpSource(company, mailSettings);
+        String smtpSource = mailSettingsService.resolveSmtpSource(company, mailSettings);
         model.addAttribute("company", dto);
         model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
         model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
@@ -169,21 +169,7 @@ public class AdminCompanySettingsController extends BaseController {
         if (company == null) {
             return false;
         }
-        return !"none".equals(resolveSmtpSource(company, mailSettingsService.getOrCreate(company)));
-    }
-
-    private String resolveSmtpSource(Company company, MailSettings settings) {
-        if (company == null) {
-            return "none";
-        }
-        if (mailSettingsService.isConfigured(settings)) {
-            return "mail_settings";
-        }
-        boolean legacyConfigured = company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
-            && company.getSmtpPort() != null
-            && company.getSmtpUser() != null && !company.getSmtpUser().isBlank()
-            && company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank();
-        return legacyConfigured ? "legacy_company" : "none";
+        return mailSettingsService.isConfiguredWithLegacyFallback(company, mailSettingsService.getOrCreate(company));
     }
 
     @GetMapping("/logo")

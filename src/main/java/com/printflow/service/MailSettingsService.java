@@ -62,4 +62,22 @@ public class MailSettingsService {
             && settings.getSmtpUsername() != null && !settings.getSmtpUsername().isBlank()
             && settings.getSmtpPasswordEnc() != null && !settings.getSmtpPasswordEnc().isBlank();
     }
+
+    public String resolveSmtpSource(Company company, MailSettings settings) {
+        if (isConfigured(settings)) {
+            return "mail_settings";
+        }
+        if (company != null
+            && company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
+            && company.getSmtpPort() != null
+            && company.getSmtpUser() != null && !company.getSmtpUser().isBlank()
+            && company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank()) {
+            return "legacy_company";
+        }
+        return "none";
+    }
+
+    public boolean isConfiguredWithLegacyFallback(Company company, MailSettings settings) {
+        return !"none".equals(resolveSmtpSource(company, settings));
+    }
 }

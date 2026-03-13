@@ -54,7 +54,7 @@ public class EmailSettingsController extends BaseController {
                            Model model) {
         Company company = currentContextService.currentCompany();
         MailSettings settings = mailSettingsService.getOrCreate(company);
-        String smtpSource = resolveSmtpSource(company, settings);
+        String smtpSource = mailSettingsService.resolveSmtpSource(company, settings);
         int safeOutboxPage = Math.max(0, outboxPage);
         Page<com.printflow.entity.EmailOutbox> outboxEntries = emailOutboxService.listForCompany(company, outboxStatus, safeOutboxPage, 20);
         model.addAttribute("company", companyService.getCompanyById(company.getId()));
@@ -189,17 +189,4 @@ public class EmailSettingsController extends BaseController {
         return null;
     }
 
-    private String resolveSmtpSource(Company company, MailSettings settings) {
-        if (mailSettingsService.isConfigured(settings)) {
-            return "mail_settings";
-        }
-        if (company != null
-            && company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
-            && company.getSmtpPort() != null
-            && company.getSmtpUser() != null && !company.getSmtpUser().isBlank()
-            && company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank()) {
-            return "legacy_company";
-        }
-        return "none";
-    }
 }
