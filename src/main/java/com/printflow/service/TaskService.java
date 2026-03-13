@@ -503,7 +503,8 @@ public class TaskService {
     public void rejectTaskCompletion(Long taskId, Long adminUserId, String reason) {
         Task task = getTaskOrThrow(taskId);
 
-        if (reason == null || reason.trim().isEmpty()) {
+        String normalizedReason = reason == null ? null : reason.trim();
+        if (normalizedReason == null || normalizedReason.isEmpty()) {
             throw new RuntimeException("Reject reason is required");
         }
 
@@ -512,17 +513,17 @@ public class TaskService {
         task.setCompletedAt(null);
         task.setUpdatedAt(LocalDateTime.now());
 
-        String noteText = "Review rejected: " + reason.trim();
+        String noteText = "Review rejected: " + normalizedReason;
         task.setNotes(task.getNotes() == null ? noteText : task.getNotes() + "\n" + noteText);
 
         taskRepository.save(task);
 
         createTaskActivity(task, "TASK_REJECTED",
-            String.format("Task rejected by admin (from %s). Reason: %s", oldStatus, reason.trim()), adminUserId);
+            String.format("Task rejected by admin (from %s). Reason: %s", oldStatus, normalizedReason), adminUserId);
         auditLogService.log(AuditAction.REJECT, "Task", task.getId(),
             oldStatus != null ? oldStatus.name() : null,
             TaskStatus.IN_PROGRESS.name(),
-            "Task rejected by admin: " + reason.trim(),
+            "Task rejected by admin: " + normalizedReason,
             task.getCompany());
 
         java.util.Set<Long> recipientIds = new java.util.LinkedHashSet<>();
@@ -536,7 +537,7 @@ public class TaskService {
             notificationService.sendTaskReviewDecisionNotification(
                 recipientId,
                 "Task Rejected",
-                "Task \"" + task.getTitle() + "\" was rejected. Reason: " + reason.trim(),
+                "Task \"" + task.getTitle() + "\" was rejected. Reason: " + normalizedReason,
                 task.getId()
             );
         }
