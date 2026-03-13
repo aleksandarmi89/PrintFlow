@@ -7,16 +7,16 @@
 <div th:replace="~{layout/header :: header}"></div>
 
 <main class="container mx-auto px-4 py-8">
-    <div class="flex items-center justify-between mb-6">
+    <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-2xl font-bold" th:text="#{pricing.bulk.preview}">Bulk Preview</h1>
             <p class="text-gray-600" th:text="#{pricing.bulk.preview_help}">Preview affected items before applying.</p>
         </div>
-        <a th:href="@{/admin/pricing/products}" class="text-blue-600" th:text="#{pricing.products.back}">Back</a>
+        <a th:href="@{/admin/pricing/products}" class="text-blue-600 text-sm md:text-base" th:text="#{pricing.products.back}">Back</a>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="flex items-center gap-6 text-sm">
+        <div class="grid grid-cols-2 gap-4 text-sm md:flex md:items-center md:gap-6">
             <div>
                 <div class="text-gray-500" th:text="#{pricing.bulk.preview_components}">Components affected</div>
                 <div class="text-lg font-semibold" th:text="${preview.componentCount}">0</div>
@@ -38,7 +38,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.bulk.preview_components}">Components affected</h2>
         <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+            <table class="min-w-[980px] w-full text-sm">
                 <thead class="text-gray-500">
                 <tr class="text-left border-b">
                     <th class="py-2" th:text="#{pricing.products.category}">Category</th>
@@ -63,8 +63,8 @@
                     <td class="py-2"
                         th:with="k=${c.pricingModel != null ? 'pricing.model.' + c.pricingModel : null}, lbl=${k != null ? #messages.msgOrNull(k) : null}"
                         th:text="${lbl != null ? lbl : c.pricingModel}">-</td>
-                    <td class="py-2" th:text="${c.amount}">-</td>
-                    <td class="py-2" th:text="${c.notes}">-</td>
+                    <td class="py-2" th:text="${c.amount != null ? c.amount : #messages.msg('common.na')}">-</td>
+                    <td class="py-2" th:text="${c.notes != null && !#strings.isEmpty(c.notes) ? c.notes : #messages.msg('common.na')}">-</td>
                 </tr>
                 <tr th:if="${preview.components.empty}">
                     <td colspan="7" class="py-4 text-gray-500" th:text="#{pricing.bulk.preview_none}">No components found.</td>
@@ -77,7 +77,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 class="text-lg font-semibold mb-4" th:text="#{pricing.bulk.preview_variants}">Variants affected</h2>
         <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+            <table class="min-w-[860px] w-full text-sm">
                 <thead class="text-gray-500">
                 <tr class="text-left border-b">
                     <th class="py-2" th:text="#{pricing.products.category}">Category</th>
@@ -95,9 +95,9 @@
                         th:text="${lbl != null ? lbl : v.category}">-</td>
                     <td class="py-2" th:text="${v.productName}">-</td>
                     <td class="py-2" th:text="${v.variantName}">-</td>
-                    <td class="py-2" th:text="${v.markupPercent}">-</td>
-                    <td class="py-2" th:text="${v.wastePercent}">-</td>
-                    <td class="py-2" th:text="${v.minPrice}">-</td>
+                    <td class="py-2" th:text="${v.markupPercent != null ? v.markupPercent : #messages.msg('common.na')}">-</td>
+                    <td class="py-2" th:text="${v.wastePercent != null ? v.wastePercent : #messages.msg('common.na')}">-</td>
+                    <td class="py-2" th:text="${v.minPrice != null ? v.minPrice : #messages.msg('common.na')}">-</td>
                 </tr>
                 <tr th:if="${preview.variants.empty}">
                     <td colspan="6" class="py-4 text-gray-500" th:text="#{pricing.bulk.preview_none}">No variants found.</td>

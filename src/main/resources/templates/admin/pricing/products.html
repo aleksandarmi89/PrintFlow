@@ -160,8 +160,10 @@
                     th:with="k=${'pricing.unit_type.' + p.unitType.name()}, lbl=${#messages.msgOrNull(k)}"
                     th:text="${lbl != null ? lbl : p.unitType.name()}">Unit</td>
                 <td class="py-2">
-                    <div class="flex items-center gap-2">
-                        <span th:text="${p.active ? #messages.msg('common.active') : #messages.msg('common.inactive')}">Active</span>
+                    <div class="flex items-center gap-2 whitespace-nowrap">
+                        <span class="text-xs px-2 py-0.5 rounded-full"
+                              th:classappend="${p.active} ? ' bg-green-50 text-green-700' : ' bg-gray-100 text-gray-700'"
+                              th:text="${p.active ? #messages.msg('common.active') : #messages.msg('common.inactive')}">Active</span>
                         <span th:if="${productHasDefault[p.id]}"
                               class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
                               th:attr="title=#{pricing.default.tooltip}"
