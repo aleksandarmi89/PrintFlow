@@ -18,6 +18,10 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     Optional<Company> findBySlugAndActiveTrue(String slug);
     boolean existsByName(String name);
     boolean existsByNameIgnoreCase(String name);
+    @Query("select (count(c) > 0) from Company c where lower(trim(c.name)) = lower(trim(:name))")
+    boolean existsByNormalizedName(@Param("name") String name);
+    @Query("select (count(c) > 0) from Company c where c.id <> :id and lower(trim(c.name)) = lower(trim(:name))")
+    boolean existsByNormalizedNameAndIdNot(@Param("name") String name, @Param("id") Long id);
     boolean existsBySlug(String slug);
     List<Company> findByActiveTrue();
     List<Company> findByNameContainingIgnoreCase(String name);

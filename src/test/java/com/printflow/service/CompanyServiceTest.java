@@ -30,7 +30,7 @@ class CompanyServiceTest {
         TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
         NotificationService notificationService = mock(NotificationService.class);
 
-        when(companyRepository.existsByNameIgnoreCase("Gamma")).thenReturn(false);
+        when(companyRepository.existsByNormalizedName("Gamma")).thenReturn(false);
         when(companyRepository.findBySlug(any())).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(inv -> {
             Company c = inv.getArgument(0);
@@ -77,7 +77,7 @@ class CompanyServiceTest {
         TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
         NotificationService notificationService = mock(NotificationService.class);
 
-        when(companyRepository.existsByNameIgnoreCase("Acme")).thenReturn(true);
+        when(companyRepository.existsByNormalizedName("Acme")).thenReturn(true);
 
         CompanyService service = new CompanyService(
             companyRepository,
@@ -201,7 +201,7 @@ class CompanyServiceTest {
         existing.setName("Alpha");
         existing.setSlug("alpha");
         when(companyRepository.findById(16L)).thenReturn(Optional.of(existing));
-        when(companyRepository.existsByNameIgnoreCase("Beta")).thenReturn(true);
+        when(companyRepository.existsByNormalizedNameAndIdNot("Beta", 16L)).thenReturn(true);
 
         CompanyService service = new CompanyService(
             companyRepository,
