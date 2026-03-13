@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -97,7 +98,7 @@ public class CompanyController extends BaseController {
         try {
             companyService.createCompany(companyDTO);
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.created", model);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             model.addAttribute("company", companyDTO);
             model.addAttribute("errorMessage", mapCompanyErrorToKey(e.getMessage()));
             return "admin/companies/create";
@@ -124,7 +125,7 @@ public class CompanyController extends BaseController {
                 .collect(Collectors.toList());
             model.addAttribute("overrideLogs", overrideLogs);
             return "admin/companies/edit";
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return redirectWithError("/admin/companies", "admin.companies.flash.not_found", model);
         }
     }
@@ -145,7 +146,7 @@ public class CompanyController extends BaseController {
                 companyService.updateLogo(id, logo);
             }
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.updated", model);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             model.addAttribute("company", companyDTO);
             model.addAttribute("errorMessage", mapCompanyErrorToKey(e.getMessage()));
             return "admin/companies/edit";
@@ -160,7 +161,7 @@ public class CompanyController extends BaseController {
         try {
             companyService.disableCompany(id);
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.disabled", model);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return redirectWithError("/admin/companies", mapCompanyErrorToKey(e.getMessage()), model);
         }
     }
@@ -173,7 +174,7 @@ public class CompanyController extends BaseController {
         try {
             companyService.enableCompany(id);
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.enabled", model);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return redirectWithError("/admin/companies", mapCompanyErrorToKey(e.getMessage()), model);
         }
     }
@@ -230,7 +231,7 @@ public class CompanyController extends BaseController {
             return org.springframework.http.ResponseEntity.ok()
                 .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
                 .body(data);
-        } catch (Exception ex) {
+        } catch (IOException | RuntimeException ex) {
             return org.springframework.http.ResponseEntity.notFound().build();
         }
     }
