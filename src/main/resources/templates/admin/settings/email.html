@@ -28,7 +28,7 @@
                      th:text="${m != null ? m : successKey}">Saved</div>
                 <div th:if="${cleanupCount != null}" class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
                      th:text="#{email.settings.outbox.cleanup_done(${cleanupCount})}">Cleanup done</div>
-                <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 flex items-center justify-between gap-3">
+                <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex flex-col gap-1">
                         <span class="text-gray-600" th:text="#{company.settings.smtp_status_label}">SMTP status</span>
                         <span class="text-xs text-gray-500" th:if="${smtpSource == 'mail_settings'}"
@@ -38,7 +38,7 @@
                         <span class="text-xs text-gray-500" th:if="${smtpSource == 'none'}"
                               th:text="#{company.settings.smtp_source_none}">Source: not configured</span>
                     </div>
-                    <div class="shrink-0">
+                    <div class="shrink-0 self-start sm:self-auto">
                         <span th:if="${smtpConfigured}"
                               class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700"
                               th:text="#{email.header.smtp_ok}">SMTP OK</span>
