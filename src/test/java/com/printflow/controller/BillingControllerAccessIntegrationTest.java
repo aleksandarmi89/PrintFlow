@@ -63,6 +63,15 @@ class BillingControllerAccessIntegrationTest {
     }
 
     @Test
+    void anonymousUserIsRedirectedToLoginForCheckout() throws Exception {
+        mockMvc.perform(post("/admin/billing/checkout")
+                .with(csrf())
+                .param("priceId", "price_pro_m"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
     void adminCanOpenBillingPageAndResolveOwnTenantContext() throws Exception {
         fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
             workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
