@@ -146,7 +146,7 @@ public class CompanyController extends BaseController {
                 companyService.updateLogo(id, logo);
             }
             return redirectWithSuccess("/admin/companies", "admin.companies.flash.updated", model);
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             model.addAttribute("company", companyDTO);
             model.addAttribute("errorMessage", mapCompanyErrorToKey(e.getMessage()));
             return "admin/companies/edit";
