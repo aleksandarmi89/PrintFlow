@@ -334,15 +334,15 @@
             </h2>
 
             <div class="space-y-3">
-                <div th:each="w : ${workerLoad}" class="flex items-center gap-3"
+                <div th:each="w : ${workerLoad}" class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
                      th:with="workerPct=${maxWorkerLoad == 0 ? 0 : (1.0 * w.count / maxWorkerLoad * 100)}">
-                    <div class="w-32 text-xs text-gray-700 truncate" th:text="${w.workerName}">Worker</div>
+                    <div class="w-full sm:w-32 text-xs text-gray-700 truncate" th:text="${w.workerName}">Worker</div>
                     <div class="flex-1 bg-gray-100 rounded-full h-3">
                         <div class="bg-emerald-600 h-3 rounded-full"
                              th:attr="data-tooltip=${w.count + ' ' + #messages.msg('planner.orders')}"
                              th:style="'width:' + ${workerPct} + '%'"></div>
                     </div>
-                    <div class="w-6 text-xs text-gray-600" th:text="${w.count}">0</div>
+                    <div class="w-full sm:w-6 text-xs text-gray-600 sm:text-right" th:text="${w.count}">0</div>
                 </div>
 
                 <div th:if="${workerLoad == null || workerLoad.size() == 0}" class="text-sm text-gray-500"
@@ -397,13 +397,13 @@
         </div>
 
         <div class="overflow-x-auto">
-        <div class="min-w-[760px] space-y-3">
-            <div th:each="p : ${statusTimeline}" class="flex items-center gap-4"
+        <div class="min-w-[640px] md:min-w-[760px] space-y-3">
+            <div th:each="p : ${statusTimeline}" class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
                  th:with="newPct=${maxStatusCount == 0 ? 0 : (p.newCount / maxStatusCount * 100)},
                           designPct=${maxStatusCount == 0 ? 0 : (p.designCount / maxStatusCount * 100)},
                           printPct=${maxStatusCount == 0 ? 0 : (p.printCount / maxStatusCount * 100)},
                           readyPct=${maxStatusCount == 0 ? 0 : (p.readyCount / maxStatusCount * 100)}">
-                <div class="w-10 text-xs text-gray-500" th:text="${p.label}">MON</div>
+                <div class="w-full sm:w-10 text-xs text-gray-500" th:text="${p.label}">MON</div>
 
                 <div class="flex-1 flex items-center gap-2">
                     <div class="flex-1 bg-gray-100 rounded-full h-3">
@@ -428,7 +428,7 @@
                     </div>
                 </div>
 
-                <div class="w-16 text-xs text-gray-600 text-right">
+                <div class="w-full sm:w-16 text-xs text-gray-600 sm:text-right">
                     <span th:text="${p.newCount}">0</span>/<span th:text="${p.designCount}">0</span>/<span th:text="${p.printCount}">0</span>/<span th:text="${p.readyCount}">0</span>
                 </div>
             </div>
@@ -509,12 +509,12 @@
         </div>
 
         <div class="overflow-x-auto">
-        <div class="min-w-[720px] space-y-3">
-            <div th:each="p : ${profitByType}" class="flex items-center gap-3"
+        <div class="min-w-[560px] md:min-w-[720px] space-y-3">
+            <div th:each="p : ${profitByType}" class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
                  th:with="grossScale=${scale == 'linear' ? (profitMaxGross == 0 ? 0 : (p.gross / profitMaxGross * 100)) : (profitMaxGrossLog == 0 ? 0 : (T(java.lang.Math).log1p(p.gross) / profitMaxGrossLog * 100))},
                           costPct=${p.gross == 0 ? 0 : ((p.gross - p.margin) / p.gross * 100)},
                           marginPct=${p.gross == 0 ? 0 : (p.margin / p.gross * 100)}">
-                <div class="w-16 text-xs text-gray-600" th:text="${p.printType}">DTF</div>
+                <div class="w-full sm:w-16 text-xs text-gray-600" th:text="${p.printType}">DTF</div>
 
                 <div class="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden relative">
                     <div class="bg-blue-500 h-4 absolute left-0 top-0"
@@ -528,7 +528,7 @@
                          th:style="'width:' + ${grossScale * marginPct / 100} + '%'"></div>
                 </div>
 
-                <div class="w-36 text-xs text-gray-700 text-right">
+                <div class="w-full sm:w-36 text-xs text-gray-700 sm:text-right">
                     <span th:text="${'€' + #numbers.formatDecimal(p.gross, 1, 2)}">€0.00</span>
                 </div>
             </div>
