@@ -64,7 +64,7 @@ public class PublicOrderRequestController extends BaseController {
             model.addAttribute("errorMessage",
                 messageSource.getMessage(ex.getMessageKey(), ex.getMessageArgs(), LocaleContextHolder.getLocale()));
             return "public/order-request-form";
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             model.addAttribute("company", company);
             model.addAttribute("companySlug", companySlug);
             model.addAttribute("errorMessage",
