@@ -55,7 +55,8 @@ public class EmailSettingsController extends BaseController {
         Company company = currentContextService.currentCompany();
         MailSettings settings = mailSettingsService.getOrCreate(company);
         String smtpSource = resolveSmtpSource(company, settings);
-        Page<com.printflow.entity.EmailOutbox> outboxEntries = emailOutboxService.listForCompany(company, outboxStatus, outboxPage, 20);
+        int safeOutboxPage = Math.max(0, outboxPage);
+        Page<com.printflow.entity.EmailOutbox> outboxEntries = emailOutboxService.listForCompany(company, outboxStatus, safeOutboxPage, 20);
         model.addAttribute("company", companyService.getCompanyById(company.getId()));
         model.addAttribute("settings", mailSettingsService.toDto(settings));
         model.addAttribute("passwordSet", settings.getSmtpPasswordEnc() != null && !settings.getSmtpPasswordEnc().isBlank());
