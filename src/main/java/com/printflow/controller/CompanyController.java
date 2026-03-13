@@ -50,10 +50,7 @@ public class CompanyController extends BaseController {
             org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
         com.printflow.entity.enums.PlanTier planTier = null;
         if (plan != null && !plan.isBlank()) {
-            try {
-                planTier = com.printflow.entity.enums.PlanTier.valueOf(plan);
-            } catch (IllegalArgumentException ignored) {
-            }
+            planTier = parsePlanTier(plan);
         }
         Boolean overrideActive = null;
         if (override != null && !override.isBlank()) {
@@ -247,5 +244,17 @@ public class CompanyController extends BaseController {
             case "Logo must be PNG, JPG or SVG" -> "admin.companies.error.logo_type";
             default -> "admin.companies.error.generic";
         };
+    }
+
+    private com.printflow.entity.enums.PlanTier parsePlanTier(String plan) {
+        if (plan == null || plan.isBlank()) {
+            return null;
+        }
+        for (com.printflow.entity.enums.PlanTier value : com.printflow.entity.enums.PlanTier.values()) {
+            if (value.name().equalsIgnoreCase(plan.trim())) {
+                return value;
+            }
+        }
+        return null;
     }
 }
