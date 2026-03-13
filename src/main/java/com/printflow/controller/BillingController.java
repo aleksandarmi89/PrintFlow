@@ -199,6 +199,8 @@ public class BillingController extends BaseController {
             return redirect;
         } catch (StripeException ex) {
             return new RedirectView("/admin/billing?error=billing.checkout.stripe_error", true);
+        } catch (RuntimeException ex) {
+            return new RedirectView("/admin/billing?error=billing.checkout.stripe_error", true);
         }
     }
 
