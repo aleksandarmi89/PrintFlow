@@ -198,9 +198,7 @@ public class BillingController extends BaseController {
             redirect.setExposeModelAttributes(false);
             redirect.setHttp10Compatible(false);
             return redirect;
-        } catch (StripeException ex) {
-            return new RedirectView("/admin/billing?error=billing.checkout.stripe_error", true);
-        } catch (RuntimeException ex) {
+        } catch (StripeException | RuntimeException ex) {
             return new RedirectView("/admin/billing?error=billing.checkout.stripe_error", true);
         }
     }

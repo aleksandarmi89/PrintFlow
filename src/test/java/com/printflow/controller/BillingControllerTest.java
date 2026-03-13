@@ -245,4 +245,42 @@ class BillingControllerTest {
             eq("Updated Stripe plan price IDs")
         );
     }
+
+    @Test
+    void updateBillingConfigNormalizesNullValuesToEmptyStrings() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                "super",
+                "n/a",
+                List.of(new SimpleGrantedAuthority("SUPER_ADMIN"))
+            )
+        );
+
+        RedirectView view = controller.updateBillingConfig(null, " ", null, "  ", null, null);
+
+        assertEquals("/admin/billing?success=billing.config.saved", view.getUrl());
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.FREE, BillingInterval.MONTHLY, "");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.FREE, BillingInterval.YEARLY, "");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.PRO, BillingInterval.MONTHLY, "");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.PRO, BillingInterval.YEARLY, "");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.TEAM, BillingInterval.MONTHLY, "");
+        verify(billingPlanConfigService).upsertPriceId(PlanTier.TEAM, BillingInterval.YEARLY, "");
+        verify(auditLogService).log(
+            any(),
+            eq("BillingPlanConfig"),
+            eq(null),
+            eq(null),
+            eq("FREE_M=, FREE_Y=, PRO_M=, PRO_Y=, TEAM_M=, TEAM_Y="),
+            eq("Updated Stripe plan price IDs")
+        );
+    }
 }
