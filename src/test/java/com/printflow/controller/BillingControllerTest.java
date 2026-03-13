@@ -113,6 +113,7 @@ class BillingControllerTest {
         Company company = new Company();
         company.setId(55L);
         when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingPlanConfigService.findPlanForPriceId("price_x")).thenReturn(PlanTier.PRO);
         when(stripeBillingService.createSubscriptionCheckout(company, "price_x"))
             .thenThrow(new IllegalStateException("downstream failed"));
 
@@ -133,6 +134,7 @@ class BillingControllerTest {
         AuditLogService auditLogService = mock(AuditLogService.class);
         StripeProperties stripeProperties = mock(StripeProperties.class);
         when(stripeProperties.isConfigured()).thenReturn(true);
+        when(billingPlanConfigService.findPlanForPriceId("price_pro_m")).thenReturn(PlanTier.PRO);
         when(tenantContextService.getCurrentCompany()).thenReturn(null);
 
         BillingController controller = createController(
@@ -142,7 +144,27 @@ class BillingControllerTest {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
             () -> controller.startCheckout("price_pro_m"));
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
-        verifyNoInteractions(stripeBillingService, billingPlanConfigService, auditLogService);
+        verifyNoInteractions(stripeBillingService, auditLogService);
+    }
+
+    @Test
+    void startCheckoutReturnsMissingPriceWhenPriceIsNotConfigured() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(billingPlanConfigService.findPlanForPriceId("price_unknown")).thenReturn(null);
+
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        RedirectView view = controller.startCheckout("price_unknown");
+
+        assertEquals("/admin/billing?error=billing.checkout.missing_price", view.getUrl());
+        verifyNoInteractions(stripeBillingService, tenantContextService, auditLogService);
     }
 
     @Test
