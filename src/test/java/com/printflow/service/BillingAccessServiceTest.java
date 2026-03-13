@@ -184,6 +184,23 @@ public class BillingAccessServiceTest {
         verifyNoMoreInteractions(repo);
     }
 
+    @Test
+    void subscriptionStatusCheckIsTrimmedAndCaseInsensitive() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        BillingSubscription sub = new BillingSubscription();
+        sub.setStatus("  AcTiVe ");
+        Long companyId = 42L;
+        when(repo.findByCompany_Id(companyId)).thenReturn(Optional.of(sub));
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertTrue(service.hasActiveSubscription(companyId));
+        verifyNoMoreInteractions(companyRepository, auditLogService);
+    }
+
     private CompanyBillingView viewWithTrialEnd(LocalDateTime trialEnd) {
         return new CompanyBillingView() {
             @Override

@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
@@ -95,7 +96,8 @@ public class BillingAccessService {
         if (subscription == null || subscription.getStatus() == null) {
             return false;
         }
-        return ACTIVE_STATUSES.contains(subscription.getStatus().toLowerCase());
+        String normalizedStatus = subscription.getStatus().trim().toLowerCase(Locale.ROOT);
+        return ACTIVE_STATUSES.contains(normalizedStatus);
     }
 
     private boolean isBillingActive(Long companyId, CompanyBillingView view) {
