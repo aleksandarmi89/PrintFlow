@@ -65,7 +65,7 @@ public class ProductImportService {
                 processRow(company, row, mode, result);
             } catch (IllegalArgumentException ex) {
                 result.addError(row.getRowNumber(), ex.getMessage());
-            } catch (Exception ex) {
+            } catch (RuntimeException ex) {
                 result.addError(row.getRowNumber(), "Unexpected error: " + ex.getMessage());
             }
         }
@@ -214,7 +214,7 @@ public class ProductImportService {
                 rows.add(toRow(values, index, i + 1));
             }
             return rows;
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             throw new IOException("Invalid XLSX file.", ex);
         }
     }

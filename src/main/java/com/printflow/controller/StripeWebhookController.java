@@ -41,7 +41,7 @@ public class StripeWebhookController {
         } catch (SignatureVerificationException ex) {
             log.warn("Stripe signature verification failed", ex);
             return ResponseEntity.status(400).body("invalid signature");
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             log.error("Stripe webhook processing error", ex);
             return ResponseEntity.status(500).body("error");
         }
