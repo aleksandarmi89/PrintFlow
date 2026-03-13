@@ -186,6 +186,9 @@ public class BillingController extends BaseController {
         if (plan == null) {
             return new RedirectView("/admin/billing?error=billing.checkout.missing_price", true);
         }
+        if (plan == PlanTier.FREE) {
+            return new RedirectView("/admin/billing?error=billing.checkout.missing_price", true);
+        }
         Company company = tenantContextService.getCurrentCompany();
         if (company == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tenant not resolved");
