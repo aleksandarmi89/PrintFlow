@@ -143,4 +143,33 @@ class BillingControllerTest {
         verify(auditLogService).log(any(), eq("BillingCheckout"), eq(null), eq(null), eq("price_pro_m"),
             eq("Checkout started for plan PRO"));
     }
+
+    @Test
+    void startCheckoutTrimsPriceIdBeforeCheckoutAndAudit() throws StripeException {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        when(stripeProperties.isConfigured()).thenReturn(true);
+
+        Company company = new Company();
+        company.setId(88L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(stripeBillingService.createSubscriptionCheckout(company, "price_trimmed"))
+            .thenReturn("https://checkout.stripe.com/session/trimmed");
+        when(billingPlanConfigService.findPlanForPriceId("price_trimmed")).thenReturn(PlanTier.PRO);
+
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        RedirectView view = controller.startCheckout("  price_trimmed  ");
+
+        assertEquals("https://checkout.stripe.com/session/trimmed", view.getUrl());
+        verify(stripeBillingService).createSubscriptionCheckout(company, "price_trimmed");
+        verify(billingPlanConfigService).findPlanForPriceId("price_trimmed");
+        verify(auditLogService).log(any(), eq("BillingCheckout"), eq(null), eq(null), eq("price_trimmed"),
+            eq("Checkout started for plan PRO"));
+    }
 }

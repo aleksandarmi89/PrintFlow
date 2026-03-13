@@ -181,18 +181,19 @@ public class BillingController extends BaseController {
         if (priceId == null || priceId.isBlank()) {
             return new RedirectView("/admin/billing?error=billing.checkout.missing_price", true);
         }
+        String normalizedPriceId = priceId.trim();
         Company company = tenantContextService.getCurrentCompany();
         if (company == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tenant not resolved");
         }
         try {
-            String checkoutUrl = stripeBillingService.createSubscriptionCheckout(company, priceId.trim());
-            var plan = billingPlanConfigService.findPlanForPriceId(priceId);
+            String checkoutUrl = stripeBillingService.createSubscriptionCheckout(company, normalizedPriceId);
+            var plan = billingPlanConfigService.findPlanForPriceId(normalizedPriceId);
             String description = "Checkout started";
             if (plan != null) {
                 description = "Checkout started for plan " + plan;
             }
-            auditLogService.log(AuditAction.UPDATE, "BillingCheckout", null, null, priceId.trim(), description);
+            auditLogService.log(AuditAction.UPDATE, "BillingCheckout", null, null, normalizedPriceId, description);
             RedirectView redirect = new RedirectView(checkoutUrl);
             redirect.setExposeModelAttributes(false);
             redirect.setHttp10Compatible(false);
