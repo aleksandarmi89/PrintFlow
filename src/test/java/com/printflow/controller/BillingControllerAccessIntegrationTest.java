@@ -163,4 +163,84 @@ class BillingControllerAccessIntegrationTest {
             .andExpect(model().attribute("priceIdProYearly", ""))
             .andExpect(model().attribute("priceConfigMissing", true));
     }
+
+    @Test
+    void superAdminConfigUpdateTrimsIncomingPriceIds() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        TenantTestFixture.TenantIds ids = fixture.createTenantData();
+        Company company1 = companyRepository.findById(ids.company1Id()).orElseThrow();
+
+        User superAdmin = new User();
+        superAdmin.setUsername("billing_super_admin_trim");
+        superAdmin.setPassword(passwordEncoder.encode("password"));
+        superAdmin.setRole(User.Role.SUPER_ADMIN);
+        superAdmin.setCompany(company1);
+        superAdmin.setFirstName("Super");
+        superAdmin.setLastName("Admin");
+        superAdmin.setActive(true);
+        userRepository.save(superAdmin);
+
+        MockHttpSession session = fixture.login("billing_super_admin_trim", "password");
+        mockMvc.perform(post("/admin/billing/config")
+                .session(session)
+                .with(csrf())
+                .param("priceIdFreeMonthly", "  price_free_m  ")
+                .param("priceIdFreeYearly", "  price_free_y  ")
+                .param("priceIdProMonthly", "  price_pro_m  ")
+                .param("priceIdProYearly", "  price_pro_y  ")
+                .param("priceIdTeamMonthly", "  price_team_m  ")
+                .param("priceIdTeamYearly", "  price_team_y  "))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/billing?success=billing.config.saved"));
+
+        assertThat(billingPlanConfigRepository.findByPlanAndInterval(PlanTier.FREE, BillingInterval.MONTHLY))
+            .isPresent()
+            .get()
+            .extracting(config -> config.getStripePriceId())
+            .isEqualTo("price_free_m");
+        assertThat(billingPlanConfigRepository.findByPlanAndInterval(PlanTier.TEAM, BillingInterval.YEARLY))
+            .isPresent()
+            .get()
+            .extracting(config -> config.getStripePriceId())
+            .isEqualTo("price_team_y");
+    }
+
+    @Test
+    void superAdminConfigUpdateStoresBlankPriceIdsAsNull() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        TenantTestFixture.TenantIds ids = fixture.createTenantData();
+        Company company1 = companyRepository.findById(ids.company1Id()).orElseThrow();
+
+        User superAdmin = new User();
+        superAdmin.setUsername("billing_super_admin_blank");
+        superAdmin.setPassword(passwordEncoder.encode("password"));
+        superAdmin.setRole(User.Role.SUPER_ADMIN);
+        superAdmin.setCompany(company1);
+        superAdmin.setFirstName("Super");
+        superAdmin.setLastName("Admin");
+        superAdmin.setActive(true);
+        userRepository.save(superAdmin);
+
+        MockHttpSession session = fixture.login("billing_super_admin_blank", "password");
+        mockMvc.perform(post("/admin/billing/config")
+                .session(session)
+                .with(csrf())
+                .param("priceIdProMonthly", "   ")
+                .param("priceIdProYearly", ""))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/billing?success=billing.config.saved"));
+
+        assertThat(billingPlanConfigRepository.findByPlanAndInterval(PlanTier.PRO, BillingInterval.MONTHLY))
+            .isPresent()
+            .get()
+            .extracting(config -> config.getStripePriceId())
+            .isNull();
+        assertThat(billingPlanConfigRepository.findByPlanAndInterval(PlanTier.PRO, BillingInterval.YEARLY))
+            .isPresent()
+            .get()
+            .extracting(config -> config.getStripePriceId())
+            .isNull();
+    }
 }
