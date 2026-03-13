@@ -33,12 +33,16 @@
             <select th:field="*{category}" class="border rounded px-3 py-2">
                 <option value="" th:text="#{pricing.products.category}">Category</option>
                 <option th:each="c : ${T(com.printflow.entity.enums.ProductCategory).values()}"
-                        th:value="${c}" th:text="${c}"></option>
+                        th:value="${c}"
+                        th:with="k=${'pricing.product_category.' + c.name()}, lbl=${#messages.msgOrNull(k)}"
+                        th:text="${lbl != null ? lbl : c.name()}"></option>
             </select>
             <select th:field="*{unitType}" class="border rounded px-3 py-2" required>
                 <option value="" th:text="#{pricing.products.unit}">Unit</option>
                 <option th:each="u : ${T(com.printflow.entity.enums.UnitType).values()}"
-                        th:value="${u}" th:text="${u}"></option>
+                        th:value="${u}"
+                        th:with="k=${'pricing.unit_type.' + u.name()}, lbl=${#messages.msgOrNull(k)}"
+                        th:text="${lbl != null ? lbl : u.name()}"></option>
             </select>
             <button type="submit"
                     th:disabled="${billingExpired}"
@@ -67,15 +71,21 @@
             </label>
             <select id="bulkCategorySelect" th:field="*{category}" class="border rounded px-3 py-2">
                 <option value="" th:text="#{pricing.products.category}">Category</option>
-                <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"></option>
+                <option th:each="c : ${categories}" th:value="${c}"
+                        th:with="k=${'pricing.product_category.' + c.name()}, lbl=${#messages.msgOrNull(k)}"
+                        th:text="${lbl != null ? lbl : c.name()}"></option>
             </select>
             <select th:field="*{componentType}" class="border rounded px-3 py-2">
                 <option value="" th:text="#{pricing.bulk.component_type_any}">Any component type</option>
-                <option th:each="t : ${componentTypes}" th:value="${t}" th:text="${t}"></option>
+                <option th:each="t : ${componentTypes}" th:value="${t}"
+                        th:with="k=${'pricing.component_type.' + t.name()}, lbl=${#messages.msgOrNull(k)}"
+                        th:text="${lbl != null ? lbl : t.name()}"></option>
             </select>
             <select th:field="*{pricingModel}" class="border rounded px-3 py-2">
                 <option value="" th:text="#{pricing.bulk.model_any}">Any model</option>
-                <option th:each="m : ${pricingModels}" th:value="${m}" th:text="${m}"></option>
+                <option th:each="m : ${pricingModels}" th:value="${m}"
+                        th:with="k=${'pricing.model.' + m.name()}, lbl=${#messages.msgOrNull(k)}"
+                        th:text="${lbl != null ? lbl : m.name()}"></option>
             </select>
             <input type="number" step="0.01" th:field="*{amountPercent}" th:placeholder="#{pricing.bulk.amount_percent}" class="border rounded px-3 py-2">
             <input type="number" step="0.01" th:field="*{setMarkupPercent}" th:placeholder="#{pricing.bulk.markup_set}" class="border rounded px-3 py-2">
@@ -114,11 +124,15 @@
             <tbody>
             <tr th:each="p : ${products}" class="border-b">
                 <td class="py-2" th:text="${p.name}">Product</td>
-                <td class="py-2" th:text="${p.category}">Category</td>
-                <td class="py-2" th:text="${p.unitType}">Unit</td>
+                <td class="py-2"
+                    th:with="k=${'pricing.product_category.' + p.category.name()}, lbl=${#messages.msgOrNull(k)}"
+                    th:text="${lbl != null ? lbl : p.category.name()}">Category</td>
+                <td class="py-2"
+                    th:with="k=${'pricing.unit_type.' + p.unitType.name()}, lbl=${#messages.msgOrNull(k)}"
+                    th:text="${lbl != null ? lbl : p.unitType.name()}">Unit</td>
                 <td class="py-2">
                     <div class="flex items-center gap-2">
-                        <span th:text="${p.active}">true</span>
+                        <span th:text="${p.active ? #messages.msg('common.active') : #messages.msg('common.inactive')}">Active</span>
                         <span th:if="${productHasDefault[p.id]}"
                               class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700"
                               th:attr="title=#{pricing.default.tooltip}"

@@ -131,7 +131,13 @@ class RegressionPagesIntegrationTest {
     void adminKeyPagesRender() throws Exception {
         mockMvc.perform(get("/admin/pricing/products").session(adminSession))
             .andExpect(status().isOk())
-            .andExpect(content().string(not(containsString("??"))));
+            .andExpect(content().string(not(containsString("??"))))
+            .andExpect(content().string(not(containsString(">BANNER</option>"))))
+            .andExpect(content().string(not(containsString(">PER_SQM</option>"))))
+            .andExpect(content().string(anyOf(
+                containsString(">Banner</option>"),
+                containsString(">Baner</option>")
+            )));
         mockMvc.perform(get("/admin/pricing/products/" + variant.getProduct().getId()).session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("??"))))
