@@ -33,7 +33,7 @@ public class BillingAccessServiceTest {
 
         Long companyId = 1L;
         when(companyRepository.findBillingViewById(companyId))
-            .thenReturn(Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 2, 5, 0, 0))));
+            .thenAnswer(invocation -> Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 2, 5, 0, 0))));
 
         assertTrue(service.isBillingActive(companyId));
         verify(companyRepository).findBillingViewById(companyId);
@@ -50,7 +50,7 @@ public class BillingAccessServiceTest {
         Long companyId = 1L;
         when(repo.findByCompany_Id(companyId)).thenReturn(Optional.of(sub));
         when(companyRepository.findBillingViewById(companyId))
-            .thenReturn(Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 2, 5, 0, 0))));
+            .thenAnswer(invocation -> Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 2, 5, 0, 0))));
 
         Clock clock = Clock.fixed(Instant.parse("2026-02-10T10:00:00Z"), ZoneOffset.UTC);
         BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
@@ -67,7 +67,7 @@ public class BillingAccessServiceTest {
         Long companyId = 1L;
         when(repo.findByCompany_Id(companyId)).thenReturn(Optional.empty());
         when(companyRepository.findBillingViewById(companyId))
-            .thenReturn(Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 2, 5, 0, 0))));
+            .thenAnswer(invocation -> Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 2, 5, 0, 0))));
 
         Clock clock = Clock.fixed(Instant.parse("2026-02-10T10:00:00Z"), ZoneOffset.UTC);
         BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
@@ -85,7 +85,7 @@ public class BillingAccessServiceTest {
         AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
         Long companyId = 2L;
         when(companyRepository.findBillingViewById(companyId))
-            .thenReturn(Optional.of(viewWithOverride(true, LocalDateTime.of(2026, 3, 20, 0, 0))));
+            .thenAnswer(invocation -> Optional.of(viewWithOverride(true, LocalDateTime.of(2026, 3, 20, 0, 0))));
 
         Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
         BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
@@ -102,7 +102,7 @@ public class BillingAccessServiceTest {
         AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
         Long companyId = 3L;
         when(companyRepository.findBillingViewById(companyId))
-            .thenReturn(Optional.of(viewWithOverride(true, LocalDateTime.of(2026, 3, 10, 0, 0))));
+            .thenAnswer(invocation -> Optional.of(viewWithOverride(true, LocalDateTime.of(2026, 3, 10, 0, 0))));
         when(repo.findByCompany_Id(companyId)).thenReturn(Optional.empty());
 
         Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
@@ -173,7 +173,7 @@ public class BillingAccessServiceTest {
         AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
         Long companyId = 10L;
         when(companyRepository.findBillingViewById(companyId))
-            .thenReturn(Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 3, 20, 0, 0))));
+            .thenAnswer(invocation -> Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 3, 20, 0, 0))));
 
         Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
         BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
