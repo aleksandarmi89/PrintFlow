@@ -486,6 +486,9 @@ public class WorkOrderService {
     }
     
     public List<WorkOrderDTO> getWorkOrdersByStatus(OrderStatus status) {
+        if (status == null) {
+            return java.util.List.of();
+        }
         if (tenantGuard.isSuperAdmin()) {
             return workOrderRepository.findByStatus(status).stream()
                 .map(this::convertToDTO)
@@ -498,6 +501,9 @@ public class WorkOrderService {
     }
 
     public Page<WorkOrderDTO> getWorkOrdersByStatus(OrderStatus status, Pageable pageable) {
+        if (status == null) {
+            return Page.empty(pageable);
+        }
         if (tenantGuard.isSuperAdmin()) {
             Page<WorkOrder> orders = workOrderRepository.findByStatus(status, pageable);
             return orders.map(this::convertToDTO);
@@ -706,6 +712,9 @@ public class WorkOrderService {
     }
     
     public long countByStatus(OrderStatus status) {
+        if (status == null) {
+            return 0L;
+        }
         if (tenantGuard.isSuperAdmin()) {
             return workOrderRepository.countByStatus(status);
         }
