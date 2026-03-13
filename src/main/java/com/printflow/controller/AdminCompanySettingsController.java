@@ -50,7 +50,7 @@ public class AdminCompanySettingsController extends BaseController {
         Company company = currentContextService.currentCompany();
         CompanyDTO dto = companyService.getCompanyById(company.getId());
         var mailSettings = mailSettingsService.getOrCreate(company);
-        String smtpSource = mailSettingsService.resolveSmtpSource(company, mailSettings);
+        String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, mailSettings));
         model.addAttribute("company", dto);
         model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
         model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
@@ -100,8 +100,12 @@ public class AdminCompanySettingsController extends BaseController {
         String validationError = validateSmtpSettings(company, smtpHost, smtpPort, smtpUser, smtpPassword);
         if (validationError != null) {
             var mailSettings = mailSettingsService.getOrCreate(company);
+            String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, mailSettings));
             model.addAttribute("company", dto);
             model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
+            model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
+            model.addAttribute("smtpSource", smtpSource);
+            model.addAttribute("smtpFallbackEnabled", emailFallbackEnabled);
             model.addAttribute("errorKey", validationError);
             return "admin/company/settings";
         }
@@ -113,8 +117,12 @@ public class AdminCompanySettingsController extends BaseController {
             return redirectWithSuccess("/admin/company", "company.settings.updated", model);
         } catch (java.io.IOException | RuntimeException e) {
             var mailSettings = mailSettingsService.getOrCreate(company);
+            String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, mailSettings));
             model.addAttribute("company", dto);
             model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
+            model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
+            model.addAttribute("smtpSource", smtpSource);
+            model.addAttribute("smtpFallbackEnabled", emailFallbackEnabled);
             model.addAttribute("errorMessage", e.getMessage() != null ? e.getMessage() : "company.settings.update_failed");
             return "admin/company/settings";
         }
@@ -169,6 +177,13 @@ public class AdminCompanySettingsController extends BaseController {
             return false;
         }
         return mailSettingsService.isConfiguredWithLegacyFallback(company, mailSettingsService.getOrCreate(company));
+    }
+
+    private String normalizeSmtpSource(String smtpSource) {
+        if (smtpSource == null || smtpSource.isBlank()) {
+            return "none";
+        }
+        return smtpSource;
     }
 
     @GetMapping("/logo")

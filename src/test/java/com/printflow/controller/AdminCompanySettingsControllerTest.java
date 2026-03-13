@@ -70,6 +70,7 @@ class AdminCompanySettingsControllerTest {
         when(contextService.currentCompany()).thenReturn(company);
         when(tenantContextService.isSuperAdmin()).thenReturn(false);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("none");
         doThrow(new RuntimeException()).when(companyService).updateCompany(eq(16L), any());
 
         Model model = new ExtendedModelMap();
@@ -80,6 +81,8 @@ class AdminCompanySettingsControllerTest {
 
         assertEquals("admin/company/settings", view);
         assertEquals("company.settings.update_failed", model.getAttribute("errorMessage"));
+        assertEquals("none", model.getAttribute("smtpSource"));
+        assertEquals(false, model.getAttribute("smtpConfigured"));
     }
 
     @Test
@@ -156,5 +159,43 @@ class AdminCompanySettingsControllerTest {
         assertEquals("admin/company/settings", view);
         assertEquals("legacy_company", model.getAttribute("smtpSource"));
         assertEquals(true, model.getAttribute("smtpConfigured"));
+    }
+
+    @Test
+    void updateValidationErrorKeepsSmtpStatusState() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, tenantContextService, true
+        );
+        Company company = new Company();
+        company.setId(19L);
+        company.setName("Tenant 19");
+        MailSettings settings = new MailSettings();
+        settings.setCompany(company);
+        CompanyDTO dto = new CompanyDTO();
+        dto.setId(19L);
+        dto.setName("Tenant 19");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("legacy_company");
+
+        Model model = new ExtendedModelMap();
+        String view = controller.update(
+            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com", "#111111",
+            "RSD", "smtp.example.com", 587, "", "", true, null, model
+        );
+
+        assertEquals("admin/company/settings", view);
+        assertEquals("legacy_company", model.getAttribute("smtpSource"));
+        assertEquals(true, model.getAttribute("smtpConfigured"));
+        assertEquals(true, model.getAttribute("smtpFallbackEnabled"));
+        assertEquals("company.smtp.error.user_required", model.getAttribute("errorKey"));
     }
 }

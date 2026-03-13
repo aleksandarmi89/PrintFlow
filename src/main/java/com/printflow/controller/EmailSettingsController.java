@@ -54,7 +54,7 @@ public class EmailSettingsController extends BaseController {
                            Model model) {
         Company company = currentContextService.currentCompany();
         MailSettings settings = mailSettingsService.getOrCreate(company);
-        String smtpSource = mailSettingsService.resolveSmtpSource(company, settings);
+        String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, settings));
         boolean smtpConfigured = !"none".equals(smtpSource);
         boolean smtpTestEnabled = "mail_settings".equals(smtpSource) && Boolean.TRUE.equals(settings.getEnabled());
         int safeOutboxPage = Math.max(0, outboxPage);
@@ -106,7 +106,7 @@ public class EmailSettingsController extends BaseController {
         String validationError = validate(dto, company);
         if (validationError != null) {
             MailSettings existingSettings = mailSettingsService.getOrCreate(company);
-            String smtpSource = mailSettingsService.resolveSmtpSource(company, existingSettings);
+            String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, existingSettings));
             model.addAttribute("company", companyService.getCompanyById(company.getId()));
             model.addAttribute("settings", dto);
             model.addAttribute("passwordSet", existingSettings.getSmtpPasswordEnc() != null);
@@ -137,7 +137,7 @@ public class EmailSettingsController extends BaseController {
         if (!Boolean.TRUE.equals(settings.getEnabled())) {
             return "redirect:/settings/email?errorKey=company.smtp.error.not_configured";
         }
-        String smtpSource = mailSettingsService.resolveSmtpSource(company, settings);
+        String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, settings));
         if ("legacy_company".equals(smtpSource)) {
             return "redirect:/settings/email?errorKey=company.smtp.error.legacy_source";
         }
@@ -208,6 +208,13 @@ public class EmailSettingsController extends BaseController {
             return "company.smtp.error.invalid_email";
         }
         return null;
+    }
+
+    private String normalizeSmtpSource(String smtpSource) {
+        if (smtpSource == null || smtpSource.isBlank()) {
+            return "none";
+        }
+        return smtpSource;
     }
 
 }
