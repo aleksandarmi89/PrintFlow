@@ -271,7 +271,7 @@ public class PublicOrderRequestService {
             customer.setTextBody(serbian ? "Vaš zahtev je primljen." : "Your request has been received.");
             try {
                 emailService.send(customer, company, "public-order-request-received");
-            } catch (Exception ignored) {
+            } catch (RuntimeException ignored) {
                 log.warn("public_request_customer_email_failed requestId={} companyId={} to={}",
                     request.getId(), company.getId(), request.getCustomerEmail());
                 // submission flow must not fail if email fails
@@ -297,7 +297,7 @@ public class PublicOrderRequestService {
             internal.setTextBody((serbian ? "Novi javni zahtev: " : "New public request: ") + detailsUrl);
             try {
                 emailService.send(internal, company, "public-order-request-admin");
-            } catch (Exception ignored) {
+            } catch (RuntimeException ignored) {
                 log.warn("public_request_admin_email_failed requestId={} companyId={} to={}",
                     request.getId(), company.getId(), admin.getEmail());
                 // submission flow must not fail if email fails
