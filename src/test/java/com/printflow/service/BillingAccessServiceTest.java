@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 public class BillingAccessServiceTest {
 
@@ -95,6 +96,24 @@ public class BillingAccessServiceTest {
     }
 
     @Test
+    void billingOverrideExpired_fallsBackToSubscriptionAndBlocksWhenMissing() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Long companyId = 3L;
+        when(companyRepository.findBillingViewById(companyId))
+            .thenReturn(Optional.of(viewWithOverride(true, LocalDateTime.of(2026, 3, 10, 0, 0))));
+        when(repo.findByCompany_Id(companyId)).thenReturn(Optional.empty());
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertFalse(service.isBillingActive(companyId));
+        assertThrows(BillingRequiredException.class, () -> service.assertBillingActiveForPremiumAction(companyId));
+        verify(repo, times(2)).findByCompany_Id(companyId);
+    }
+
+    @Test
     void billingEnforcementDisabled_allowsPremiumWithoutAnyChecks() {
         BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
         CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
@@ -144,6 +163,25 @@ public class BillingAccessServiceTest {
         assertTrue(service.isBillingActive(companyId));
         service.invalidateCompanyCache(companyId);
         assertFalse(service.isBillingActive(companyId));
+        verify(companyRepository, times(2)).findBillingViewById(companyId);
+    }
+
+    @Test
+    void billingViewIsCachedWithinTtl() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Long companyId = 10L;
+        when(companyRepository.findBillingViewById(companyId))
+            .thenReturn(Optional.of(viewWithTrialEnd(LocalDateTime.of(2026, 3, 20, 0, 0))));
+
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+
+        assertTrue(service.isBillingActive(companyId));
+        assertTrue(service.isTrialActive(companyId));
+        verify(companyRepository, times(1)).findBillingViewById(companyId);
+        verifyNoMoreInteractions(repo);
     }
 
     private CompanyBillingView viewWithTrialEnd(LocalDateTime trialEnd) {
