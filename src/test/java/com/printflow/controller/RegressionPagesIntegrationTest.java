@@ -181,6 +181,11 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/planner").session(adminSession))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??"))))
+            .andExpect(content().string(anyOf(
+                containsString("Swipe horizontally to see all planner columns."),
+                containsString("Prevucite horizontalno da vidite sve kolone planera.")
+            )))
             .andExpect(content().string(anyOf(
                 containsString("Production Planner"),
                 containsString("Planer proizvodnje")
@@ -189,9 +194,10 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/company").session(adminSession))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??"))))
             .andExpect(content().string(anyOf(
                 containsString("SMTP OK"),
-                containsString("SMTP JE PODEŠEN")
+                containsString("SMTP NIJE PODEŠEN")
             )));
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())

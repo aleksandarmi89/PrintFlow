@@ -60,6 +60,12 @@ public class GlobalModelAttributes {
         boolean smtpConfigured = mailSettingsRepository.findByCompany_Id(companyId)
             .map(mailSettingsService::isConfigured)
             .orElse(false);
+        if (!smtpConfigured && company != null) {
+            smtpConfigured = company.getSmtpHost() != null && !company.getSmtpHost().isBlank()
+                && company.getSmtpPort() != null
+                && company.getSmtpUser() != null && !company.getSmtpUser().isBlank()
+                && company.getSmtpPassword() != null && !company.getSmtpPassword().isBlank();
+        }
         model.addAttribute("smtpConfigured", smtpConfigured);
         if (tenantContextService.isSuperAdmin()) {
             model.addAttribute("billingActive", true);

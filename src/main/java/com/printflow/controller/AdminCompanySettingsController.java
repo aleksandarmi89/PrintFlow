@@ -108,12 +108,12 @@ public class AdminCompanySettingsController extends BaseController {
             if (logo != null && !logo.isEmpty()) {
                 companyService.updateLogo(company.getId(), logo);
             }
-            return redirectWithSuccess("/admin/company", "Company settings updated", model);
+            return redirectWithSuccess("/admin/company", "company.settings.updated", model);
         } catch (Exception e) {
             var mailSettings = mailSettingsService.getOrCreate(company);
             model.addAttribute("company", dto);
             model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
-            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage() != null ? e.getMessage() : "company.settings.update_failed");
             return "admin/company/settings";
         }
     }
