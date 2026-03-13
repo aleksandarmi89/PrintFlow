@@ -130,7 +130,7 @@ public class EmailSettingsController extends BaseController {
             msg.setHtmlBody("<p>This is a test message sent from your company SMTP settings.</p>");
             emailService.sendNow(msg, company, "smtp-test");
             return "redirect:/settings/email?successKey=company.smtp.test_sent";
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             String detail = extractErrorDetail(e);
             return "redirect:/settings/email?errorKey=company.smtp.test_failed&errorMessage="
                 + UriUtils.encode(detail, StandardCharsets.UTF_8);
@@ -145,7 +145,7 @@ public class EmailSettingsController extends BaseController {
         return "redirect:/settings/email?successKey=email.outbox.cleanup_success&cleanupCount=" + deleted;
     }
 
-    private String extractErrorDetail(Exception e) {
+    private String extractErrorDetail(Throwable e) {
         Throwable t = e;
         while (t.getCause() != null) {
             t = t.getCause();

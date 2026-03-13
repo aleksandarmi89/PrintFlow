@@ -111,7 +111,7 @@ public class AdminCompanySettingsController extends BaseController {
                 companyService.updateLogo(company.getId(), logo);
             }
             return redirectWithSuccess("/admin/company", "company.settings.updated", model);
-        } catch (Exception e) {
+        } catch (java.io.IOException | RuntimeException e) {
             var mailSettings = mailSettingsService.getOrCreate(company);
             model.addAttribute("company", dto);
             model.addAttribute("smtpPasswordSet", mailSettings.getSmtpPasswordEnc() != null && !mailSettings.getSmtpPasswordEnc().isBlank());
@@ -132,7 +132,7 @@ public class AdminCompanySettingsController extends BaseController {
         try {
             companyService.sendTestSmtpEmail(company.getId(), toEmail.trim());
             return "redirect:/admin/company?successKey=company.smtp.test_sent";
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return "redirect:/admin/company?errorKey=company.smtp.test_failed";
         }
     }
@@ -183,7 +183,7 @@ public class AdminCompanySettingsController extends BaseController {
             MediaType contentType = MediaTypeFactory.getMediaType(company.getLogoPath())
                 .orElse(MediaType.APPLICATION_OCTET_STREAM);
             return ResponseEntity.ok().contentType(contentType).body(data);
-        } catch (Exception ex) {
+        } catch (java.io.IOException | RuntimeException ex) {
             return ResponseEntity.notFound().build();
         }
     }
