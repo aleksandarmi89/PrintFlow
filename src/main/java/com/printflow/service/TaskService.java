@@ -245,7 +245,7 @@ public class TaskService {
             String.format("Status changed from %s to %s", oldStatus, nextStatus), userId);
         auditLogService.log(AuditAction.STATUS_CHANGE, "Task", task.getId(),
             oldStatus != null ? oldStatus.name() : null,
-            nextStatus != null ? nextStatus.name() : null,
+            nextStatus.name(),
             "Task status updated",
             task.getCompany());
 
@@ -311,7 +311,7 @@ public class TaskService {
         createTaskActivity(task, "STATUS_CHANGED", activityDescription, userId);
         auditLogService.log(AuditAction.STATUS_CHANGE, "Task", task.getId(),
             oldStatus != null ? oldStatus.name() : null,
-            nextStatus != null ? nextStatus.name() : null,
+            nextStatus.name(),
             "Task status updated (worker)",
             task.getCompany());
 

@@ -218,17 +218,18 @@ public class WorkOrderService {
         if (status == null) {
             throw new RuntimeException("Status is required");
         }
+        OrderStatus nextStatus = status;
         WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
         
         OrderStatus oldStatus = workOrder.getStatus();
-        validateOrderStatusTransition(oldStatus, status);
-        workOrder.setStatus(status);
+        validateOrderStatusTransition(oldStatus, nextStatus);
+        workOrder.setStatus(nextStatus);
         
-        boolean printedEvent = status == OrderStatus.WAITING_QUALITY_CHECK;
+        boolean printedEvent = nextStatus == OrderStatus.WAITING_QUALITY_CHECK;
         if (notes != null && !notes.trim().isEmpty()) {
             workOrder.setInternalNotes(
                 (workOrder.getInternalNotes() != null ? workOrder.getInternalNotes() + "\n" : "") +
-                LocalDateTime.now() + ": Status changed from " + oldStatus + " to " + status +
+                LocalDateTime.now() + ": Status changed from " + oldStatus + " to " + nextStatus +
                 " - " + notes.trim()
             );
         } else if (printedEvent) {
@@ -238,7 +239,7 @@ public class WorkOrderService {
             );
         }
         
-        if (status == OrderStatus.COMPLETED) {
+        if (nextStatus == OrderStatus.COMPLETED) {
             workOrder.setCompletedAt(LocalDateTime.now());
         }
         
@@ -246,16 +247,16 @@ public class WorkOrderService {
         String auditDescription = printedEvent ? "Štampano" : "Order status updated";
         auditLogService.log(AuditAction.STATUS_CHANGE, "WorkOrder", workOrder.getId(),
             oldStatus != null ? oldStatus.name() : null,
-            status != null ? status.name() : null,
+            nextStatus.name(),
             auditDescription,
             workOrder.getCompany());
         Long actorId = tenantGuard.getCurrentUser() != null ? tenantGuard.getCurrentUser().getId() : null;
         activityLogService.log(updatedOrder,
             "STATUS_CHANGE",
-            "Status changed to " + orderStatusName(status),
+            "Status changed to " + orderStatusName(nextStatus),
             actorId);
-        eventPublisher.publishEvent(new OrderStatusChangedEvent(updatedOrder.getId(), oldStatus, status));
-        if (status == OrderStatus.READY_FOR_DELIVERY) {
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(updatedOrder.getId(), oldStatus, nextStatus));
+        if (nextStatus == OrderStatus.READY_FOR_DELIVERY) {
             notificationService.notifyClientOrderReady(updatedOrder);
         }
         return convertToDTO(updatedOrder);
