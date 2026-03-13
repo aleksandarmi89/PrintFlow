@@ -29,6 +29,7 @@ import java.util.Map;
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    private static final String NOT_AVAILABLE = "N/A";
     private final TenantContextService tenantContextService;
     private final BillingAccessService billingAccessService;
 
@@ -148,8 +149,8 @@ public class ApiExceptionHandler {
     private void logByLevel(String tag, Exception ex, HttpServletRequest request, boolean serverError) {
         Long userId = tenantContextService.getCurrentUserId();
         Long companyId = tenantContextService.getCurrentCompanyId();
-        String method = request != null ? request.getMethod() : "N/A";
-        String path = request != null ? request.getRequestURI() : "N/A";
+        String method = request != null ? request.getMethod() : NOT_AVAILABLE;
+        String path = request != null ? request.getRequestURI() : NOT_AVAILABLE;
         if (serverError) {
             log.error("[API:{}] {} {} userId={} companyId={} message={}",
                 tag, method, path, userId, companyId, ex.toString(), ex);

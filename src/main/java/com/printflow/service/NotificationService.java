@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
+    private static final String NOT_AVAILABLE = "N/A";
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final TenantGuard tenantGuard;
@@ -733,9 +734,9 @@ public class NotificationService {
                                               String companyName, String ctaLabel) {
         String name = (contactPerson != null && !contactPerson.isBlank()) ? contactPerson : "there";
         String safeTask = (taskTitle != null) ? taskTitle : "Update";
-        String safeOrderNumber = (orderNumber != null) ? orderNumber : "N/A";
+        String safeOrderNumber = (orderNumber != null) ? orderNumber : NOT_AVAILABLE;
         String safeOrderTitle = (orderTitle != null) ? orderTitle : "Order";
-        String safePrice = (price != null) ? String.format("%.2f", price) : "N/A";
+        String safePrice = (price != null) ? String.format("%.2f", price) : NOT_AVAILABLE;
         String safeLink = (link != null && !link.isBlank()) ? link : baseUrl;
         String safeCompany = (companyName != null && !companyName.isBlank()) ? companyName : "PrintFlow";
         String safeCta = (ctaLabel != null && !ctaLabel.isBlank()) ? ctaLabel : "Open order";

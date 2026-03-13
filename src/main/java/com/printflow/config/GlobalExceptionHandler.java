@@ -34,6 +34,7 @@ import java.time.format.DateTimeFormatter;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final String NOT_AVAILABLE = "N/A";
     private final TenantContextService tenantContextService;
     private final BillingAccessService billingAccessService;
 
@@ -73,8 +74,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public String handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request, Model model) {
-        String path = request != null ? request.getRequestURI() : "N/A";
-        String method = request != null ? request.getMethod() : "N/A";
+        String path = request != null ? request.getRequestURI() : NOT_AVAILABLE;
+        String method = request != null ? request.getMethod() : NOT_AVAILABLE;
         log.debug("[NO_RESOURCE] {} {} {}", method, path, ex.getMessage());
         populateModel(model, HttpStatus.NOT_FOUND, "The requested resource was not found.");
         return "error/404";
@@ -185,8 +186,8 @@ public class GlobalExceptionHandler {
     private void logByStatus(String tag, Exception ex, HttpServletRequest request, HttpStatus status) {
         Long userId = tenantContextService.getCurrentUserId();
         Long companyId = tenantContextService.getCurrentCompanyId();
-        String path = request != null ? request.getRequestURI() : "N/A";
-        String method = request != null ? request.getMethod() : "N/A";
+        String path = request != null ? request.getRequestURI() : NOT_AVAILABLE;
+        String method = request != null ? request.getMethod() : NOT_AVAILABLE;
         if (status.is4xxClientError()) {
             log.warn("[{}] {} {} userId={} companyId={} message={}", tag, method, path, userId, companyId, ex.toString());
         } else {
