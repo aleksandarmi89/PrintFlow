@@ -26,10 +26,10 @@
         </div>
 
         <div class="flex flex-col gap-1">
-            <label for="plannerWorker" class="text-sm text-gray-500" th:text="#{planner.filter.worker}">Worker</label>
+            <label for="plannerWorker" class="text-sm text-gray-500" th:text="#{planner.filter.worker}">Team Member</label>
             <select id="plannerWorker" name="workerId" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                 <option value="" th:selected="${workerFilter == null}" th:text="#{planner.filter.all_workers}">
-                    All workers
+                    All Team Members
                 </option>
                 <option th:each="w : ${workers}"
                         th:value="${w.id}"
@@ -333,13 +333,13 @@
 
         <div class="bg-white rounded-xl border border-gray-200 p-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{planner.load_by_worker.title}">
-                Load by Worker
+                Load by Team Member
             </h2>
 
             <div class="space-y-3">
                 <div th:each="w : ${workerLoad}" class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
                      th:with="workerPct=${maxWorkerLoad == 0 ? 0 : (1.0 * w.count / maxWorkerLoad * 100)}">
-                    <div class="w-full sm:w-32 text-xs text-gray-700 truncate" th:text="${w.workerName}">Worker</div>
+                    <div class="w-full sm:w-32 text-xs text-gray-700 truncate" th:text="${w.workerName}">Team Member</div>
                     <div class="flex-1 bg-gray-100 rounded-full h-3">
                         <div class="bg-emerald-600 h-3 rounded-full"
                              th:attr="data-tooltip=${w.count + ' ' + #messages.msg('planner.orders')}"
