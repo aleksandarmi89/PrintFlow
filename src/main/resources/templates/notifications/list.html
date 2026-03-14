@@ -110,7 +110,7 @@
                 <span th:text="#{pagination.page}">Page</span>
                 <span th:text="${currentPage + 1}">1</span>
                 <span th:text="#{pagination.of}">of</span>
-                <span th:text="${totalPages}">1</span>
+                <span th:text="${displayTotalPages}">1</span>
             </div>
             <div class="flex items-center gap-2">
                 <a th:href="@{/notifications(page=0,size=${size},type=${type},read=${read})}"
@@ -125,7 +125,7 @@
                    class="px-3 py-1 border rounded text-sm"
                    th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
                    th:text="#{pagination.next}">Next</a>
-                <a th:href="@{/notifications(page=${totalPages-1},size=${size},type=${type},read=${read})}"
+                <a th:href="@{/notifications(page=${lastPage},size=${size},type=${type},read=${read})}"
                    class="px-3 py-1 border rounded text-sm"
                    th:classappend="${currentPage + 1 >= totalPages} ? 'opacity-50 pointer-events-none' : ''"
                    th:text="#{pagination.last}">Last</a>

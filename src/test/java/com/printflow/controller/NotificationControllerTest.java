@@ -77,7 +77,34 @@ class NotificationControllerTest {
 
         assertEquals("notifications/list", view);
         assertEquals(null, model.getAttribute("type"));
+        assertEquals(1, model.getAttribute("displayTotalPages"));
+        assertEquals(0, model.getAttribute("lastPage"));
         verify(notificationService).getNotificationsWithFilters(eq(8L), isNull(), isNull(), any());
+    }
+
+    @Test
+    void listNotificationsSetsLastPageForMultiPageResults() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(10L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        when(paginationConfig.normalizePage(2)).thenReturn(2);
+        when(paginationConfig.normalizeSize(20)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(notificationService.getNotificationsWithFilters(eq(10L), isNull(), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(2, 20), 85));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listNotifications(null, null, 2, 20, model);
+
+        assertEquals("notifications/list", view);
+        assertEquals(5, model.getAttribute("totalPages"));
+        assertEquals(5, model.getAttribute("displayTotalPages"));
+        assertEquals(4, model.getAttribute("lastPage"));
     }
 
     @Test

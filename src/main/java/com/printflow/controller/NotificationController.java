@@ -103,6 +103,8 @@ public class NotificationController {
         model.addAttribute("read", read);
         model.addAttribute("currentPage", notifications.getNumber());
         model.addAttribute("totalPages", notifications.getTotalPages());
+        model.addAttribute("displayTotalPages", Math.max(1, notifications.getTotalPages()));
+        model.addAttribute("lastPage", Math.max(0, notifications.getTotalPages() - 1));
         model.addAttribute("size", pageSize);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
         return "notifications/list";
