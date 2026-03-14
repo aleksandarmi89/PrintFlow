@@ -44,6 +44,7 @@ public class PasswordResetController {
     public String requestReset(@RequestParam("identifier") String identifier,
                                jakarta.servlet.http.HttpServletRequest request,
                                RedirectAttributes redirectAttributes) {
+        String normalizedIdentifier = normalizeOptional(identifier);
         String ip = getClientIp(request);
         if (forgotRateLimitEnabled) {
             boolean allowed = rateLimitService.allow(
@@ -56,19 +57,20 @@ public class PasswordResetController {
                 return "redirect:/forgot-password";
             }
         }
-        passwordResetService.requestReset(identifier);
+        passwordResetService.requestReset(normalizedIdentifier);
         redirectAttributes.addFlashAttribute("resetRequested", true);
         return "redirect:/forgot-password";
     }
 
     @GetMapping("/reset-password")
     public String resetPasswordForm(@RequestParam("token") String token, Model model) {
-        boolean valid = passwordResetService.validateToken(token).isPresent();
-        model.addAttribute("token", token);
+        String normalizedToken = normalizeOptional(token);
+        boolean valid = normalizedToken != null && passwordResetService.validateToken(normalizedToken).isPresent();
+        model.addAttribute("token", normalizedToken);
         model.addAttribute("tokenValid", valid);
         if (valid) {
-            passwordResetTokenRepository.findCompanyIdByToken(token)
-                .flatMap(companyId -> companyBrandingService.getBrandingByCompanyId(companyId, token, "reset"))
+            passwordResetTokenRepository.findCompanyIdByToken(normalizedToken)
+                .flatMap(companyId -> companyBrandingService.getBrandingByCompanyId(companyId, normalizedToken, "reset"))
                 .ifPresent(brand -> model.addAttribute("companyBrand", brand));
         }
         return "auth/reset-password";
@@ -79,14 +81,15 @@ public class PasswordResetController {
                           @RequestParam("password") String password,
                           @RequestParam("confirmPassword") String confirmPassword,
                           RedirectAttributes redirectAttributes) {
+        String normalizedToken = normalizeOptional(token);
         if (password == null || password.length() < 6 || !password.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("resetError", "auth.reset_invalid");
-            return "redirect:/reset-password?token=" + token;
+            return "redirect:/reset-password?token=" + encodeTokenForRedirect(normalizedToken);
         }
-        boolean success = passwordResetService.resetPassword(token, password);
+        boolean success = passwordResetService.resetPassword(normalizedToken, password);
         if (!success) {
             redirectAttributes.addFlashAttribute("resetError", "auth.reset_invalid_token");
-            return "redirect:/reset-password?token=" + token;
+            return "redirect:/reset-password?token=" + encodeTokenForRedirect(normalizedToken);
         }
         redirectAttributes.addFlashAttribute("resetSuccess", true);
         return "redirect:/login";
@@ -101,5 +104,20 @@ public class PasswordResetController {
             return forwarded.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String encodeTokenForRedirect(String token) {
+        if (token == null) {
+            return "";
+        }
+        return java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8);
     }
 }
