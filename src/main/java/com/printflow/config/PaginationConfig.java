@@ -19,7 +19,8 @@ public class PaginationConfig {
         if (size <= 0) {
             size = defaultSize;
         }
-        if (!allowedSizes.isEmpty() && !allowedSizes.contains(size)) {
+        List<Integer> sizes = getAllowedSizes();
+        if (!sizes.isEmpty() && !sizes.contains(size)) {
             size = defaultSize;
         }
         if (size > maxSize) {
@@ -50,10 +51,10 @@ public class PaginationConfig {
     }
 
     public List<Integer> getAllowedSizes() {
-        return allowedSizes;
+        return allowedSizes != null ? allowedSizes : List.of();
     }
 
     public void setAllowedSizes(List<Integer> allowedSizes) {
-        this.allowedSizes = allowedSizes;
+        this.allowedSizes = allowedSizes != null ? new ArrayList<>(allowedSizes) : new ArrayList<>();
     }
 }
