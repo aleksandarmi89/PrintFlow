@@ -4,6 +4,7 @@ import com.printflow.service.BillingAccessService;
 import com.printflow.service.TenantContextService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
@@ -98,10 +99,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public String handleResponseStatus(ResponseStatusException ex, HttpServletRequest request, Model model) {
+    public String handleResponseStatus(ResponseStatusException ex,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response,
+                                       Model model) {
         HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
         if (status == null) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        if (response != null) {
+            response.setStatus(status.value());
         }
         logByStatus("RESPONSE_STATUS", ex, request, status);
         populateModel(model, status, status.is4xxClientError()
