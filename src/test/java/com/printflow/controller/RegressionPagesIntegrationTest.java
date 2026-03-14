@@ -202,6 +202,8 @@ class RegressionPagesIntegrationTest {
                 containsString("Production Planner"),
                 containsString("Planer proizvodnje")
             )));
+        mockMvc.perform(get("/admin/tasks").param("status", "not-a-real-status").session(adminSession))
+            .andExpect(status().isOk());
         mockMvc.perform(get("/admin/rate-limit").session(adminSession))
             .andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/company").session(adminSession))

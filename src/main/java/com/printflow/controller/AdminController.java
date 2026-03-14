@@ -948,6 +948,7 @@ public class AdminController extends BaseController {
                                      Model model) {
         notificationService.markAllAsRead(getCurrentUserId());
         String statusParam = status != null ? status.trim().toUpperCase() : "";
+        com.printflow.entity.enums.TaskStatus parsedStatus = parseTaskStatus(statusParam);
 
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
@@ -955,30 +956,29 @@ public class AdminController extends BaseController {
         org.springframework.data.domain.Pageable pageable =
             org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
         org.springframework.data.domain.Page<TaskDTO> tasksPage;
-        if (statusParam.isEmpty() || "ALL".equals(statusParam)) {
+        if (statusParam.isEmpty() || "ALL".equals(statusParam) || parsedStatus == null) {
             tasksPage = taskService.getTasksForAdmin(pageable);
         } else if ("OPEN".equals(statusParam)) {
             tasksPage = taskService.getOpenTasksForAdmin(pageable);
         } else {
-            com.printflow.entity.enums.TaskStatus taskStatus = com.printflow.entity.enums.TaskStatus.valueOf(statusParam);
-            tasksPage = taskService.getTasksByStatusForAdmin(taskStatus, pageable);
+            tasksPage = taskService.getTasksByStatusForAdmin(parsedStatus, pageable);
         }
         if (safePage >= tasksPage.getTotalPages() && tasksPage.getTotalPages() > 0) {
             safePage = tasksPage.getTotalPages() - 1;
             pageable = org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
-            if (statusParam.isEmpty() || "ALL".equals(statusParam)) {
+            if (statusParam.isEmpty() || "ALL".equals(statusParam) || parsedStatus == null) {
                 tasksPage = taskService.getTasksForAdmin(pageable);
             } else if ("OPEN".equals(statusParam)) {
                 tasksPage = taskService.getOpenTasksForAdmin(pageable);
             } else {
-                com.printflow.entity.enums.TaskStatus taskStatus = com.printflow.entity.enums.TaskStatus.valueOf(statusParam);
-                tasksPage = taskService.getTasksByStatusForAdmin(taskStatus, pageable);
+                tasksPage = taskService.getTasksByStatusForAdmin(parsedStatus, pageable);
             }
         }
 
         model.addAttribute("tasksPage", tasksPage);
         model.addAttribute("tasks", tasksPage.getContent());
-        model.addAttribute("status", statusParam.isEmpty() ? "ALL" : statusParam);
+        String resolvedStatus = (statusParam.isEmpty() || parsedStatus == null) ? "ALL" : statusParam;
+        model.addAttribute("status", resolvedStatus);
         model.addAttribute("currentPage", tasksPage.getNumber());
         model.addAttribute("totalPages", tasksPage.getTotalPages());
         model.addAttribute("totalItems", tasksPage.getTotalElements());
@@ -990,6 +990,17 @@ public class AdminController extends BaseController {
             model.addAttribute("scopeCompanyName", companyService.getCompanyById(companyId).getName());
         }
         return "admin/tasks/list";
+    }
+
+    private com.printflow.entity.enums.TaskStatus parseTaskStatus(String statusParam) {
+        if (statusParam == null || statusParam.isBlank()) {
+            return null;
+        }
+        try {
+            return com.printflow.entity.enums.TaskStatus.valueOf(statusParam);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     @GetMapping("/tasks/{id}")
