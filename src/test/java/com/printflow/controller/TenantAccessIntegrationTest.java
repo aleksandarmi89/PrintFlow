@@ -7,6 +7,7 @@ import com.printflow.repository.TaskRepository;
 import com.printflow.repository.UserRepository;
 import com.printflow.repository.WorkOrderRepository;
 import com.printflow.repository.MailSettingsRepository;
+import com.printflow.entity.User;
 import com.printflow.testsupport.TenantTestFixture;
 import com.printflow.testsupport.TenantTestFixture.TenantIds;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +84,33 @@ class TenantAccessIntegrationTest {
         MockHttpSession tenant2Session = fixture.login("tenant2_admin", "password");
         mockMvc.perform(get("/admin/orders/{id}", ids.workOrderId()).session(tenant2Session))
             .andExpect(tenantIsolationStatus());
+    }
+
+    @Test
+    void superAdminCanAccessOrderAcrossTenants() throws Exception {
+        User superAdmin = userRepository.findByUsername("tenant_super_admin")
+            .orElseGet(() -> {
+                User u = new User();
+                u.setUsername("tenant_super_admin");
+                u.setPassword(passwordEncoder.encode("password"));
+                u.setRole(User.Role.SUPER_ADMIN);
+                u.setCompany(companyRepository.findById(ids.company2Id()).orElseThrow());
+                u.setActive(true);
+                u.setFirstName("Super");
+                u.setLastName("Admin");
+                u.setFullName("Super Admin");
+                return userRepository.save(u);
+            });
+        superAdmin.setRole(User.Role.SUPER_ADMIN);
+        superAdmin.setActive(true);
+        if (superAdmin.getCompany() == null) {
+            superAdmin.setCompany(companyRepository.findById(ids.company2Id()).orElseThrow());
+        }
+        userRepository.save(superAdmin);
+
+        MockHttpSession superAdminSession = fixture.login("tenant_super_admin", "password");
+        mockMvc.perform(get("/admin/orders/{id}", ids.workOrderId()).session(superAdminSession))
+            .andExpect(status().isOk());
     }
 
     @Test

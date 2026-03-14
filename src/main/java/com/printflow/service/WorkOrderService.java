@@ -127,6 +127,7 @@ public class WorkOrderService {
     
     public WorkOrderDTO updateWorkOrder(Long id, WorkOrderDTO workOrderDTO) {
         WorkOrder workOrder = getWorkOrderWithRelationsOrThrow(id);
+        Long orderCompanyId = workOrder.getCompany() != null ? workOrder.getCompany().getId() : tenantGuard.requireCompanyId();
         String normalizedTitle = requireTitle(workOrderDTO.getTitle());
         Long oldClientId = workOrder.getClient() != null ? workOrder.getClient().getId() : null;
         String oldPrintType = workOrder.getPrintType() != null ? workOrder.getPrintType().name() : null;
@@ -155,7 +156,7 @@ public class WorkOrderService {
         workOrder.setPrintType(workOrderDTO.getPrintType() != null ? workOrderDTO.getPrintType() : PrintType.OTHER);
         
         if (workOrderDTO.getAssignedToId() != null) {
-            User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), tenantGuard.requireCompanyId())
+            User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), orderCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             workOrder.setAssignedTo(assignedTo);
         } else {
@@ -168,7 +169,7 @@ public class WorkOrderService {
         }
 
         if (workOrderDTO.getClientId() != null && (workOrder.getClient() == null || !workOrder.getClient().getId().equals(workOrderDTO.getClientId()))) {
-            Client client = getClientOrThrow(workOrderDTO.getClientId(), tenantGuard.requireCompanyId());
+            Client client = getClientOrThrow(workOrderDTO.getClientId(), orderCompanyId);
             workOrder.setClient(client);
             workOrder.setCompany(client.getCompany());
         }
@@ -691,12 +692,13 @@ public class WorkOrderService {
 
     public void assignWorker(Long orderId, Long userId) {
         WorkOrder workOrder = getWorkOrderOrThrow(orderId);
+        Long orderCompanyId = workOrder.getCompany() != null ? workOrder.getCompany().getId() : tenantGuard.requireCompanyId();
 
         String oldAssigned = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getFullName() : "Unassigned";
         Long previousAssignedId = workOrder.getAssignedTo() != null ? workOrder.getAssignedTo().getId() : null;
         User assignedTo = null;
         if (userId != null) {
-            assignedTo = userRepository.findByIdAndCompany_Id(userId, tenantGuard.requireCompanyId())
+            assignedTo = userRepository.findByIdAndCompany_Id(userId, orderCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         }
 
@@ -886,15 +888,21 @@ public class WorkOrderService {
     }
 
     private WorkOrder getWorkOrderOrThrow(Long id) {
-        WorkOrder workOrder = workOrderRepository.findByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
+        }
+        return workOrderRepository.findByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
-        return workOrder;
     }
 
     private WorkOrder getWorkOrderWithRelationsOrThrow(Long id) {
-        WorkOrder workOrder = workOrderRepository.findWithRelationsByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findWithRelationsById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
+        }
+        return workOrderRepository.findWithRelationsByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
-        return workOrder;
     }
 
     private Client getClientOrThrow(Long clientId, Long companyId) {

@@ -401,6 +401,12 @@ public class AdminController extends BaseController {
                                Model model) {
         try {
             WorkOrderDTO order = workOrderService.getWorkOrderById(id);
+            com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+            com.printflow.entity.Company orderCompany = orderEntity.getCompany();
+            if (orderCompany == null) {
+                throw new ResourceNotFoundException("Order company not found");
+            }
+            Long orderCompanyId = orderCompany.getId();
             List<AttachmentDTO> attachments = fileStorageService.getAttachmentsByWorkOrder(id);
             List<UserDTO> workers = userService.getWorkers();
             UserDTO assignedWorker = null;
@@ -419,17 +425,20 @@ public class AdminController extends BaseController {
             model.addAttribute("workers", workers);
             model.addAttribute("assignedWorker", assignedWorker);
             model.addAttribute("orderActivities", taskService.getActivitiesByWorkOrder(id));
-            model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
-                id, tenantContextService.requireCompanyId()));
+            if (tenantContextService.isSuperAdmin()) {
+                model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_Id(id));
+            } else {
+                model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
+                    id, orderCompanyId));
+            }
             model.addAttribute("profitSummary", workOrderProfitService.calculateRealProfit(
-                id, tenantContextService.getCurrentCompany()));
+                id, orderCompany));
             model.addAttribute("activityFeed", activityLogService.getForWorkOrder(id));
-            model.addAttribute("companyCurrency", tenantContextService.getCurrentCompany() != null
-                ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
-            model.addAttribute("variants", productVariantRepository.findAllByCompany_Id(tenantContextService.requireCompanyId()));
+            model.addAttribute("companyCurrency", orderCompany != null
+                ? orderCompany.getCurrency() : "RSD");
+            model.addAttribute("variants", productVariantRepository.findAllByCompany_Id(orderCompanyId));
             model.addAttribute("publicTrackingUrl", baseUrl + "/public/order/" + order.getPublicToken());
             model.addAttribute("autocopyPublicLink", autocopyPublicLink);
-            com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
             model.addAttribute("publicTokenExpiresAt", orderEntity.getPublicTokenExpiresAt());
             java.util.List<com.printflow.entity.PublicOrderRequest> sourceRequests =
                 publicOrderRequestRepository.findByConvertedOrder_IdIn(java.util.List.of(order.getId()));
@@ -489,12 +498,20 @@ public class AdminController extends BaseController {
 
     @GetMapping("/orders/{id}/items-fragment")
     public String orderItemsFragment(@PathVariable Long id, Model model) {
-        model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
-            id, tenantContextService.requireCompanyId()));
-        model.addAttribute("profitSummary", workOrderProfitService.calculateRealProfit(
-            id, tenantContextService.getCurrentCompany()));
-        model.addAttribute("companyCurrency", tenantContextService.getCurrentCompany() != null
-            ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
+        com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+        com.printflow.entity.Company orderCompany = orderEntity.getCompany();
+        if (orderCompany == null) {
+            throw new ResourceNotFoundException("Order company not found");
+        }
+        Long orderCompanyId = orderCompany.getId();
+        if (tenantContextService.isSuperAdmin()) {
+            model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_Id(id));
+        } else {
+            model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
+                id, orderCompanyId));
+        }
+        model.addAttribute("profitSummary", workOrderProfitService.calculateRealProfit(id, orderCompany));
+        model.addAttribute("companyCurrency", orderCompany != null ? orderCompany.getCurrency() : "RSD");
         return "admin/orders/items-fragment :: itemsTable";
     }
 
@@ -937,6 +954,21 @@ public class AdminController extends BaseController {
     @GetMapping("/users/permissions/{id}")
     public String legacyUserPermissionsRedirect(@PathVariable Long id) {
         return "redirect:/admin/users/edit/" + id;
+    }
+
+    @PostMapping("/users/{id}/toggle-active")
+    public String toggleUserActive(@PathVariable Long id, Model model) {
+        try {
+            UserDTO user = userService.getUserById(id);
+            if (user.isActive()) {
+                userService.deactivateUser(id);
+                return redirectWithSuccess("/admin/users", "admin.users.flash.deactivated", model);
+            }
+            userService.activateUser(id);
+            return redirectWithSuccess("/admin/users", "admin.users.flash.activated", model);
+        } catch (RuntimeException e) {
+            return redirectWithError("/admin/users", "admin.users.flash.not_found", model);
+        }
     }
 
     // ==================== TASK REVIEW ====================

@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface WorkOrderItemRepository extends JpaRepository<WorkOrderItem, Long> {
     @EntityGraph(attributePaths = {"variant"})
     List<WorkOrderItem> findAllByWorkOrder_IdAndCompany_Id(Long workOrderId, Long companyId);
+    @EntityGraph(attributePaths = {"variant"})
+    List<WorkOrderItem> findAllByWorkOrder_Id(Long workOrderId);
 
     Optional<WorkOrderItem> findByIdAndCompany_Id(Long id, Long companyId);
 }
