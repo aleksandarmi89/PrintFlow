@@ -721,6 +721,7 @@ public class TaskService {
         if (assignedToId != null) {
             User assigned = userRepository.findByIdAndCompany_Id(assignedToId, tenantGuard.requireCompanyId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            validateAssignableUser(assigned);
             task.setAssignedTo(assigned);
             if (task.getStatus() == TaskStatus.PENDING) {
                 task.setStatus(TaskStatus.ASSIGNED);
@@ -802,6 +803,7 @@ public class TaskService {
         if (assignedToId != null) {
             User assigned = userRepository.findByIdAndCompany_Id(assignedToId, taskCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            validateAssignableUser(assigned);
             task.setAssignedTo(assigned);
             task.setStatus(TaskStatus.ASSIGNED);
             task.setAssignedAt(LocalDateTime.now());
@@ -833,6 +835,21 @@ public class TaskService {
             throw new IllegalArgumentException("Task title is required");
         }
         return title.trim();
+    }
+
+    private void validateAssignableUser(User user) {
+        if (user == null || user.getRole() == null) {
+            throw new RuntimeException("User is not assignable");
+        }
+        User.Role role = user.getRole();
+        boolean assignable = role == User.Role.ADMIN
+            || role == User.Role.MANAGER
+            || role == User.Role.WORKER_DESIGN
+            || role == User.Role.WORKER_PRINT
+            || role == User.Role.WORKER_GENERAL;
+        if (!assignable) {
+            throw new RuntimeException("Selected user cannot be assigned");
+        }
     }
 
     private Long requireTaskCompanyId(Task task) {

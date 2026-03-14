@@ -103,7 +103,7 @@
                                 <option value="" th:text="#{admin.tasks.edit.field.unassigned}">Unassigned</option>
                                 <option th:each="worker : ${workers}"
                                         th:value="${worker.id}"
-                                        th:text="${worker.fullName}"
+                                        th:text="${worker.fullName + ' (' + worker.role + ')'}"
                                         th:selected="${task.assignedToId == worker.id}">
                                 </option>
                             </select>

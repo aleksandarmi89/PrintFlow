@@ -191,6 +191,7 @@ class TaskServiceCreateValidationTest {
 
         User assigned = new User();
         assigned.setId(10L);
+        assigned.setRole(User.Role.WORKER_DESIGN);
         User createdBy = new User();
         createdBy.setId(20L);
 

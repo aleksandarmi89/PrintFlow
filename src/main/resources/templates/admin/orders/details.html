@@ -134,7 +134,7 @@
                                         <option th:each="user : ${workers}"
                                                 th:value="${user.id}"
                                                 th:selected="${order.assignedToId == user.id}"
-                                                th:text="${user.fullName + ' • ' + (user.available ? #messages.msg('workers.available') : #messages.msg('workers.busy'))}">
+                                                th:text="${user.fullName + ' (' + user.role + ') • ' + (user.available ? #messages.msg('workers.available') : #messages.msg('workers.busy'))}">
                                         </option>
                                     </select>
                                     <button type="submit"
@@ -455,7 +455,7 @@
                                     <option th:each="user : ${workers}"
                                             th:value="${user.id}"
                                             th:selected="${order.assignedToId == user.id}"
-                                            th:text="${user.fullName + ' • ' + (user.available ? #messages.msg('workers.available') : #messages.msg('workers.busy'))}">
+                                            th:text="${user.fullName + ' (' + user.role + ') • ' + (user.available ? #messages.msg('workers.available') : #messages.msg('workers.busy'))}">
                                     </option>
                                 </select>
                                 <button type="submit"

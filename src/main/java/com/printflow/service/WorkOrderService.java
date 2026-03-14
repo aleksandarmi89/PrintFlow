@@ -111,6 +111,7 @@ public class WorkOrderService {
         if (workOrderDTO.getAssignedToId() != null) {
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), companyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            validateAssignableUser(assignedTo);
             workOrder.setAssignedTo(assignedTo);
         }
         
@@ -158,6 +159,7 @@ public class WorkOrderService {
         if (workOrderDTO.getAssignedToId() != null) {
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), orderCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            validateAssignableUser(assignedTo);
             workOrder.setAssignedTo(assignedTo);
         } else {
             workOrder.setAssignedTo(null);
@@ -700,6 +702,7 @@ public class WorkOrderService {
         if (userId != null) {
             assignedTo = userRepository.findByIdAndCompany_Id(userId, orderCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            validateAssignableUser(assignedTo);
         }
 
         workOrder.setAssignedTo(assignedTo);
@@ -725,6 +728,21 @@ public class WorkOrderService {
 
     private String orderStatusName(OrderStatus status) {
         return status != null ? status.name() : "UNKNOWN";
+    }
+
+    private void validateAssignableUser(User user) {
+        if (user == null || user.getRole() == null) {
+            throw new RuntimeException("User is not assignable");
+        }
+        User.Role role = user.getRole();
+        boolean assignable = role == User.Role.ADMIN
+            || role == User.Role.MANAGER
+            || role == User.Role.WORKER_DESIGN
+            || role == User.Role.WORKER_PRINT
+            || role == User.Role.WORKER_GENERAL;
+        if (!assignable) {
+            throw new RuntimeException("Selected user cannot be assigned");
+        }
     }
 
     private String requireTitle(String title) {

@@ -40,6 +40,14 @@ public class UserService {
         Role.WORKER_PRINT
     );
 
+    private static final List<Role> ASSIGNABLE_ROLES = Arrays.asList(
+        Role.ADMIN,
+        Role.MANAGER,
+        Role.WORKER_GENERAL,
+        Role.WORKER_DESIGN,
+        Role.WORKER_PRINT
+    );
+
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        TenantContextService tenantContextService,
@@ -291,6 +299,19 @@ public class UserService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         }
+    }
+
+    public List<UserDTO> getAssignableUsers() {
+        List<User> users;
+        if (tenantContextService.isSuperAdmin()) {
+            users = userRepository.findByRoleInAndActiveTrue(ASSIGNABLE_ROLES);
+        } else {
+            Long companyId = tenantContextService.requireCompanyId();
+            users = userRepository.findByCompany_IdAndRoleInAndActiveTrue(companyId, ASSIGNABLE_ROLES);
+        }
+        return users.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
     public void updateLastLogin(String username) {

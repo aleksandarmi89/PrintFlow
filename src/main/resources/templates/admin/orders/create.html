@@ -186,10 +186,10 @@
                                     data-available-label="Available"
                                     th:attr="data-available-label=#{workers.available},data-busy-label=#{workers.busy}">
                                 <option value="" th:text="#{orders.create.assign.unassigned}">-- Unassigned --</option>
-                               <option th:each="user : ${workers}"
-        th:value="${user.id}"
-        th:text="|${user.firstName} ${user.lastName} • ${#messages.msg(user.available ? 'workers.available' : 'workers.busy')}|">
-</option>
+                                <option th:each="user : ${workers}"
+                                        th:value="${user.id}"
+                                        th:text="${user.fullName + ' (' + user.role + ') • ' + (user.available ? #messages.msg('workers.available') : #messages.msg('workers.busy'))}">
+                                </option>
                             </select>
                         </div>
 

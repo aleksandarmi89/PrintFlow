@@ -352,7 +352,7 @@ public class AdminController extends BaseController {
     public String createOrderForm(Model model) {
         model.addAttribute("order", new WorkOrderDTO());
         model.addAttribute("clients", clientService.getActiveClients());
-        model.addAttribute("workers", userService.getWorkers());
+        model.addAttribute("workers", userService.getAssignableUsers());
         model.addAttribute("companyCurrency", tenantContextService.getCurrentCompany() != null
             ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
         return "admin/orders/create";
@@ -423,7 +423,7 @@ public class AdminController extends BaseController {
             }
             Long orderCompanyId = orderCompany.getId();
             List<AttachmentDTO> attachments = fileStorageService.getAttachmentsByWorkOrder(id);
-            List<UserDTO> workers = userService.getWorkers();
+            List<UserDTO> workers = userService.getAssignableUsers();
             UserDTO assignedWorker = null;
             if (order.getAssignedToId() != null) {
                 for (UserDTO worker : workers) {
@@ -551,7 +551,7 @@ public class AdminController extends BaseController {
             WorkOrderDTO order = workOrderService.getWorkOrderById(id);
             model.addAttribute("order", order);
             model.addAttribute("clients", clientService.getActiveClients());
-            model.addAttribute("workers", userService.getWorkers());
+            model.addAttribute("workers", userService.getAssignableUsers());
             model.addAttribute("orderStatuses", OrderStatus.values());
             model.addAttribute("companyCurrency", tenantContextService.getCurrentCompany() != null
                 ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
@@ -1083,7 +1083,7 @@ public class AdminController extends BaseController {
     public String editTaskForm(@PathVariable Long id, Model model) {
         try {
             model.addAttribute("task", taskService.getTaskForEdit(id));
-            model.addAttribute("workers", userService.getWorkers());
+            model.addAttribute("workers", userService.getAssignableUsers());
             model.addAttribute("priorities", com.printflow.entity.enums.TaskPriority.values());
             notificationService.markUnreadByLink(getCurrentUserId(), "/admin/tasks/" + id);
             return "admin/tasks/edit";
@@ -1107,7 +1107,7 @@ public class AdminController extends BaseController {
             throw e;
         } catch (Exception e) {
             model.addAttribute("task", taskDTO);
-            model.addAttribute("workers", userService.getWorkers());
+            model.addAttribute("workers", userService.getAssignableUsers());
             model.addAttribute("priorities", com.printflow.entity.enums.TaskPriority.values());
             model.addAttribute("errorMessage", "Error updating task: " + e.getMessage());
             return "admin/tasks/edit";
@@ -1120,7 +1120,7 @@ public class AdminController extends BaseController {
         org.springframework.data.domain.Pageable pageable =
             org.springframework.data.domain.PageRequest.of(0, 200, org.springframework.data.domain.Sort.by("createdAt").descending());
         List<WorkOrderDTO> orders = workOrderService.getWorkOrders(pageable).getContent();
-        List<UserDTO> workers = userService.getWorkers();
+        List<UserDTO> workers = userService.getAssignableUsers();
         model.addAttribute("orders", orders);
         model.addAttribute("workers", workers);
         model.addAttribute("priorities", com.printflow.entity.enums.TaskPriority.values());
@@ -1147,7 +1147,7 @@ public class AdminController extends BaseController {
             org.springframework.data.domain.Pageable pageable =
                 org.springframework.data.domain.PageRequest.of(0, 200, org.springframework.data.domain.Sort.by("createdAt").descending());
             List<WorkOrderDTO> orders = workOrderService.getWorkOrders(pageable).getContent();
-            List<UserDTO> workers = userService.getWorkers();
+            List<UserDTO> workers = userService.getAssignableUsers();
             model.addAttribute("orders", orders);
             model.addAttribute("workers", workers);
             model.addAttribute("priorities", com.printflow.entity.enums.TaskPriority.values());
