@@ -340,6 +340,26 @@ class CompanyControllerTest {
     }
 
     @Test
+    void setBillingOverrideTrimsDateBeforeParsing() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.setBillingOverride(34L, true, " 2026-03-13T10:15:00 ", model);
+
+        assertEquals("redirect:/admin/companies/edit/34", view);
+        verify(companyService).setBillingOverride(eq(34L), eq(true), eq(LocalDateTime.parse("2026-03-13T10:15:00")));
+    }
+
+    @Test
     void listCompaniesTrimsOverrideFilterBeforeParsing() {
         CompanyService companyService = mock(CompanyService.class);
         PaginationConfig paginationConfig = mock(PaginationConfig.class);

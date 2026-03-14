@@ -195,9 +195,10 @@ public class CompanyController extends BaseController {
             return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
         }
         java.time.LocalDateTime untilDate = null;
-        if (until != null && !until.isBlank()) {
+        String normalizedUntil = normalizeOptional(until);
+        if (normalizedUntil != null) {
             try {
-                untilDate = java.time.LocalDateTime.parse(until);
+                untilDate = java.time.LocalDateTime.parse(normalizedUntil);
             } catch (DateTimeParseException ex) {
                 return redirectWithError("/admin/companies/edit/" + id, "admin.companies.flash.invalid_date_format", model);
             }
