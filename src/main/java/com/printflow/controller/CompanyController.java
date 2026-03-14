@@ -54,9 +54,10 @@ public class CompanyController extends BaseController {
         }
         Boolean overrideActive = null;
         if (override != null && !override.isBlank()) {
-            if ("on".equalsIgnoreCase(override)) {
+            String normalizedOverride = override.trim();
+            if ("on".equalsIgnoreCase(normalizedOverride)) {
                 overrideActive = true;
-            } else if ("off".equalsIgnoreCase(override)) {
+            } else if ("off".equalsIgnoreCase(normalizedOverride)) {
                 overrideActive = false;
             }
         }

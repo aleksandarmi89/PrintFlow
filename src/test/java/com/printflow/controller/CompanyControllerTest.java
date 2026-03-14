@@ -7,12 +7,16 @@ import com.printflow.service.CompanyBrandingService;
 import com.printflow.service.CompanyService;
 import com.printflow.service.TenantContextService;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -273,5 +277,53 @@ class CompanyControllerTest {
 
         assertEquals("redirect:/admin/companies/edit/34", view);
         verifyNoInteractions(companyService, auditLogService);
+    }
+
+    @Test
+    void listCompaniesTrimsOverrideFilterBeforeParsing() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(null)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(companyService.getCompanies(isNull(), isNull(), eq(true), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listCompanies(null, null, "  on  ", 0, null, model);
+
+        assertEquals("admin/companies/list", view);
+        verify(companyService).getCompanies(isNull(), isNull(), eq(true), any());
+    }
+
+    @Test
+    void listCompaniesIgnoresUnknownOverrideFilterValues() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(null)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(companyService.getCompanies(isNull(), isNull(), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listCompanies(null, null, "maybe", 0, null, model);
+
+        assertEquals("admin/companies/list", view);
+        verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
     }
 }
