@@ -11,9 +11,11 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,6 +39,18 @@ class OnboardingPageIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Passwords do not match!")))
             .andExpect(content().string(not(containsString("auth.password_mismatch"))));
+    }
+
+    @Test
+    void registerPageContainsSingleCsrfField() throws Exception {
+        String html = mockMvc.perform(get("/register"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        int occurrences = html.split("name=\"_csrf\"", -1).length - 1;
+        assertEquals(1, occurrences);
     }
 
     @Test

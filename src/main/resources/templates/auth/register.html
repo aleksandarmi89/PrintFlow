@@ -35,7 +35,6 @@
         
         <!-- Register Form -->
         <form class="mt-8 space-y-6" th:action="@{/register}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <!-- Flash Messages -->
             <div th:if="${successMessage}" class="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div class="flex">
