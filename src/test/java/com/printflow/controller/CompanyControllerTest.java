@@ -403,4 +403,54 @@ class CompanyControllerTest {
         assertEquals("enterprise", model.getAttribute("plan"));
         verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
     }
+
+    @Test
+    void listCompaniesTrimsSearchBeforeQueryAndModel() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(null)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(companyService.getCompanies(eq("Acme"), isNull(), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listCompanies("  Acme  ", null, null, 0, null, model);
+
+        assertEquals("admin/companies/list", view);
+        assertEquals("Acme", model.getAttribute("search"));
+        verify(companyService).getCompanies(eq("Acme"), isNull(), isNull(), any());
+    }
+
+    @Test
+    void listCompaniesConvertsBlankSearchToNull() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(null)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(companyService.getCompanies(isNull(), isNull(), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listCompanies("   ", null, null, 0, null, model);
+
+        assertEquals("admin/companies/list", view);
+        assertEquals(null, model.getAttribute("search"));
+        verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
+    }
 }

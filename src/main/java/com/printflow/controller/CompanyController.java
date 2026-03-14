@@ -44,6 +44,10 @@ public class CompanyController extends BaseController {
                                 @RequestParam(defaultValue = "0") int page,
                                 @RequestParam(required = false) Integer size,
                                 Model model) {
+        String normalizedSearch = (search != null ? search.trim() : null);
+        if (normalizedSearch != null && normalizedSearch.isBlank()) {
+            normalizedSearch = null;
+        }
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
         org.springframework.data.domain.Pageable pageable =
@@ -64,15 +68,15 @@ public class CompanyController extends BaseController {
         }
 
         org.springframework.data.domain.Page<CompanyDTO> companiesPage =
-            companyService.getCompanies(search, planTier, overrideActive, pageable);
+            companyService.getCompanies(normalizedSearch, planTier, overrideActive, pageable);
         if (safePage >= companiesPage.getTotalPages() && companiesPage.getTotalPages() > 0) {
             safePage = companiesPage.getTotalPages() - 1;
             pageable = org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
-            companiesPage = companyService.getCompanies(search, planTier, overrideActive, pageable);
+            companiesPage = companyService.getCompanies(normalizedSearch, planTier, overrideActive, pageable);
         }
         model.addAttribute("companies", companiesPage.getContent());
         model.addAttribute("companiesPage", companiesPage);
-        model.addAttribute("search", search);
+        model.addAttribute("search", normalizedSearch);
         model.addAttribute("plan", normalizedPlan);
         model.addAttribute("override", normalizedOverride);
         model.addAttribute("planOptions", com.printflow.entity.enums.PlanTier.values());
