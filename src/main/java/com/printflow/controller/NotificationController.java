@@ -21,6 +21,8 @@ import java.util.Map;
 @Controller
 public class NotificationController {
 
+    private static final String API_ERROR_MESSAGE = "notifications.error";
+
     private final NotificationService notificationService;
     private final TenantContextService tenantContextService;
     private final PaginationConfig paginationConfig;
@@ -40,9 +42,9 @@ public class NotificationController {
             Long userId = tenantContextService.getCurrentUser().getId();
             notificationService.markAsRead(id, userId);
             return ResponseEntity.ok(Map.of("status", "success"));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("status", "error", "message", e.getMessage()));
+                .body(Map.of("status", "error", "message", API_ERROR_MESSAGE));
         }
     }
 
@@ -53,9 +55,9 @@ public class NotificationController {
             Long userId = tenantContextService.getCurrentUser().getId();
             notificationService.markAllAsRead(userId);
             return ResponseEntity.ok(Map.of("status", "success"));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("status", "error", "message", e.getMessage()));
+                .body(Map.of("status", "error", "message", API_ERROR_MESSAGE));
         }
     }
 

@@ -10,6 +10,8 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
@@ -21,11 +23,49 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class NotificationControllerTest {
+
+    @Test
+    void markNotificationAsReadReturnsGenericErrorPayload() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(11L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        doThrow(new RuntimeException("db failure")).when(notificationService).markAsRead(55L, 11L);
+
+        ResponseEntity<java.util.Map<String, Object>> response = controller.markNotificationAsRead(55L);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("error", response.getBody().get("status"));
+        assertEquals("notifications.error", response.getBody().get("message"));
+    }
+
+    @Test
+    void markAllAsReadReturnsSuccessPayload() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(12L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+
+        ResponseEntity<java.util.Map<String, Object>> response = controller.markAllNotificationsAsRead();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("success", response.getBody().get("status"));
+        verify(notificationService).markAllAsRead(12L);
+    }
 
     @Test
     void listNotificationsTrimsTypeAndUsesReturnedPageNumber() {
