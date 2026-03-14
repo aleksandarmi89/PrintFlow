@@ -1169,7 +1169,11 @@ public class AdminController extends BaseController {
         if (value == null || value.isBlank()) {
             return null;
         }
-        return Long.valueOf(value);
+        try {
+            return Long.valueOf(value.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private Long suggestWorkerId(Long workOrderId, List<WorkOrderDTO> orders, List<UserDTO> workers) {
