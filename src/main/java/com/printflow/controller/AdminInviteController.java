@@ -39,7 +39,12 @@ public class AdminInviteController extends BaseController {
                                @RequestParam String role,
                                Model model) {
         try {
-            Role inviteRole = Role.valueOf(role);
+            Role inviteRole = parseRole(role);
+            if (inviteRole == null) {
+                model.addAttribute("roles", getAssignableRoles());
+                model.addAttribute("errorMessage", "admin.users.invite.invalid_role");
+                return "admin/users/invite";
+            }
             String link = inviteService.createInvite(email, inviteRole);
             return "redirect:/admin/users/invite?inviteLink=" + urlEncode(link);
         } catch (Exception ex) {
@@ -58,5 +63,16 @@ public class AdminInviteController extends BaseController {
 
     private String urlEncode(String value) {
         return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private Role parseRole(String role) {
+        if (role == null || role.isBlank()) {
+            return null;
+        }
+        try {
+            return Role.valueOf(role.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }
