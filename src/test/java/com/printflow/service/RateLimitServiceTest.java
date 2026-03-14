@@ -117,7 +117,7 @@ class RateLimitServiceTest {
 
         service.unban(" 203.0.113.77 ");
         service.unwhitelist(" 203.0.113.77 ");
-        verify(whitelistedIpRepository).findByIp("203.0.113.77");
+        verify(whitelistedIpRepository, times(2)).findByIp("203.0.113.77");
         verify(bannedIpRepository, times(2)).findByIp("203.0.113.77");
     }
 }
