@@ -199,6 +199,63 @@ class CompanyControllerTest {
     }
 
     @Test
+    void createCompanyMapsTrimmedDuplicateNameErrorToMessageKey() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+        CompanyDTO incoming = new CompanyDTO();
+        incoming.setName("Acme");
+        Model model = new ExtendedModelMap();
+
+        doThrow(new RuntimeException("  Company name already exists  "))
+            .when(companyService).createCompany(any(CompanyDTO.class));
+
+        String view = controller.createCompany(incoming, model);
+
+        assertEquals("admin/companies/create", view);
+        assertEquals("admin.companies.error.name_exists", model.getAttribute("errorMessage"));
+    }
+
+    @Test
+    void updateCompanyMapsTrimmedLogoErrorToMessageKey() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService,
+            paginationConfig,
+            brandingService,
+            tenantContextService,
+            auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        doThrow(new RuntimeException("  Logo must be PNG, JPG or SVG  "))
+            .when(companyService).updateCompany(eq(41L), any(CompanyDTO.class));
+
+        CompanyDTO incoming = new CompanyDTO();
+        incoming.setName("Acme");
+        Model model = new ExtendedModelMap();
+
+        String view = controller.updateCompany(41L, incoming, null, model);
+
+        assertEquals("admin/companies/edit", view);
+        assertEquals("admin.companies.error.logo_type", model.getAttribute("errorMessage"));
+    }
+
+    @Test
     void activateProTrialIsForbiddenForNonSuperAdmin() {
         CompanyService companyService = mock(CompanyService.class);
         PaginationConfig paginationConfig = mock(PaginationConfig.class);

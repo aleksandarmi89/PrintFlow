@@ -243,7 +243,8 @@ public class CompanyController extends BaseController {
         if (message == null || message.isBlank()) {
             return "admin.companies.error.generic";
         }
-        return switch (message) {
+        String normalized = message.trim();
+        return switch (normalized) {
             case "Company not found" -> "admin.companies.flash.not_found";
             case "Company name is required" -> "admin.companies.error.name_required";
             case "Company name already exists" -> "admin.companies.error.name_exists";
