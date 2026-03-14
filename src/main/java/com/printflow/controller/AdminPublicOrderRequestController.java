@@ -78,34 +78,42 @@ public class AdminPublicOrderRequestController extends BaseController {
                        @RequestParam(required = false) Integer size,
                        HttpSession session,
                        Model model) {
+        String normalizedStatusInput = normalizeOptional(status);
+        String normalizedSearchInput = normalizeOptional(search);
         if (resetFilters) {
             session.removeAttribute("publicRequests.statusFilter");
             session.removeAttribute("publicRequests.searchFilter");
-            status = null;
-            search = null;
+            normalizedStatusInput = null;
+            normalizedSearchInput = null;
         } else {
-            if (status == null) {
-                status = (String) session.getAttribute("publicRequests.statusFilter");
+            if (normalizedStatusInput == null) {
+                normalizedStatusInput = normalizeOptional((String) session.getAttribute("publicRequests.statusFilter"));
             } else {
-                session.setAttribute("publicRequests.statusFilter", status);
+                session.setAttribute("publicRequests.statusFilter", normalizedStatusInput);
             }
-            if (search == null) {
-                search = (String) session.getAttribute("publicRequests.searchFilter");
+            if (normalizedSearchInput == null) {
+                normalizedSearchInput = normalizeOptional((String) session.getAttribute("publicRequests.searchFilter"));
             } else {
-                session.setAttribute("publicRequests.searchFilter", search);
+                session.setAttribute("publicRequests.searchFilter", normalizedSearchInput);
             }
         }
 
-        PublicOrderRequestStatus statusFilter = parseStatus(status);
+        PublicOrderRequestStatus statusFilter = parseStatus(normalizedStatusInput);
+        String normalizedStatus = statusFilter != null ? statusFilter.name() : null;
+        if (normalizedStatusInput != null && statusFilter == null) {
+            session.removeAttribute("publicRequests.statusFilter");
+        } else if (normalizedStatus != null) {
+            session.setAttribute("publicRequests.statusFilter", normalizedStatus);
+        }
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
         Page<PublicOrderRequest> requests = requestService.listForCurrentTenant(
             statusFilter,
-            search,
+            normalizedSearchInput,
             PageRequest.of(safePage, pageSize, Sort.by("createdAt").descending()));
         model.addAttribute("requestsPage", requests);
-        model.addAttribute("statusFilter", status);
-        model.addAttribute("search", search);
+        model.addAttribute("statusFilter", normalizedStatus);
+        model.addAttribute("search", normalizedSearchInput);
         model.addAttribute("allStatuses", PublicOrderRequestStatus.values());
         Map<String, String> statusOptionLabels = new HashMap<>();
         for (PublicOrderRequestStatus requestStatus : PublicOrderRequestStatus.values()) {
@@ -322,6 +330,14 @@ public class AdminPublicOrderRequestController extends BaseController {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private int generateTasks(WorkOrder order, String template) {
