@@ -99,4 +99,26 @@ class PlanLimitServiceTest {
         assertEquals(0, nullCompanyLimits.getMaxMonthlyOrders());
         assertEquals(0L, nullCompanyLimits.getMaxStorageBytes());
     }
+
+    @Test
+    void storageLimitTreatsNegativeDeltaAsZeroAndHandlesNullUsedBytes() {
+        PlanLimitsProperties properties = new PlanLimitsProperties();
+        PlanLimitsProperties.PlanLimits free = new PlanLimitsProperties.PlanLimits();
+        free.setMaxStorageBytes(100L);
+        properties.setFree(free);
+
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+
+        Company company = new Company();
+        company.setId(30L);
+        company.setPlan(PlanTier.FREE);
+
+        when(attachmentRepository.sumFileSizeByCompanyId(30L)).thenReturn(null);
+
+        PlanLimitService service = new PlanLimitService(properties, userRepository, workOrderRepository, attachmentRepository);
+
+        assertDoesNotThrow(() -> service.assertStorageLimit(company, -500L));
+    }
 }
