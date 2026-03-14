@@ -3,6 +3,7 @@ package com.printflow.service;
 import com.printflow.dto.TaskDTO;
 import com.printflow.entity.Company;
 import com.printflow.entity.Task;
+import com.printflow.entity.User;
 import com.printflow.entity.enums.TaskPriority;
 import com.printflow.entity.enums.TaskStatus;
 import com.printflow.repository.CommentRepository;
@@ -197,6 +198,56 @@ class TaskServiceAdminUpdateValidationTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> service.updateTaskFromAdmin(9L, dto, null));
         assertEquals("Invalid task priority", ex.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void updateTaskFromAdmin_rejectsNonAssignableAssignee() {
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        TaskActivityRepository taskActivityRepository = mock(TaskActivityRepository.class);
+        TimeEntryRepository timeEntryRepository = mock(TimeEntryRepository.class);
+        CommentRepository commentRepository = mock(CommentRepository.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
+        TenantGuard tenantGuard = mock(TenantGuard.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        TaskService service = new TaskService(
+            taskRepository,
+            userRepository,
+            workOrderRepository,
+            taskActivityRepository,
+            timeEntryRepository,
+            commentRepository,
+            fileStorageService,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            2000
+        );
+
+        Company company = new Company();
+        company.setId(1L);
+        Task task = new Task();
+        task.setId(10L);
+        task.setCompany(company);
+        task.setStatus(TaskStatus.PENDING);
+        User assignee = new User();
+        assignee.setId(77L);
+        assignee.setRole(User.Role.SUPER_ADMIN);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(1L);
+        when(taskRepository.findByIdAndCompany_Id(10L, 1L)).thenReturn(Optional.of(task));
+        when(userRepository.findByIdAndCompany_Id(77L, 1L)).thenReturn(Optional.of(assignee));
+
+        TaskDTO dto = new TaskDTO();
+        dto.setTitle("Task");
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+            () -> service.updateTaskFromAdmin(10L, dto, 77L));
+        assertEquals("Selected user cannot be assigned", ex.getMessage());
         verify(taskRepository, never()).save(any(Task.class));
     }
 }
