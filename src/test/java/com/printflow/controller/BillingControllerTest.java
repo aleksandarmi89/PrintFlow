@@ -717,4 +717,52 @@ class BillingControllerTest {
         assertEquals("admin/billing/index", view);
         assertEquals(true, model.getAttribute("priceTestMode"));
     }
+
+    @Test
+    void billingHomeWorksWhenStripePropertiesBeanIsNull() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            null
+        );
+
+        Company company = new Company();
+        company.setId(107L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(107L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(107L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(107L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(107L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_Id(107L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(107L), any())).thenReturn(1L);
+        when(attachmentRepository.sumFileSizeByCompanyId(107L)).thenReturn(512L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(new com.printflow.config.PlanLimitsProperties.PlanLimits());
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of());
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.billingHome(model, null, null);
+
+        assertEquals("admin/billing/index", view);
+        assertEquals(false, model.getAttribute("stripeConfigured"));
+        assertEquals("test", model.getAttribute("stripeMode"));
+    }
 }
