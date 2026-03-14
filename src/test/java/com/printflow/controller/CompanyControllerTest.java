@@ -385,7 +385,7 @@ class CompanyControllerTest {
         String view = controller.listCompanies(null, null, "maybe", 0, null, model);
 
         assertEquals("admin/companies/list", view);
-        assertEquals("maybe", model.getAttribute("override"));
+        assertEquals(null, model.getAttribute("override"));
         verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
     }
 
@@ -410,7 +410,7 @@ class CompanyControllerTest {
         String view = controller.listCompanies(null, null, "  maybe  ", 0, null, model);
 
         assertEquals("admin/companies/list", view);
-        assertEquals("maybe", model.getAttribute("override"));
+        assertEquals(null, model.getAttribute("override"));
         verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
     }
 
@@ -440,7 +440,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void listCompaniesKeepsUnknownPlanInModelButDoesNotApplyFilter() {
+    void listCompaniesDropsUnknownPlanFromModelAndDoesNotApplyFilter() {
         CompanyService companyService = mock(CompanyService.class);
         PaginationConfig paginationConfig = mock(PaginationConfig.class);
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
@@ -460,7 +460,7 @@ class CompanyControllerTest {
         String view = controller.listCompanies(null, "  enterprise  ", null, 0, null, model);
 
         assertEquals("admin/companies/list", view);
-        assertEquals("enterprise", model.getAttribute("plan"));
+        assertEquals(null, model.getAttribute("plan"));
         verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
     }
 

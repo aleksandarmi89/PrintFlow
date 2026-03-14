@@ -44,26 +44,30 @@ public class CompanyController extends BaseController {
                                 @RequestParam(defaultValue = "0") int page,
                                 @RequestParam(required = false) Integer size,
                                 Model model) {
-        String normalizedSearch = (search != null ? search.trim() : null);
-        if (normalizedSearch != null && normalizedSearch.isBlank()) {
-            normalizedSearch = null;
-        }
+        String normalizedSearch = normalizeOptional(search);
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
         org.springframework.data.domain.Pageable pageable =
             org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
-        String normalizedPlan = (plan != null ? plan.trim() : null);
+        String normalizedPlan = normalizeOptional(plan);
         com.printflow.entity.enums.PlanTier planTier = null;
-        if (normalizedPlan != null && !normalizedPlan.isBlank()) {
+        if (normalizedPlan != null) {
             planTier = parsePlanTier(normalizedPlan);
+            if (planTier == null) {
+                normalizedPlan = null;
+            }
         }
-        String normalizedOverride = (override != null ? override.trim() : null);
+        String normalizedOverride = normalizeOptional(override);
         Boolean overrideActive = null;
-        if (normalizedOverride != null && !normalizedOverride.isBlank()) {
+        if (normalizedOverride != null) {
             if ("on".equalsIgnoreCase(normalizedOverride)) {
                 overrideActive = true;
+                normalizedOverride = "on";
             } else if ("off".equalsIgnoreCase(normalizedOverride)) {
                 overrideActive = false;
+                normalizedOverride = "off";
+            } else {
+                normalizedOverride = null;
             }
         }
 
@@ -263,5 +267,13 @@ public class CompanyController extends BaseController {
             }
         }
         return null;
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
