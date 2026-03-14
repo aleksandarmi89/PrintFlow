@@ -73,7 +73,7 @@ public class HomeController extends BaseController {
             normalizeOptional(position),
             normalizeOptional(notes)
         );
-        return redirectWithSuccess("/profile", "Profile updated.", model);
+        return redirectWithSuccess("/profile", "profile.updated", model);
     }
 
     @PostMapping("/settings/password")
@@ -85,14 +85,14 @@ public class HomeController extends BaseController {
         String normalizedNewPassword = normalizeOptional(newPassword);
         String normalizedConfirmPassword = normalizeOptional(confirmPassword);
         if (normalizedNewPassword == null || !Objects.equals(normalizedNewPassword, normalizedConfirmPassword)) {
-            return redirectWithError("/settings", "Passwords do not match.", model);
+            return redirectWithError("/settings", "auth.password_mismatch", model);
         }
         User user = currentContextService.currentUser();
         boolean changed = userService.changePassword(user.getId(), normalizedCurrentPassword, normalizedNewPassword);
         if (!changed) {
-            return redirectWithError("/settings", "Current password is incorrect.", model);
+            return redirectWithError("/settings", "auth.password_current_incorrect", model);
         }
-        return redirectWithSuccess("/settings", "Password updated.", model);
+        return redirectWithSuccess("/settings", "auth.password_updated", model);
     }
 
     private String normalizeOptional(String value) {
