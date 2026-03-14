@@ -82,9 +82,9 @@ public class PlanLimitService {
 
     public PlanLimitsProperties.PlanLimits getLimitsForCompany(Company company) {
         if (company == null) {
-            return planLimitsProperties.getFree();
+            return safeLimits(planLimitsProperties.getFree());
         }
-        return resolveLimits(company);
+        return safeLimits(resolveLimits(company));
     }
 
     private PlanLimitsProperties.PlanLimits resolveLimits(Company company) {
@@ -94,5 +94,9 @@ public class PlanLimitService {
             case TEAM -> planLimitsProperties.getTeam();
             case FREE -> planLimitsProperties.getFree();
         };
+    }
+
+    private PlanLimitsProperties.PlanLimits safeLimits(PlanLimitsProperties.PlanLimits limits) {
+        return limits != null ? limits : new PlanLimitsProperties.PlanLimits();
     }
 }

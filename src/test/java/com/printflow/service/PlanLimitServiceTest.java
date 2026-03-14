@@ -9,6 +9,7 @@ import com.printflow.repository.WorkOrderRepository;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -71,5 +72,31 @@ class PlanLimitServiceTest {
         ))
             .thenReturn(1L);
         assertDoesNotThrow(() -> service.assertMonthlyOrdersLimit(company));
+    }
+
+    @Test
+    void getLimitsForCompanyReturnsSafeDefaultsWhenConfiguredTierLimitsAreMissing() {
+        PlanLimitsProperties properties = new PlanLimitsProperties();
+        properties.setFree(null);
+        properties.setPro(null);
+        properties.setTeam(null);
+
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+
+        PlanLimitService service = new PlanLimitService(properties, userRepository, workOrderRepository, attachmentRepository);
+
+        Company proCompany = new Company();
+        proCompany.setPlan(PlanTier.PRO);
+        PlanLimitsProperties.PlanLimits proLimits = service.getLimitsForCompany(proCompany);
+        assertEquals(0, proLimits.getMaxUsers());
+        assertEquals(0, proLimits.getMaxMonthlyOrders());
+        assertEquals(0L, proLimits.getMaxStorageBytes());
+
+        PlanLimitsProperties.PlanLimits nullCompanyLimits = service.getLimitsForCompany(null);
+        assertEquals(0, nullCompanyLimits.getMaxUsers());
+        assertEquals(0, nullCompanyLimits.getMaxMonthlyOrders());
+        assertEquals(0L, nullCompanyLimits.getMaxStorageBytes());
     }
 }
