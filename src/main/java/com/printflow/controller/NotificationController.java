@@ -111,6 +111,15 @@ public class NotificationController {
             read,
             PageRequest.of(safePage, pageSize)
         );
+        if (safePage >= notifications.getTotalPages() && notifications.getTotalPages() > 0) {
+            int lastPage = notifications.getTotalPages() - 1;
+            notifications = notificationService.getNotificationsWithFilters(
+                userId,
+                normalizedType,
+                read,
+                PageRequest.of(lastPage, pageSize)
+            );
+        }
         model.addAttribute("notifications", notifications);
         model.addAttribute("type", normalizedType);
         model.addAttribute("read", read);

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class NotificationControllerTest {
@@ -163,6 +164,41 @@ class NotificationControllerTest {
         assertEquals(5, model.getAttribute("totalPages"));
         assertEquals(5, model.getAttribute("displayTotalPages"));
         assertEquals(4, model.getAttribute("lastPage"));
+    }
+
+    @Test
+    void listNotificationsRefetchesLastPageWhenRequestedPageIsOutOfRange() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(15L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        when(paginationConfig.normalizePage(9)).thenReturn(9);
+        when(paginationConfig.normalizeSize(20)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        java.util.concurrent.atomic.AtomicInteger invocationCount = new java.util.concurrent.atomic.AtomicInteger();
+        when(notificationService.getNotificationsWithFilters(eq(15L), eq("TASK"), eq(Boolean.TRUE), any()))
+            .thenAnswer(invocation -> invocationCount.getAndIncrement() == 0
+                ? new PageImpl<>(List.of(), PageRequest.of(9, 20), 45)
+                : new PageImpl<>(List.of(), PageRequest.of(2, 20), 45));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listNotifications(" TASK ", true, 9, 20, model);
+
+        assertEquals("notifications/list", view);
+        assertEquals("TASK", model.getAttribute("type"));
+        assertEquals(2, model.getAttribute("currentPage"));
+        assertEquals(3, model.getAttribute("lastPage"));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(notificationService, times(2))
+            .getNotificationsWithFilters(eq(15L), eq("TASK"), eq(Boolean.TRUE), pageableCaptor.capture());
+        List<Pageable> capturedPageables = pageableCaptor.getAllValues();
+        assertEquals(9, capturedPageables.get(0).getPageNumber());
+        assertEquals(2, capturedPageables.get(1).getPageNumber());
     }
 
     @Test
