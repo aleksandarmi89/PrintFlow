@@ -77,13 +77,15 @@ public class BillingController extends BaseController {
     public String billingHome(Model model,
                               @RequestParam(required = false) String error,
                               @RequestParam(required = false) String success) {
-        model.addAttribute("error", error);
-        if (error != null && (error.startsWith("billing.") || error.startsWith("plan."))) {
-            model.addAttribute("errorKey", error);
+        String normalizedError = normalizeOptional(error);
+        String normalizedSuccess = normalizeOptional(success);
+        model.addAttribute("error", normalizedError);
+        if (normalizedError != null && (normalizedError.startsWith("billing.") || normalizedError.startsWith("plan."))) {
+            model.addAttribute("errorKey", normalizedError);
         }
-        model.addAttribute("success", success);
-        if (success != null && success.startsWith("billing.")) {
-            model.addAttribute("successKey", success);
+        model.addAttribute("success", normalizedSuccess);
+        if (normalizedSuccess != null && normalizedSuccess.startsWith("billing.")) {
+            model.addAttribute("successKey", normalizedSuccess);
         }
         Company company = tenantContextService.getCurrentCompany();
         if (company == null) {
@@ -308,5 +310,13 @@ public class BillingController extends BaseController {
         }
         double gb = mb / 1024.0;
         return String.format("%.2f GB", gb);
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

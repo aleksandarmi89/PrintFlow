@@ -886,4 +886,61 @@ class BillingControllerTest {
         assertEquals(null, model.getAttribute("errorKey"));
         assertEquals(null, model.getAttribute("successKey"));
     }
+
+    @Test
+    void billingHomeTrimsAndNormalizesErrorAndSuccessParams() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(110L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(110L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(110L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(110L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(110L)).thenReturn(0L);
+        when(workOrderRepository.countByCompany_Id(110L)).thenReturn(0L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(110L), any())).thenReturn(0L);
+        when(attachmentRepository.sumFileSizeByCompanyId(110L)).thenReturn(0L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(new com.printflow.config.PlanLimitsProperties.PlanLimits());
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of());
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(stripeProperties.getMode()).thenReturn("live");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        controller.billingHome(model, "  plan.limit.users  ", "  billing.config.saved  ");
+
+        assertEquals("plan.limit.users", model.getAttribute("error"));
+        assertEquals("plan.limit.users", model.getAttribute("errorKey"));
+        assertEquals("billing.config.saved", model.getAttribute("success"));
+        assertEquals("billing.config.saved", model.getAttribute("successKey"));
+
+        ExtendedModelMap blankModel = new ExtendedModelMap();
+        controller.billingHome(blankModel, "   ", "   ");
+        assertEquals(null, blankModel.getAttribute("error"));
+        assertEquals(null, blankModel.getAttribute("success"));
+    }
 }
