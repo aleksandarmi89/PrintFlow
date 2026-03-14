@@ -300,6 +300,7 @@ class CompanyControllerTest {
         String view = controller.listCompanies(null, null, "  on  ", 0, null, model);
 
         assertEquals("admin/companies/list", view);
+        assertEquals("on", model.getAttribute("override"));
         verify(companyService).getCompanies(isNull(), isNull(), eq(true), any());
     }
 
@@ -324,6 +325,32 @@ class CompanyControllerTest {
         String view = controller.listCompanies(null, null, "maybe", 0, null, model);
 
         assertEquals("admin/companies/list", view);
+        assertEquals("maybe", model.getAttribute("override"));
+        verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
+    }
+
+    @Test
+    void listCompaniesTrimsUnknownOverrideBeforeReturningToModel() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(null)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(companyService.getCompanies(isNull(), isNull(), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listCompanies(null, null, "  maybe  ", 0, null, model);
+
+        assertEquals("admin/companies/list", view);
+        assertEquals("maybe", model.getAttribute("override"));
         verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
     }
 

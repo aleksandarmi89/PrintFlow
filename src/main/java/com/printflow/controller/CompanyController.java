@@ -53,9 +53,9 @@ public class CompanyController extends BaseController {
         if (normalizedPlan != null && !normalizedPlan.isBlank()) {
             planTier = parsePlanTier(normalizedPlan);
         }
+        String normalizedOverride = (override != null ? override.trim() : null);
         Boolean overrideActive = null;
-        if (override != null && !override.isBlank()) {
-            String normalizedOverride = override.trim();
+        if (normalizedOverride != null && !normalizedOverride.isBlank()) {
             if ("on".equalsIgnoreCase(normalizedOverride)) {
                 overrideActive = true;
             } else if ("off".equalsIgnoreCase(normalizedOverride)) {
@@ -74,7 +74,7 @@ public class CompanyController extends BaseController {
         model.addAttribute("companiesPage", companiesPage);
         model.addAttribute("search", search);
         model.addAttribute("plan", normalizedPlan);
-        model.addAttribute("override", override);
+        model.addAttribute("override", normalizedOverride);
         model.addAttribute("planOptions", com.printflow.entity.enums.PlanTier.values());
         model.addAttribute("currentPage", companiesPage.getNumber());
         model.addAttribute("totalPages", companiesPage.getTotalPages());
