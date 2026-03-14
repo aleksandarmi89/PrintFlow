@@ -43,26 +43,17 @@ class OnboardingPageIntegrationTest {
 
     @Test
     void registerPageContainsSingleCsrfField() throws Exception {
-        String html = mockMvc.perform(get("/register"))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-        int occurrences = html.split("name=\"_csrf\"", -1).length - 1;
-        assertEquals(1, occurrences);
+        assertSingleCsrfField("/register");
     }
 
     @Test
     void loginPageContainsSingleCsrfField() throws Exception {
-        String html = mockMvc.perform(get("/login"))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+        assertSingleCsrfField("/login");
+    }
 
-        int occurrences = html.split("name=\"_csrf\"", -1).length - 1;
-        assertEquals(1, occurrences);
+    @Test
+    void forgotPasswordPageContainsSingleCsrfField() throws Exception {
+        assertSingleCsrfField("/forgot-password");
     }
 
     @Test
@@ -83,5 +74,16 @@ class OnboardingPageIntegrationTest {
                 containsString("Kompanija je kreirana.")
             )))
             .andExpect(content().string(not(containsString("auth.register.success"))));
+    }
+
+    private void assertSingleCsrfField(String uri) throws Exception {
+        String html = mockMvc.perform(get(uri))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        int occurrences = html.split("name=\"_csrf\"", -1).length - 1;
+        assertEquals(1, occurrences);
     }
 }
