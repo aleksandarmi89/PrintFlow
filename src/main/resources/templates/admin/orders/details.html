@@ -446,8 +446,8 @@
                         <form th:action="@{/admin/orders/{id}/assign-worker(id=${order.id})}" method="post"
                               class="block w-full px-4 py-3 border border-gray-300 rounded-lg">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <div class="font-medium text-gray-900" th:text="#{orders.details.assign_worker}">Assign to Worker</div>
-                            <div class="text-sm text-gray-500 mb-2" th:text="#{orders.details.assign_worker_help}">Assign this order to a worker</div>
+                            <div class="font-medium text-gray-900" th:text="#{orders.details.assign_worker}">Assign to Team Member</div>
+                            <div class="text-sm text-gray-500 mb-2" th:text="#{orders.details.assign_worker_help}">Assign this order to a team member</div>
                             <div class="flex items-center gap-2">
                                 <select name="assignedToId"
                                         class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
