@@ -11,12 +11,14 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -72,5 +74,30 @@ class AuditLogControllerTest {
 
         assertEquals("admin/audit-logs/list", view);
         verify(auditLogService).searchAuditLogs(eq(12L), isNull(), isNull(), isNull(), isNull(), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    void exportNormalizesPageAndSizeAndParsesActionCaseInsensitive() throws Exception {
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+
+        AuditLogController controller = new AuditLogController(auditLogService, companyService, tenantContextService, paginationConfig);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        when(tenantContextService.requireCompanyId()).thenReturn(13L);
+        when(paginationConfig.normalizePage(-2)).thenReturn(0);
+        when(paginationConfig.normalizeSize(5000)).thenReturn(200);
+        when(auditLogService.searchAuditLogs(eq(13L), eq(AuditAction.DELETE), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 200), 0));
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        controller.export(null, " delete ", null, null, null, null, -2, 5000, response);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(auditLogService).searchAuditLogs(eq(13L), eq(AuditAction.DELETE), isNull(), isNull(), isNull(), isNull(), pageableCaptor.capture());
+        assertEquals(0, pageableCaptor.getValue().getPageNumber());
+        assertEquals(200, pageableCaptor.getValue().getPageSize());
+        assertTrue(response.getContentType().startsWith("text/csv"));
     }
 }

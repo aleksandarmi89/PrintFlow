@@ -96,6 +96,8 @@ public class AuditLogController extends BaseController {
             companyId = tenantContextService.requireCompanyId();
         }
         AuditAction actionEnum = parseAction(action);
+        int safePage = paginationConfig.normalizePage(page);
+        int pageSize = paginationConfig.normalizeSize(size);
         var logs = auditLogService.searchAuditLogs(
             companyId,
             actionEnum,
@@ -103,7 +105,7 @@ public class AuditLogController extends BaseController {
             userId,
             entityId,
             entityType,
-            org.springframework.data.domain.PageRequest.of(page, size)
+            org.springframework.data.domain.PageRequest.of(safePage, pageSize)
         ).getContent();
 
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
