@@ -190,6 +190,44 @@ class NotificationControllerTest {
     }
 
     @Test
+    void deleteSelectedNotificationsSanitizesNullAndDuplicateIds() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(13L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
+
+        String view = controller.deleteSelectedNotifications(List.of(1L, null, 1L, 2L), redirect);
+
+        assertEquals("redirect:/notifications", view);
+        assertEquals("notifications.flash.deleted_selected", redirect.getFlashAttributes().get("successMessage"));
+        verify(notificationService).deleteMultipleNotifications(List.of(1L, 2L), 13L);
+    }
+
+    @Test
+    void deleteSelectedNotificationsRejectsNullOnlyIdList() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(14L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
+
+        String view = controller.deleteSelectedNotifications(List.of((Long) null), redirect);
+
+        assertEquals("redirect:/notifications", view);
+        assertEquals("notifications.flash.select_one", redirect.getFlashAttributes().get("errorMessage"));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
     void listNotificationsThrowsForbiddenWhenCurrentUserMissing() {
         NotificationService notificationService = mock(NotificationService.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);

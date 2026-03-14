@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 public class NotificationController {
@@ -79,11 +80,14 @@ public class NotificationController {
     public String deleteSelectedNotifications(@RequestParam(name = "notificationIds", required = false) List<Long> notificationIds,
                                               RedirectAttributes redirectAttributes) {
         Long userId = requireCurrentUserId();
-        if (notificationIds == null || notificationIds.isEmpty()) {
+        List<Long> sanitizedIds = notificationIds == null
+            ? List.of()
+            : notificationIds.stream().filter(java.util.Objects::nonNull).distinct().collect(Collectors.toList());
+        if (sanitizedIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "notifications.flash.select_one");
             return "redirect:/notifications";
         }
-        notificationService.deleteMultipleNotifications(notificationIds, userId);
+        notificationService.deleteMultipleNotifications(sanitizedIds, userId);
         redirectAttributes.addFlashAttribute("successMessage", "notifications.flash.deleted_selected");
         return "redirect:/notifications";
     }
