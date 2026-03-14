@@ -34,7 +34,7 @@ public class PlanLimitService {
         if (company == null) {
             return;
         }
-        PlanLimitsProperties.PlanLimits limits = resolveLimits(company);
+        PlanLimitsProperties.PlanLimits limits = safeLimits(resolveLimits(company));
         int maxUsers = limits.getMaxUsers();
         if (maxUsers <= 0) {
             return;
@@ -50,7 +50,7 @@ public class PlanLimitService {
         if (company == null) {
             return;
         }
-        PlanLimitsProperties.PlanLimits limits = resolveLimits(company);
+        PlanLimitsProperties.PlanLimits limits = safeLimits(resolveLimits(company));
         int maxOrders = limits.getMaxMonthlyOrders();
         if (maxOrders <= 0) {
             return;
@@ -67,7 +67,7 @@ public class PlanLimitService {
         if (company == null) {
             return;
         }
-        PlanLimitsProperties.PlanLimits limits = resolveLimits(company);
+        PlanLimitsProperties.PlanLimits limits = safeLimits(resolveLimits(company));
         long maxBytes = limits.getMaxStorageBytes();
         if (maxBytes <= 0) {
             return;

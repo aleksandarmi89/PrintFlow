@@ -121,4 +121,26 @@ class PlanLimitServiceTest {
 
         assertDoesNotThrow(() -> service.assertStorageLimit(company, -500L));
     }
+
+    @Test
+    void limitAssertionsDoNotThrowWhenTierLimitsAreMissing() {
+        PlanLimitsProperties properties = new PlanLimitsProperties();
+        properties.setFree(null);
+        properties.setPro(null);
+        properties.setTeam(null);
+
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+
+        Company company = new Company();
+        company.setId(40L);
+        company.setPlan(PlanTier.PRO);
+
+        PlanLimitService service = new PlanLimitService(properties, userRepository, workOrderRepository, attachmentRepository);
+
+        assertDoesNotThrow(() -> service.assertUserLimit(company));
+        assertDoesNotThrow(() -> service.assertMonthlyOrdersLimit(company));
+        assertDoesNotThrow(() -> service.assertStorageLimit(company, 1024L));
+    }
 }
