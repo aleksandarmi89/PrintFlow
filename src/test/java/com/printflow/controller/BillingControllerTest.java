@@ -169,6 +169,27 @@ class BillingControllerTest {
     }
 
     @Test
+    void startCheckoutTrimsPriceIdBeforeConfiguredPlanLookup() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(billingPlanConfigService.findPlanForPriceId("price_unknown")).thenReturn(null);
+
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, stripeProperties
+        );
+
+        RedirectView view = controller.startCheckout("  price_unknown  ");
+
+        assertEquals("/admin/billing?error=billing.checkout.missing_price", view.getUrl());
+        verify(billingPlanConfigService).findPlanForPriceId("price_unknown");
+        verifyNoInteractions(stripeBillingService, tenantContextService, auditLogService);
+    }
+
+    @Test
     void startCheckoutRejectsFreePlanPriceId() {
         StripeBillingService stripeBillingService = mock(StripeBillingService.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
