@@ -471,11 +471,11 @@ class CompanyControllerTest {
         when(paginationConfig.normalizePage(5)).thenReturn(5);
         when(paginationConfig.normalizeSize(null)).thenReturn(20);
         when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
         when(companyService.getCompanies(eq("Acme"), eq(com.printflow.entity.enums.PlanTier.PRO), eq(false), any()))
-            .thenReturn(
-                new PageImpl<>(List.of(), PageRequest.of(5, 20), 1),
-                new PageImpl<>(List.of(), PageRequest.of(0, 20), 1)
-            );
+            .thenAnswer(inv -> calls.getAndIncrement() == 0
+                ? new PageImpl<>(List.of(), PageRequest.of(5, 20), 1)
+                : new PageImpl<>(List.of(), PageRequest.of(0, 20), 1));
 
         Model model = new ExtendedModelMap();
         String view = controller.listCompanies("  Acme  ", "  PRO  ", "  off  ", 5, null, model);
