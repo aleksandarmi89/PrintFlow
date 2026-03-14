@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -110,5 +111,32 @@ class RateLimitAdminControllerTest {
         assertEquals("redirect:/admin/rate-limit", view);
         verifyNoInteractions(rateLimitService);
         verifyNoInteractions(auditLogService);
+    }
+
+    @Test
+    void banUsesManualReasonWhenRequestReasonIsBlank() {
+        RateLimitService rateLimitService = mock(RateLimitService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        RateLimitAdminController controller = new RateLimitAdminController(rateLimitService, auditLogService);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.ban("203.0.113.10", "   ", 5, model);
+
+        assertEquals("redirect:/admin/rate-limit", view);
+        verify(rateLimitService).ban(eq("203.0.113.10"), eq("manual"), any());
+        verify(auditLogService).log(any(), eq("RateLimit"), eq(null), eq(null), eq("203.0.113.10"), eq("Banned IP 203.0.113.10"));
+    }
+
+    @Test
+    void banUsesNullExpiryWhenDurationIsNotPositive() {
+        RateLimitService rateLimitService = mock(RateLimitService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        RateLimitAdminController controller = new RateLimitAdminController(rateLimitService, auditLogService);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.ban("203.0.113.11", "test", 0, model);
+
+        assertEquals("redirect:/admin/rate-limit", view);
+        verify(rateLimitService).ban(eq("203.0.113.11"), eq("test"), isNull());
     }
 }
