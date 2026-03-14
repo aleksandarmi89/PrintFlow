@@ -26,7 +26,7 @@ public class InviteController extends BaseController {
             model.addAttribute("role", invite.getRole().name());
             return "auth/accept-invite";
         } catch (Exception ex) {
-            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("errorMessage", mapInviteErrorToKey(ex.getMessage()));
             return "auth/accept-invite";
         }
     }

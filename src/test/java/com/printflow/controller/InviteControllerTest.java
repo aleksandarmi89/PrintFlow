@@ -10,8 +10,24 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class InviteControllerTest {
+
+    @Test
+    void acceptInviteFormMapsKnownServiceErrorToI18nKey() {
+        InviteService inviteService = mock(InviteService.class);
+        InviteController controller = new InviteController(inviteService);
+        Model model = new ExtendedModelMap();
+
+        when(inviteService.getValidInvite("bad-token"))
+            .thenThrow(new RuntimeException("Invitation expired"));
+
+        String view = controller.acceptInviteForm("bad-token", model);
+
+        assertEquals("auth/accept-invite", view);
+        assertEquals("auth.invite.error.expired", model.getAttribute("errorMessage"));
+    }
 
     @Test
     void acceptInviteTrimsInputsBeforeServiceCall() {
