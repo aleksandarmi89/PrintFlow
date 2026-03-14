@@ -102,19 +102,20 @@ public class RateLimitService {
     }
 
     public boolean isBanned(String ip) {
-        if (ip == null) {
+        String normalizedIp = normalizeIp(ip);
+        if (normalizedIp == null) {
             return false;
         }
-        if (isWhitelisted(ip)) {
+        if (isWhitelisted(normalizedIp)) {
             return false;
         }
         cleanupExpiredBans();
-        if (bannedIps.contains(ip)) {
+        if (bannedIps.contains(normalizedIp)) {
             return true;
         }
         // CIDR support
         for (String pattern : bannedIps) {
-            if (pattern != null && pattern.contains("/") && isIpInCidr(ip, pattern)) {
+            if (pattern != null && pattern.contains("/") && isIpInCidr(normalizedIp, pattern)) {
                 return true;
             }
         }
@@ -126,18 +127,20 @@ public class RateLimitService {
     }
 
     public void ban(String ip, String reason, java.time.LocalDateTime expiresAt) {
-        if (ip != null && !ip.isBlank()) {
-            bannedIps.add(ip);
-            bannedIpRepository.findByIp(ip).ifPresentOrElse(
+        String normalizedIp = normalizeIp(ip);
+        if (normalizedIp != null) {
+            String normalizedReason = normalizeReason(reason);
+            bannedIps.add(normalizedIp);
+            bannedIpRepository.findByIp(normalizedIp).ifPresentOrElse(
                 existing -> {
                     existing.setActive(true);
-                    existing.setReason(reason);
+                    existing.setReason(normalizedReason);
                     existing.setExpiresAt(expiresAt);
                     bannedIpRepository.save(existing);
                 },
                 () -> {
-                    com.printflow.entity.BannedIp entity = new com.printflow.entity.BannedIp(ip);
-                    entity.setReason(reason);
+                    com.printflow.entity.BannedIp entity = new com.printflow.entity.BannedIp(normalizedIp);
+                    entity.setReason(normalizedReason);
                     entity.setExpiresAt(expiresAt);
                     bannedIpRepository.save(entity);
                 }
@@ -146,9 +149,10 @@ public class RateLimitService {
     }
 
     public void unban(String ip) {
-        if (ip != null && !ip.isBlank()) {
-            bannedIps.remove(ip);
-            bannedIpRepository.findByIp(ip).ifPresent(existing -> {
+        String normalizedIp = normalizeIp(ip);
+        if (normalizedIp != null) {
+            bannedIps.remove(normalizedIp);
+            bannedIpRepository.findByIp(normalizedIp).ifPresent(existing -> {
                 existing.setActive(false);
                 bannedIpRepository.save(existing);
             });
@@ -165,14 +169,15 @@ public class RateLimitService {
     }
 
     public boolean isWhitelisted(String ip) {
-        if (ip == null) {
+        String normalizedIp = normalizeIp(ip);
+        if (normalizedIp == null) {
             return false;
         }
-        if (whitelistedIps.contains(ip)) {
+        if (whitelistedIps.contains(normalizedIp)) {
             return true;
         }
         for (String pattern : whitelistedIps) {
-            if (pattern != null && pattern.contains("/") && isIpInCidr(ip, pattern)) {
+            if (pattern != null && pattern.contains("/") && isIpInCidr(normalizedIp, pattern)) {
                 return true;
             }
         }
@@ -180,22 +185,24 @@ public class RateLimitService {
     }
 
     public void whitelist(String ip) {
-        if (ip != null && !ip.isBlank()) {
-            whitelistedIps.add(ip);
-            whitelistedIpRepository.findByIp(ip).ifPresentOrElse(
+        String normalizedIp = normalizeIp(ip);
+        if (normalizedIp != null) {
+            whitelistedIps.add(normalizedIp);
+            whitelistedIpRepository.findByIp(normalizedIp).ifPresentOrElse(
                 existing -> {
                     existing.setActive(true);
                     whitelistedIpRepository.save(existing);
                 },
-                () -> whitelistedIpRepository.save(new com.printflow.entity.WhitelistedIp(ip))
+                () -> whitelistedIpRepository.save(new com.printflow.entity.WhitelistedIp(normalizedIp))
             );
         }
     }
 
     public void unwhitelist(String ip) {
-        if (ip != null && !ip.isBlank()) {
-            whitelistedIps.remove(ip);
-            whitelistedIpRepository.findByIp(ip).ifPresent(existing -> {
+        String normalizedIp = normalizeIp(ip);
+        if (normalizedIp != null) {
+            whitelistedIps.remove(normalizedIp);
+            whitelistedIpRepository.findByIp(normalizedIp).ifPresent(existing -> {
                 existing.setActive(false);
                 whitelistedIpRepository.save(existing);
             });
@@ -208,6 +215,22 @@ public class RateLimitService {
 
     public java.util.List<com.printflow.entity.WhitelistedIp> getActiveWhitelistedIps() {
         return whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc();
+    }
+
+    private String normalizeIp(String ip) {
+        if (ip == null) {
+            return null;
+        }
+        String normalized = ip.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeReason(String reason) {
+        if (reason == null) {
+            return "manual";
+        }
+        String normalized = reason.trim();
+        return normalized.isEmpty() ? "manual" : normalized;
     }
 
     public boolean allow(String key, int maxRequests, long windowMillis) {

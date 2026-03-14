@@ -10,8 +10,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,5 +65,59 @@ class RateLimitServiceTest {
         assertEquals(1.0d, registry.get("printflow_rate_limit_auto_ban_total").counter().count());
         verify(bannedIpRepository).save(any());
     }
-}
 
+    @Test
+    void banNormalizesIpAndReasonFallbackToManual() {
+        BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
+        WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);
+        when(bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(bannedIpRepository.findByIp("198.51.100.7")).thenReturn(Optional.empty());
+        when(bannedIpRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RateLimitService service = new RateLimitService(
+            false, "", false, "",
+            false, 10, 300, 3600, 3600,
+            bannedIpRepository, whitelistedIpRepository,
+            Optional.empty()
+        );
+
+        service.ban(" 198.51.100.7 ", "   ", null);
+
+        verify(bannedIpRepository).findByIp("198.51.100.7");
+        verify(bannedIpRepository).save(argThat(entity ->
+            "198.51.100.7".equals(entity.getIp()) && "manual".equals(entity.getReason())
+        ));
+        assertTrue(service.isBanned("198.51.100.7"));
+        assertTrue(service.isBanned(" 198.51.100.7 "));
+    }
+
+    @Test
+    void whitelistAndUnbanNormalizeIp() {
+        BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
+        WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);
+        when(bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(whitelistedIpRepository.findByIp("203.0.113.77")).thenReturn(Optional.empty());
+        when(bannedIpRepository.findByIp("203.0.113.77")).thenReturn(Optional.empty());
+
+        RateLimitService service = new RateLimitService(
+            false, "", false, "",
+            false, 10, 300, 3600, 3600,
+            bannedIpRepository, whitelistedIpRepository,
+            Optional.empty()
+        );
+
+        service.whitelist(" 203.0.113.77 ");
+        assertTrue(service.isWhitelisted("203.0.113.77"));
+        assertTrue(service.isWhitelisted(" 203.0.113.77 "));
+
+        service.ban("203.0.113.77", "x", null);
+        assertFalse(service.isBanned("203.0.113.77"));
+
+        service.unban(" 203.0.113.77 ");
+        service.unwhitelist(" 203.0.113.77 ");
+        verify(whitelistedIpRepository).findByIp("203.0.113.77");
+        verify(bannedIpRepository, times(2)).findByIp("203.0.113.77");
+    }
+}
