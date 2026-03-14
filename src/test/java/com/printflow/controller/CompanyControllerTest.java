@@ -13,6 +13,8 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 class CompanyControllerTest {
 
@@ -452,5 +455,42 @@ class CompanyControllerTest {
         assertEquals("admin/companies/list", view);
         assertEquals(null, model.getAttribute("search"));
         verify(companyService).getCompanies(isNull(), isNull(), isNull(), any());
+    }
+
+    @Test
+    void listCompaniesRefetchKeepsNormalizedFiltersWhenPageOutOfRange() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(paginationConfig.normalizePage(5)).thenReturn(5);
+        when(paginationConfig.normalizeSize(null)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(companyService.getCompanies(eq("Acme"), eq(com.printflow.entity.enums.PlanTier.PRO), eq(false), any()))
+            .thenReturn(
+                new PageImpl<>(List.of(), PageRequest.of(5, 20), 1),
+                new PageImpl<>(List.of(), PageRequest.of(0, 20), 1)
+            );
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listCompanies("  Acme  ", "  PRO  ", "  off  ", 5, null, model);
+
+        assertEquals("admin/companies/list", view);
+        assertEquals("Acme", model.getAttribute("search"));
+        assertEquals("PRO", model.getAttribute("plan"));
+        assertEquals("off", model.getAttribute("override"));
+        assertEquals(0, model.getAttribute("currentPage"));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(companyService, times(2))
+            .getCompanies(eq("Acme"), eq(com.printflow.entity.enums.PlanTier.PRO), eq(false), pageableCaptor.capture());
+        List<Pageable> captured = pageableCaptor.getAllValues();
+        assertEquals(5, captured.get(0).getPageNumber());
+        assertEquals(0, captured.get(1).getPageNumber());
     }
 }
