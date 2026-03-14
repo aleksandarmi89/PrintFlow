@@ -133,10 +133,20 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("??"))))
             .andExpect(content().string(not(containsString(">BANNER</option>"))))
+            .andExpect(content().string(not(containsString(">APPAREL</option>"))))
+            .andExpect(content().string(not(containsString(">STICKER</option>"))))
+            .andExpect(content().string(not(containsString(">PIECE</option>"))))
+            .andExpect(content().string(not(containsString(">METER</option>"))))
             .andExpect(content().string(not(containsString(">PER_SQM</option>"))))
+            .andExpect(content().string(not(containsString(">PER_COLOR</option>"))))
+            .andExpect(content().string(not(containsString(">FINISHING</option>"))))
             .andExpect(content().string(anyOf(
                 containsString(">Banner</option>"),
                 containsString(">Baner</option>")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString(">Apparel</option>"),
+                containsString(">Tekstil</option>")
             )));
         mockMvc.perform(get("/admin/pricing/products/" + variant.getProduct().getId()).session(adminSession))
             .andExpect(status().isOk())
