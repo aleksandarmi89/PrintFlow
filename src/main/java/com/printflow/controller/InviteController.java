@@ -6,6 +6,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 @Controller
 public class InviteController extends BaseController {
 
@@ -36,17 +38,47 @@ public class InviteController extends BaseController {
                                @RequestParam String password,
                                @RequestParam String confirmPassword,
                                Model model) {
-        if (!password.equals(confirmPassword)) {
-            model.addAttribute("errorMessage", "Passwords do not match.");
+        String normalizedUsername = normalizeOptional(username);
+        String normalizedFullName = normalizeOptional(fullName);
+        String normalizedPassword = normalizeOptional(password);
+        String normalizedConfirmPassword = normalizeOptional(confirmPassword);
+
+        if (!Objects.equals(normalizedPassword, normalizedConfirmPassword)) {
+            model.addAttribute("errorMessage", "auth.password_mismatch");
             return "auth/accept-invite";
         }
         try {
-            inviteService.acceptInvite(token, username, fullName, password);
-            model.addAttribute("successMessage", "Account created. You can now sign in.");
+            inviteService.acceptInvite(token, normalizedUsername, normalizedFullName, normalizedPassword);
+            model.addAttribute("successMessage", "auth.invite.success");
             return "auth/accept-invite";
         } catch (Exception ex) {
-            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("errorMessage", mapInviteErrorToKey(ex.getMessage()));
             return "auth/accept-invite";
         }
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String mapInviteErrorToKey(String message) {
+        if (message == null || message.isBlank()) {
+            return "auth.invite.error.generic";
+        }
+        return switch (message.trim()) {
+            case "Invalid invitation token" -> "auth.invite.error.invalid_token";
+            case "Invitation not found" -> "auth.invite.error.not_found";
+            case "Invitation already used" -> "auth.invite.error.used";
+            case "Invitation expired" -> "auth.invite.error.expired";
+            case "Username is required" -> "auth.register.error.username_required";
+            case "Password must be at least 6 characters" -> "auth.password_min";
+            case "Username already exists" -> "auth.register.error.username_exists";
+            case "Email already exists" -> "auth.register.error.email_exists";
+            default -> "auth.invite.error.generic";
+        };
     }
 }
