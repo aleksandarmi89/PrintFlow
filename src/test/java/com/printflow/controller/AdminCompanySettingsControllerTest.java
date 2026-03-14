@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class AdminCompanySettingsControllerTest {
@@ -197,5 +198,69 @@ class AdminCompanySettingsControllerTest {
         assertEquals(true, model.getAttribute("smtpConfigured"));
         assertEquals(true, model.getAttribute("smtpFallbackEnabled"));
         assertEquals("company.smtp.error.user_required", model.getAttribute("errorKey"));
+    }
+
+    @Test
+    void settingsTrimsErrorAndSuccessKeys() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+        );
+        Company company = new Company();
+        company.setId(20L);
+        company.setName("Tenant 20");
+        MailSettings settings = new MailSettings();
+        settings.setCompany(company);
+        CompanyDTO dto = new CompanyDTO();
+        dto.setId(20L);
+        dto.setName("Tenant 20");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(companyService.getCompanyById(20L)).thenReturn(dto);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("none");
+
+        Model model = new ExtendedModelMap();
+        String view = controller.settings("  company.smtp.error.invalid_email  ", "  company.smtp.test_sent  ", model);
+
+        assertEquals("admin/company/settings", view);
+        assertEquals("company.smtp.error.invalid_email", model.getAttribute("errorKey"));
+        assertEquals("company.smtp.test_sent", model.getAttribute("successKey"));
+    }
+
+    @Test
+    void testSmtpTrimsRecipientBeforeSend() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+        );
+        Company company = new Company();
+        company.setId(21L);
+        MailSettings settings = new MailSettings();
+        settings.setCompany(company);
+        settings.setSmtpHost("smtp.example.com");
+        settings.setSmtpPort(587);
+        settings.setSmtpUsername("user");
+        settings.setSmtpPasswordEnc("enc");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.isConfiguredWithLegacyFallback(company, settings)).thenReturn(true);
+
+        String view = controller.testSmtp("  test@example.com  ", new ExtendedModelMap());
+
+        assertEquals("redirect:/admin/company?successKey=company.smtp.test_sent", view);
+        verify(companyService).sendTestSmtpEmail(21L, "test@example.com");
+        verify(companyService, never()).sendTestSmtpEmail(21L, "  test@example.com  ");
     }
 }

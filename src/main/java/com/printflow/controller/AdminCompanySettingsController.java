@@ -47,6 +47,8 @@ public class AdminCompanySettingsController extends BaseController {
     public String settings(@RequestParam(required = false) String errorKey,
                            @RequestParam(required = false) String successKey,
                            Model model) {
+        String normalizedErrorKey = normalizeOptional(errorKey);
+        String normalizedSuccessKey = normalizeOptional(successKey);
         Company company = currentContextService.currentCompany();
         CompanyDTO dto = companyService.getCompanyById(company.getId());
         var mailSettings = mailSettingsService.getOrCreate(company);
@@ -56,8 +58,8 @@ public class AdminCompanySettingsController extends BaseController {
         model.addAttribute("smtpConfigured", !"none".equals(smtpSource));
         model.addAttribute("smtpSource", smtpSource);
         model.addAttribute("smtpFallbackEnabled", emailFallbackEnabled);
-        model.addAttribute("errorKey", errorKey);
-        model.addAttribute("successKey", successKey);
+        model.addAttribute("errorKey", normalizedErrorKey);
+        model.addAttribute("successKey", normalizedSuccessKey);
         return "admin/company/settings";
     }
 
@@ -81,23 +83,32 @@ public class AdminCompanySettingsController extends BaseController {
         CompanyDTO dto = new CompanyDTO();
         dto.setId(company.getId());
         if (tenantContextService.isSuperAdmin()) {
-            dto.setName(name);
+            dto.setName(normalizeOptional(name));
         } else {
             dto.setName(company.getName());
         }
-        dto.setEmail(email);
-        dto.setPhone(phone);
-        dto.setAddress(address);
-        dto.setWebsite(website);
-        dto.setPrimaryColor(primaryColor);
-        dto.setCurrency(currency);
-        dto.setSmtpHost(smtpHost);
+        String normalizedEmail = normalizeOptional(email);
+        String normalizedPhone = normalizeOptional(phone);
+        String normalizedAddress = normalizeOptional(address);
+        String normalizedWebsite = normalizeOptional(website);
+        String normalizedPrimaryColor = normalizeOptional(primaryColor);
+        String normalizedCurrency = normalizeOptional(currency);
+        String normalizedSmtpHost = normalizeOptional(smtpHost);
+        String normalizedSmtpUser = normalizeOptional(smtpUser);
+        String normalizedSmtpPassword = normalizeOptional(smtpPassword);
+        dto.setEmail(normalizedEmail);
+        dto.setPhone(normalizedPhone);
+        dto.setAddress(normalizedAddress);
+        dto.setWebsite(normalizedWebsite);
+        dto.setPrimaryColor(normalizedPrimaryColor);
+        dto.setCurrency(normalizedCurrency);
+        dto.setSmtpHost(normalizedSmtpHost);
         dto.setSmtpPort(smtpPort);
-        dto.setSmtpUser(smtpUser);
-        dto.setSmtpPassword(smtpPassword);
+        dto.setSmtpUser(normalizedSmtpUser);
+        dto.setSmtpPassword(normalizedSmtpPassword);
         dto.setSmtpTls(smtpTls);
         dto.setActive(company.isActive());
-        String validationError = validateSmtpSettings(company, smtpHost, smtpPort, smtpUser, smtpPassword);
+        String validationError = validateSmtpSettings(company, normalizedSmtpHost, smtpPort, normalizedSmtpUser, normalizedSmtpPassword);
         if (validationError != null) {
             var mailSettings = mailSettingsService.getOrCreate(company);
             String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, mailSettings));
@@ -131,14 +142,15 @@ public class AdminCompanySettingsController extends BaseController {
     @PostMapping("/test-smtp")
     public String testSmtp(@RequestParam String toEmail, Model model) {
         Company company = currentContextService.currentCompany();
-        if (toEmail == null || toEmail.isBlank() || !toEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+        String normalizedToEmail = normalizeOptional(toEmail);
+        if (normalizedToEmail == null || !normalizedToEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             return "redirect:/admin/company?errorKey=company.smtp.error.invalid_email";
         }
         if (!isSmtpConfigured(company)) {
             return "redirect:/admin/company?errorKey=company.smtp.error.not_configured";
         }
         try {
-            companyService.sendTestSmtpEmail(company.getId(), toEmail.trim());
+            companyService.sendTestSmtpEmail(company.getId(), normalizedToEmail);
             return "redirect:/admin/company?successKey=company.smtp.test_sent";
         } catch (RuntimeException e) {
             return "redirect:/admin/company?errorKey=company.smtp.test_failed";
@@ -184,6 +196,14 @@ public class AdminCompanySettingsController extends BaseController {
             return "none";
         }
         return smtpSource;
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     @GetMapping("/logo")
