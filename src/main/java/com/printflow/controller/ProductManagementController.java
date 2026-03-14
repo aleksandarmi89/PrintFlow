@@ -61,20 +61,21 @@ public class ProductManagementController extends BaseController {
     @GetMapping
     public String list(@RequestParam(required = false) String q,
                        @RequestParam(required = false) Boolean active,
-                       @RequestParam(required = false) ProductSource source,
+                       @RequestParam(required = false) String source,
                        @RequestParam(defaultValue = "0") int page,
                        @RequestParam(defaultValue = "20") int size,
                        @RequestParam(defaultValue = "name") String sortBy,
                        @RequestParam(defaultValue = "asc") String sortDir,
                        Model model) {
+        ProductSource sourceFilter = parseSource(source);
         ProductListFilter filter = new ProductListFilter();
-        filter.setQ(q);
+        filter.setQ(normalizeOptional(q));
         filter.setActive(active);
-        filter.setSource(source);
+        filter.setSource(sourceFilter);
         filter.setPage(page);
         filter.setSize(ALLOWED_SIZES.contains(size) ? size : 20);
-        filter.setSortBy(sortBy);
-        filter.setSortDir(sortDir);
+        filter.setSortBy(normalizeOptional(sortBy));
+        filter.setSortDir(normalizeOptional(sortDir));
 
         Page<Product> productPage = productService.findPage(filter);
         model.addAttribute("productPage", productPage);
@@ -314,5 +315,24 @@ public class ProductManagementController extends BaseController {
     private String tr(String sr, String en) {
         String language = LocaleContextHolder.getLocale() != null ? LocaleContextHolder.getLocale().getLanguage() : null;
         return "sr".equalsIgnoreCase(language) ? sr : en;
+    }
+
+    private ProductSource parseSource(String source) {
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        try {
+            return ProductSource.valueOf(source.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
