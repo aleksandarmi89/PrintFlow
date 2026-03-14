@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import java.util.List;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class NotificationControllerTest {
 
@@ -65,6 +67,22 @@ class NotificationControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("success", response.getBody().get("status"));
         verify(notificationService).markAllAsRead(12L);
+    }
+
+    @Test
+    void markReadReturnsForbiddenWhenCurrentUserMissing() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+        when(tenantContextService.getCurrentUser()).thenReturn(null);
+
+        ResponseEntity<java.util.Map<String, Object>> response = controller.markNotificationAsRead(77L);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals("error", response.getBody().get("status"));
+        assertEquals("notifications.error", response.getBody().get("message"));
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -169,5 +187,19 @@ class NotificationControllerTest {
         assertEquals("redirect:/notifications", successView);
         assertEquals("notifications.flash.deleted_selected", redirect.getFlashAttributes().get("successMessage"));
         verify(notificationService).deleteMultipleNotifications(List.of(1L, 2L), 9L);
+    }
+
+    @Test
+    void listNotificationsThrowsForbiddenWhenCurrentUserMissing() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+        when(tenantContextService.getCurrentUser()).thenReturn(null);
+
+        Model model = new ExtendedModelMap();
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> controller.listNotifications(null, null, 0, null, model));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
     }
 }

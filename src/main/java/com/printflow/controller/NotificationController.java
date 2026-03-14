@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -39,9 +40,12 @@ public class NotificationController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> markNotificationAsRead(@PathVariable Long id) {
         try {
-            Long userId = tenantContextService.getCurrentUser().getId();
+            Long userId = requireCurrentUserId();
             notificationService.markAsRead(id, userId);
             return ResponseEntity.ok(Map.of("status", "success"));
+        } catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatusCode())
+                .body(Map.of("status", "error", "message", API_ERROR_MESSAGE));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("status", "error", "message", API_ERROR_MESSAGE));
@@ -52,9 +56,12 @@ public class NotificationController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> markAllNotificationsAsRead() {
         try {
-            Long userId = tenantContextService.getCurrentUser().getId();
+            Long userId = requireCurrentUserId();
             notificationService.markAllAsRead(userId);
             return ResponseEntity.ok(Map.of("status", "success"));
+        } catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatusCode())
+                .body(Map.of("status", "error", "message", API_ERROR_MESSAGE));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("status", "error", "message", API_ERROR_MESSAGE));
@@ -63,7 +70,7 @@ public class NotificationController {
 
     @PostMapping("/notifications/{id}/delete")
     public String deleteNotification(@PathVariable Long id) {
-        Long userId = tenantContextService.getCurrentUser().getId();
+        Long userId = requireCurrentUserId();
         notificationService.deleteNotification(id, userId);
         return "redirect:/notifications";
     }
@@ -71,7 +78,7 @@ public class NotificationController {
     @PostMapping("/notifications/delete-selected")
     public String deleteSelectedNotifications(@RequestParam(name = "notificationIds", required = false) List<Long> notificationIds,
                                               RedirectAttributes redirectAttributes) {
-        Long userId = tenantContextService.getCurrentUser().getId();
+        Long userId = requireCurrentUserId();
         if (notificationIds == null || notificationIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "notifications.flash.select_one");
             return "redirect:/notifications";
@@ -87,7 +94,7 @@ public class NotificationController {
                                     @RequestParam(defaultValue = "0") int page,
                                     @RequestParam(required = false) Integer size,
                                     Model model) {
-        Long userId = tenantContextService.getCurrentUser().getId();
+        Long userId = requireCurrentUserId();
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
         String normalizedType = (type != null ? type.trim() : null);
@@ -110,5 +117,13 @@ public class NotificationController {
         model.addAttribute("size", pageSize);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
         return "notifications/list";
+    }
+
+    private Long requireCurrentUserId() {
+        var currentUser = tenantContextService.getCurrentUser();
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User not resolved");
+        }
+        return currentUser.getId();
     }
 }
