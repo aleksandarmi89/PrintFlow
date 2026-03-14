@@ -16,6 +16,7 @@ import com.printflow.service.PlanLimitService;
 import com.printflow.service.StripeBillingService;
 import com.printflow.service.TenantContextService;
 import com.printflow.config.StripeProperties;
+import com.printflow.config.PlanLimitsProperties;
 import com.stripe.exception.StripeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -115,7 +116,10 @@ public class BillingController extends BaseController {
         Long storageUsedRaw = attachmentRepository.sumFileSizeByCompanyId(company.getId());
         long storageUsedBytes = storageUsedRaw != null ? storageUsedRaw : 0L;
 
-        var limits = planLimitService.getLimitsForCompany(company);
+        PlanLimitsProperties.PlanLimits limits = planLimitService.getLimitsForCompany(company);
+        if (limits == null) {
+            limits = new PlanLimitsProperties.PlanLimits();
+        }
         int maxUsers = limits.getMaxUsers();
         int maxMonthlyOrders = limits.getMaxMonthlyOrders();
         long maxStorageBytes = limits.getMaxStorageBytes();
