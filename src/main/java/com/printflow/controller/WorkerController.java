@@ -111,20 +111,20 @@ public class WorkerController extends BaseController {
         int pageSize = paginationConfig.normalizeSize(size);
         Pageable pageable = PageRequest.of(safePage, pageSize);
         Page<TaskDTO> taskPage;
-        
-        TaskStatus taskStatus = null;
-        if (status != null && !status.isEmpty()) {
-            try {
-                taskStatus = TaskStatus.valueOf(status.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                model.addAttribute("errorMessage", "Invalid status: " + status);
-            }
+
+        String normalizedStatus = status != null ? status.trim() : null;
+        TaskStatus taskStatus = parseTaskStatus(normalizedStatus);
+        if (normalizedStatus != null && !normalizedStatus.isBlank() && taskStatus == null) {
+            model.addAttribute("errorMessage", "worker.tasks.error.invalid_status");
+            normalizedStatus = null;
+        } else if (taskStatus != null) {
+            normalizedStatus = taskStatus.name();
         }
         taskPage = taskService.getTasksByWorkerFiltered(currentUserId, taskStatus, filter, q, sort, dir, pageable);
 
         int totalPages = taskPage.getTotalPages();
         if (totalPages > 0 && safePage >= totalPages) {
-            return "redirect:" + buildMyTasksUrl(totalPages - 1, pageSize, status, filter, q, sort, dir);
+            return "redirect:" + buildMyTasksUrl(totalPages - 1, pageSize, normalizedStatus, filter, q, sort, dir);
         }
         
         model.addAttribute("tasks", taskPage.getContent());
@@ -133,12 +133,11 @@ public class WorkerController extends BaseController {
         model.addAttribute("totalItems", taskPage.getTotalElements());
         model.addAttribute("size", pageSize);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
-        model.addAttribute("status", status);
+        model.addAttribute("status", normalizedStatus);
         model.addAttribute("filter", filter);
         model.addAttribute("q", q);
         model.addAttribute("sort", sort);
         model.addAttribute("dir", dir);
-        model.addAttribute("size", size);
         model.addAttribute("pageNumbers", buildPageNumbers(totalPages, safePage));
         model.addAttribute("taskStatuses", TaskStatus.values());
         
@@ -654,6 +653,17 @@ public class WorkerController extends BaseController {
             builder.queryParam("dir", dir);
         }
         return builder.build().toUriString();
+    }
+
+    private TaskStatus parseTaskStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return TaskStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     private List<Integer> buildPageNumbers(int totalPages, int currentPage) {
