@@ -201,7 +201,7 @@ class NotificationControllerTest {
         when(tenantContextService.getCurrentUser()).thenReturn(user);
         RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
 
-        String view = controller.deleteSelectedNotifications(List.of(1L, null, 1L, 2L), redirect);
+        String view = controller.deleteSelectedNotifications(java.util.Arrays.asList(1L, null, 1L, 2L), redirect);
 
         assertEquals("redirect:/notifications", view);
         assertEquals("notifications.flash.deleted_selected", redirect.getFlashAttributes().get("successMessage"));
@@ -220,7 +220,7 @@ class NotificationControllerTest {
         when(tenantContextService.getCurrentUser()).thenReturn(user);
         RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
 
-        String view = controller.deleteSelectedNotifications(List.of((Long) null), redirect);
+        String view = controller.deleteSelectedNotifications(java.util.Collections.singletonList((Long) null), redirect);
 
         assertEquals("redirect:/notifications", view);
         assertEquals("notifications.flash.select_one", redirect.getFlashAttributes().get("errorMessage"));

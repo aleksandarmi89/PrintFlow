@@ -51,7 +51,7 @@ class GlobalModelAttributesTest {
         settings.setCompany(company);
 
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken("user", "pass")
+            new UsernamePasswordAuthenticationToken("user", "pass", Collections.emptyList())
         );
         when(tenantContextService.getCurrentUserId()).thenReturn(1L);
         when(tenantContextService.getCurrentCompanyId()).thenReturn(10L);
@@ -93,7 +93,7 @@ class GlobalModelAttributesTest {
         company.setSmtpPassword("legacy-pass");
 
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken("user", "pass")
+            new UsernamePasswordAuthenticationToken("user", "pass", Collections.emptyList())
         );
         when(tenantContextService.getCurrentUserId()).thenReturn(2L);
         when(tenantContextService.getCurrentCompanyId()).thenReturn(11L);
@@ -131,7 +131,7 @@ class GlobalModelAttributesTest {
         company.setId(12L);
 
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken("user", "pass")
+            new UsernamePasswordAuthenticationToken("user", "pass", Collections.emptyList())
         );
         when(tenantContextService.getCurrentUserId()).thenReturn(3L);
         when(tenantContextService.getCurrentCompanyId()).thenReturn(12L);
