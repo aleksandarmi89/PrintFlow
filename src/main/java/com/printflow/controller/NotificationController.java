@@ -71,11 +71,11 @@ public class NotificationController {
                                               RedirectAttributes redirectAttributes) {
         Long userId = tenantContextService.getCurrentUser().getId();
         if (notificationIds == null || notificationIds.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Select at least one notification.");
+            redirectAttributes.addFlashAttribute("errorMessage", "notifications.flash.select_one");
             return "redirect:/notifications";
         }
         notificationService.deleteMultipleNotifications(notificationIds, userId);
-        redirectAttributes.addFlashAttribute("successMessage", "Selected notifications deleted.");
+        redirectAttributes.addFlashAttribute("successMessage", "notifications.flash.deleted_selected");
         return "redirect:/notifications";
     }
 
@@ -88,16 +88,20 @@ public class NotificationController {
         Long userId = tenantContextService.getCurrentUser().getId();
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
+        String normalizedType = (type != null ? type.trim() : null);
+        if (normalizedType != null && normalizedType.isBlank()) {
+            normalizedType = null;
+        }
         var notifications = notificationService.getNotificationsWithFilters(
             userId,
-            type,
+            normalizedType,
             read,
             PageRequest.of(safePage, pageSize)
         );
         model.addAttribute("notifications", notifications);
-        model.addAttribute("type", type);
+        model.addAttribute("type", normalizedType);
         model.addAttribute("read", read);
-        model.addAttribute("currentPage", safePage);
+        model.addAttribute("currentPage", notifications.getNumber());
         model.addAttribute("totalPages", notifications.getTotalPages());
         model.addAttribute("size", pageSize);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
