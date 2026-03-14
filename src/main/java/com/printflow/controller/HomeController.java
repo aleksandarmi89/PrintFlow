@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Objects;
+
 @Controller
 @RequiredArgsConstructor
 public class HomeController extends BaseController {
@@ -61,7 +63,16 @@ public class HomeController extends BaseController {
                                 @RequestParam(required = false) String notes,
                                 Model model) {
         User user = currentContextService.currentUser();
-        userService.updateProfile(user.getId(), firstName, lastName, email, phone, department, position, notes);
+        userService.updateProfile(
+            user.getId(),
+            normalizeOptional(firstName),
+            normalizeOptional(lastName),
+            normalizeOptional(email),
+            normalizeOptional(phone),
+            normalizeOptional(department),
+            normalizeOptional(position),
+            normalizeOptional(notes)
+        );
         return redirectWithSuccess("/profile", "Profile updated.", model);
     }
 
@@ -70,14 +81,25 @@ public class HomeController extends BaseController {
                                  @RequestParam String newPassword,
                                  @RequestParam String confirmPassword,
                                  Model model) {
-        if (!newPassword.equals(confirmPassword)) {
+        String normalizedCurrentPassword = normalizeOptional(currentPassword);
+        String normalizedNewPassword = normalizeOptional(newPassword);
+        String normalizedConfirmPassword = normalizeOptional(confirmPassword);
+        if (normalizedNewPassword == null || !Objects.equals(normalizedNewPassword, normalizedConfirmPassword)) {
             return redirectWithError("/settings", "Passwords do not match.", model);
         }
         User user = currentContextService.currentUser();
-        boolean changed = userService.changePassword(user.getId(), currentPassword, newPassword);
+        boolean changed = userService.changePassword(user.getId(), normalizedCurrentPassword, normalizedNewPassword);
         if (!changed) {
             return redirectWithError("/settings", "Current password is incorrect.", model);
         }
         return redirectWithSuccess("/settings", "Password updated.", model);
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
