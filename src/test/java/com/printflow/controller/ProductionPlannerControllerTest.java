@@ -1,8 +1,11 @@
 package com.printflow.controller;
 
 import com.printflow.dto.PlannerStatsDTO;
+import com.printflow.dto.PlannerProfitDTO;
+import com.printflow.dto.PlannerProfitTrendDTO;
 import com.printflow.service.ProductionPlannerService;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
@@ -10,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -94,5 +98,33 @@ class ProductionPlannerControllerTest {
         verify(service, never()).getDailyHeatmap(any(), isNull());
         verify(service).getProfitByPrintType(eq("DTF"), any(), isNull());
         verify(service).getProfitTrend(eq(6), any(), eq("DTF"), isNull());
+    }
+
+    @Test
+    void exportMarginsNormalizesInvalidPrintTypeAndFormat() {
+        ProductionPlannerService service = mock(ProductionPlannerService.class);
+        ProductionPlannerController controller = new ProductionPlannerController(service);
+        when(service.getProfitByPrintType(isNull(), any()))
+            .thenReturn(List.of(new PlannerProfitDTO("LASER", 10.0, 4.0)));
+
+        ResponseEntity<String> response = controller.exportMargins("invalid", "2026-03", "bad");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody().startsWith("\uFEFFtip;bruto;marza;trosak"));
+        verify(service).getProfitByPrintType(isNull(), any());
+    }
+
+    @Test
+    void exportProfitTrendNormalizesInvalidPrintTypeAndKeepsEnglishFormat() {
+        ProductionPlannerService service = mock(ProductionPlannerService.class);
+        ProductionPlannerController controller = new ProductionPlannerController(service);
+        when(service.getProfitTrend(eq(6), any(), isNull(), isNull()))
+            .thenReturn(List.of(new PlannerProfitTrendDTO("2026-03", 10.0, 3.0, 7.0)));
+
+        ResponseEntity<String> response = controller.exportProfitTrend("invalid", "2026-03", null, 6, "en");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody().startsWith("\uFEFFmonth,gross,margin,cost"));
+        verify(service).getProfitTrend(eq(6), any(), isNull(), isNull());
     }
 }

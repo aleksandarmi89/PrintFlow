@@ -84,10 +84,12 @@ public class ProductionPlannerController extends BaseController {
     public ResponseEntity<String> exportMargins(@RequestParam(required = false) String printType,
                                                 @RequestParam(required = false) String month,
                                                 @RequestParam(required = false, defaultValue = "sr") String format) {
+        String normalizedPrintType = normalizePrintType(printType);
+        String normalizedFormat = normalizeCsvFormat(format);
         java.time.YearMonth ym = parseYearMonth(month);
-        var rows = productionPlannerService.getProfitByPrintType(printType, ym);
+        var rows = productionPlannerService.getProfitByPrintType(normalizedPrintType, ym);
         StringBuilder sb = new StringBuilder();
-        boolean sr = "sr".equalsIgnoreCase(format);
+        boolean sr = "sr".equalsIgnoreCase(normalizedFormat);
         String sep = sr ? ";" : ",";
         java.text.DecimalFormat df;
         if (sr) {
@@ -139,10 +141,12 @@ public class ProductionPlannerController extends BaseController {
                                                     @RequestParam(required = false) Long workerId,
                                                     @RequestParam(required = false, defaultValue = "6") int profitMonths,
                                                     @RequestParam(required = false, defaultValue = "sr") String format) {
+        String normalizedPrintType = normalizePrintType(printType);
+        String normalizedFormat = normalizeCsvFormat(format);
         java.time.YearMonth ym = parseYearMonth(month);
         int safeMonths = Math.max(3, Math.min(profitMonths, 12));
-        var rows = productionPlannerService.getProfitTrend(safeMonths, ym, printType, workerId);
-        boolean sr = "sr".equalsIgnoreCase(format);
+        var rows = productionPlannerService.getProfitTrend(safeMonths, ym, normalizedPrintType, workerId);
+        boolean sr = "sr".equalsIgnoreCase(normalizedFormat);
         String sep = sr ? ";" : ",";
         java.text.DecimalFormat df;
         if (sr) {
@@ -177,10 +181,11 @@ public class ProductionPlannerController extends BaseController {
                                                     @RequestParam(required = false) Long workerId,
                                                     @RequestParam(required = false, defaultValue = "7") int trendDays,
                                                     @RequestParam(required = false, defaultValue = "sr") String format) {
+        String normalizedFormat = normalizeCsvFormat(format);
         java.time.YearMonth ym = parseYearMonth(month);
         int safeTrendDays = trendDays < 7 ? 7 : Math.min(trendDays, 60);
         var rows = productionPlannerService.getStatusTimeline(safeTrendDays, ym, workerId);
-        boolean sr = "sr".equalsIgnoreCase(format);
+        boolean sr = "sr".equalsIgnoreCase(normalizedFormat);
         String sep = sr ? ";" : ",";
         StringBuilder sb = new StringBuilder();
         if (sr) {
@@ -238,5 +243,12 @@ public class ProductionPlannerController extends BaseController {
             return "linear";
         }
         return "log";
+    }
+
+    private String normalizeCsvFormat(String format) {
+        if ("en".equalsIgnoreCase(format)) {
+            return "en";
+        }
+        return "sr";
     }
 }
