@@ -179,7 +179,7 @@ public class BillingController extends BaseController {
 
     @PostMapping("/checkout")
     public RedirectView startCheckout(@RequestParam("priceId") String priceId) {
-        if (stripeProperties != null && !stripeProperties.isConfigured()) {
+        if (stripeProperties == null || !stripeProperties.isConfigured()) {
             return new RedirectView("/admin/billing?error=billing.checkout.stripe_not_configured", true);
         }
         if (priceId == null || priceId.isBlank()) {

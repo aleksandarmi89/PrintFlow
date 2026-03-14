@@ -84,6 +84,23 @@ class BillingControllerTest {
     }
 
     @Test
+    void startCheckoutReturnsConfigErrorWhenStripePropertiesMissing() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        BillingController controller = createController(
+            stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService, null
+        );
+
+        RedirectView view = controller.startCheckout("price_pro_monthly");
+
+        assertEquals("/admin/billing?error=billing.checkout.stripe_not_configured", view.getUrl());
+        verifyNoInteractions(stripeBillingService, tenantContextService, billingPlanConfigService, auditLogService);
+    }
+
+    @Test
     void startCheckoutReturnsMissingPriceWhenBlank() {
         StripeBillingService stripeBillingService = mock(StripeBillingService.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
