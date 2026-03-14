@@ -188,13 +188,19 @@ public class ProductManagementController extends BaseController {
 
     @PostMapping("/import")
     public String importProducts(@RequestParam("file") MultipartFile file,
-                                 @RequestParam(name = "mode", defaultValue = "ADD_NEW_ONLY") ProductImportMode mode,
+                                 @RequestParam(name = "mode", defaultValue = "ADD_NEW_ONLY") String mode,
                                  RedirectAttributes redirectAttributes) {
+        ProductImportMode parsedMode = parseImportMode(mode);
+        if (parsedMode == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", tr("Neispravan režim importa.", "Invalid import mode."));
+            redirectAttributes.addFlashAttribute("importMode", ProductImportMode.ADD_NEW_ONLY);
+            return "redirect:/products/import";
+        }
         Company company = productService.currentCompany();
         try {
-            ProductImportResult result = productImportService.importFile(file, company, mode);
+            ProductImportResult result = productImportService.importFile(file, company, parsedMode);
             redirectAttributes.addFlashAttribute("importResult", result);
-            redirectAttributes.addFlashAttribute("importMode", mode);
+            redirectAttributes.addFlashAttribute("importMode", parsedMode);
             if (result.getFailedCount() == 0) {
                 redirectAttributes.addFlashAttribute("successMessage", tr("Import je uspešno završen.", "Import finished successfully."));
             } else {
@@ -202,7 +208,7 @@ public class ProductManagementController extends BaseController {
                     tr("Import je završen sa greškama. Neuspešni redovi: ", "Import completed with errors. Failed rows: ")
                         + result.getFailedCount());
             }
-            auditLogService.log(AuditAction.UPLOAD, "Product", null, null, mode.name(),
+            auditLogService.log(AuditAction.UPLOAD, "Product", null, null, parsedMode.name(),
                 "Product import finished. Imported=" + result.getImportedCount() + ", Updated=" + result.getUpdatedCount(),
                 company);
         } catch (IllegalArgumentException ex) {
@@ -334,5 +340,16 @@ public class ProductManagementController extends BaseController {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private ProductImportMode parseImportMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return ProductImportMode.ADD_NEW_ONLY;
+        }
+        try {
+            return ProductImportMode.valueOf(mode.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }
