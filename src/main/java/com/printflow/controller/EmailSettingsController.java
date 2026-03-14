@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 @Controller
 @RequestMapping("/settings/email")
 public class EmailSettingsController extends BaseController {
+    private static final java.util.regex.Pattern LOCALIZED_MESSAGE_KEY_PATTERN =
+        java.util.regex.Pattern.compile("^[a-z0-9._-]{1,120}$");
 
     private final CurrentContextService currentContextService;
     private final MailSettingsService mailSettingsService;
@@ -52,6 +54,9 @@ public class EmailSettingsController extends BaseController {
                            @RequestParam(required = false) EmailOutboxStatus outboxStatus,
                            @RequestParam(defaultValue = "0") int outboxPage,
                            Model model) {
+        String normalizedErrorKey = normalizeOptional(errorKey);
+        String normalizedSuccessKey = normalizeOptional(successKey);
+        String normalizedErrorMessage = normalizeOptional(errorMessage);
         Company company = currentContextService.currentCompany();
         MailSettings settings = mailSettingsService.getOrCreate(company);
         String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, settings));
@@ -65,9 +70,9 @@ public class EmailSettingsController extends BaseController {
         model.addAttribute("smtpConfigured", smtpConfigured);
         model.addAttribute("smtpTestEnabled", smtpTestEnabled);
         model.addAttribute("smtpSource", smtpSource);
-        model.addAttribute("errorKey", errorKey);
-        model.addAttribute("errorMessage", errorMessage);
-        model.addAttribute("successKey", successKey);
+        model.addAttribute("errorKey", isLocalizedMessageKey(normalizedErrorKey) ? normalizedErrorKey : null);
+        model.addAttribute("errorMessage", normalizedErrorMessage);
+        model.addAttribute("successKey", isLocalizedMessageKey(normalizedSuccessKey) ? normalizedSuccessKey : null);
         model.addAttribute("cleanupCount", cleanupCount);
         model.addAttribute("outboxStatus", outboxStatus);
         model.addAttribute("outboxEntries", outboxEntries);
@@ -92,16 +97,21 @@ public class EmailSettingsController extends BaseController {
                          @RequestParam(required = false) String fromName,
                          Model model) {
         Company company = currentContextService.currentCompany();
+        String normalizedSmtpHost = normalizeOptional(smtpHost);
+        String normalizedSmtpUsername = normalizeOptional(smtpUsername);
+        String normalizedSmtpPassword = normalizeOptional(smtpPassword);
+        String normalizedFromEmail = normalizeOptional(fromEmail);
+        String normalizedFromName = normalizeOptional(fromName);
         MailSettingsDTO dto = new MailSettingsDTO();
         dto.setEnabled(Boolean.TRUE.equals(enabled));
-        dto.setSmtpHost(smtpHost);
+        dto.setSmtpHost(normalizedSmtpHost);
         dto.setSmtpPort(smtpPort);
-        dto.setSmtpUsername(smtpUsername);
-        dto.setSmtpPassword(smtpPassword);
+        dto.setSmtpUsername(normalizedSmtpUsername);
+        dto.setSmtpPassword(normalizedSmtpPassword);
         dto.setSmtpUseTls(smtpUseTls);
         dto.setSmtpUseSsl(smtpUseSsl);
-        dto.setFromEmail(fromEmail);
-        dto.setFromName(fromName);
+        dto.setFromEmail(normalizedFromEmail);
+        dto.setFromName(normalizedFromName);
 
         String validationError = validate(dto, company);
         if (validationError != null) {
@@ -130,7 +140,8 @@ public class EmailSettingsController extends BaseController {
     @PostMapping("/test")
     public String test(@RequestParam String toEmail) {
         Company company = currentContextService.currentCompany();
-        if (toEmail == null || toEmail.isBlank() || !toEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+        String normalizedToEmail = normalizeOptional(toEmail);
+        if (normalizedToEmail == null || !normalizedToEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             return "redirect:/settings/email?errorKey=company.smtp.error.invalid_email";
         }
         MailSettings settings = mailSettingsService.getOrCreate(company);
@@ -146,7 +157,7 @@ public class EmailSettingsController extends BaseController {
         }
         try {
             com.printflow.dto.EmailMessage msg = new com.printflow.dto.EmailMessage();
-            msg.setTo(toEmail.trim());
+            msg.setTo(normalizedToEmail);
             msg.setSubject("SMTP test - " + (company.getName() != null ? company.getName() : "PrintFlow"));
             msg.setHtmlBody("<p>This is a test message sent from your company SMTP settings.</p>");
             emailService.sendNow(msg, company, "smtp-test");
@@ -162,7 +173,7 @@ public class EmailSettingsController extends BaseController {
     @PostMapping("/outbox/cleanup-failed")
     public String cleanupFailed(@RequestParam(defaultValue = "30") int days) {
         Company company = currentContextService.currentCompany();
-        long deleted = emailOutboxService.cleanupFailed(company, days);
+        long deleted = emailOutboxService.cleanupFailed(company, normalizeCleanupDays(days));
         return "redirect:/settings/email?successKey=email.outbox.cleanup_success&cleanupCount=" + deleted;
     }
 
@@ -215,6 +226,28 @@ public class EmailSettingsController extends BaseController {
             return "none";
         }
         return smtpSource;
+    }
+
+    private boolean isLocalizedMessageKey(String value) {
+        if (value == null || !LOCALIZED_MESSAGE_KEY_PATTERN.matcher(value).matches()) {
+            return false;
+        }
+        return value.startsWith("company.") || value.startsWith("email.");
+    }
+
+    private int normalizeCleanupDays(int days) {
+        if (days < 1) {
+            return 1;
+        }
+        return Math.min(days, 3650);
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
 }

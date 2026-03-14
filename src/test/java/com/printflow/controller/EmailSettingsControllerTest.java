@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.argThat;
 
 class EmailSettingsControllerTest {
 
@@ -218,6 +219,38 @@ class EmailSettingsControllerTest {
     }
 
     @Test
+    void testEmailTrimsRecipientBeforeSend() {
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        EmailService emailService = mock(EmailService.class);
+        EmailOutboxService emailOutboxService = mock(EmailOutboxService.class);
+
+        EmailSettingsController controller = new EmailSettingsController(
+            contextService, mailSettingsService, companyService, emailService, emailOutboxService
+        );
+        Company company = new Company();
+        company.setId(351L);
+        company.setName("Tenant 351");
+        MailSettings settings = new MailSettings();
+        settings.setEnabled(true);
+        settings.setSmtpHost("smtp.example.com");
+        settings.setSmtpPort(587);
+        settings.setSmtpUsername("noreply@example.com");
+        settings.setSmtpPasswordEnc("enc");
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("mail_settings");
+        when(mailSettingsService.isConfigured(settings)).thenReturn(true);
+
+        String result = controller.test("  admin@printflow.test  ");
+
+        assertEquals("redirect:/settings/email?successKey=company.smtp.test_sent", result);
+        verify(emailService).sendNow(argThat(msg -> "admin@printflow.test".equals(msg.getTo())), eq(company), eq("smtp-test"));
+    }
+
+    @Test
     void updateValidationErrorPopulatesSmtpStateForTemplate() {
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
@@ -259,5 +292,66 @@ class EmailSettingsControllerTest {
         assertEquals("legacy_company", model.getAttribute("smtpSource"));
         assertEquals(true, model.getAttribute("smtpConfigured"));
         assertEquals(false, model.getAttribute("smtpTestEnabled"));
+    }
+
+    @Test
+    void settingsSanitizesNonKeyErrorAndSuccessValues() {
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        EmailService emailService = mock(EmailService.class);
+        EmailOutboxService emailOutboxService = mock(EmailOutboxService.class);
+
+        EmailSettingsController controller = new EmailSettingsController(
+            contextService, mailSettingsService, companyService, emailService, emailOutboxService
+        );
+        Company company = new Company();
+        company.setId(37L);
+        company.setName("Tenant 37");
+        CompanyDTO dto = new CompanyDTO();
+        dto.setId(37L);
+        dto.setName("Tenant 37");
+        MailSettings settings = new MailSettings();
+        settings.setCompany(company);
+
+        when(contextService.currentCompany()).thenReturn(company);
+        when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
+        when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("none");
+        when(mailSettingsService.toDto(settings)).thenReturn(new com.printflow.dto.MailSettingsDTO());
+        when(companyService.getCompanyById(37L)).thenReturn(dto);
+        when(emailOutboxService.listForCompany(company, null, 0, 20)).thenReturn(new PageImpl<>(List.of()));
+        when(emailOutboxService.totalForCompany(company)).thenReturn(0L);
+        when(emailOutboxService.countForCompanyByStatus(company, EmailOutboxStatus.SENT)).thenReturn(0L);
+        when(emailOutboxService.countForCompanyByStatus(company, EmailOutboxStatus.FAILED)).thenReturn(0L);
+        when(emailOutboxService.countForCompanyByStatus(company, EmailOutboxStatus.PENDING)).thenReturn(0L);
+
+        Model model = new ExtendedModelMap();
+        controller.settings("  company.smtp.test_sent<script>  ", "  raw message  ", "  email.settings.saved!  ", null, null, 0, model);
+
+        assertEquals(null, model.getAttribute("errorKey"));
+        assertEquals(null, model.getAttribute("successKey"));
+        assertEquals("raw message", model.getAttribute("errorMessage"));
+    }
+
+    @Test
+    void cleanupFailedClampsDaysToMinimum() {
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        EmailService emailService = mock(EmailService.class);
+        EmailOutboxService emailOutboxService = mock(EmailOutboxService.class);
+
+        EmailSettingsController controller = new EmailSettingsController(
+            contextService, mailSettingsService, companyService, emailService, emailOutboxService
+        );
+        Company company = new Company();
+        company.setId(38L);
+        when(contextService.currentCompany()).thenReturn(company);
+        when(emailOutboxService.cleanupFailed(company, 1)).thenReturn(5L);
+
+        String view = controller.cleanupFailed(0);
+
+        assertEquals("redirect:/settings/email?successKey=email.outbox.cleanup_success&cleanupCount=5", view);
+        verify(emailOutboxService).cleanupFailed(company, 1);
     }
 }
