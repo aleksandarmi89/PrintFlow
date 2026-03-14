@@ -74,31 +74,27 @@ public class RateLimitService {
 
     @PostConstruct
     public void initBanList() {
+        bannedIps.clear();
+        whitelistedIps.clear();
         if (!banListEnabled || banListIps == null || banListIps.isBlank()) {
             // still load from DB
         } else {
             String[] items = banListIps.split(",");
             for (String item : items) {
-                String ip = item.trim();
-                if (!ip.isEmpty()) {
-                    bannedIps.add(ip);
-                }
+                addNormalizedIp(bannedIps, item);
             }
         }
         bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc()
-            .forEach(b -> bannedIps.add(b.getIp()));
+            .forEach(b -> addNormalizedIp(bannedIps, b.getIp()));
 
         if (whitelistEnabled && whitelistIps != null && !whitelistIps.isBlank()) {
             String[] items = whitelistIps.split(",");
             for (String item : items) {
-                String ip = item.trim();
-                if (!ip.isEmpty()) {
-                    whitelistedIps.add(ip);
-                }
+                addNormalizedIp(whitelistedIps, item);
             }
         }
         whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc()
-            .forEach(w -> whitelistedIps.add(w.getIp()));
+            .forEach(w -> addNormalizedIp(whitelistedIps, w.getIp()));
     }
 
     public boolean isBanned(String ip) {
@@ -299,7 +295,10 @@ public class RateLimitService {
             if (ban.getExpiresAt() != null && ban.getExpiresAt().isBefore(now)) {
                 ban.setActive(false);
                 bannedIpRepository.save(ban);
-                bannedIps.remove(ban.getIp());
+                String normalizedIp = normalizeIp(ban.getIp());
+                if (normalizedIp != null) {
+                    bannedIps.remove(normalizedIp);
+                }
             }
         }
     }
@@ -324,8 +323,15 @@ public class RateLimitService {
             if (remainder == 0) return true;
             int mask = ~((1 << (8 - remainder)) - 1);
             return (addrBytes[fullBytes] & mask) == (targetBytes[fullBytes] & mask);
-        } catch (Exception ex) {
+        } catch (java.net.UnknownHostException | NumberFormatException ex) {
             return false;
+        }
+    }
+
+    private void addNormalizedIp(Set<String> target, String ipCandidate) {
+        String normalized = normalizeIp(ipCandidate);
+        if (normalized != null) {
+            target.add(normalized);
         }
     }
 

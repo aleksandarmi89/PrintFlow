@@ -2,9 +2,12 @@ package com.printflow.service;
 
 import com.printflow.repository.BannedIpRepository;
 import com.printflow.repository.WhitelistedIpRepository;
+import com.printflow.entity.BannedIp;
+import com.printflow.entity.WhitelistedIp;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -119,5 +122,33 @@ class RateLimitServiceTest {
         service.unwhitelist(" 203.0.113.77 ");
         verify(whitelistedIpRepository, times(2)).findByIp("203.0.113.77");
         verify(bannedIpRepository, times(2)).findByIp("203.0.113.77");
+    }
+
+    @Test
+    void initBanListNormalizesConfiguredAndPersistedIps() {
+        BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
+        WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);
+
+        BannedIp persistedBan = new BannedIp();
+        persistedBan.setIp(" 198.51.100.2 ");
+        WhitelistedIp persistedWhitelist = new WhitelistedIp();
+        persistedWhitelist.setIp(" 203.0.113.2 ");
+
+        when(bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(List.of(persistedBan));
+        when(whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(List.of(persistedWhitelist));
+
+        RateLimitService service = new RateLimitService(
+            true, " 198.51.100.1 , 198.51.100.2 ",
+            true, " 203.0.113.1 , 203.0.113.2 ",
+            false, 10, 300, 3600, 3600,
+            bannedIpRepository, whitelistedIpRepository,
+            Optional.empty()
+        );
+        service.initBanList();
+
+        assertTrue(service.isBanned("198.51.100.1"));
+        assertTrue(service.isBanned(" 198.51.100.2 "));
+        assertTrue(service.isWhitelisted("203.0.113.1"));
+        assertTrue(service.isWhitelisted(" 203.0.113.2 "));
     }
 }
