@@ -360,6 +360,26 @@ class CompanyControllerTest {
     }
 
     @Test
+    void setBillingOverrideIgnoresInvalidUntilWhenDeactivatingOverride() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.setBillingOverride(35L, false, "not-a-date", model);
+
+        assertEquals("redirect:/admin/companies/edit/35", view);
+        verify(companyService).setBillingOverride(eq(35L), eq(false), isNull());
+    }
+
+    @Test
     void listCompaniesTrimsOverrideFilterBeforeParsing() {
         CompanyService companyService = mock(CompanyService.class);
         PaginationConfig paginationConfig = mock(PaginationConfig.class);

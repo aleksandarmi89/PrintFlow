@@ -196,7 +196,7 @@ public class CompanyController extends BaseController {
         }
         java.time.LocalDateTime untilDate = null;
         String normalizedUntil = normalizeOptional(until);
-        if (normalizedUntil != null) {
+        if (active && normalizedUntil != null) {
             try {
                 untilDate = java.time.LocalDateTime.parse(normalizedUntil);
             } catch (DateTimeParseException ex) {
