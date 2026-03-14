@@ -183,10 +183,11 @@ public class AdminPublicOrderRequestController extends BaseController {
     public String bulkAction(@RequestParam(name = "requestIds", required = false) List<Long> requestIds,
                              @RequestParam(name = "action", defaultValue = "none") String action,
                              Model model) {
+        String normalizedAction = normalizeBulkAction(action);
         if (requestIds == null || requestIds.isEmpty()) {
             return redirectWithError("/admin/public-requests", tr("Izaberite bar jedan zahtev.", "Select at least one request."), model);
         }
-        if ("none".equalsIgnoreCase(action)) {
+        if ("none".equals(normalizedAction)) {
             return redirectWithError("/admin/public-requests", tr("Izaberite bulk akciju.", "Select bulk action."), model);
         }
         int success = 0;
@@ -194,7 +195,7 @@ public class AdminPublicOrderRequestController extends BaseController {
         List<String> errors = new ArrayList<>();
         for (Long id : requestIds) {
             try {
-                switch (action) {
+                switch (normalizedAction) {
                     case "convert" -> conversionService.getOrConvertToOrder(id);
                     case "auto-basic" -> generateTasks(conversionService.getOrConvertToOrder(id), "basic");
                     case "auto-advanced" -> generateTasks(conversionService.getOrConvertToOrder(id), "advanced");
@@ -338,6 +339,17 @@ public class AdminPublicOrderRequestController extends BaseController {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeBulkAction(String action) {
+        if (action == null || action.isBlank()) {
+            return "none";
+        }
+        String normalized = action.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (normalized) {
+            case "convert", "auto-basic", "auto-advanced", "none" -> normalized;
+            default -> "none";
+        };
     }
 
     private int generateTasks(WorkOrder order, String template) {

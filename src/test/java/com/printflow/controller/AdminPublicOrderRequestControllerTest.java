@@ -21,6 +21,8 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -164,5 +166,53 @@ class AdminPublicOrderRequestControllerTest {
         assertEquals("admin/public-requests/list", view);
         assertNull(model.getAttribute("statusFilter"));
         assertNull(session.getAttribute("publicRequests.statusFilter"));
+    }
+
+    @Test
+    void bulkActionNormalizesActionValue() {
+        PublicOrderRequestService requestService = mock(PublicOrderRequestService.class);
+        PublicOrderRequestConversionService conversionService = mock(PublicOrderRequestConversionService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        TaskService taskService = mock(TaskService.class);
+        UserService userService = mock(UserService.class);
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        EmailService emailService = mock(EmailService.class);
+
+        AdminPublicOrderRequestController controller = new AdminPublicOrderRequestController(
+            requestService, conversionService, paginationConfig, auditLogService, tenantContextService,
+            taskService, userService, taskRepository, emailService
+        );
+
+        Model model = new ExtendedModelMap();
+        String view = controller.bulkAction(List.of(21L), " CONVERT ", model);
+
+        assertEquals("redirect:/admin/public-requests", view);
+        verify(conversionService).getOrConvertToOrder(21L);
+    }
+
+    @Test
+    void bulkActionRejectsUnknownActionAsNone() {
+        PublicOrderRequestService requestService = mock(PublicOrderRequestService.class);
+        PublicOrderRequestConversionService conversionService = mock(PublicOrderRequestConversionService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        TaskService taskService = mock(TaskService.class);
+        UserService userService = mock(UserService.class);
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        EmailService emailService = mock(EmailService.class);
+
+        AdminPublicOrderRequestController controller = new AdminPublicOrderRequestController(
+            requestService, conversionService, paginationConfig, auditLogService, tenantContextService,
+            taskService, userService, taskRepository, emailService
+        );
+
+        Model model = new ExtendedModelMap();
+        String view = controller.bulkAction(List.of(22L), "bad-action", model);
+
+        assertEquals("redirect:/admin/public-requests", view);
+        verify(conversionService, never()).getOrConvertToOrder(22L);
     }
 }
