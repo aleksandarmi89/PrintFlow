@@ -54,6 +54,18 @@ class OnboardingPageIntegrationTest {
     }
 
     @Test
+    void loginPageContainsSingleCsrfField() throws Exception {
+        String html = mockMvc.perform(get("/login"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        int occurrences = html.split("name=\"_csrf\"", -1).length - 1;
+        assertEquals(1, occurrences);
+    }
+
+    @Test
     void registerRendersTranslatedSuccessMessage() throws Exception {
         String suffix = String.valueOf(System.nanoTime());
         mockMvc.perform(post("/register")
