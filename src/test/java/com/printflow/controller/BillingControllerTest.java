@@ -782,4 +782,108 @@ class BillingControllerTest {
         assertEquals(false, model.getAttribute("stripeConfigured"));
         assertEquals("test", model.getAttribute("stripeMode"));
     }
+
+    @Test
+    void billingHomeSetsLocalizedKeysOnlyForBillingAndPlanMessages() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(108L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(108L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(108L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(108L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(108L)).thenReturn(0L);
+        when(workOrderRepository.countByCompany_Id(108L)).thenReturn(0L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(108L), any())).thenReturn(0L);
+        when(attachmentRepository.sumFileSizeByCompanyId(108L)).thenReturn(0L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(new com.printflow.config.PlanLimitsProperties.PlanLimits());
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of());
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(stripeProperties.getMode()).thenReturn("live");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        controller.billingHome(model, "plan.limit.users", "billing.config.saved");
+
+        assertEquals("plan.limit.users", model.getAttribute("error"));
+        assertEquals("plan.limit.users", model.getAttribute("errorKey"));
+        assertEquals("billing.config.saved", model.getAttribute("success"));
+        assertEquals("billing.config.saved", model.getAttribute("successKey"));
+    }
+
+    @Test
+    void billingHomeDoesNotSetLocalizedKeysForPlainMessages() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(109L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(109L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(109L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(109L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(109L)).thenReturn(0L);
+        when(workOrderRepository.countByCompany_Id(109L)).thenReturn(0L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(109L), any())).thenReturn(0L);
+        when(attachmentRepository.sumFileSizeByCompanyId(109L)).thenReturn(0L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(new com.printflow.config.PlanLimitsProperties.PlanLimits());
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of());
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(stripeProperties.getMode()).thenReturn("live");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        controller.billingHome(model, "Something broke", "Saved");
+
+        assertEquals("Something broke", model.getAttribute("error"));
+        assertEquals("Saved", model.getAttribute("success"));
+        assertEquals(null, model.getAttribute("errorKey"));
+        assertEquals(null, model.getAttribute("successKey"));
+    }
 }
