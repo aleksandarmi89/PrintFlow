@@ -498,4 +498,115 @@ class BillingControllerTest {
         assertEquals("", model.getAttribute("priceIdTeamYearly"));
         assertEquals(true, model.getAttribute("priceConfigMissing"));
     }
+
+    @Test
+    void billingHomeCapsUsagePercentagesAtHundred() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(103L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(103L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(103L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(103L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(103L)).thenReturn(15L);
+        when(workOrderRepository.countByCompany_Id(103L)).thenReturn(120L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(103L), any())).thenReturn(70L);
+        when(attachmentRepository.sumFileSizeByCompanyId(103L)).thenReturn(5_000L);
+        com.printflow.config.PlanLimitsProperties.PlanLimits limits = new com.printflow.config.PlanLimitsProperties.PlanLimits();
+        limits.setMaxUsers(3);
+        limits.setMaxMonthlyOrders(20);
+        limits.setMaxStorageBytes(100L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(limits);
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of());
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(stripeProperties.getMode()).thenReturn("live");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.billingHome(model, null, null);
+
+        assertEquals("admin/billing/index", view);
+        assertEquals(100, model.getAttribute("userUsagePercent"));
+        assertEquals(100, model.getAttribute("orderUsagePercent"));
+        assertEquals(100, model.getAttribute("storageUsagePercent"));
+    }
+
+    @Test
+    void billingHomeShowsUnlimitedStorageLabelWhenStorageLimitIsZero() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(104L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(104L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(104L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(104L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(104L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_Id(104L)).thenReturn(2L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(104L), any())).thenReturn(1L);
+        when(attachmentRepository.sumFileSizeByCompanyId(104L)).thenReturn(2048L);
+        com.printflow.config.PlanLimitsProperties.PlanLimits limits = new com.printflow.config.PlanLimitsProperties.PlanLimits();
+        limits.setMaxUsers(10);
+        limits.setMaxMonthlyOrders(50);
+        limits.setMaxStorageBytes(0L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(limits);
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of());
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(stripeProperties.getMode()).thenReturn("live");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.billingHome(model, null, null);
+
+        assertEquals("admin/billing/index", view);
+        assertEquals("∞", model.getAttribute("storageLimitLabel"));
+        assertEquals(0, model.getAttribute("storageUsagePercent"));
+    }
 }
