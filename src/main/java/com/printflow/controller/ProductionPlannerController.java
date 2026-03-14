@@ -30,24 +30,25 @@ public class ProductionPlannerController extends BaseController {
                           @RequestParam(required = false, defaultValue = "6") int profitMonths,
                           @RequestParam(required = false, defaultValue = "log") String scale,
                           Model model) {
+        Long normalizedWorkerId = normalizeWorkerId(workerId);
         String normalizedPrintType = normalizePrintType(printType);
         String normalizedHeatmapMode = normalizeHeatmapMode(heatmapMode);
         String normalizedScale = normalizeScale(scale);
         java.time.YearMonth ym = parseYearMonth(month);
         model.addAttribute("stats", productionPlannerService.getStats(ym));
         model.addAttribute("dueSoonOrders", productionPlannerService.getDueSoonOrders(8));
-        var dailyLoad = productionPlannerService.getDailyLoad(7, workerId);
+        var dailyLoad = productionPlannerService.getDailyLoad(7, normalizedWorkerId);
         var workerLoad = productionPlannerService.getWorkerLoad(8);
-        var profit = productionPlannerService.getProfitByPrintType(normalizedPrintType, ym, workerId);
+        var profit = productionPlannerService.getProfitByPrintType(normalizedPrintType, ym, normalizedWorkerId);
         int safeTrendDays = trendDays < 7 ? 7 : Math.min(trendDays, 60);
-        var statusTimeline = productionPlannerService.getStatusTimeline(safeTrendDays, ym, workerId);
+        var statusTimeline = productionPlannerService.getStatusTimeline(safeTrendDays, ym, normalizedWorkerId);
         java.time.YearMonth heatmapMonth = ym != null ? ym : java.time.YearMonth.now();
         boolean deadlineHeatmap = "deadline".equalsIgnoreCase(normalizedHeatmapMode);
         var heatmap = deadlineHeatmap
-            ? productionPlannerService.getDeadlineHeatmap(ym, workerId)
-            : productionPlannerService.getDailyHeatmap(ym, workerId);
+            ? productionPlannerService.getDeadlineHeatmap(ym, normalizedWorkerId)
+            : productionPlannerService.getDailyHeatmap(ym, normalizedWorkerId);
         int safeProfitMonths = Math.max(3, Math.min(profitMonths, 12));
-        var profitTrend = productionPlannerService.getProfitTrend(safeProfitMonths, ym, normalizedPrintType, workerId);
+        var profitTrend = productionPlannerService.getProfitTrend(safeProfitMonths, ym, normalizedPrintType, normalizedWorkerId);
         model.addAttribute("dailyLoad", dailyLoad);
         model.addAttribute("workerLoad", workerLoad);
         model.addAttribute("profitByType", profit);
@@ -65,7 +66,7 @@ public class ProductionPlannerController extends BaseController {
         model.addAttribute("profitTrend", profitTrend);
         model.addAttribute("printTypeFilter", normalizedPrintType);
         model.addAttribute("monthFilter", month);
-        model.addAttribute("workerFilter", workerId);
+        model.addAttribute("workerFilter", normalizedWorkerId);
         model.addAttribute("scale", normalizedScale);
         model.addAttribute("trendDays", safeTrendDays);
         model.addAttribute("profitMonths", safeProfitMonths);
@@ -141,11 +142,12 @@ public class ProductionPlannerController extends BaseController {
                                                     @RequestParam(required = false) Long workerId,
                                                     @RequestParam(required = false, defaultValue = "6") int profitMonths,
                                                     @RequestParam(required = false, defaultValue = "sr") String format) {
+        Long normalizedWorkerId = normalizeWorkerId(workerId);
         String normalizedPrintType = normalizePrintType(printType);
         String normalizedFormat = normalizeCsvFormat(format);
         java.time.YearMonth ym = parseYearMonth(month);
         int safeMonths = Math.max(3, Math.min(profitMonths, 12));
-        var rows = productionPlannerService.getProfitTrend(safeMonths, ym, normalizedPrintType, workerId);
+        var rows = productionPlannerService.getProfitTrend(safeMonths, ym, normalizedPrintType, normalizedWorkerId);
         boolean sr = "sr".equalsIgnoreCase(normalizedFormat);
         String sep = sr ? ";" : ",";
         java.text.DecimalFormat df;
@@ -181,10 +183,11 @@ public class ProductionPlannerController extends BaseController {
                                                     @RequestParam(required = false) Long workerId,
                                                     @RequestParam(required = false, defaultValue = "7") int trendDays,
                                                     @RequestParam(required = false, defaultValue = "sr") String format) {
+        Long normalizedWorkerId = normalizeWorkerId(workerId);
         String normalizedFormat = normalizeCsvFormat(format);
         java.time.YearMonth ym = parseYearMonth(month);
         int safeTrendDays = trendDays < 7 ? 7 : Math.min(trendDays, 60);
-        var rows = productionPlannerService.getStatusTimeline(safeTrendDays, ym, workerId);
+        var rows = productionPlannerService.getStatusTimeline(safeTrendDays, ym, normalizedWorkerId);
         boolean sr = "sr".equalsIgnoreCase(normalizedFormat);
         String sep = sr ? ";" : ",";
         StringBuilder sb = new StringBuilder();
@@ -243,6 +246,13 @@ public class ProductionPlannerController extends BaseController {
             return "linear";
         }
         return "log";
+    }
+
+    private Long normalizeWorkerId(Long workerId) {
+        if (workerId == null || workerId <= 0) {
+            return null;
+        }
+        return workerId;
     }
 
     private String normalizeCsvFormat(String format) {
