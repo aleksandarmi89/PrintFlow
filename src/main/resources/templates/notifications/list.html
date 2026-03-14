@@ -6,7 +6,8 @@
 <body>
     <div th:replace="~{layout/header :: header}"></div>
 
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-8"
+          th:attr="data-notification-read-text=#{notifications.read},data-notification-unread-text=#{notifications.unread}">
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
@@ -141,6 +142,10 @@
                 csrfHeaders[csrfHeader.content] = csrfToken.content;
             }
 
+            const notificationsRoot = document.querySelector('main[data-notification-read-text]');
+            const readText = notificationsRoot?.dataset?.notificationReadText || 'Read';
+            const unreadText = notificationsRoot?.dataset?.notificationUnreadText || 'Unread';
+
             const updateHeaderBadge = (delta) => {
                 const badge = document.querySelector('#notification-menu-button span span');
                 if (!badge) return;
@@ -169,7 +174,7 @@
                             if (container) {
                                 const status = container.querySelector('span.text-red-600');
                                 if (status) {
-                                    status.textContent = 'Read';
+                                    status.textContent = readText;
                                     status.classList.remove('text-red-600');
                                     status.classList.add('text-green-600');
                                 }
@@ -191,8 +196,8 @@
                         .then(() => {
                             document.querySelectorAll('.notification-mark-read').forEach(btn => btn.remove());
                             document.querySelectorAll('.text-red-600').forEach(span => {
-                                if (span.textContent === 'Unread') {
-                                    span.textContent = 'Read';
+                                if ((span.textContent || '').trim() === unreadText) {
+                                    span.textContent = readText;
                                     span.classList.remove('text-red-600');
                                     span.classList.add('text-green-600');
                                 }
