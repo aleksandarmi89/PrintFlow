@@ -5,6 +5,7 @@ import com.printflow.entity.*;
 import com.printflow.entity.enums.*;
 import com.printflow.repository.*;
 import jakarta.transaction.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -719,6 +720,7 @@ public class TaskService {
 
         Long previousAssignedId = task.getAssignedTo() != null ? task.getAssignedTo().getId() : null;
         if (assignedToId != null) {
+            assertCurrentUserCanAssign();
             User assigned = userRepository.findByIdAndCompany_Id(assignedToId, tenantGuard.requireCompanyId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
             validateAssignableUser(assigned);
@@ -801,6 +803,7 @@ public class TaskService {
 
         Long taskCompanyId = requireTaskCompanyId(task);
         if (assignedToId != null) {
+            assertCurrentUserCanAssign();
             User assigned = userRepository.findByIdAndCompany_Id(assignedToId, taskCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             validateAssignableUser(assigned);
@@ -849,6 +852,20 @@ public class TaskService {
             || role == User.Role.WORKER_GENERAL;
         if (!assignable) {
             throw new RuntimeException("Selected user cannot be assigned");
+        }
+    }
+
+    private void assertCurrentUserCanAssign() {
+        User currentUser = tenantGuard.getCurrentUser();
+        if (currentUser == null || currentUser.getRole() == null) {
+            return;
+        }
+        User.Role role = currentUser.getRole();
+        boolean canAssign = role == User.Role.SUPER_ADMIN
+            || role == User.Role.ADMIN
+            || role == User.Role.MANAGER;
+        if (!canAssign) {
+            throw new AccessDeniedException("Not allowed to assign work");
         }
     }
 

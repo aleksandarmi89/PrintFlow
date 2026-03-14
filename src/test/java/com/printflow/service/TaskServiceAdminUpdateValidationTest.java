@@ -15,6 +15,7 @@ import com.printflow.repository.WorkOrderRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.access.AccessDeniedException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -248,6 +249,55 @@ class TaskServiceAdminUpdateValidationTest {
         RuntimeException ex = assertThrows(RuntimeException.class,
             () -> service.updateTaskFromAdmin(10L, dto, 77L));
         assertEquals("Selected user cannot be assigned", ex.getMessage());
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    void updateTaskFromAdmin_rejectsWorkerAsAssigner() {
+        TaskRepository taskRepository = mock(TaskRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        TaskActivityRepository taskActivityRepository = mock(TaskActivityRepository.class);
+        TimeEntryRepository timeEntryRepository = mock(TimeEntryRepository.class);
+        CommentRepository commentRepository = mock(CommentRepository.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
+        TenantGuard tenantGuard = mock(TenantGuard.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        TaskService service = new TaskService(
+            taskRepository,
+            userRepository,
+            workOrderRepository,
+            taskActivityRepository,
+            timeEntryRepository,
+            commentRepository,
+            fileStorageService,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            2000
+        );
+
+        Company company = new Company();
+        company.setId(1L);
+        Task task = new Task();
+        task.setId(11L);
+        task.setCompany(company);
+        task.setStatus(TaskStatus.PENDING);
+        User currentUser = new User();
+        currentUser.setRole(User.Role.WORKER_GENERAL);
+
+        when(tenantGuard.requireCompanyId()).thenReturn(1L);
+        when(tenantGuard.getCurrentUser()).thenReturn(currentUser);
+        when(taskRepository.findByIdAndCompany_Id(11L, 1L)).thenReturn(Optional.of(task));
+
+        TaskDTO dto = new TaskDTO();
+        dto.setTitle("Task");
+
+        assertThrows(AccessDeniedException.class,
+            () -> service.updateTaskFromAdmin(11L, dto, 78L));
+        verify(userRepository, never()).findByIdAndCompany_Id(78L, 1L);
         verify(taskRepository, never()).save(any(Task.class));
     }
 }

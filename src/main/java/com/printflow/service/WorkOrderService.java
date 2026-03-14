@@ -17,6 +17,7 @@ import com.printflow.events.OrderCreatedEvent;
 import com.printflow.events.OrderStatusChangedEvent;
 import com.printflow.repository.AttachmentRepository;
 import com.printflow.util.OrderNumberGenerator;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -109,6 +110,7 @@ public class WorkOrderService {
         workOrder.setPublicTokenExpiresAt(tokenInfo.expiresAt());
         
         if (workOrderDTO.getAssignedToId() != null) {
+            assertCurrentUserCanAssign();
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), companyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             validateAssignableUser(assignedTo);
@@ -157,6 +159,7 @@ public class WorkOrderService {
         workOrder.setPrintType(workOrderDTO.getPrintType() != null ? workOrderDTO.getPrintType() : PrintType.OTHER);
         
         if (workOrderDTO.getAssignedToId() != null) {
+            assertCurrentUserCanAssign();
             User assignedTo = userRepository.findByIdAndCompany_Id(workOrderDTO.getAssignedToId(), orderCompanyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
             validateAssignableUser(assignedTo);
@@ -693,6 +696,7 @@ public class WorkOrderService {
     }
 
     public void assignWorker(Long orderId, Long userId) {
+        assertCurrentUserCanAssign();
         WorkOrder workOrder = getWorkOrderOrThrow(orderId);
         Long orderCompanyId = workOrder.getCompany() != null ? workOrder.getCompany().getId() : tenantGuard.requireCompanyId();
 
@@ -742,6 +746,20 @@ public class WorkOrderService {
             || role == User.Role.WORKER_GENERAL;
         if (!assignable) {
             throw new RuntimeException("Selected user cannot be assigned");
+        }
+    }
+
+    private void assertCurrentUserCanAssign() {
+        User currentUser = tenantGuard.getCurrentUser();
+        if (currentUser == null || currentUser.getRole() == null) {
+            return;
+        }
+        User.Role role = currentUser.getRole();
+        boolean canAssign = role == User.Role.SUPER_ADMIN
+            || role == User.Role.ADMIN
+            || role == User.Role.MANAGER;
+        if (!canAssign) {
+            throw new AccessDeniedException("Not allowed to assign work");
         }
     }
 

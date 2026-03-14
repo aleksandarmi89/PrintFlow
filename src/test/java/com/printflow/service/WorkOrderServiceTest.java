@@ -14,6 +14,7 @@ import com.printflow.util.OrderNumberGenerator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -699,6 +700,50 @@ class WorkOrderServiceTest {
         RuntimeException ex = assertThrows(RuntimeException.class, () -> service.createWorkOrder(dto));
         assertEquals("Selected user cannot be assigned", ex.getMessage());
         verify(workOrderRepository, never()).save(any(WorkOrder.class));
+    }
+
+    @Test
+    void assignWorker_rejectsWorkerAsAssigner() {
+        WorkOrderRepository workOrderRepository = Mockito.mock(WorkOrderRepository.class);
+        ClientRepository clientRepository = Mockito.mock(ClientRepository.class);
+        UserRepository userRepository = Mockito.mock(UserRepository.class);
+        AttachmentRepository attachmentRepository = Mockito.mock(AttachmentRepository.class);
+        OrderNumberGenerator orderNumberGenerator = Mockito.mock(OrderNumberGenerator.class);
+        TenantGuard tenantGuard = Mockito.mock(TenantGuard.class);
+        NotificationService notificationService = Mockito.mock(NotificationService.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        PlanLimitService planLimitService = Mockito.mock(PlanLimitService.class);
+        BillingAccessService billingAccessService = Mockito.mock(BillingAccessService.class);
+        PublicTokenService publicTokenService = Mockito.mock(PublicTokenService.class);
+        WorkOrderItemRepository workOrderItemRepository = Mockito.mock(WorkOrderItemRepository.class);
+        ClientPricingProfileService pricingProfileService = Mockito.mock(ClientPricingProfileService.class);
+        ActivityLogService activityLogService = Mockito.mock(ActivityLogService.class);
+        org.springframework.context.ApplicationEventPublisher eventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+
+        WorkOrderService service = new WorkOrderService(
+            workOrderRepository,
+            clientRepository,
+            userRepository,
+            attachmentRepository,
+            orderNumberGenerator,
+            tenantGuard,
+            notificationService,
+            auditLogService,
+            planLimitService,
+            billingAccessService,
+            publicTokenService,
+            workOrderItemRepository,
+            pricingProfileService,
+            activityLogService,
+            eventPublisher
+        );
+
+        User currentUser = new User();
+        currentUser.setRole(User.Role.WORKER_GENERAL);
+        when(tenantGuard.getCurrentUser()).thenReturn(currentUser);
+
+        assertThrows(AccessDeniedException.class, () -> service.assignWorker(1L, 2L));
+        verifyNoInteractions(workOrderRepository);
     }
 
     @Test
