@@ -151,4 +151,38 @@ class RateLimitServiceTest {
         assertTrue(service.isWhitelisted("203.0.113.1"));
         assertTrue(service.isWhitelisted(" 203.0.113.2 "));
     }
+
+    @Test
+    void initBanListClearsStaleInMemoryEntriesOnReload() {
+        BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
+        WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);
+
+        BannedIp persistedBan = new BannedIp();
+        persistedBan.setIp("198.51.100.20");
+        WhitelistedIp persistedWhitelist = new WhitelistedIp();
+        persistedWhitelist.setIp("203.0.113.20");
+
+        when(bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc())
+            .thenReturn(List.of(persistedBan))
+            .thenReturn(List.of());
+        when(whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc())
+            .thenReturn(List.of(persistedWhitelist))
+            .thenReturn(List.of());
+
+        RateLimitService service = new RateLimitService(
+            false, "",
+            false, "",
+            false, 10, 300, 3600, 3600,
+            bannedIpRepository, whitelistedIpRepository,
+            Optional.empty()
+        );
+
+        service.initBanList();
+        assertTrue(service.isBanned("198.51.100.20"));
+        assertTrue(service.isWhitelisted("203.0.113.20"));
+
+        service.initBanList();
+        assertFalse(service.isBanned("198.51.100.20"));
+        assertFalse(service.isWhitelisted("203.0.113.20"));
+    }
 }
