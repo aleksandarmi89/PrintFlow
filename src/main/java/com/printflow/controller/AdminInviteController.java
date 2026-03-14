@@ -15,6 +15,8 @@ import java.util.List;
 @Controller
 @RequestMapping("/admin/users")
 public class AdminInviteController extends BaseController {
+    private static final java.util.regex.Pattern MESSAGE_KEY_PATTERN =
+        java.util.regex.Pattern.compile("^[a-z0-9._-]{1,120}$");
 
     private final InviteService inviteService;
     private final TenantContextService tenantContextService;
@@ -28,9 +30,11 @@ public class AdminInviteController extends BaseController {
     public String inviteForm(Model model,
                              @RequestParam(required = false) String inviteLink,
                              @RequestParam(required = false) String error) {
+        String normalizedInviteLink = normalizeOptional(inviteLink);
+        String normalizedError = normalizeOptional(error);
         model.addAttribute("roles", getAssignableRoles());
-        model.addAttribute("inviteLink", inviteLink);
-        model.addAttribute("errorMessage", error);
+        model.addAttribute("inviteLink", normalizedInviteLink);
+        model.addAttribute("errorMessage", isMessageKey(normalizedError) ? normalizedError : null);
         return "admin/users/invite";
     }
 
@@ -38,18 +42,21 @@ public class AdminInviteController extends BaseController {
     public String createInvite(@RequestParam String email,
                                @RequestParam String role,
                                Model model) {
+        String normalizedEmail = normalizeOptional(email);
         try {
             Role inviteRole = parseRole(role);
-            if (inviteRole == null) {
+            if (inviteRole == null || normalizedEmail == null) {
                 model.addAttribute("roles", getAssignableRoles());
-                model.addAttribute("errorMessage", "admin.users.invite.invalid_role");
+                model.addAttribute("errorMessage",
+                    inviteRole == null ? "admin.users.invite.invalid_role" : "admin.users.invite.invalid_email");
                 return "admin/users/invite";
             }
-            String link = inviteService.createInvite(email, inviteRole);
+            String link = inviteService.createInvite(normalizedEmail, inviteRole);
             return "redirect:/admin/users/invite?inviteLink=" + urlEncode(link);
         } catch (Exception ex) {
             model.addAttribute("roles", getAssignableRoles());
-            model.addAttribute("errorMessage", ex.getMessage());
+            String message = normalizeOptional(ex.getMessage());
+            model.addAttribute("errorMessage", isMessageKey(message) ? message : "admin.users.invite.create_failed");
             return "admin/users/invite";
         }
     }
@@ -70,9 +77,21 @@ public class AdminInviteController extends BaseController {
             return null;
         }
         try {
-            return Role.valueOf(role.trim().toUpperCase());
+            return Role.valueOf(role.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private boolean isMessageKey(String value) {
+        return value != null && MESSAGE_KEY_PATTERN.matcher(value).matches();
     }
 }

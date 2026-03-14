@@ -46,4 +46,35 @@ class AdminInviteControllerTest {
         assertEquals("admin.users.invite.invalid_role", model.getAttribute("errorMessage"));
         verifyNoInteractions(inviteService);
     }
+
+    @Test
+    void createInviteRejectsBlankEmailWithoutCallingService() {
+        InviteService inviteService = mock(InviteService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+
+        AdminInviteController controller = new AdminInviteController(inviteService, tenantContextService);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.createInvite("   ", "worker_print", model);
+
+        assertEquals("admin/users/invite", view);
+        assertEquals("admin.users.invite.invalid_email", model.getAttribute("errorMessage"));
+        verifyNoInteractions(inviteService);
+    }
+
+    @Test
+    void inviteFormSanitizesUnknownErrorValue() {
+        InviteService inviteService = mock(InviteService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+
+        AdminInviteController controller = new AdminInviteController(inviteService, tenantContextService);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.inviteForm(model, "  https://example.test/invite/abc  ", "  <script>  ");
+
+        assertEquals("admin/users/invite", view);
+        assertEquals("https://example.test/invite/abc", model.getAttribute("inviteLink"));
+        assertEquals(null, model.getAttribute("errorMessage"));
+    }
 }
