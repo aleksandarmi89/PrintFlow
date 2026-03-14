@@ -160,7 +160,7 @@
                 <div class="p-6 space-y-4">
                     <div class="text-sm text-gray-700">
                         <span th:text="#{admin.companies.billing_override.current}">Current:</span>
-                        <strong th:text="${company.billingOverrideActive} ? #messages.msg('admin.companies.billing_override.on') : #messages.msg('admin.companies.billing_override.off')">OFF</strong>
+                        <strong th:text="${company.billingOverrideActive ? #messages.msg('admin.companies.billing_override.on') : #messages.msg('admin.companies.billing_override.off')}">OFF</strong>
                         <span th:if="${company.billingOverrideUntil != null}" class="ml-2 text-gray-500">
                             <span th:text="#{admin.companies.billing_override.until}">until</span>
                             <span th:text="${#temporals.format(company.billingOverrideUntil, 'yyyy-MM-dd HH:mm')}">2026-02-25</span>

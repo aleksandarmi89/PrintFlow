@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class BillingAccessService {
@@ -28,6 +29,7 @@ public class BillingAccessService {
     private final boolean billingEnforcementEnabled;
     private final Map<Long, CachedBillingView> billingViewCache = new ConcurrentHashMap<>();
     private static final Duration BILLING_VIEW_TTL = Duration.ofSeconds(30);
+    private TenantContextService tenantContextService;
 
     public BillingAccessService(BillingSubscriptionRepository billingSubscriptionRepository,
                                 CompanyRepository companyRepository,
@@ -114,6 +116,9 @@ public class BillingAccessService {
         if (!billingEnforcementEnabled) {
             return;
         }
+        if (isCurrentUserSuperAdmin()) {
+            return;
+        }
         if (companyId == null) {
             return;
         }
@@ -131,6 +136,19 @@ public class BillingAccessService {
                 "Blocked premium action: " + message);
         }
         throw new BillingRequiredException(message);
+    }
+
+    @Autowired(required = false)
+    void setTenantContextService(TenantContextService tenantContextService) {
+        this.tenantContextService = tenantContextService;
+    }
+
+    private boolean isCurrentUserSuperAdmin() {
+        try {
+            return tenantContextService != null && tenantContextService.isSuperAdmin();
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     public LocalDateTime getTrialEnd(Long companyId) {

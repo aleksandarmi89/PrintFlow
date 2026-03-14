@@ -128,6 +128,21 @@ public class BillingAccessServiceTest {
     }
 
     @Test
+    void superAdminBypassesBillingEnforcementForPremiumAction() {
+        BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
+        CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);
+        AuditLogService auditLogService = Mockito.mock(AuditLogService.class);
+        Clock clock = Clock.fixed(Instant.parse("2026-03-13T10:00:00Z"), ZoneOffset.UTC);
+        BillingAccessService service = new BillingAccessService(repo, companyRepository, auditLogService, clock, true);
+        TenantContextService tenantContextService = Mockito.mock(TenantContextService.class);
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        service.setTenantContextService(tenantContextService);
+
+        assertDoesNotThrow(() -> service.assertBillingActiveForPremiumAction(55L));
+        verifyNoMoreInteractions(repo, companyRepository, auditLogService);
+    }
+
+    @Test
     void nullCompanyId_isTreatedAsAllowedForBackgroundPaths() {
         BillingSubscriptionRepository repo = Mockito.mock(BillingSubscriptionRepository.class);
         CompanyRepository companyRepository = Mockito.mock(CompanyRepository.class);

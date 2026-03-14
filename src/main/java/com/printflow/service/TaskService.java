@@ -1353,21 +1353,30 @@ public class TaskService {
     }
 
     private Task getTaskOrThrow(Long taskId) {
-        Task task = taskRepository.findByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId())
+        if (tenantGuard.isSuperAdmin()) {
+            return taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+        }
+        return taskRepository.findByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
-        return task;
     }
 
     private Task getTaskWithDetailsOrThrow(Long taskId) {
-        Task task = taskRepository.findWithDetailsByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId())
+        if (tenantGuard.isSuperAdmin()) {
+            return taskRepository.findWithDetailsById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+        }
+        return taskRepository.findWithDetailsByIdAndCompany_Id(taskId, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
-        return task;
     }
 
     private WorkOrder getWorkOrderOrThrow(Long workOrderId) {
-        WorkOrder order = workOrderRepository.findByIdAndCompany_Id(workOrderId, tenantGuard.requireCompanyId())
+        if (tenantGuard.isSuperAdmin()) {
+            return workOrderRepository.findById(workOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
+        }
+        return workOrderRepository.findByIdAndCompany_Id(workOrderId, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Work order not found"));
-        return order;
     }
 
         private TaskDetailsDTO convertToDetailsDTO(Task task) {

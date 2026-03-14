@@ -161,6 +161,33 @@ class TenantAccessIntegrationTest {
     }
 
     @Test
+    void superAdminCanAccessClientAcrossTenants() throws Exception {
+        User superAdmin = userRepository.findByUsername("tenant_super_admin")
+            .orElseGet(() -> {
+                User u = new User();
+                u.setUsername("tenant_super_admin");
+                u.setPassword(passwordEncoder.encode("password"));
+                u.setRole(User.Role.SUPER_ADMIN);
+                u.setCompany(companyRepository.findById(ids.company2Id()).orElseThrow());
+                u.setActive(true);
+                u.setFirstName("Super");
+                u.setLastName("Admin");
+                u.setFullName("Super Admin");
+                return userRepository.save(u);
+            });
+        superAdmin.setRole(User.Role.SUPER_ADMIN);
+        superAdmin.setActive(true);
+        if (superAdmin.getCompany() == null) {
+            superAdmin.setCompany(companyRepository.findById(ids.company2Id()).orElseThrow());
+        }
+        userRepository.save(superAdmin);
+
+        MockHttpSession superAdminSession = fixture.login("tenant_super_admin", "password");
+        mockMvc.perform(get("/admin/clients/edit/{id}", ids.clientId()).session(superAdminSession))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void attachmentAccessRespectsTenant() throws Exception {
         MockHttpSession tenant1Session = fixture.login("tenant1_admin", "password");
         mockMvc.perform(get("/api/files/download/{id}", ids.attachmentId()).session(tenant1Session))

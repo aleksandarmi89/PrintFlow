@@ -74,6 +74,9 @@ public class UserService {
         user.setFullName(userDTO.getFullName());
         user.setEmail(userDTO.getEmail());
         user.setPhone(userDTO.getPhone());
+        user.setDepartment(userDTO.getDepartment());
+        user.setPosition(userDTO.getPosition());
+        user.setNotes(userDTO.getNotes());
         Role requestedRole = userDTO.getRole() != null ? Role.valueOf(userDTO.getRole()) : Role.WORKER_GENERAL;
         if (!tenantContextService.isSuperAdmin() && requestedRole == Role.SUPER_ADMIN) {
             throw new RuntimeException("Not allowed to assign SUPER_ADMIN role");
@@ -120,6 +123,9 @@ public class UserService {
         user.setFullName(userDTO.getFullName());
         user.setEmail(userDTO.getEmail());
         user.setPhone(userDTO.getPhone());
+        user.setDepartment(userDTO.getDepartment());
+        user.setPosition(userDTO.getPosition());
+        user.setNotes(userDTO.getNotes());
         
         if (userDTO.getRole() != null) {
             Role requestedRole = Role.valueOf(userDTO.getRole());
@@ -154,12 +160,10 @@ public class UserService {
     }
 
     public UserDTO getUserById(Long id) {
-        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = tenantContextService.isSuperAdmin()
+            ? userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"))
+            : userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
         return convertToDTO(user);
     }
 
@@ -315,24 +319,20 @@ public class UserService {
     }
 
     public void deactivateUser(Long id) {
-        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = tenantContextService.isSuperAdmin()
+            ? userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"))
+            : userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
         user.setActive(false);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
     }
 
     public void activateUser(Long id) {
-        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = tenantContextService.isSuperAdmin()
+            ? userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"))
+            : userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
         user.setActive(true);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -513,6 +513,12 @@ public class UserService {
         
         if (user.getDepartment() != null) {
             dto.setDepartment(user.getDepartment());
+        }
+        if (user.getPosition() != null) {
+            dto.setPosition(user.getPosition());
+        }
+        if (user.getNotes() != null) {
+            dto.setNotes(user.getNotes());
         }
         
         return dto;

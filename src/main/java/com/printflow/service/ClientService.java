@@ -61,11 +61,12 @@ public class ClientService {
     @Transactional // Write operation
     public ClientDTO updateClient(Long id, ClientDTO clientDTO) {
         Client client = getClientOrThrow(id);
+        Long clientCompanyId = client.getCompany() != null ? client.getCompany().getId() : tenantGuard.requireCompanyId();
         
         // Provera za unique email (u okviru kompanije)
         if (clientDTO.getEmail() != null && !clientDTO.getEmail().isEmpty() &&
             !clientDTO.getEmail().equals(client.getEmail()) &&
-            clientRepository.existsByEmailAndCompany_Id(clientDTO.getEmail(), tenantGuard.requireCompanyId())) {
+            clientRepository.existsByEmailAndCompany_Id(clientDTO.getEmail(), clientCompanyId)) {
             throw new RuntimeException("Email already exists");
         }
         
@@ -182,9 +183,12 @@ public class ClientService {
     }
 
     private Client getClientOrThrow(Long id) {
-        Client client = clientRepository.findByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
+        if (tenantGuard.isSuperAdmin()) {
+            return clientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+        }
+        return clientRepository.findByIdAndCompany_Id(id, tenantGuard.requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
-        return client;
     }
     
     private ClientDTO convertToDTO(Client client) {

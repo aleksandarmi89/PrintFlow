@@ -1,6 +1,8 @@
 package com.printflow.controller;
 
 import com.printflow.dto.*;
+import com.printflow.entity.Client;
+import com.printflow.entity.Company;
 import com.printflow.entity.User;
 import com.printflow.entity.enums.OrderStatus;
 import com.printflow.config.PaginationConfig;
@@ -179,11 +181,14 @@ public class AdminController extends BaseController {
     public String editClientForm(@PathVariable Long id, Model model) {
         try {
             ClientDTO client = clientService.getClientById(id);
+            Client clientEntity = clientService.getClientEntity(id);
+            Long companyId = clientEntity.getCompany() != null
+                ? clientEntity.getCompany().getId()
+                : tenantContextService.requireCompanyId();
             model.addAttribute("client", client);
-            Long companyId = tenantContextService.requireCompanyId();
             model.addAttribute("pricingVariants", productVariantRepository.findAllByCompany_Id(companyId));
             model.addAttribute("pricingProfiles", clientPricingProfileService.getProfilesForClient(id, companyId));
-            var access = clientPortalService.getAccessForClient(id, tenantContextService.requireCompanyId());
+            var access = clientPortalService.getAccessForClient(id, companyId);
             if (access != null) {
                 model.addAttribute("portalLink", baseUrl + "/portal/" + access.getAccessToken());
             }
@@ -199,9 +204,16 @@ public class AdminController extends BaseController {
     public String generatePortalLink(@PathVariable Long id, Model model) {
         try {
             ClientDTO client = clientService.getClientById(id);
+            Client clientEntity = clientService.getClientEntity(id);
+            Company company = clientEntity.getCompany() != null
+                ? clientEntity.getCompany()
+                : tenantContextService.getCurrentCompany();
+            if (company == null) {
+                throw new ResourceNotFoundException("Client company not found");
+            }
             var access = clientPortalService.createOrRefreshAccess(
-                clientService.getClientEntity(id),
-                tenantContextService.getCurrentCompany(),
+                clientEntity,
+                company,
                 java.time.LocalDateTime.now().plusDays(30)
             );
             model.addAttribute("client", client);
@@ -221,7 +233,10 @@ public class AdminController extends BaseController {
                                               @RequestParam(required = false) java.math.BigDecimal discountPercent,
                                               Model model) {
         try {
-            Long companyId = tenantContextService.requireCompanyId();
+            Client clientEntity = clientService.getClientEntity(id);
+            Long companyId = clientEntity.getCompany() != null
+                ? clientEntity.getCompany().getId()
+                : tenantContextService.requireCompanyId();
             clientPricingProfileService.upsertDiscount(id, variantId, companyId, discountPercent);
             return redirectWithSuccess("/admin/clients/edit/" + id, "Pricing profile updated.", model);
         } catch (ResourceNotFoundException e) {

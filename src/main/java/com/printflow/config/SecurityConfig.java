@@ -144,6 +144,8 @@ public class SecurityConfig {
                 redirectUrl = "/admin/companies";
             } else if (authorities.stream().anyMatch(a -> a.getAuthority().equals(User.Role.ADMIN.name()))) {
                 redirectUrl = "/admin/dashboard";
+            } else if (authorities.stream().anyMatch(a -> a.getAuthority().equals(User.Role.MANAGER.name()))) {
+                redirectUrl = "/admin/dashboard";
             } else if (authorities.stream().anyMatch(a -> 
                 a.getAuthority().equals(User.Role.WORKER_DESIGN.name()) ||
                 a.getAuthority().equals(User.Role.WORKER_PRINT.name()) ||
