@@ -70,6 +70,33 @@ class RateLimitServiceTest {
     }
 
     @Test
+    void autoBanUsesFullIpv6FromRateLimitKey() {
+        BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
+        WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);
+        when(bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(bannedIpRepository.findByIp("2001:db8::9")).thenReturn(Optional.empty());
+        when(bannedIpRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        RateLimitService service = new RateLimitService(
+            false, "", false, "",
+            true, 1, 300, 3600, 3600,
+            bannedIpRepository, whitelistedIpRepository,
+            Optional.of(registry)
+        );
+
+        assertTrue(service.allow("public-global:2001:db8::9", 1, 60_000));
+        assertFalse(service.allow("public-global:2001:db8::9", 1, 60_000));
+
+        verify(bannedIpRepository).findByIp("2001:db8::9");
+        verify(bannedIpRepository).save(argThat(entity ->
+            "2001:db8::9".equals(entity.getIp())
+        ));
+        assertEquals(1.0d, registry.get("printflow_rate_limit_auto_ban_total").counter().count());
+    }
+
+    @Test
     void banNormalizesIpAndReasonFallbackToManual() {
         BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
         WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);

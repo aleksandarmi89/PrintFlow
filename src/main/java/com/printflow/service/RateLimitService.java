@@ -282,7 +282,7 @@ public class RateLimitService {
     }
 
     private String extractIpFromKey(String key) {
-        int idx = key.lastIndexOf(':');
+        int idx = key.indexOf(':');
         if (idx == -1 || idx == key.length() - 1) {
             return null;
         }
