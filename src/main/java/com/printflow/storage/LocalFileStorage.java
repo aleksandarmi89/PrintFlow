@@ -126,7 +126,7 @@ public class LocalFileStorage implements FileStorage {
 
             log.info("Thumbnail generated: {}", thumbnailPath);
             return thumbnailPath;
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             log.warn("Could not generate thumbnail for {}, using original instead. Error: {}",
                 uniqueFileName, e.getMessage());
             return null;
@@ -151,13 +151,21 @@ public class LocalFileStorage implements FileStorage {
                 Files.deleteIfExists(filePath);
                 throw new RuntimeException("Virus scan failed for file: " + filePath.getFileName());
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             try {
                 Files.deleteIfExists(filePath);
             } catch (IOException ignore) {
                 // no-op
             }
             throw new RuntimeException("Virus scan error: " + ex.getMessage());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            try {
+                Files.deleteIfExists(filePath);
+            } catch (IOException ignore) {
+                // no-op
+            }
+            throw new RuntimeException("Virus scan interrupted for file: " + filePath.getFileName(), ex);
         }
     }
 }
