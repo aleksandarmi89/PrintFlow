@@ -100,4 +100,30 @@ class AuditLogControllerTest {
         assertEquals(200, pageableCaptor.getValue().getPageSize());
         assertTrue(response.getContentType().startsWith("text/csv"));
     }
+
+    @Test
+    void listTrimsQueryAndEntityTypeBeforeSearchAndModel() {
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        CompanyService companyService = mock(CompanyService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+
+        AuditLogController controller = new AuditLogController(auditLogService, companyService, tenantContextService, paginationConfig);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        when(tenantContextService.requireCompanyId()).thenReturn(14L);
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(20)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(auditLogService.searchAuditLogs(eq(14L), eq(AuditAction.UPDATE), eq("john"), eq(3L), eq(9L), eq("WorkOrder"), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.list(null, " update ", "  john  ", 3L, 9L, "  WorkOrder  ", 1, 20, model);
+
+        assertEquals("admin/audit-logs/list", view);
+        assertEquals("john", model.getAttribute("query"));
+        assertEquals("WorkOrder", model.getAttribute("entityType"));
+        assertEquals("update", model.getAttribute("action"));
+        verify(auditLogService).searchAuditLogs(eq(14L), eq(AuditAction.UPDATE), eq("john"), eq(3L), eq(9L), eq("WorkOrder"), any(Pageable.class));
+    }
 }

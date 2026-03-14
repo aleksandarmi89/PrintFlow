@@ -48,28 +48,31 @@ public class AuditLogController extends BaseController {
         if (!tenantContextService.isSuperAdmin()) {
             companyId = tenantContextService.requireCompanyId();
         }
-        AuditAction actionEnum = parseAction(action);
+        String normalizedAction = normalizeOptional(action);
+        String normalizedQuery = normalizeOptional(query);
+        String normalizedEntityType = normalizeOptional(entityType);
+        AuditAction actionEnum = parseAction(normalizedAction);
         int page = (pageNumber != null && pageNumber > 0) ? pageNumber - 1 : 0;
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
         var logsPage = auditLogService.searchAuditLogs(
             companyId,
             actionEnum,
-            query,
+            normalizedQuery,
             userId,
             entityId,
-            entityType,
+            normalizedEntityType,
             org.springframework.data.domain.PageRequest.of(safePage, pageSize)
         );
 
         model.addAttribute("logsPage", logsPage);
         model.addAttribute("logs", logsPage.getContent());
         model.addAttribute("actions", AuditAction.values());
-        model.addAttribute("action", action);
-        model.addAttribute("query", query);
+        model.addAttribute("action", normalizedAction);
+        model.addAttribute("query", normalizedQuery);
         model.addAttribute("userId", userId);
         model.addAttribute("entityId", entityId);
-        model.addAttribute("entityType", entityType);
+        model.addAttribute("entityType", normalizedEntityType);
         model.addAttribute("page", logsPage.getNumber());
         model.addAttribute("pageNumber", logsPage.getNumber() + 1);
         model.addAttribute("size", pageSize);
@@ -95,16 +98,19 @@ public class AuditLogController extends BaseController {
         if (!tenantContextService.isSuperAdmin()) {
             companyId = tenantContextService.requireCompanyId();
         }
-        AuditAction actionEnum = parseAction(action);
+        String normalizedAction = normalizeOptional(action);
+        String normalizedQuery = normalizeOptional(query);
+        String normalizedEntityType = normalizeOptional(entityType);
+        AuditAction actionEnum = parseAction(normalizedAction);
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
         var logs = auditLogService.searchAuditLogs(
             companyId,
             actionEnum,
-            query,
+            normalizedQuery,
             userId,
             entityId,
-            entityType,
+            normalizedEntityType,
             org.springframework.data.domain.PageRequest.of(safePage, pageSize)
         ).getContent();
 
@@ -147,5 +153,13 @@ public class AuditLogController extends BaseController {
         }
         String escaped = value.replace("\"", "\"\"");
         return "\"" + escaped + "\"";
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
