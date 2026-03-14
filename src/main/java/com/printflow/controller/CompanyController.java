@@ -48,9 +48,10 @@ public class CompanyController extends BaseController {
         int pageSize = paginationConfig.normalizeSize(size);
         org.springframework.data.domain.Pageable pageable =
             org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
+        String normalizedPlan = (plan != null ? plan.trim() : null);
         com.printflow.entity.enums.PlanTier planTier = null;
-        if (plan != null && !plan.isBlank()) {
-            planTier = parsePlanTier(plan);
+        if (normalizedPlan != null && !normalizedPlan.isBlank()) {
+            planTier = parsePlanTier(normalizedPlan);
         }
         Boolean overrideActive = null;
         if (override != null && !override.isBlank()) {
@@ -72,7 +73,7 @@ public class CompanyController extends BaseController {
         model.addAttribute("companies", companiesPage.getContent());
         model.addAttribute("companiesPage", companiesPage);
         model.addAttribute("search", search);
-        model.addAttribute("plan", plan);
+        model.addAttribute("plan", normalizedPlan);
         model.addAttribute("override", override);
         model.addAttribute("planOptions", com.printflow.entity.enums.PlanTier.values());
         model.addAttribute("currentPage", companiesPage.getNumber());
