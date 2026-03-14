@@ -229,6 +229,17 @@ class RegressionPagesIntegrationTest {
                 containsString("Swipe horizontally to see all outbox columns."),
                 containsString("Prevucite horizontalno da vidite sve kolone outbox tabele.")
             )));
+        mockMvc.perform(get("/notifications").session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("??"))))
+            .andExpect(content().string(anyOf(
+                containsString("data-notification-read-text=\"Read\""),
+                containsString("data-notification-read-text=\"Pročitano\"")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("data-notification-unread-text=\"Unread\""),
+                containsString("data-notification-unread-text=\"Nepročitano\"")
+            )));
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())
             .andExpect(content().string(not(containsString("/public/companies"))))
