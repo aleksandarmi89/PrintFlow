@@ -152,6 +152,30 @@ class RateLimitServiceTest {
     }
 
     @Test
+    void banTruncatesOverlongReasonToDatabaseLimit() {
+        BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
+        WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);
+        when(bannedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(whitelistedIpRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(java.util.List.of());
+        when(bannedIpRepository.findByIp("198.51.100.42")).thenReturn(Optional.empty());
+        when(bannedIpRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RateLimitService service = new RateLimitService(
+            false, "", false, "",
+            false, 10, 300, 3600, 3600,
+            bannedIpRepository, whitelistedIpRepository,
+            Optional.empty()
+        );
+        String reason = "x".repeat(700);
+
+        service.ban("198.51.100.42", reason, null);
+
+        verify(bannedIpRepository).save(argThat(entity ->
+            entity.getReason() != null && entity.getReason().length() == 500
+        ));
+    }
+
+    @Test
     void initBanListNormalizesConfiguredAndPersistedIps() {
         BannedIpRepository bannedIpRepository = mock(BannedIpRepository.class);
         WhitelistedIpRepository whitelistedIpRepository = mock(WhitelistedIpRepository.class);

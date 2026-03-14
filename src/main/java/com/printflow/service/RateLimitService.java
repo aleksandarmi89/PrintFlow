@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class RateLimitService {
     private static final Logger log = LoggerFactory.getLogger(RateLimitService.class);
+    private static final int MAX_REASON_LENGTH = 500;
 
     private final ConcurrentHashMap<String, Deque<Long>> buckets = new ConcurrentHashMap<>();
     private final Set<String> bannedIps = ConcurrentHashMap.newKeySet();
@@ -226,7 +227,13 @@ public class RateLimitService {
             return "manual";
         }
         String normalized = reason.trim();
-        return normalized.isEmpty() ? "manual" : normalized;
+        if (normalized.isEmpty()) {
+            return "manual";
+        }
+        if (normalized.length() > MAX_REASON_LENGTH) {
+            return normalized.substring(0, MAX_REASON_LENGTH);
+        }
+        return normalized;
     }
 
     public boolean allow(String key, int maxRequests, long windowMillis) {
