@@ -30,21 +30,24 @@ public class ProductionPlannerController extends BaseController {
                           @RequestParam(required = false, defaultValue = "6") int profitMonths,
                           @RequestParam(required = false, defaultValue = "log") String scale,
                           Model model) {
+        String normalizedPrintType = normalizePrintType(printType);
+        String normalizedHeatmapMode = normalizeHeatmapMode(heatmapMode);
+        String normalizedScale = normalizeScale(scale);
         java.time.YearMonth ym = parseYearMonth(month);
         model.addAttribute("stats", productionPlannerService.getStats(ym));
         model.addAttribute("dueSoonOrders", productionPlannerService.getDueSoonOrders(8));
         var dailyLoad = productionPlannerService.getDailyLoad(7, workerId);
         var workerLoad = productionPlannerService.getWorkerLoad(8);
-        var profit = productionPlannerService.getProfitByPrintType(printType, ym, workerId);
+        var profit = productionPlannerService.getProfitByPrintType(normalizedPrintType, ym, workerId);
         int safeTrendDays = trendDays < 7 ? 7 : Math.min(trendDays, 60);
         var statusTimeline = productionPlannerService.getStatusTimeline(safeTrendDays, ym, workerId);
         java.time.YearMonth heatmapMonth = ym != null ? ym : java.time.YearMonth.now();
-        boolean deadlineHeatmap = "deadline".equalsIgnoreCase(heatmapMode);
+        boolean deadlineHeatmap = "deadline".equalsIgnoreCase(normalizedHeatmapMode);
         var heatmap = deadlineHeatmap
             ? productionPlannerService.getDeadlineHeatmap(ym, workerId)
             : productionPlannerService.getDailyHeatmap(ym, workerId);
         int safeProfitMonths = Math.max(3, Math.min(profitMonths, 12));
-        var profitTrend = productionPlannerService.getProfitTrend(safeProfitMonths, ym, printType, workerId);
+        var profitTrend = productionPlannerService.getProfitTrend(safeProfitMonths, ym, normalizedPrintType, workerId);
         model.addAttribute("dailyLoad", dailyLoad);
         model.addAttribute("workerLoad", workerLoad);
         model.addAttribute("profitByType", profit);
@@ -58,12 +61,12 @@ public class ProductionPlannerController extends BaseController {
         model.addAttribute("maxHeatmapCount", productionPlannerService.getMaxHeatmapCount(heatmap));
         model.addAttribute("heatmapOffset", heatmapMonth.atDay(1).getDayOfWeek().getValue() - 1);
         model.addAttribute("workers", productionPlannerService.getWorkers());
-        model.addAttribute("heatmapMode", heatmapMode);
+        model.addAttribute("heatmapMode", normalizedHeatmapMode);
         model.addAttribute("profitTrend", profitTrend);
-        model.addAttribute("printTypeFilter", printType);
+        model.addAttribute("printTypeFilter", normalizedPrintType);
         model.addAttribute("monthFilter", month);
         model.addAttribute("workerFilter", workerId);
-        model.addAttribute("scale", scale);
+        model.addAttribute("scale", normalizedScale);
         model.addAttribute("trendDays", safeTrendDays);
         model.addAttribute("profitMonths", safeProfitMonths);
         try {
@@ -210,5 +213,30 @@ public class ProductionPlannerController extends BaseController {
         } catch (java.time.format.DateTimeParseException ignored) {
             return null;
         }
+    }
+
+    private String normalizePrintType(String printType) {
+        if (printType == null || printType.isBlank()) {
+            return null;
+        }
+        String normalized = printType.trim().toUpperCase();
+        return switch (normalized) {
+            case "DTF", "LASER", "OTHER" -> normalized;
+            default -> null;
+        };
+    }
+
+    private String normalizeHeatmapMode(String heatmapMode) {
+        if ("deadline".equalsIgnoreCase(heatmapMode)) {
+            return "deadline";
+        }
+        return "status";
+    }
+
+    private String normalizeScale(String scale) {
+        if ("linear".equalsIgnoreCase(scale)) {
+            return "linear";
+        }
+        return "log";
     }
 }
