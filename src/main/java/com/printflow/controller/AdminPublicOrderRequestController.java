@@ -217,7 +217,10 @@ public class AdminPublicOrderRequestController extends BaseController {
         try {
             PublicOrderRequest request = requestService.getForCurrentTenant(id);
             PublicOrderRequestStatus oldStatus = request.getStatus();
-            PublicOrderRequestStatus newStatus = PublicOrderRequestStatus.valueOf(status);
+            PublicOrderRequestStatus newStatus = parseStatus(status);
+            if (newStatus == null) {
+                return redirectWithError("/admin/public-requests/" + id, tr("Neispravan status.", "Invalid status."), model);
+            }
             requestService.updateStatus(id, newStatus);
             auditLogService.log(AuditAction.STATUS_CHANGE, "PublicOrderRequest", id,
                 oldStatus != null ? oldStatus.name() : null,
@@ -315,7 +318,7 @@ public class AdminPublicOrderRequestController extends BaseController {
             return null;
         }
         try {
-            return PublicOrderRequestStatus.valueOf(value);
+            return PublicOrderRequestStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
             return null;
         }
