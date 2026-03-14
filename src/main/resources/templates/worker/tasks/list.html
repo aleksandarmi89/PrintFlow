@@ -72,8 +72,12 @@
             </div>
         </div>
 
-        <div th:if="${successMessage}" class="mb-4 px-4 py-3 rounded-lg bg-green-50 text-green-700 border border-green-200" th:text="${successMessage}"></div>
-        <div th:if="${errorMessage}" class="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 border border-red-200" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="mb-4 px-4 py-3 rounded-lg bg-green-50 text-green-700 border border-green-200"
+             th:with="m=${#messages.msgOrNull(successMessage)}"
+             th:text="${m != null ? m : successMessage}"></div>
+        <div th:if="${errorMessage}" class="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 border border-red-200"
+             th:with="m=${#messages.msgOrNull(errorMessage)}"
+             th:text="${m != null ? m : errorMessage}"></div>
         
         <!-- Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
