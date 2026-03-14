@@ -194,7 +194,7 @@ public class AdminController extends BaseController {
             }
             return "admin/clients/edit";
         } catch (ResourceNotFoundException e) {
-            throw e;
+            return redirectWithError("/admin/clients", "Client not found", model);
         } catch (Exception e) {
             return redirectWithError("/admin/clients", "Client not found", model);
         }
@@ -505,7 +505,7 @@ public class AdminController extends BaseController {
 
             return "admin/orders/details";
         } catch (ResourceNotFoundException e) {
-            throw e;
+            return redirectWithError("/admin/orders", "Order not found", model);
         } catch (Exception e) {
             return redirectWithError("/admin/orders", "Order not found", model);
         }
@@ -557,7 +557,7 @@ public class AdminController extends BaseController {
                 ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
             return "admin/orders/edit";
         } catch (ResourceNotFoundException e) {
-            throw e;
+            return redirectWithError("/admin/orders", "Order not found", model);
         } catch (Exception e) {
             return redirectWithError("/admin/orders", "Order not found", model);
         }
@@ -967,8 +967,13 @@ public class AdminController extends BaseController {
     }
 
     @GetMapping("/users/permissions/{id}")
-    public String legacyUserPermissionsRedirect(@PathVariable Long id) {
-        return "redirect:/admin/users/edit/" + id;
+    public String legacyUserPermissionsRedirect(@PathVariable Long id, Model model) {
+        try {
+            userService.getUserById(id);
+            return "redirect:/admin/users/edit/" + id;
+        } catch (RuntimeException ex) {
+            return redirectWithError("/admin/users", "admin.users.flash.not_found", model);
+        }
     }
 
     @PostMapping("/users/{id}/toggle-active")

@@ -14,6 +14,7 @@ import com.printflow.pricing.repository.ProductVariantRepository;
 import com.printflow.pricing.service.PricingAdminService;
 import com.printflow.service.AuditLogService;
 import com.printflow.service.BillingAccessService;
+import com.printflow.service.BillingRequiredException;
 import com.printflow.service.CurrentContextService;
 import com.printflow.service.ResourceNotFoundException;
 import com.printflow.service.TemplateSeederService;
@@ -93,7 +94,11 @@ public class AdminPricingController extends BaseController {
                                 Model model,
                                 RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
-        requireBilling(company);
+        try {
+            requireBilling(company);
+        } catch (BillingRequiredException ex) {
+            return redirectBillingLocked(redirectAttributes);
+        }
         if (bindingResult.hasErrors()) {
             model.addAttribute("products", productRepository.findAllByCompany_Id(company.getId()));
             return "admin/pricing/products";
@@ -109,7 +114,11 @@ public class AdminPricingController extends BaseController {
     @PostMapping("/products/templates")
     public String createFromTemplates(RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
-        requireBilling(company);
+        try {
+            requireBilling(company);
+        } catch (BillingRequiredException ex) {
+            return redirectBillingLocked(redirectAttributes);
+        }
         templateSeederService.seedDefaultTemplates(company);
         redirectAttributes.addFlashAttribute("successMessage", "pricing.flash.templates_added");
         return "redirect:/admin/pricing/products";
@@ -121,7 +130,11 @@ public class AdminPricingController extends BaseController {
                              Model model,
                              RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
-        requireBilling(company);
+        try {
+            requireBilling(company);
+        } catch (BillingRequiredException ex) {
+            return redirectBillingLocked(redirectAttributes);
+        }
         if (!form.isApplyAllCategories() && form.getCategory() == null) {
             bindingResult.rejectValue("category", "required", "Category is required");
         }
@@ -149,7 +162,11 @@ public class AdminPricingController extends BaseController {
                               Model model,
                               RedirectAttributes redirectAttributes) {
         Company company = currentContextService.currentCompany();
-        requireBilling(company);
+        try {
+            requireBilling(company);
+        } catch (BillingRequiredException ex) {
+            return redirectBillingLocked(redirectAttributes);
+        }
         if (!form.isApplyAllCategories() && form.getCategory() == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "pricing.flash.category_required");
             return "redirect:/admin/pricing/products";
@@ -211,6 +228,11 @@ public class AdminPricingController extends BaseController {
             return "\"" + text + "\"";
         }
         return text;
+    }
+
+    private String redirectBillingLocked(RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", "billing.notice.expired");
+        return "redirect:/admin/pricing/products";
     }
 
     @GetMapping("/products/{id}")

@@ -489,12 +489,10 @@ public class UserService {
     }
 
     public UserTaskStats getUserTaskStats(Long id) {
-        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = tenantContextService.isSuperAdmin()
+            ? userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"))
+            : userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserTaskStats stats = new UserTaskStats();
         stats.setLastLogin(user.getLastLogin());
