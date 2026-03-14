@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class NotificationController {
 
     private static final String API_ERROR_MESSAGE = "notifications.error";
+    private static final java.util.regex.Pattern TYPE_FILTER_PATTERN = java.util.regex.Pattern.compile("^[A-Z_]{1,64}$");
 
     private final NotificationService notificationService;
     private final TenantContextService tenantContextService;
@@ -101,10 +102,7 @@ public class NotificationController {
         Long userId = requireCurrentUserId();
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
-        String normalizedType = (type != null ? type.trim() : null);
-        if (normalizedType != null && normalizedType.isBlank()) {
-            normalizedType = null;
-        }
+        String normalizedType = normalizeTypeFilter(type);
         var notifications = notificationService.getNotificationsWithFilters(
             userId,
             normalizedType,
@@ -130,6 +128,21 @@ public class NotificationController {
         model.addAttribute("size", pageSize);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
         return "notifications/list";
+    }
+
+    private String normalizeTypeFilter(String type) {
+        if (type == null) {
+            return null;
+        }
+        String normalized = type.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        normalized = normalized.toUpperCase(java.util.Locale.ROOT);
+        if (!TYPE_FILTER_PATTERN.matcher(normalized).matches()) {
+            return null;
+        }
+        return normalized;
     }
 
     private Long requireCurrentUserId() {

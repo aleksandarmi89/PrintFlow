@@ -110,9 +110,36 @@ class NotificationControllerTest {
         assertEquals(0, model.getAttribute("currentPage"));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(notificationService).getNotificationsWithFilters(eq(7L), eq("TASK"), eq(Boolean.FALSE), pageableCaptor.capture());
-        assertEquals(4, pageableCaptor.getValue().getPageNumber());
-        assertEquals(20, pageableCaptor.getValue().getPageSize());
+        verify(notificationService, times(2))
+            .getNotificationsWithFilters(eq(7L), eq("TASK"), eq(Boolean.FALSE), pageableCaptor.capture());
+        List<Pageable> capturedPageables = pageableCaptor.getAllValues();
+        assertEquals(4, capturedPageables.get(0).getPageNumber());
+        assertEquals(0, capturedPageables.get(1).getPageNumber());
+        assertEquals(20, capturedPageables.get(0).getPageSize());
+    }
+
+    @Test
+    void listNotificationsNormalizesLowercaseTypeToUppercase() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(71L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(20)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(notificationService.getNotificationsWithFilters(eq(71L), eq("TASK_ASSIGNED"), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listNotifications(" task_assigned ", null, 0, 20, model);
+
+        assertEquals("notifications/list", view);
+        assertEquals("TASK_ASSIGNED", model.getAttribute("type"));
+        verify(notificationService).getNotificationsWithFilters(eq(71L), eq("TASK_ASSIGNED"), isNull(), any());
     }
 
     @Test
@@ -139,6 +166,30 @@ class NotificationControllerTest {
         assertEquals(1, model.getAttribute("displayTotalPages"));
         assertEquals(0, model.getAttribute("lastPage"));
         verify(notificationService).getNotificationsWithFilters(eq(8L), isNull(), isNull(), any());
+    }
+
+    @Test
+    void listNotificationsDropsInvalidTypeCharactersFromFilter() {
+        NotificationService notificationService = mock(NotificationService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        NotificationController controller = new NotificationController(notificationService, tenantContextService, paginationConfig);
+
+        User user = new User();
+        user.setId(72L);
+        when(tenantContextService.getCurrentUser()).thenReturn(user);
+        when(paginationConfig.normalizePage(0)).thenReturn(0);
+        when(paginationConfig.normalizeSize(20)).thenReturn(20);
+        when(paginationConfig.getAllowedSizes()).thenReturn(List.of(10, 20, 50));
+        when(notificationService.getNotificationsWithFilters(eq(72L), isNull(), isNull(), any()))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        Model model = new ExtendedModelMap();
+        String view = controller.listNotifications("TASK<script>", null, 0, 20, model);
+
+        assertEquals("notifications/list", view);
+        assertEquals(null, model.getAttribute("type"));
+        verify(notificationService).getNotificationsWithFilters(eq(72L), isNull(), isNull(), any());
     }
 
     @Test
@@ -191,7 +242,7 @@ class NotificationControllerTest {
         assertEquals("notifications/list", view);
         assertEquals("TASK", model.getAttribute("type"));
         assertEquals(2, model.getAttribute("currentPage"));
-        assertEquals(3, model.getAttribute("lastPage"));
+        assertEquals(2, model.getAttribute("lastPage"));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(notificationService, times(2))
