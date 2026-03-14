@@ -129,6 +129,8 @@ public class InviteService {
         user.setFullName(fullName != null ? fullName.trim() : null);
         user.setEmail(invite.getEmail());
         user.setRole(invite.getRole());
+        user.setDepartment(defaultDepartmentForRole(invite.getRole()));
+        user.setPosition(defaultPositionForRole(invite.getRole()));
         user.setActive(true);
         user.setCompany(company);
         user.setCreatedAt(LocalDateTime.now(clock));
@@ -136,5 +138,31 @@ public class InviteService {
 
         invite.setUsedAt(LocalDateTime.now(clock));
         userInviteRepository.save(invite);
+    }
+
+    private String defaultDepartmentForRole(Role role) {
+        if (role == null) {
+            return null;
+        }
+        return switch (role) {
+            case SUPER_ADMIN, ADMIN, MANAGER -> "MANAGEMENT";
+            case WORKER_DESIGN -> "DESIGN";
+            case WORKER_PRINT -> "PRINTING";
+            case WORKER_GENERAL -> "PRINTING";
+        };
+    }
+
+    private String defaultPositionForRole(Role role) {
+        if (role == null) {
+            return null;
+        }
+        return switch (role) {
+            case SUPER_ADMIN -> "Super Admin";
+            case ADMIN -> "Admin";
+            case MANAGER -> "Manager";
+            case WORKER_DESIGN -> "Designer";
+            case WORKER_PRINT -> "Print Operator";
+            case WORKER_GENERAL -> "Production Worker";
+        };
     }
 }
