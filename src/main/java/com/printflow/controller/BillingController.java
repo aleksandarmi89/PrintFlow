@@ -36,6 +36,8 @@ import java.time.temporal.ChronoUnit;
 @Controller
 @RequestMapping("/admin/billing")
 public class BillingController extends BaseController {
+    private static final java.util.regex.Pattern LOCALIZED_MESSAGE_KEY_PATTERN =
+        java.util.regex.Pattern.compile("^[a-z0-9._-]{1,120}$");
 
     private final StripeBillingService stripeBillingService;
     private final TenantContextService tenantContextService;
@@ -80,11 +82,11 @@ public class BillingController extends BaseController {
         String normalizedError = normalizeOptional(error);
         String normalizedSuccess = normalizeOptional(success);
         model.addAttribute("error", normalizedError);
-        if (normalizedError != null && (normalizedError.startsWith("billing.") || normalizedError.startsWith("plan."))) {
+        if (isLocalizedMessageKey(normalizedError, "billing.", "plan.")) {
             model.addAttribute("errorKey", normalizedError);
         }
         model.addAttribute("success", normalizedSuccess);
-        if (normalizedSuccess != null && normalizedSuccess.startsWith("billing.")) {
+        if (isLocalizedMessageKey(normalizedSuccess, "billing.")) {
             model.addAttribute("successKey", normalizedSuccess);
         }
         Company company = tenantContextService.getCurrentCompany();
@@ -318,5 +320,17 @@ public class BillingController extends BaseController {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private boolean isLocalizedMessageKey(String value, String... allowedPrefixes) {
+        if (value == null || !LOCALIZED_MESSAGE_KEY_PATTERN.matcher(value).matches()) {
+            return false;
+        }
+        for (String allowedPrefix : allowedPrefixes) {
+            if (value.startsWith(allowedPrefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
