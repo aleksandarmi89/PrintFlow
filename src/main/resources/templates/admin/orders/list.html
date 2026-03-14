@@ -75,26 +75,40 @@
         
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg border border-gray-200">
+            <a th:href="@{/admin/orders(status=NEW, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.NEW}">New</div>
                 <div class="text-2xl font-bold text-blue-600" th:text="${newCount}">0</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-gray-200">
+            </a>
+            <a th:href="@{/admin/orders(status=IN_DESIGN, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-yellow-200 transition-colors">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.IN_DESIGN}">In Design</div>
                 <div class="text-2xl font-bold text-yellow-600" th:text="${designCount}">0</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-gray-200">
+            </a>
+            <a th:href="@{/admin/orders(status=IN_PRINT, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-200 transition-colors">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.IN_PRINT}">In Print</div>
                 <div class="text-2xl font-bold text-purple-600" th:text="${printCount}">0</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-gray-200">
+            </a>
+            <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-green-200 transition-colors">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.READY_FOR_DELIVERY}">Ready</div>
                 <div class="text-2xl font-bold text-green-600" th:text="${readyCount}">0</div>
-            </div>
+            </a>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
                 <div class="text-sm text-gray-600" th:text="#{orders.list.overdue}">Overdue</div>
                 <div class="text-2xl font-bold text-red-600" th:text="${overdueCount}">0</div>
             </div>
+        </div>
+
+        <div th:if="${status != null || (search != null and !#strings.isEmpty(search))}"
+             class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+            <span class="text-gray-600" th:text="#{orders.list.active_filters}">Active filters:</span>
+            <span th:if="${status != null}" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+                <span th:text="#{${status.messageKey}}">Status</span>
+            </span>
+            <span th:if="${search != null and !#strings.isEmpty(search)}"
+                  class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800"
+                  th:text="'\"' + ${search} + '\"'">"query"</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-gray-700" th:text="#{orders.list.filtered_results(${totalItems})}">0 results</span>
+            <a th:href="@{/admin/orders(size=${size})}" class="ml-auto text-blue-600 hover:text-blue-700 font-medium" th:text="#{common.clear}">Clear</a>
         </div>
         
         <!-- Orders Table -->
@@ -174,14 +188,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
-                                    (order.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
-                                     order.status == 'IN_DESIGN' ? 'bg-yellow-100 text-yellow-800' :
-                                     order.status == 'WAITING_CLIENT_APPROVAL' ? 'bg-orange-100 text-orange-800' :
-                                     order.status == 'IN_PRINT' ? 'bg-purple-100 text-purple-800' :
-                                     order.status == 'READY_FOR_DELIVERY' ? 'bg-green-100 text-green-800' :
-                                     order.status == 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
-                                     'bg-red-100 text-red-800')}">
+                                <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + order.statusBadgeClass}">
                                     <span th:text="#{${order.status.messageKey}}">Status</span>
                                 </span>
                             </td>
@@ -276,7 +283,7 @@
         </div>
         
         <!-- Quick Actions -->
-        <div class="mt-8 grid grid-cols-1 md:grid-c-3 gap-6">
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
                 <h3 class="text-lg font-semibold text-blue-900 mb-4" th:text="#{orders.list.tips_title}">📋 Order Management Tips</h3>
                 <ul class="space-y-3 text-blue-800">
@@ -290,7 +297,7 @@
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        <span th:text="#{orders.list.tip_assign}">Assign orders to specific workers for better accountability.</span>
+                        <span th:text="#{orders.list.tip_assign}">Assign orders to specific team members for better accountability.</span>
                     </li>
                     <li class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">

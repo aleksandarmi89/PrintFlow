@@ -144,6 +144,10 @@
     </div>
 
     <div class="card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm text-gray-600" th:text="#{pricing.products.count_label(${#lists.size(products)})}">Total products: 0</p>
+            <a th:href="@{/admin/pricing/products}" class="text-sm text-blue-600 hover:text-blue-700" th:text="#{common.refresh}">Refresh</a>
+        </div>
         <div class="overflow-x-auto">
         <table class="min-w-[920px] w-full text-sm">
             <thead class="text-gray-500">
@@ -191,7 +195,23 @@
                 </td>
             </tr>
             <tr th:if="${products.empty}">
-                <td colspan="6" class="py-4 text-gray-500" th:text="#{pricing.products.empty}">No products yet.</td>
+                <td colspan="6" class="py-12">
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <svg class="h-10 w-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V7a2 2 0 00-2-2h-3V3H9v2H6a2 2 0 00-2 2v6m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4m5 4h6"/>
+                        </svg>
+                        <h3 class="text-sm font-semibold text-gray-900" th:text="#{pricing.products.empty_title}">No products yet</h3>
+                        <p class="mt-1 text-sm text-gray-500" th:text="#{pricing.products.empty}">No products yet.</p>
+                        <form th:action="@{/admin/pricing/products/templates}" method="post" class="mt-4">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit"
+                                    th:disabled="${billingExpired}"
+                                    th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
+                                    class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                                    th:text="#{pricing.products.templates}">Create from templates</button>
+                        </form>
+                    </div>
+                </td>
             </tr>
             </tbody>
         </table>

@@ -50,14 +50,7 @@
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{orders.details.order_status}">Order Status</h2>
                     <div class="flex flex-wrap items-center gap-4">
                         <div class="flex-1">
-                            <span th:class="${'px-3 py-2 text-sm font-medium rounded-full ' + 
-                                (order.status == 'NEW' ? 'bg-blue-100 text-blue-800' :
-                                 order.status == 'IN_DESIGN' ? 'bg-yellow-100 text-yellow-800' :
-                                 order.status == 'WAITING_CLIENT_APPROVAL' ? 'bg-orange-100 text-orange-800' :
-                                 order.status == 'IN_PRINT' ? 'bg-purple-100 text-purple-800' :
-                                 order.status == 'READY_FOR_DELIVERY' ? 'bg-green-100 text-green-800' :
-                                 order.status == 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
-                                 'bg-red-100 text-red-800')}">
+                            <span th:class="${'px-3 py-2 text-sm font-medium rounded-full ' + order.statusBadgeClass}">
                                     <span th:text="#{${order.status.messageKey}}">Status</span>
                             </span>
                         </div>
