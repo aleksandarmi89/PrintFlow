@@ -80,9 +80,12 @@
                         </div>
                     </div>
                     <div class="text-right text-xs text-gray-500 space-y-1">
-                        <div th:if="${companyBrand != null && companyBrand.email != null}" th:text="${companyBrand.email}">email</div>
-                        <div th:if="${companyBrand != null && companyBrand.phone != null}" th:text="${companyBrand.phone}">phone</div>
-                        <div th:if="${companyBrand != null && companyBrand.website != null}" th:text="${companyBrand.website}">website</div>
+                        <div th:if="${(companyBrand != null && companyBrand.email != null) || (footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail))}"
+                             th:text="${companyBrand != null && companyBrand.email != null ? companyBrand.email : footerCompanyEmail}">email</div>
+                        <div th:if="${(companyBrand != null && companyBrand.phone != null) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
+                             th:text="${companyBrand != null && companyBrand.phone != null ? companyBrand.phone : footerCompanyPhone}">phone</div>
+                        <div th:if="${(companyBrand != null && companyBrand.website != null) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
+                             th:text="${companyBrand != null && companyBrand.website != null ? companyBrand.website : footerCompanyWebsite}">website</div>
                     </div>
                 </div>
                 <form th:action="@{/public/track}" method="post" class="space-y-6">
