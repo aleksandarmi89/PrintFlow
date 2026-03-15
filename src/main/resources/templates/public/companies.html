@@ -107,17 +107,32 @@
     </div>
 </main>
 
-<footer class="bg-white border-t border-gray-200 mt-12">
-    <div class="container mx-auto px-4 py-6">
-        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-sm text-gray-600">
-            <p>
-                &copy; <span th:text="${currentYear}">2024</span>
-                <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>.
-                <span th:text="#{public.brand_footer_rights}">All rights reserved.</span>
-            </p>
-            <div class="flex items-center gap-4">
-                <a th:href="@{/public/track}" class="hover:text-blue-600" th:text="#{footer.track_order}">Track order</a>
-                <a th:href="@{/public/contact}" class="hover:text-blue-600" th:text="#{footer.contact}">Contact</a>
+<footer class="mt-12 bg-gray-800 text-white">
+    <div class="container mx-auto px-4 py-7">
+        <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center gap-3">
+                <div class="h-12 w-12 shrink-0 flex items-center justify-center">
+                    <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-12 object-contain"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <span style="display:none" class="h-12 w-12 rounded-lg bg-blue-600 text-white font-bold items-center justify-center">PF</span>
+                </div>
+                <div>
+                    <div class="text-2xl font-extrabold tracking-tight text-white">ProPrintFlow</div>
+                    <div class="text-[11px] tracking-[0.2em] uppercase text-blue-100/90" th:text="#{footer.brand_tagline}">
+                        Professional Print Workflow
+                    </div>
+                </div>
+            </div>
+            <div class="text-sm text-gray-300">
+                <p>
+                    &copy; <span th:text="${currentYear}">2024</span>
+                    <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>.
+                    <span th:text="#{public.brand_footer_rights}">All rights reserved.</span>
+                </p>
+                <div class="mt-2 flex flex-wrap items-center gap-4">
+                    <a th:href="@{/public/track}" class="hover:text-white" th:text="#{footer.track_order}">Track order</a>
+                    <a th:href="@{/public/contact}" class="hover:text-white" th:text="#{footer.contact}">Contact</a>
+                </div>
             </div>
         </div>
     </div>
