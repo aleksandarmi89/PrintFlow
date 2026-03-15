@@ -17,12 +17,23 @@
                th:text="${errorKey != null ? #messages.msg(errorKey) : (error != null ? error : #messages.msg('order_not_found.message'))}">
                 The tracking link is invalid or has expired. Please check the link or contact the print shop.
             </p>
+            <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left">
+                <h2 class="text-sm font-semibold text-blue-900" th:text="#{order_not_found.smart.title}">Quick recovery steps</h2>
+                <ul class="mt-2 space-y-1 text-xs text-blue-800">
+                    <li th:text="#{order_not_found.smart.step1}">Copy the full tracking code from your email (including ORD-...).</li>
+                    <li th:text="#{order_not_found.smart.step2}">Open Track page and select the correct company before searching.</li>
+                    <li th:text="#{order_not_found.smart.step3}">If still not found, contact the print shop with your order details.</li>
+                </ul>
+            </div>
             <div class="mt-6 flex items-center justify-center gap-3">
                 <a th:href="@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{order_not_found.track_another}">
                     Track another order
                 </a>
                 <a th:href="@{/public/(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50" th:text="#{order_not_found.public_home}">
                     Public home
+                </a>
+                <a th:href="@{/public/contact(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50" th:text="#{order_not_found.contact}">
+                    Contact
                 </a>
             </div>
         </div>
