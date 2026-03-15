@@ -21,6 +21,28 @@
                         <li th:text="#{contact.smart.step2}">Need a quote? Submit a public request with files and dimensions.</li>
                         <li th:text="#{contact.smart.step3}">Need account help? Include company name and user email.</li>
                     </ul>
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                        <div class="sm:col-span-2">
+                            <label for="contactIntent" class="block text-xs font-medium text-blue-900 mb-1"
+                                   th:text="#{contact.smart.intent_label}">
+                                What do you need?
+                            </label>
+                            <select id="contactIntent"
+                                    class="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800">
+                                <option value="tracking" th:text="#{contact.smart.intent.tracking}">Order status update</option>
+                                <option value="quote" th:text="#{contact.smart.intent.quote}">Quote / pricing</option>
+                                <option value="account" th:text="#{contact.smart.intent.account}">Account support</option>
+                                <option value="other" th:text="#{contact.smart.intent.other}">Other question</option>
+                            </select>
+                        </div>
+                        <a id="contactSmartCta"
+                           th:href="@{/public/track}"
+                           class="inline-flex justify-center rounded-lg bg-white border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                           th:text="#{contact.smart.intent.cta.tracking}">
+                            Open tracking
+                        </a>
+                    </div>
+                    <p id="contactSmartAdvice" class="mt-2 text-xs text-blue-900"></p>
                 </div>
             </div>
 
@@ -72,5 +94,58 @@
     </main>
 
     <div th:replace="~{layout/footer :: footer}"></div>
+    <div id="contactSmartI18n"
+         class="hidden"
+         th:attr="data-advice-tracking=#{contact.smart.intent.advice.tracking},
+                  data-advice-quote=#{contact.smart.intent.advice.quote},
+                  data-advice-account=#{contact.smart.intent.advice.account},
+                  data-advice-other=#{contact.smart.intent.advice.other},
+                  data-cta-tracking=#{contact.smart.intent.cta.tracking},
+                  data-cta-quote=#{contact.smart.intent.cta.quote},
+                  data-cta-account=#{contact.smart.intent.cta.account},
+                  data-cta-other=#{contact.smart.intent.cta.other}">
+    </div>
+    <script>
+        (function () {
+            const select = document.getElementById('contactIntent');
+            const advice = document.getElementById('contactSmartAdvice');
+            const cta = document.getElementById('contactSmartCta');
+            const i18nEl = document.getElementById('contactSmartI18n');
+            if (!select || !advice || !cta || !i18nEl) return;
+
+            const map = {
+                tracking: {
+                    advice: i18nEl.getAttribute('data-advice-tracking'),
+                    cta: i18nEl.getAttribute('data-cta-tracking'),
+                    href: '/public/track'
+                },
+                quote: {
+                    advice: i18nEl.getAttribute('data-advice-quote'),
+                    cta: i18nEl.getAttribute('data-cta-quote'),
+                    href: '/public/companies'
+                },
+                account: {
+                    advice: i18nEl.getAttribute('data-advice-account'),
+                    cta: i18nEl.getAttribute('data-cta-account'),
+                    href: '/login'
+                },
+                other: {
+                    advice: i18nEl.getAttribute('data-advice-other'),
+                    cta: i18nEl.getAttribute('data-cta-other'),
+                    href: '/public/contact'
+                }
+            };
+
+            function updateIntentHint() {
+                const key = select.value in map ? select.value : 'other';
+                advice.textContent = map[key].advice || '';
+                cta.textContent = map[key].cta || '';
+                cta.setAttribute('href', map[key].href);
+            }
+
+            select.addEventListener('change', updateIntentHint);
+            updateIntentHint();
+        })();
+    </script>
 </body>
 </html>
