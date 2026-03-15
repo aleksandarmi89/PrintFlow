@@ -17,7 +17,7 @@
                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                 <span style="display:none" class="w-16 h-16 rounded-lg bg-blue-600 text-white items-center justify-center">PF</span>
             </span>
-            <span class="text-lg font-bold text-gray-800">ProPrintFlow</span>
+            <span class="text-lg font-bold text-gray-800 whitespace-nowrap">ProPrintFlow</span>
         </a>
         <div class="flex items-center gap-3">
             <a th:href="@{/public/track}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.track_order}">Track order</a>
@@ -71,5 +71,21 @@
         </article>
     </div>
 </main>
+
+<footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-sm text-gray-600">
+            <p>
+                &copy; <span th:text="${currentYear}">2024</span>
+                <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>.
+                <span th:text="#{public.brand_footer_rights}">All rights reserved.</span>
+            </p>
+            <div class="flex items-center gap-4">
+                <a th:href="@{/public/track}" class="hover:text-blue-600" th:text="#{footer.track_order}">Track order</a>
+                <a th:href="@{/public/contact}" class="hover:text-blue-600" th:text="#{footer.contact}">Contact</a>
+            </div>
+        </div>
+    </div>
+</footer>
 </body>
 </html>
