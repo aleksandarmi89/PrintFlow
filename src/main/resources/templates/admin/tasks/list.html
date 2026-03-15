@@ -26,6 +26,11 @@
                 <p class="text-gray-600 mt-2" th:text="#{tasks.review.subtitle}">
                     Approve completed tasks
                 </p>
+                <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                    <span th:text="#{tasks.review.smart_hint}">
+                        Smart tip: review AWAITING_REVIEW first, then switch to IN_PROGRESS to catch potential blockers.
+                    </span>
+                </div>
             </div>
             <a th:href="@{/admin/tasks/create}"
                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -148,13 +153,27 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{tasks.review.empty.title}">
                                 No tasks
                             </h3>
-                            <p class="mt-1 text-sm text-gray-500" th:text="#{tasks.review.empty.desc}">
+                            <p class="mt-1 text-sm text-gray-500"
+                               th:if="${status == 'AWAITING_REVIEW'}"
+                               th:text="#{tasks.review.empty.desc}">
                                 Nothing to review.
+                            </p>
+                            <p class="mt-1 text-sm text-gray-500"
+                               th:if="${status != 'AWAITING_REVIEW'}"
+                               th:text="#{tasks.review.empty.filtered_desc}">
+                                No tasks found for current status filter.
                             </p>
                             <p class="mt-2 text-xs text-gray-400" th:if="${scopeCompanyName != null}">
                                 <span th:text="#{tasks.review.scope.only_company}">Showing tasks for company:</span>
                                 <span class="font-medium" th:text="${scopeCompanyName}"></span>.
                             </p>
+                            <div class="mt-5" th:if="${status != 'AWAITING_REVIEW'}">
+                                <a th:href="@{/admin/tasks(status='AWAITING_REVIEW',size=${size})}"
+                                   class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                   th:text="#{tasks.review.empty.reset_to_review}">
+                                    Show Awaiting Review
+                                </a>
+                            </div>
                         </div>
                     </td>
                 </tr>
