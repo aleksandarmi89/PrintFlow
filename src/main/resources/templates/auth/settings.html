@@ -24,6 +24,11 @@
 
                 <div class="mt-6 border-t border-gray-200 pt-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{auth.settings.change_password}">Change Password</h2>
+                    <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                        <p id="passwordSmartHint" class="text-xs text-sky-800" th:text="#{auth.settings.smart.initial}">
+                            Use a strong password and avoid reusing your current one.
+                        </p>
+                    </div>
                     <form th:action="@{/settings/password}" method="post" class="space-y-4">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <div>
@@ -42,6 +47,9 @@
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                             <p class="mt-1 text-xs text-gray-500" th:text="#{auth.password_min}">Password must be at least 6 characters long.</p>
                             <p id="passwordMismatchHint" class="mt-1 hidden text-xs text-red-600" th:text="#{auth.password_mismatch}">Passwords do not match!</p>
+                            <p id="passwordWeakHint" class="mt-1 hidden text-xs text-amber-700" th:text="#{auth.settings.smart.weak}">
+                                Password is weak. Add upper/lowercase letters and numbers.
+                            </p>
                         </div>
                         <div class="flex justify-end">
                             <button id="updatePasswordBtn" type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" th:text="#{auth.settings.update_password}">Update password</button>
@@ -53,30 +61,71 @@
     </main>
 
     <div th:replace="~{layout/footer :: footer}"></div>
-    <script>
+    <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', () => {
+            const currentPassword = document.getElementById('currentPassword');
             const newPassword = document.getElementById('newPassword');
             const confirmPassword = document.getElementById('confirmPassword');
             const mismatchHint = document.getElementById('passwordMismatchHint');
+            const weakHint = document.getElementById('passwordWeakHint');
+            const smartHint = document.getElementById('passwordSmartHint');
             const submitBtn = document.getElementById('updatePasswordBtn');
+            const i18n = {
+                initial: /*[[#{auth.settings.smart.initial}]]*/ 'Use a strong password and avoid reusing your current one.',
+                ready: /*[[#{auth.settings.smart.ready}]]*/ 'Password update looks safe and ready to submit.',
+                missingCurrent: /*[[#{auth.settings.smart.missing_current}]]*/ 'Enter current password.',
+                missingNew: /*[[#{auth.settings.smart.missing_new}]]*/ 'Enter new password.',
+                missingConfirm: /*[[#{auth.settings.smart.missing_confirm}]]*/ 'Confirm new password.',
+                reused: /*[[#{auth.settings.smart.reused}]]*/ 'New password should be different from current password.',
+                weak: /*[[#{auth.settings.smart.weak}]]*/ 'Password is weak. Add upper/lowercase letters, numbers, and a symbol.',
+                mismatch: /*[[#{auth.settings.smart.mismatch}]]*/ 'Passwords must match.'
+            };
 
-            function validatePasswordForm() {
-                if (!newPassword || !confirmPassword || !submitBtn) {
-                    return;
-                }
-                const newValue = newPassword.value || '';
-                const confirmValue = confirmPassword.value || '';
-                const hasBoth = newValue.length > 0 || confirmValue.length > 0;
-                const validLength = newValue.length >= 6 && confirmValue.length >= 6;
-                const matches = newValue === confirmValue;
-                const valid = !hasBoth || (validLength && matches);
-
-                if (mismatchHint) {
-                    mismatchHint.classList.toggle('hidden', !hasBoth || matches);
-                }
-                submitBtn.disabled = !valid;
+            function passwordScore(value) {
+                if (!value) return 0;
+                let score = 0;
+                if (value.length >= 8) score += 1;
+                if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
+                if (/[0-9]/.test(value)) score += 1;
+                if (/[^A-Za-z0-9]/.test(value)) score += 1;
+                return score;
             }
 
+            function validatePasswordForm() {
+                if (!currentPassword || !newPassword || !confirmPassword || !submitBtn) {
+                    return;
+                }
+                const currentValue = currentPassword.value || '';
+                const newValue = newPassword.value || '';
+                const confirmValue = confirmPassword.value || '';
+                const hasAny = currentValue.length > 0 || newValue.length > 0 || confirmValue.length > 0;
+                const validLength = newValue.length >= 6 && confirmValue.length >= 6;
+                const matches = newValue === confirmValue;
+                const reused = currentValue.length > 0 && newValue.length > 0 && currentValue === newValue;
+                const strongEnough = passwordScore(newValue) >= 3;
+                const valid = !hasAny || (currentValue.length > 0 && validLength && matches && !reused && strongEnough);
+
+                if (mismatchHint) {
+                    mismatchHint.classList.toggle('hidden', !hasAny || matches);
+                }
+                if (weakHint) {
+                    weakHint.classList.toggle('hidden', !hasAny || strongEnough);
+                }
+                submitBtn.disabled = !valid;
+
+                if (smartHint) {
+                    const issues = [];
+                    if (!currentValue) issues.push(i18n.missingCurrent);
+                    if (!newValue) issues.push(i18n.missingNew);
+                    if (!confirmValue) issues.push(i18n.missingConfirm);
+                    if (newValue && confirmValue && !matches) issues.push(i18n.mismatch);
+                    if (reused) issues.push(i18n.reused);
+                    if (newValue && !strongEnough) issues.push(i18n.weak);
+                    smartHint.textContent = issues.length > 0 ? issues[0] : i18n.ready;
+                }
+            }
+
+            currentPassword?.addEventListener('input', validatePasswordForm);
             newPassword?.addEventListener('input', validatePasswordForm);
             confirmPassword?.addEventListener('input', validatePasswordForm);
             validatePasswordForm();
