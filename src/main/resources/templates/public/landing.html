@@ -12,15 +12,15 @@
     <!-- Navigation -->
     <nav class="bg-white shadow-lg">
         <div class="container mx-auto px-4">
-            <div class="py-2 flex flex-col gap-3 md:gap-0 md:h-16 md:flex-row md:justify-between md:items-center">
+            <div class="py-2 flex flex-col gap-3 md:gap-0 md:h-20 md:flex-row md:justify-between md:items-center">
                 <div class="flex items-center">
                     <a th:href="@{/}" class="flex items-center space-x-2">
-                        <div class="h-12 md:h-14 flex items-center justify-center">
-                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 md:h-12 w-auto object-contain">
-                            <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 md:h-12 flex items-center justify-center">
-                                <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-10 md:h-12 w-auto object-contain"
+                        <div class="h-14 md:h-16 flex items-center justify-center">
+                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-14 md:h-16 w-auto object-contain">
+                            <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-14 md:h-16 flex items-center justify-center">
+                                <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-14 md:h-16 w-auto object-contain"
                                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                                <div style="display:none" class="w-10 h-10 bg-blue-600 rounded-lg items-center justify-center">
+                                <div style="display:none" class="w-14 h-14 bg-blue-600 rounded-lg items-center justify-center">
                                     <span class="text-white font-bold">PF</span>
                                 </div>
                             </div>
