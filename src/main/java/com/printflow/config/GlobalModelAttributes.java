@@ -6,7 +6,6 @@ import com.printflow.service.MailSettingsService;
 import com.printflow.service.NotificationService;
 import com.printflow.service.TenantContextService;
 import com.printflow.service.BillingAccessService;
-import com.printflow.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -101,7 +100,7 @@ public class GlobalModelAttributes {
     }
 
     private void addPlatformFooterDefaults(Model model) {
-        userRepository.findByRoleAndActiveTrue(User.Role.SUPER_ADMIN).stream().findFirst().ifPresent(superAdmin -> {
+        userRepository.findFirstActiveSuperAdmin().ifPresent(superAdmin -> {
             if (superAdmin.getFullName() != null && !superAdmin.getFullName().isBlank()) {
                 model.addAttribute("footerCompanyName", superAdmin.getFullName());
             }

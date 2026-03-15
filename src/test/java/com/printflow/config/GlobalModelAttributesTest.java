@@ -62,7 +62,7 @@ class GlobalModelAttributesTest {
         when(tenantContextService.isSuperAdmin()).thenReturn(false);
         when(notificationService.getUnreadNotificationCount(1L)).thenReturn(0);
         when(notificationService.getRecentNotifications(1L, 5)).thenReturn(Collections.emptyList());
-        when(userRepository.findByRoleAndActiveTrue(com.printflow.entity.User.Role.SUPER_ADMIN)).thenReturn(Collections.emptyList());
+        when(userRepository.findFirstActiveSuperAdmin()).thenReturn(Optional.empty());
         when(mailSettingsRepository.findByCompany_Id(10L)).thenReturn(Optional.of(settings));
         when(mailSettingsService.isConfiguredWithLegacyFallback(company, settings)).thenReturn(true);
         when(billingAccessService.isBillingActive(10L)).thenReturn(true);
@@ -107,7 +107,7 @@ class GlobalModelAttributesTest {
         when(tenantContextService.isSuperAdmin()).thenReturn(false);
         when(notificationService.getUnreadNotificationCount(2L)).thenReturn(0);
         when(notificationService.getRecentNotifications(2L, 5)).thenReturn(Collections.emptyList());
-        when(userRepository.findByRoleAndActiveTrue(com.printflow.entity.User.Role.SUPER_ADMIN)).thenReturn(Collections.emptyList());
+        when(userRepository.findFirstActiveSuperAdmin()).thenReturn(Optional.empty());
         when(mailSettingsRepository.findByCompany_Id(11L)).thenReturn(Optional.empty());
         when(mailSettingsService.isConfiguredWithLegacyFallback(company, null)).thenReturn(true);
         when(billingAccessService.isBillingActive(11L)).thenReturn(true);
@@ -148,7 +148,7 @@ class GlobalModelAttributesTest {
         when(tenantContextService.isSuperAdmin()).thenReturn(false);
         when(notificationService.getUnreadNotificationCount(3L)).thenReturn(0);
         when(notificationService.getRecentNotifications(3L, 5)).thenReturn(Collections.emptyList());
-        when(userRepository.findByRoleAndActiveTrue(com.printflow.entity.User.Role.SUPER_ADMIN)).thenReturn(Collections.emptyList());
+        when(userRepository.findFirstActiveSuperAdmin()).thenReturn(Optional.empty());
         when(mailSettingsRepository.findByCompany_Id(12L)).thenReturn(Optional.empty());
         when(mailSettingsService.isConfiguredWithLegacyFallback(company, null)).thenReturn(false);
         when(billingAccessService.isBillingActive(12L)).thenReturn(true);

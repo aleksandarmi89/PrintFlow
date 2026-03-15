@@ -36,6 +36,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByCompany_Id(Long companyId, Pageable pageable);
     Page<User> findByCompany_IdAndActiveTrue(Long companyId, Pageable pageable);
     List<User> findByRoleAndActiveTrue(Role role);
+    @Query(value = "SELECT * FROM users WHERE role = 'SUPER_ADMIN' AND active = true ORDER BY id ASC LIMIT 1", nativeQuery = true)
+    Optional<User> findFirstActiveSuperAdmin();
     List<User> findByCompany_IdAndRoleAndActiveTrue(Long companyId, Role role);
     
     // Metode za radnike - ISPRAVLJENE
