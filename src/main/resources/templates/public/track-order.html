@@ -120,6 +120,25 @@
                                 <span th:text="${trackCompany.billingEmail}">billing@example.com</span>
                             </div>
                         </div>
+                        <div th:if="${trackCompany != null}" class="mt-3 flex flex-wrap gap-2">
+                            <a th:href="@{/p/company/{id}/order(id=${trackCompany.id})}"
+                               class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                               th:text="#{track.company_profile.open_request}">
+                                Send request
+                            </a>
+                            <a th:if="${trackCompany.email != null && !#strings.isEmpty(trackCompany.email)}"
+                               th:href="'mailto:' + ${trackCompany.email}"
+                               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                               th:text="#{track.company_profile.email_company}">
+                                Email company
+                            </a>
+                            <a th:if="${trackCompany.phone != null && !#strings.isEmpty(trackCompany.phone)}"
+                               th:href="'tel:' + ${trackCompany.phone}"
+                               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                               th:text="#{track.company_profile.call_company}">
+                                Call company
+                            </a>
+                        </div>
                         <p th:if="${trackCompany == null}" class="mt-2 text-xs text-gray-500" th:text="#{track.company_profile.select_hint}">
                             Select a company to see full business profile details.
                         </p>
