@@ -70,6 +70,16 @@
                 <p id="visibleClientsHint"
                    class="mt-3 text-xs text-gray-500"
                    th:attr="data-label=#{clients.visible_count}"></p>
+                <div id="clientSmartNoResults"
+                     class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <span th:text="#{clients.smart.no_results}">No clients match the current quick filters.</span>
+                    <button id="resetClientSmartFilters"
+                            type="button"
+                            class="ml-2 font-semibold underline hover:no-underline"
+                            th:text="#{clients.smart.no_results.reset}">
+                        Reset filters
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -235,6 +245,11 @@
                                     <p class="mt-1 text-sm text-gray-500" th:text="#{clients.no_clients_desc}">
                                         Get started by creating a new client.
                                     </p>
+                                    <ul class="mt-3 inline-block text-left text-sm text-gray-500 space-y-1">
+                                        <li th:text="#{clients.smart.empty.tip1}">• Add your first client</li>
+                                        <li th:text="#{clients.smart.empty.tip2}">• Create the first order</li>
+                                        <li th:text="#{clients.smart.empty.tip3}">• Track status updates from Orders</li>
+                                    </ul>
                                     <div class="mt-6">
                                         <a th:href="@{/admin/clients/create}" 
                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
@@ -305,6 +320,8 @@
             const clientSearchInput = document.getElementById('clientSearchInput');
             const clientStatusFilter = document.getElementById('clientStatusFilter');
             const visibleClientsHint = document.getElementById('visibleClientsHint');
+            const smartNoResults = document.getElementById('clientSmartNoResults');
+            const resetSmartFiltersBtn = document.getElementById('resetClientSmartFilters');
 
             function applyClientFilters() {
                 const rows = Array.from(document.querySelectorAll('tbody tr.client-row'));
@@ -329,6 +346,9 @@
                     const label = visibleClientsHint.getAttribute('data-label') || '';
                     visibleClientsHint.textContent = `${label} ${visibleCount}/${total}`;
                 }
+                if (smartNoResults) {
+                    smartNoResults.classList.toggle('hidden', !(rows.length > 0 && visibleCount === 0));
+                }
             }
 
             if (clientSearchInput) {
@@ -336,6 +356,13 @@
             }
             if (clientStatusFilter) {
                 clientStatusFilter.addEventListener('change', applyClientFilters);
+            }
+            if (resetSmartFiltersBtn) {
+                resetSmartFiltersBtn.addEventListener('click', () => {
+                    if (clientSearchInput) clientSearchInput.value = '';
+                    if (clientStatusFilter) clientStatusFilter.value = 'all';
+                    applyClientFilters();
+                });
             }
             applyClientFilters();
         });

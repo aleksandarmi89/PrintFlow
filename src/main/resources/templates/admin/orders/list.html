@@ -258,13 +258,22 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                     <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{orders.list.empty_title}">No orders found</h3>
-                                    <p class="mt-1 text-sm text-gray-500" th:text="#{orders.list.empty_desc}">
+                                    <p class="mt-1 text-sm text-gray-500" th:if="${status == null && (search == null || #strings.isEmpty(search))}" th:text="#{orders.list.empty_desc}">
                                         Get started by creating a new order.
+                                    </p>
+                                    <p class="mt-1 text-sm text-gray-500" th:if="${status != null || (search != null && !#strings.isEmpty(search))}" th:text="#{orders.list.empty_filtered_desc}">
+                                        No orders match your current filters. Clear filters to see all orders.
                                     </p>
                                     <div class="mt-6">
                                         <a th:href="@{/admin/orders/create}" 
                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
                                             <span th:text="#{orders.list.new_order}">+ New Order</span>
+                                        </a>
+                                        <a th:if="${status != null || (search != null && !#strings.isEmpty(search))}"
+                                           th:href="@{/admin/orders(size=${size})}"
+                                           class="ml-2 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                                           th:text="#{orders.list.empty_filtered_clear}">
+                                            Clear filters
                                         </a>
                                     </div>
                                 </div>
