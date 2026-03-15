@@ -1,6 +1,7 @@
 package com.printflow.service;
 
 import com.printflow.dto.CompanyDTO;
+import com.printflow.dto.EmailMessage;
 import com.printflow.entity.Company;
 import com.printflow.repository.CompanyRepository;
 import com.printflow.repository.UserRepository;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.printflow.util.SlugUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,7 @@ public class CompanyService {
     private final int trialDays;
     private final TemplateSeederService templateSeederService;
     private final NotificationService notificationService;
+    private final EmailService emailService;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BillingAccessService billingAccessService;
 
@@ -39,7 +42,8 @@ public class CompanyService {
                           com.printflow.storage.FileStorage fileStorage,
                           @Value("${app.billing.trial-days:14}") int trialDays,
                           TemplateSeederService templateSeederService,
-                          NotificationService notificationService) {
+                          NotificationService notificationService,
+                          EmailService emailService) {
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
         this.clientRepository = clientRepository;
@@ -48,6 +52,7 @@ public class CompanyService {
         this.trialDays = trialDays;
         this.templateSeederService = templateSeederService;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     public List<CompanyDTO> getCompanies(String search) {
@@ -124,6 +129,12 @@ public class CompanyService {
         company.setPhone(normalizeNullable(dto.getPhone()));
         company.setAddress(normalizeNullable(dto.getAddress()));
         company.setWebsite(normalizeNullable(dto.getWebsite()));
+        company.setLegalName(normalizeNullable(dto.getLegalName()));
+        company.setTaxId(normalizeNullable(dto.getTaxId()));
+        company.setRegistrationNumber(normalizeNullable(dto.getRegistrationNumber()));
+        company.setBankAccount(normalizeNullable(dto.getBankAccount()));
+        company.setBankName(normalizeNullable(dto.getBankName()));
+        company.setBillingEmail(normalizeNullable(dto.getBillingEmail()));
         company.setPrimaryColor(normalizeNullable(dto.getPrimaryColor()));
         company.setCurrency(normalizeCurrency(dto.getCurrency()));
         company.setActive(dto.isActive());
@@ -153,6 +164,12 @@ public class CompanyService {
         company.setPhone(normalizeNullable(dto.getPhone()));
         company.setAddress(normalizeNullable(dto.getAddress()));
         company.setWebsite(normalizeNullable(dto.getWebsite()));
+        company.setLegalName(normalizeNullable(dto.getLegalName()));
+        company.setTaxId(normalizeNullable(dto.getTaxId()));
+        company.setRegistrationNumber(normalizeNullable(dto.getRegistrationNumber()));
+        company.setBankAccount(normalizeNullable(dto.getBankAccount()));
+        company.setBankName(normalizeNullable(dto.getBankName()));
+        company.setBillingEmail(normalizeNullable(dto.getBillingEmail()));
         company.setPrimaryColor(normalizeNullable(dto.getPrimaryColor()));
         company.setCurrency(normalizeCurrency(dto.getCurrency()));
         company.setSmtpHost(normalizeNullable(dto.getSmtpHost()));
@@ -220,6 +237,35 @@ public class CompanyService {
         notificationService.sendCompanySmtpTest(company, toEmail);
     }
 
+    public void sendSuperAdminCompanyMessage(Long companyId,
+                                             String toEmail,
+                                             String subject,
+                                             String body,
+                                             String messageType) {
+        Company company = companyRepository.findById(companyId)
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+        String normalizedTo = normalizeNullable(toEmail);
+        String normalizedSubject = normalizeNullable(subject);
+        String normalizedBody = normalizeNullable(body);
+        String normalizedType = normalizeNullable(messageType);
+        if (normalizedTo == null) {
+            throw new RuntimeException("Company recipient email is required");
+        }
+        if (normalizedSubject == null) {
+            throw new RuntimeException("Email subject is required");
+        }
+        if (normalizedBody == null) {
+            throw new RuntimeException("Email body is required");
+        }
+        EmailMessage message = new EmailMessage();
+        message.setTo(normalizedTo);
+        message.setSubject(normalizedSubject);
+        message.setTextBody(normalizedBody);
+        message.setHtmlBody(buildSuperAdminHtmlMessage(company, normalizedBody, normalizedType));
+        message.setMetadata(Map.of("type", normalizedType != null ? normalizedType : "general"));
+        emailService.sendNow(message, null, "superadmin-company-message");
+    }
+
     public void updateLogo(Long id, org.springframework.web.multipart.MultipartFile logoFile) throws java.io.IOException {
         if (logoFile == null || logoFile.isEmpty()) {
             return;
@@ -282,6 +328,12 @@ public class CompanyService {
         dto.setPhone(company.getPhone());
         dto.setAddress(company.getAddress());
         dto.setWebsite(company.getWebsite());
+        dto.setLegalName(company.getLegalName());
+        dto.setTaxId(company.getTaxId());
+        dto.setRegistrationNumber(company.getRegistrationNumber());
+        dto.setBankAccount(company.getBankAccount());
+        dto.setBankName(company.getBankName());
+        dto.setBillingEmail(company.getBillingEmail());
         dto.setPrimaryColor(company.getPrimaryColor());
         dto.setLogoPath(company.getLogoPath());
         dto.setCurrency(company.getCurrency());
@@ -322,5 +374,24 @@ public class CompanyService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String buildSuperAdminHtmlMessage(Company company, String body, String messageType) {
+        String safeBody = body
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
+            .replace("\n", "<br/>");
+        String typeLabel = messageType != null ? messageType.toUpperCase() : "GENERAL";
+        String companyName = company.getName() != null ? company.getName() : "Company";
+        return """
+            <div style="font-family:Arial,sans-serif;color:#111827;">
+              <p style="margin:0 0 8px 0;font-size:12px;color:#6b7280;">PrintFlow Super Admin • %s</p>
+              <h2 style="margin:0 0 12px 0;">%s</h2>
+              <div style="line-height:1.6;">%s</div>
+            </div>
+            """.formatted(typeLabel, companyName, safeBody);
     }
 }

@@ -231,6 +231,24 @@ public class CompanyController extends BaseController {
         return redirectWithSuccess("/admin/companies/edit/" + id, "billing.override.updated", model);
     }
 
+    @PostMapping("/edit/{id}/send-message")
+    public String sendCompanyMessage(@PathVariable Long id,
+                                     @RequestParam(required = false) String toEmail,
+                                     @RequestParam(required = false) String subject,
+                                     @RequestParam(required = false) String body,
+                                     @RequestParam(required = false, defaultValue = "general") String type,
+                                     Model model) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
+        }
+        try {
+            companyService.sendSuperAdminCompanyMessage(id, toEmail, subject, body, type);
+            return redirectWithSuccess("/admin/companies/edit/" + id, "admin.companies.message.sent", model);
+        } catch (RuntimeException e) {
+            return redirectWithError("/admin/companies/edit/" + id, mapCompanyErrorToKey(e.getMessage()), model);
+        }
+    }
+
     @GetMapping("/{id}/logo")
     @ResponseBody
     public org.springframework.http.ResponseEntity<byte[]> companyLogo(@PathVariable Long id) {
@@ -254,6 +272,9 @@ public class CompanyController extends BaseController {
             case "Company name is required" -> "admin.companies.error.name_required";
             case "Company name already exists" -> "admin.companies.error.name_exists";
             case "Logo must be PNG, JPG or SVG" -> "admin.companies.error.logo_type";
+            case "Company recipient email is required" -> "admin.companies.message.error.recipient_required";
+            case "Email subject is required" -> "admin.companies.message.error.subject_required";
+            case "Email body is required" -> "admin.companies.message.error.body_required";
             default -> "admin.companies.error.generic";
         };
     }

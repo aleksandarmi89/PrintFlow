@@ -43,6 +43,24 @@ public class Company {
     @Column(name = "website", length = 255)
     private String website;
 
+    @Column(name = "legal_name", length = 255)
+    private String legalName;
+
+    @Column(name = "tax_id", length = 50)
+    private String taxId;
+
+    @Column(name = "registration_number", length = 50)
+    private String registrationNumber;
+
+    @Column(name = "bank_account", length = 100)
+    private String bankAccount;
+
+    @Column(name = "bank_name", length = 120)
+    private String bankName;
+
+    @Column(name = "billing_email", length = 255)
+    private String billingEmail;
+
     @Column(name = "primary_color", length = 20)
     private String primaryColor;
 
@@ -138,6 +156,24 @@ public class Company {
 
     public String getWebsite() { return website; }
     public void setWebsite(String website) { this.website = website; }
+
+    public String getLegalName() { return legalName; }
+    public void setLegalName(String legalName) { this.legalName = legalName; }
+
+    public String getTaxId() { return taxId; }
+    public void setTaxId(String taxId) { this.taxId = taxId; }
+
+    public String getRegistrationNumber() { return registrationNumber; }
+    public void setRegistrationNumber(String registrationNumber) { this.registrationNumber = registrationNumber; }
+
+    public String getBankAccount() { return bankAccount; }
+    public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
+
+    public String getBankName() { return bankName; }
+    public void setBankName(String bankName) { this.bankName = bankName; }
+
+    public String getBillingEmail() { return billingEmail; }
+    public void setBillingEmail(String billingEmail) { this.billingEmail = billingEmail; }
 
     public String getPrimaryColor() { return primaryColor; }
     public void setPrimaryColor(String primaryColor) { this.primaryColor = primaryColor; }

@@ -54,7 +54,7 @@
                                     <span class="text-white font-bold">PF</span>
                                 </div>
                             </div>
-                            <span class="inline max-w-[8rem] truncate text-sm sm:text-base font-semibold text-gray-800 leading-none">ProPrintFlow</span>
+                            <span class="inline text-sm sm:text-base font-semibold text-gray-800 leading-none whitespace-nowrap">ProPrintFlow</span>
                             <span class="sr-only" th:text="#{nav.dashboard}">Dashboard</span>
                         </a>
                         <div sec:authorize="isAuthenticated()" class="ml-3 hidden 2xl:flex items-center gap-2 text-xs text-gray-600">
@@ -72,7 +72,7 @@
                                   th:text="#{email.header.smtp_missing}">SMTP NOT CONFIGURED</span>
                         </div>
                         <a sec:authorize="!isAuthenticated()" th:href="@{/public/track}" class="flex items-center space-x-2">
-                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-auto object-contain">
+                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-11 w-auto object-contain">
                             <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 flex items-center justify-center">
                                 <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-auto object-contain"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -80,7 +80,7 @@
                                     <span class="text-white font-bold">PF</span>
                                 </div>
                             </div>
-                            <span class="text-xl font-bold text-gray-800" th:if="${companyBrand != null && companyBrand.logoUrl != null}" th:text="${companyBrand.name}">Company</span>
+                            <span class="text-xl font-bold text-gray-800" th:text="${(companyBrand != null && companyBrand.name != null && !#strings.isEmpty(companyBrand.name)) ? companyBrand.name : 'ProPrintFlow'}">ProPrintFlow</span>
                         </a>
                     </div>
                     

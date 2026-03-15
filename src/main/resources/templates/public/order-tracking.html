@@ -11,8 +11,8 @@
         <div class="flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <img th:if="${companyBrand != null and companyBrand.logoUrl != null}"
-                     th:src="${companyBrand.logoUrl}" alt="Logo" class="h-8 w-8 rounded">
-                <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="w-8 h-8 flex items-center justify-center">
+                     th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-auto object-contain">
+                <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="w-10 h-10 flex items-center justify-center">
                     <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-16 w-auto object-contain"
                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div style="display:none" class="w-16 h-16 bg-blue-600 rounded-lg items-center justify-center">

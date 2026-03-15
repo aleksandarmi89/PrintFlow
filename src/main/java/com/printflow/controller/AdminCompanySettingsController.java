@@ -70,6 +70,12 @@ public class AdminCompanySettingsController extends BaseController {
                          @RequestParam(required = false) String phone,
                          @RequestParam(required = false) String address,
                          @RequestParam(required = false) String website,
+                         @RequestParam(required = false) String legalName,
+                         @RequestParam(required = false) String taxId,
+                         @RequestParam(required = false) String registrationNumber,
+                         @RequestParam(required = false) String bankAccount,
+                         @RequestParam(required = false) String bankName,
+                         @RequestParam(required = false) String billingEmail,
                          @RequestParam(required = false) String primaryColor,
                          @RequestParam(required = false) String currency,
                          @RequestParam(required = false) String smtpHost,
@@ -91,6 +97,12 @@ public class AdminCompanySettingsController extends BaseController {
         String normalizedPhone = normalizeOptional(phone);
         String normalizedAddress = normalizeOptional(address);
         String normalizedWebsite = normalizeOptional(website);
+        String normalizedLegalName = normalizeOptional(legalName);
+        String normalizedTaxId = normalizeOptional(taxId);
+        String normalizedRegistrationNumber = normalizeOptional(registrationNumber);
+        String normalizedBankAccount = normalizeOptional(bankAccount);
+        String normalizedBankName = normalizeOptional(bankName);
+        String normalizedBillingEmail = normalizeOptional(billingEmail);
         String normalizedPrimaryColor = normalizeOptional(primaryColor);
         String normalizedCurrency = normalizeOptional(currency);
         String normalizedSmtpHost = normalizeOptional(smtpHost);
@@ -100,6 +112,12 @@ public class AdminCompanySettingsController extends BaseController {
         dto.setPhone(normalizedPhone);
         dto.setAddress(normalizedAddress);
         dto.setWebsite(normalizedWebsite);
+        dto.setLegalName(normalizedLegalName);
+        dto.setTaxId(normalizedTaxId);
+        dto.setRegistrationNumber(normalizedRegistrationNumber);
+        dto.setBankAccount(normalizedBankAccount);
+        dto.setBankName(normalizedBankName);
+        dto.setBillingEmail(normalizedBillingEmail);
         dto.setPrimaryColor(normalizedPrimaryColor);
         dto.setCurrency(normalizedCurrency);
         dto.setSmtpHost(normalizedSmtpHost);

@@ -56,6 +56,11 @@ public class GlobalModelAttributes {
         var company = tenantContextService.getCurrentCompany();
         if (company != null) {
             model.addAttribute("companyPlan", company.getPlan());
+            model.addAttribute("footerCompanyName", company.getName());
+            model.addAttribute("footerCompanyEmail", company.getEmail());
+            model.addAttribute("footerCompanyPhone", company.getPhone());
+            model.addAttribute("footerCompanyAddress", company.getAddress());
+            model.addAttribute("footerCompanyWebsite", company.getWebsite());
         }
         var mailSettings = mailSettingsRepository.findByCompany_Id(companyId).orElse(null);
         boolean smtpConfigured = mailSettingsService.isConfiguredWithLegacyFallback(company, mailSettings);

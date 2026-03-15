@@ -9,6 +9,12 @@ public class CompanyDTO {
     private String phone;
     private String address;
     private String website;
+    private String legalName;
+    private String taxId;
+    private String registrationNumber;
+    private String bankAccount;
+    private String bankName;
+    private String billingEmail;
     private String primaryColor;
     private String logoPath;
     private String currency;
@@ -68,6 +74,24 @@ public class CompanyDTO {
 
     public String getWebsite() { return website; }
     public void setWebsite(String website) { this.website = website; }
+
+    public String getLegalName() { return legalName; }
+    public void setLegalName(String legalName) { this.legalName = legalName; }
+
+    public String getTaxId() { return taxId; }
+    public void setTaxId(String taxId) { this.taxId = taxId; }
+
+    public String getRegistrationNumber() { return registrationNumber; }
+    public void setRegistrationNumber(String registrationNumber) { this.registrationNumber = registrationNumber; }
+
+    public String getBankAccount() { return bankAccount; }
+    public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
+
+    public String getBankName() { return bankName; }
+    public void setBankName(String bankName) { this.bankName = bankName; }
+
+    public String getBillingEmail() { return billingEmail; }
+    public void setBillingEmail(String billingEmail) { this.billingEmail = billingEmail; }
 
     public String getPrimaryColor() { return primaryColor; }
     public void setPrimaryColor(String primaryColor) { this.primaryColor = primaryColor; }
