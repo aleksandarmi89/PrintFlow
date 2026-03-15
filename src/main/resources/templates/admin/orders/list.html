@@ -59,10 +59,12 @@
                                 <span th:text="#{common.search}">Search</span>
                             </button>
                             <select name="size"
+                                    onchange="this.form.submit()"
                                     class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="10" th:selected="${size == 10}" th:text="#{orders.list.page_size(10)}">10 / page</option>
-                                <option value="20" th:selected="${size == 20}" th:text="#{orders.list.page_size(20)}">20 / page</option>
-                                <option value="50" th:selected="${size == 50}" th:text="#{orders.list.page_size(50)}">50 / page</option>
+                                <option th:each="opt : ${allowedSizes}"
+                                        th:value="${opt}"
+                                        th:selected="${size == opt}"
+                                        th:text="#{pagination.size.option(${opt} + ' / page')}">20 / page</option>
                             </select>
                             <a th:href="@{/admin/orders}" 
                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
@@ -76,19 +78,27 @@
         
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <a th:href="@{/admin/orders(status=NEW, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors">
+            <a th:href="@{/admin/orders(status=NEW, size=${size})}"
+               class="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors"
+               th:classappend="${status != null and status.name() == 'NEW'} ? ' ring-2 ring-blue-200 border-blue-300' : ''">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.NEW}">New</div>
                 <div class="text-2xl font-bold text-blue-600" th:text="${newCount}">0</div>
             </a>
-            <a th:href="@{/admin/orders(status=IN_DESIGN, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-yellow-200 transition-colors">
+            <a th:href="@{/admin/orders(status=IN_DESIGN, size=${size})}"
+               class="bg-white p-4 rounded-lg border border-gray-200 hover:border-yellow-200 transition-colors"
+               th:classappend="${status != null and status.name() == 'IN_DESIGN'} ? ' ring-2 ring-yellow-200 border-yellow-300' : ''">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.IN_DESIGN}">In Design</div>
                 <div class="text-2xl font-bold text-yellow-600" th:text="${designCount}">0</div>
             </a>
-            <a th:href="@{/admin/orders(status=IN_PRINT, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-200 transition-colors">
+            <a th:href="@{/admin/orders(status=IN_PRINT, size=${size})}"
+               class="bg-white p-4 rounded-lg border border-gray-200 hover:border-purple-200 transition-colors"
+               th:classappend="${status != null and status.name() == 'IN_PRINT'} ? ' ring-2 ring-purple-200 border-purple-300' : ''">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.IN_PRINT}">In Print</div>
                 <div class="text-2xl font-bold text-purple-600" th:text="${printCount}">0</div>
             </a>
-            <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY, size=${size})}" class="bg-white p-4 rounded-lg border border-gray-200 hover:border-green-200 transition-colors">
+            <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY, size=${size})}"
+               class="bg-white p-4 rounded-lg border border-gray-200 hover:border-green-200 transition-colors"
+               th:classappend="${status != null and status.name() == 'READY_FOR_DELIVERY'} ? ' ring-2 ring-green-200 border-green-300' : ''">
                 <div class="text-sm text-gray-600" th:text="#{orders.status.READY_FOR_DELIVERY}">Ready</div>
                 <div class="text-2xl font-bold text-green-600" th:text="${readyCount}">0</div>
             </a>
