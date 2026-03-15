@@ -27,6 +27,38 @@
         </div>
         <h1 class="text-3xl font-bold text-gray-900" th:text="#{company.settings.title}">Company Settings</h1>
         <p class="text-gray-600 mt-2" th:text="#{company.settings.subtitle}">Update your company profile and branding.</p>
+        <div class="mt-4 rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-3">
+            <h2 class="text-sm font-semibold text-sky-900" th:text="#{company.settings.smart.title}">Profile completeness assistant</h2>
+            <p class="mt-1 text-xs text-sky-800" th:text="#{company.settings.smart.subtitle}">
+                Complete key company fields to improve invoicing, email deliverability, and public trust.
+            </p>
+            <ul class="mt-3 space-y-1 text-sm">
+                <li th:if="${#strings.isEmpty(company.email)}" class="text-amber-800" th:text="#{company.settings.smart.missing.email}">
+                    Add company email used for outgoing notifications.
+                </li>
+                <li th:if="${#strings.isEmpty(company.phone)}" class="text-amber-800" th:text="#{company.settings.smart.missing.phone}">
+                    Add phone so clients can reach you quickly.
+                </li>
+                <li th:if="${#strings.isEmpty(company.address)}" class="text-amber-800" th:text="#{company.settings.smart.missing.address}">
+                    Add address to complete footer and billing profile.
+                </li>
+                <li th:if="${#strings.isEmpty(company.taxId)}" class="text-amber-800" th:text="#{company.settings.smart.missing.tax_id}">
+                    Add tax ID/PIB for professional invoices.
+                </li>
+                <li th:if="${#strings.isEmpty(company.bankAccount)}" class="text-amber-800" th:text="#{company.settings.smart.missing.bank_account}">
+                    Add bank account for payment instructions.
+                </li>
+                <li th:if="${smtpConfigured != true}" class="text-amber-800">
+                    <a th:href="@{/settings/email}" class="underline hover:no-underline" th:text="#{company.settings.smart.missing.smtp}">
+                        Configure SMTP in Email Settings so notifications can be sent.
+                    </a>
+                </li>
+                <li th:if="${!#strings.isEmpty(company.email) && !#strings.isEmpty(company.phone) && !#strings.isEmpty(company.address) && !#strings.isEmpty(company.taxId) && !#strings.isEmpty(company.bankAccount) && smtpConfigured == true}"
+                    class="text-emerald-800" th:text="#{company.settings.smart.ready}">
+                    Company profile is complete and ready for daily operations.
+                </li>
+            </ul>
+        </div>
     </div>
 
     <div class="max-w-3xl mx-auto">
