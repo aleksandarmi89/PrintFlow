@@ -184,6 +184,7 @@
                             class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <span th:text="#{track.submit}">Track Order</span>
                     </button>
+                    <p id="trackNextStepHint" class="text-xs text-gray-600"></p>
                 </form>
                 
                 <div class="mt-8 pt-8 border-t border-gray-200">
@@ -215,7 +216,11 @@
                   data-short=#{track.smart.code_short},
                   data-format=#{track.smart.code_format_hint},
                   data-ready=#{track.smart.code_ready},
-                  data-company=#{track.smart.code_company_hint}">
+                  data-company=#{track.smart.code_company_hint},
+                  data-next-select-company=#{track.smart.next.select_company},
+                  data-next-enter-code=#{track.smart.next.enter_code},
+                  data-next-review-code=#{track.smart.next.review_code},
+                  data-next-submit=#{track.smart.next.submit}">
     </div>
     <script>
         (function () {
@@ -224,6 +229,7 @@
             const searchInfo = document.getElementById('companySearchInfo');
             const trackingCode = document.getElementById('trackingCode');
             const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
+            const trackNextStepHint = document.getElementById('trackNextStepHint');
             const i18nEl = document.getElementById('trackSmartI18n');
             if (!search || !select) return;
 
@@ -237,7 +243,11 @@
                 short: i18nEl?.getAttribute('data-short') || 'Code looks short. Check if you copied all characters.',
                 format: i18nEl?.getAttribute('data-format') || 'Use letters, numbers, and dashes (example: ORD-123456-789).',
                 ready: i18nEl?.getAttribute('data-ready') || 'Code format looks good. You can submit now.',
-                company: i18nEl?.getAttribute('data-company') || 'Tip: choose company for faster lookup and fewer mismatch errors.'
+                company: i18nEl?.getAttribute('data-company') || 'Tip: choose company for faster lookup and fewer mismatch errors.',
+                nextSelectCompany: i18nEl?.getAttribute('data-next-select-company') || 'Next step: select company for precise tracking lookup.',
+                nextEnterCode: i18nEl?.getAttribute('data-next-enter-code') || 'Next step: enter full tracking code from email.',
+                nextReviewCode: i18nEl?.getAttribute('data-next-review-code') || 'Next step: review code format (letters, numbers, dashes).',
+                nextSubmit: i18nEl?.getAttribute('data-next-submit') || 'Ready: click Track Order to see live status.'
             };
 
             function render(query) {
@@ -282,6 +292,24 @@
                     hints.push(i18n.company);
                 }
                 trackingCodeSmartHint.textContent = hints.join(' ');
+                updateNextStepHint(normalized, codeRegex.test(normalized) && normalized.includes('-'));
+            }
+
+            function updateNextStepHint(normalizedCode, validCodeFormat) {
+                if (!trackNextStepHint) return;
+                if (!select.value) {
+                    trackNextStepHint.textContent = i18n.nextSelectCompany;
+                    return;
+                }
+                if (!normalizedCode) {
+                    trackNextStepHint.textContent = i18n.nextEnterCode;
+                    return;
+                }
+                if (!validCodeFormat || normalizedCode.length < 8) {
+                    trackNextStepHint.textContent = i18n.nextReviewCode;
+                    return;
+                }
+                trackNextStepHint.textContent = i18n.nextSubmit;
             }
 
             search.addEventListener('input', function () {
