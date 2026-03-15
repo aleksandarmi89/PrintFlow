@@ -149,10 +149,18 @@
                     <input type="hidden" name="company" th:value="${companyParam}" />
                     <input type="hidden" name="token" th:value="${tokenParam}" />
                     <div>
-                        <label for="trackingCode" class="block text-sm font-medium text-gray-700 mb-2"
-                               th:text="#{track.code_label}">
-                            Tracking Code
-                        </label>
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <label for="trackingCode" class="block text-sm font-medium text-gray-700"
+                                   th:text="#{track.code_label}">
+                                Tracking Code
+                            </label>
+                            <button id="pasteTrackingCodeBtn"
+                                    type="button"
+                                    class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                    th:text="#{track.smart.paste_code}">
+                                Paste code
+                            </button>
+                        </div>
                         <input type="text" 
                                id="trackingCode" 
                                name="trackingCode" 
@@ -166,6 +174,7 @@
                         <p class="mt-1 text-xs text-gray-500">
                             <span th:text="#{track.code_example}">Example:</span> <span class="font-mono">ORD-123456-789</span>
                         </p>
+                        <p id="pasteTrackingCodeHint" class="mt-1 text-xs text-gray-500"></p>
                         <p id="trackingCodeSmartHint" class="mt-2 text-xs text-blue-700"></p>
                     </div>
                     
@@ -220,7 +229,10 @@
                   data-next-select-company=#{track.smart.next.select_company},
                   data-next-enter-code=#{track.smart.next.enter_code},
                   data-next-review-code=#{track.smart.next.review_code},
-                  data-next-submit=#{track.smart.next.submit}">
+                  data-next-submit=#{track.smart.next.submit},
+                  data-paste-success=#{track.smart.paste_success},
+                  data-paste-failed=#{track.smart.paste_failed},
+                  data-paste-unsupported=#{track.smart.paste_unsupported}">
     </div>
     <script>
         (function () {
@@ -228,6 +240,8 @@
             const select = document.getElementById('companySelect');
             const searchInfo = document.getElementById('companySearchInfo');
             const trackingCode = document.getElementById('trackingCode');
+            const pasteTrackingCodeBtn = document.getElementById('pasteTrackingCodeBtn');
+            const pasteTrackingCodeHint = document.getElementById('pasteTrackingCodeHint');
             const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
             const trackNextStepHint = document.getElementById('trackNextStepHint');
             const i18nEl = document.getElementById('trackSmartI18n');
@@ -247,7 +261,10 @@
                 nextSelectCompany: i18nEl?.getAttribute('data-next-select-company') || 'Next step: select company for precise tracking lookup.',
                 nextEnterCode: i18nEl?.getAttribute('data-next-enter-code') || 'Next step: enter full tracking code from email.',
                 nextReviewCode: i18nEl?.getAttribute('data-next-review-code') || 'Next step: review code format (letters, numbers, dashes).',
-                nextSubmit: i18nEl?.getAttribute('data-next-submit') || 'Ready: click Track Order to see live status.'
+                nextSubmit: i18nEl?.getAttribute('data-next-submit') || 'Ready: click Track Order to see live status.',
+                pasteSuccess: i18nEl?.getAttribute('data-paste-success') || 'Tracking code pasted from clipboard.',
+                pasteFailed: i18nEl?.getAttribute('data-paste-failed') || 'Unable to paste automatically. Paste manually.',
+                pasteUnsupported: i18nEl?.getAttribute('data-paste-unsupported') || 'Clipboard paste is not available in this browser context.'
             };
 
             function render(query) {
@@ -323,6 +340,23 @@
                     updateCodeSmartHint();
                 });
                 trackingCode.addEventListener('input', updateCodeSmartHint);
+            }
+            if (pasteTrackingCodeBtn) {
+                pasteTrackingCodeBtn.addEventListener('click', async function () {
+                    if (!trackingCode) return;
+                    if (!navigator.clipboard || !navigator.clipboard.readText) {
+                        if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteUnsupported;
+                        return;
+                    }
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        trackingCode.value = (text || '').trim().replace(/\s+/g, '').toUpperCase();
+                        if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteSuccess;
+                        updateCodeSmartHint();
+                    } catch (e) {
+                        if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteFailed;
+                    }
+                });
             }
             render('');
             updateCodeSmartHint();
