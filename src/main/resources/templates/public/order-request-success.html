@@ -23,8 +23,22 @@
         <p class="text-gray-600 mt-3" th:utext="#{public.order.success.description(${company.name})}">
             Thank you! <strong>PrintFlow</strong> received your request. We will contact you soon.
         </p>
+        <div class="mt-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left">
+            <h2 class="text-sm font-semibold text-blue-900" th:text="#{public.order.success.smart.title}">What happens next</h2>
+            <ul class="mt-2 space-y-1 text-xs text-blue-800">
+                <li th:text="#{public.order.success.smart.step1}">Our team reviews your brief and files.</li>
+                <li th:text="#{public.order.success.smart.step2}">If details are missing, we will contact you quickly.</li>
+                <li th:text="#{public.order.success.smart.step3}">You will receive price and timeline confirmation.</li>
+            </ul>
+        </div>
+        <p class="mt-4 text-xs text-gray-500" th:text="#{public.order.success.smart.tip}">
+            Tip: for faster processing, keep your phone and email available.
+        </p>
         <a th:href="@{/p/{slug}/order(slug=${companySlug})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
             <span th:text="#{public.order.success.new_request}">Send new request</span>
+        </a>
+        <a th:href="@{/public/track}" class="inline-flex mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+            <span th:text="#{public.order.success.track}">Track an order</span>
         </a>
     </div>
 </main>
