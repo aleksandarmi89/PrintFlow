@@ -149,6 +149,36 @@
             <p class="text-sm text-gray-600" th:text="#{pricing.products.count_label(${#lists.size(products)})}">Total products: 0</p>
             <a th:href="@{/admin/pricing/products}" class="text-sm text-blue-600 hover:text-blue-700" th:text="#{common.refresh}">Refresh</a>
         </div>
+        <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="sm:col-span-2">
+                <label for="productTableSearch" class="mb-1 block text-xs font-medium text-gray-600" th:text="#{pricing.products.filter.search}">Search</label>
+                <input id="productTableSearch"
+                       type="text"
+                       class="w-full border rounded px-3 py-2"
+                       th:placeholder="#{pricing.products.filter.search}">
+            </div>
+            <div>
+                <label for="productTableStatus" class="mb-1 block text-xs font-medium text-gray-600" th:text="#{pricing.products.filter.status}">Status</label>
+                <select id="productTableStatus" class="w-full border rounded px-3 py-2">
+                    <option value="all" th:text="#{pricing.products.filter.all_statuses}">All statuses</option>
+                    <option value="active" th:text="#{common.active}">Active</option>
+                    <option value="inactive" th:text="#{common.inactive}">Inactive</option>
+                </select>
+            </div>
+            <div>
+                <label for="productTableCategory" class="mb-1 block text-xs font-medium text-gray-600" th:text="#{pricing.products.filter.category}">Category</label>
+                <select id="productTableCategory" class="w-full border rounded px-3 py-2">
+                    <option value="all" th:text="#{pricing.products.filter.all_categories}">All categories</option>
+                    <option th:each="c : ${T(com.printflow.entity.enums.ProductCategory).values()}"
+                            th:value="${c.name()}"
+                            th:with="k=${'pricing.product_category.' + c.name()}, lbl=${#messages.msgOrNull(k)}"
+                            th:text="${lbl != null ? lbl : c.name()}">Category</option>
+                </select>
+            </div>
+        </div>
+        <p id="visibleProductsHint"
+           class="mb-3 text-xs text-gray-500"
+           th:attr="data-label=#{pricing.products.visible_count}"></p>
         <div class="overflow-x-auto">
         <table class="min-w-[920px] w-full text-sm">
             <thead class="text-gray-500">
@@ -162,7 +192,11 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="p : ${products}" class="border-b">
+            <tr th:each="p : ${products}"
+                class="border-b product-row"
+                th:attr="data-search=${(p.name + ' ' + p.category.name() + ' ' + p.unitType.name()).toLowerCase()},
+                         data-category=${p.category.name()},
+                         data-active=${p.active ? 'active' : 'inactive'}">
                 <td class="py-2" th:text="${p.name}">Product</td>
                 <td class="py-2"
                     th:with="k=${'pricing.product_category.' + p.category.name()}, lbl=${#messages.msgOrNull(k)}"
@@ -224,16 +258,59 @@
     document.addEventListener('DOMContentLoaded', () => {
         const checkbox = document.getElementById('applyAllCategories');
         const select = document.getElementById('bulkCategorySelect');
-        if (!checkbox || !select) {
-            return;
+        if (checkbox && select) {
+            const toggleSelect = () => {
+                const disabled = checkbox.checked;
+                select.disabled = disabled;
+                select.classList.toggle('bg-gray-100', disabled);
+            };
+            checkbox.addEventListener('change', toggleSelect);
+            toggleSelect();
         }
-        const toggleSelect = () => {
-            const disabled = checkbox.checked;
-            select.disabled = disabled;
-            select.classList.toggle('bg-gray-100', disabled);
-        };
-        checkbox.addEventListener('change', toggleSelect);
-        toggleSelect();
+
+        const productTableSearch = document.getElementById('productTableSearch');
+        const productTableStatus = document.getElementById('productTableStatus');
+        const productTableCategory = document.getElementById('productTableCategory');
+        const visibleProductsHint = document.getElementById('visibleProductsHint');
+
+        function applyProductTableFilters() {
+            const rows = Array.from(document.querySelectorAll('tr.product-row'));
+            const searchTerm = (productTableSearch?.value || '').trim().toLowerCase();
+            const status = productTableStatus?.value || 'all';
+            const category = productTableCategory?.value || 'all';
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const rowSearch = row.getAttribute('data-search') || '';
+                const rowStatus = row.getAttribute('data-active') || '';
+                const rowCategory = row.getAttribute('data-category') || '';
+                const searchMatch = !searchTerm || rowSearch.includes(searchTerm);
+                const statusMatch = status === 'all' || rowStatus === status;
+                const categoryMatch = category === 'all' || rowCategory === category;
+                const visible = searchMatch && statusMatch && categoryMatch;
+                row.style.display = visible ? '' : 'none';
+                if (visible) {
+                    visibleCount++;
+                }
+            });
+
+            if (visibleProductsHint) {
+                const total = rows.length;
+                const label = visibleProductsHint.getAttribute('data-label') || '';
+                visibleProductsHint.textContent = `${label} ${visibleCount}/${total}`;
+            }
+        }
+
+        if (productTableSearch) {
+            productTableSearch.addEventListener('input', applyProductTableFilters);
+        }
+        if (productTableStatus) {
+            productTableStatus.addEventListener('change', applyProductTableFilters);
+        }
+        if (productTableCategory) {
+            productTableCategory.addEventListener('change', applyProductTableFilters);
+        }
+        applyProductTableFilters();
     });
 </script>
 </body>
