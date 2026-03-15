@@ -30,6 +30,27 @@
                 <li th:text="#{public.order.success.smart.step2}">If details are missing, we will contact you quickly.</li>
                 <li th:text="#{public.order.success.smart.step3}">You will receive price and timeline confirmation.</li>
             </ul>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                <div class="sm:col-span-2">
+                    <label for="successNextStep" class="block text-xs font-medium text-blue-900 mb-1"
+                           th:text="#{public.order.success.smart.intent_label}">
+                        Next step
+                    </label>
+                    <select id="successNextStep"
+                            class="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800">
+                        <option value="track" th:text="#{public.order.success.smart.intent.track}">I want to track status</option>
+                        <option value="new_request" th:text="#{public.order.success.smart.intent.new_request}">I want to send another request</option>
+                        <option value="contact" th:text="#{public.order.success.smart.intent.contact}">I need to contact support</option>
+                    </select>
+                </div>
+                <a id="successNextStepCta"
+                   th:href="@{/public/track}"
+                   class="inline-flex justify-center rounded-lg bg-white border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                   th:text="#{public.order.success.smart.intent.cta.track}">
+                    Open tracking
+                </a>
+            </div>
+            <p id="successNextStepHint" class="mt-2 text-xs text-blue-900"></p>
         </div>
         <p class="mt-4 text-xs text-gray-500" th:text="#{public.order.success.smart.tip}">
             Tip: for faster processing, keep your phone and email available.
@@ -42,5 +63,53 @@
         </a>
     </div>
 </main>
+<div id="orderSuccessSmartI18n"
+     class="hidden"
+     th:attr="data-hint-track=#{public.order.success.smart.intent.hint.track},
+              data-hint-new-request=#{public.order.success.smart.intent.hint.new_request},
+              data-hint-contact=#{public.order.success.smart.intent.hint.contact},
+              data-cta-track=#{public.order.success.smart.intent.cta.track},
+              data-cta-new-request=#{public.order.success.smart.intent.cta.new_request},
+              data-cta-contact=#{public.order.success.smart.intent.cta.contact},
+              data-new-request-url=@{/p/{slug}/order(slug=${companySlug})}">
+</div>
+<script>
+    (function () {
+        const select = document.getElementById('successNextStep');
+        const cta = document.getElementById('successNextStepCta');
+        const hint = document.getElementById('successNextStepHint');
+        const i18nEl = document.getElementById('orderSuccessSmartI18n');
+        if (!select || !cta || !hint || !i18nEl) return;
+
+        const hrefNewRequest = i18nEl.getAttribute('data-new-request-url') || '/public/track';
+        const map = {
+            track: {
+                href: '/public/track',
+                cta: i18nEl.getAttribute('data-cta-track'),
+                hint: i18nEl.getAttribute('data-hint-track')
+            },
+            new_request: {
+                href: hrefNewRequest,
+                cta: i18nEl.getAttribute('data-cta-new-request'),
+                hint: i18nEl.getAttribute('data-hint-new-request')
+            },
+            contact: {
+                href: '/public/contact',
+                cta: i18nEl.getAttribute('data-cta-contact'),
+                hint: i18nEl.getAttribute('data-hint-contact')
+            }
+        };
+
+        function update() {
+            const key = select.value in map ? select.value : 'track';
+            cta.setAttribute('href', map[key].href);
+            cta.textContent = map[key].cta || '';
+            hint.textContent = map[key].hint || '';
+        }
+
+        select.addEventListener('change', update);
+        update();
+    })();
+</script>
 </body>
 </html>
