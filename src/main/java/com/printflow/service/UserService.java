@@ -113,12 +113,7 @@ public class UserService {
     }
 
     public UserDTO updateUser(Long id, UserDTO userDTO) {
-        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = findUserForCurrentScope(id);
 
         if (!user.getUsername().equals(userDTO.getUsername()) &&
             userRepository.existsByUsername(userDTO.getUsername())) {
@@ -160,8 +155,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        User user = userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = findUserForCurrentScope(id);
         user.setActive(false);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
@@ -361,12 +355,7 @@ public class UserService {
 
     public void updateProfile(Long userId, String firstName, String lastName, String email, String phone,
                               String department, String position, String notes) {
-        User user = userRepository.findByIdAndCompany_Id(userId, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = findUserForCurrentScope(userId);
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setEmail(email);
@@ -379,12 +368,7 @@ public class UserService {
     }
 
     public boolean changePassword(Long userId, String currentPassword, String newPassword) {
-        User user = userRepository.findByIdAndCompany_Id(userId, tenantContextService.requireCompanyId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!tenantContextService.isSuperAdmin() &&
-            (user.getCompany() == null || !user.getCompany().getId().equals(tenantContextService.requireCompanyId()))) {
-            throw new RuntimeException("User not found");
-        }
+        User user = findUserForCurrentScope(userId);
         
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             return false;
@@ -573,5 +557,14 @@ public class UserService {
                 .limit(limit)
                 .collect(Collectors.toList());
         }
+    }
+
+    private User findUserForCurrentScope(Long id) {
+        if (tenantContextService.isSuperAdmin()) {
+            return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        }
+        return userRepository.findByIdAndCompany_Id(id, tenantContextService.requireCompanyId())
+            .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }
