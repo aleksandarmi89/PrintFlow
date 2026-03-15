@@ -176,6 +176,21 @@
                 </select>
             </div>
         </div>
+        <div class="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+            <p id="productsSmartHint" class="text-xs text-sky-800" th:text="#{pricing.products.smart.initial}">
+                Use search + category + status to quickly isolate products before editing variants.
+            </p>
+        </div>
+        <div id="productsNoResultsHint"
+             class="mb-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <span th:text="#{pricing.products.smart.no_results}">No products match current filters.</span>
+            <button id="resetProductsFiltersBtn"
+                    type="button"
+                    class="ml-2 font-semibold underline hover:no-underline"
+                    th:text="#{pricing.products.smart.reset}">
+                Reset filters
+            </button>
+        </div>
         <p id="visibleProductsHint"
            class="mb-3 text-xs text-gray-500"
            th:attr="data-label=#{pricing.products.visible_count}"></p>
@@ -254,7 +269,7 @@
         <p class="mt-3 text-xs text-gray-500 sm:hidden" th:text="#{pricing.table.swipe_hint}">Swipe horizontally to see all columns and actions.</p>
     </div>
 </main>
-<script>
+<script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', () => {
         const checkbox = document.getElementById('applyAllCategories');
         const select = document.getElementById('bulkCategorySelect');
@@ -272,6 +287,15 @@
         const productTableStatus = document.getElementById('productTableStatus');
         const productTableCategory = document.getElementById('productTableCategory');
         const visibleProductsHint = document.getElementById('visibleProductsHint');
+        const productsSmartHint = document.getElementById('productsSmartHint');
+        const productsNoResultsHint = document.getElementById('productsNoResultsHint');
+        const resetProductsFiltersBtn = document.getElementById('resetProductsFiltersBtn');
+        const i18n = {
+            initial: /*[[#{pricing.products.smart.initial}]]*/ 'Use search + category + status to quickly isolate products before editing variants.',
+            noResults: /*[[#{pricing.products.smart.no_results}]]*/ 'No products match current filters.',
+            ready: /*[[#{pricing.products.smart.ready}]]*/ 'Filtered list is ready. Open product and adjust variants/pricing.',
+            reset: /*[[#{pricing.products.smart.reset}]]*/ 'Reset filters'
+        };
 
         function applyProductTableFilters() {
             const rows = Array.from(document.querySelectorAll('tr.product-row'));
@@ -299,6 +323,12 @@
                 const label = visibleProductsHint.getAttribute('data-label') || '';
                 visibleProductsHint.textContent = `${label} ${visibleCount}/${total}`;
             }
+            if (productsNoResultsHint) {
+                productsNoResultsHint.classList.toggle('hidden', visibleCount > 0 || rows.length === 0);
+            }
+            if (productsSmartHint) {
+                productsSmartHint.textContent = (visibleCount > 0 || rows.length === 0) ? i18n.ready : i18n.noResults;
+            }
         }
 
         if (productTableSearch) {
@@ -309,6 +339,15 @@
         }
         if (productTableCategory) {
             productTableCategory.addEventListener('change', applyProductTableFilters);
+        }
+        if (resetProductsFiltersBtn) {
+            resetProductsFiltersBtn.addEventListener('click', () => {
+                if (productTableSearch) productTableSearch.value = '';
+                if (productTableStatus) productTableStatus.value = 'all';
+                if (productTableCategory) productTableCategory.value = 'all';
+                if (productsSmartHint) productsSmartHint.textContent = i18n.initial;
+                applyProductTableFilters();
+            });
         }
         applyProductTableFilters();
     });
