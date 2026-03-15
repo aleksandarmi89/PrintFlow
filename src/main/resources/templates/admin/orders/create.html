@@ -125,14 +125,23 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1"
-                                   th:text="#{orders.create.field.description}">Description *</label>
+                            <div class="mb-1 flex items-center justify-between gap-2">
+                                <label class="block text-sm font-medium text-gray-700"
+                                       th:text="#{orders.create.field.description}">Description *</label>
+                                <button id="insertOrderBriefTemplate"
+                                        type="button"
+                                        class="text-xs rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                        th:text="#{orders.create.smart.brief_template_cta}">
+                                    Insert brief template
+                                </button>
+                            </div>
                             <textarea th:field="*{description}" id="orderDescription" rows="3"
                                       th:placeholder="#{orders.create.field.description.placeholder}"
                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
                             <p class="mt-1 text-xs text-gray-500" th:text="#{orders.create.field.description.hint}">
                                 Include dimensions, material, finishing, and delivery notes.
                             </p>
+                            <p id="orderBriefHint" class="mt-1 text-xs text-blue-700"></p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -375,6 +384,8 @@
         const descriptionInput = document.getElementById('orderDescription');
         const assistantProgress = document.getElementById('assistantProgress');
         const warningsBox = document.getElementById('orderSmartWarnings');
+        const orderBriefHint = document.getElementById('orderBriefHint');
+        const insertOrderBriefTemplate = document.getElementById('insertOrderBriefTemplate');
         const checks = {
             client: document.getElementById('checkClient'),
             title: document.getElementById('checkTitle'),
@@ -396,7 +407,12 @@
             warnNoFiles: /*[[#{orders.create.smart.warn.no_files}]]*/ 'No files attached yet. Add at least one reference to reduce back-and-forth.',
             warnTightDeadline: /*[[#{orders.create.smart.warn.tight_deadline}]]*/ 'High quantity with a near deadline may be risky. Confirm capacity before saving.',
             warnShortBrief: /*[[#{orders.create.smart.warn.short_brief}]]*/ 'Description is very short. Add dimensions/material/finishing for fewer clarification calls.',
-            progressTemplate: /*[[#{orders.create.smart.progress_label}]]*/ '__DONE__/__TOTAL__ complete'
+            progressTemplate: /*[[#{orders.create.smart.progress_label}]]*/ '__DONE__/__TOTAL__ complete',
+            briefTemplateCta: /*[[#{orders.create.smart.brief_template_cta}]]*/ 'Insert brief template',
+            briefTemplate: /*[[#{orders.create.smart.brief_template}]]*/ 'Product:\nDimensions:\nMaterial:\nFinishing:\nQuantity:\nDeadline:\nDelivery notes:',
+            briefHintEmpty: /*[[#{orders.create.smart.brief_hint_empty}]]*/ 'Use the brief template to speed up accurate planning and pricing.',
+            briefHintPartial: /*[[#{orders.create.smart.brief_hint_partial}]]*/ 'Add dimensions, material, finishing, and deadline for a complete brief.',
+            briefHintReady: /*[[#{orders.create.smart.brief_hint_ready}]]*/ 'Brief coverage looks good for production handoff.'
         };
 
         function setCheck(element, done, doneLabel, todoLabel) {
@@ -457,6 +473,19 @@
                     warningsBox.innerHTML = warnings.map(item => `<div>• ${item}</div>`).join('');
                 }
             }
+            if (orderBriefHint) {
+                const descText = descriptionInput ? descriptionInput.value.trim().toLowerCase() : '';
+                if (!descText) {
+                    orderBriefHint.textContent = i18n.briefHintEmpty;
+                } else {
+                    const hasDims = descText.includes('mm') || descText.includes('cm') || descText.includes('x');
+                    const hasMaterial = descText.includes('paper') || descText.includes('papir') || descText.includes('material');
+                    const hasFinishing = descText.includes('lamination') || descText.includes('plast') || descText.includes('finish') || descText.includes('dorad');
+                    const hasDeadlineInfo = descText.includes('deadline') || descText.includes('rok') || descText.includes('isporuk');
+                    const completedParts = [hasDims, hasMaterial, hasFinishing, hasDeadlineInfo].filter(Boolean).length;
+                    orderBriefHint.textContent = completedParts >= 3 ? i18n.briefHintReady : i18n.briefHintPartial;
+                }
+            }
         }
 
         if (clientSelect && clientInfo) {
@@ -492,6 +521,17 @@
             element.addEventListener('input', updateSmartAssistant);
             element.addEventListener('change', updateSmartAssistant);
         });
+        if (insertOrderBriefTemplate && descriptionInput) {
+            insertOrderBriefTemplate.addEventListener('click', function () {
+                if (descriptionInput.value && descriptionInput.value.trim().length > 0) {
+                    descriptionInput.value += '\n\n' + i18n.briefTemplate;
+                } else {
+                    descriptionInput.value = i18n.briefTemplate;
+                }
+                descriptionInput.focus();
+                updateSmartAssistant();
+            });
+        }
         updateSmartAssistant();
     });
 
