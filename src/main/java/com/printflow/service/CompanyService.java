@@ -275,7 +275,7 @@ public class CompanyService {
         String normalizedTo = normalizeNullable(toEmail);
         String normalizedSubject = normalizeNullable(subject);
         String normalizedBody = normalizeNullable(body);
-        String normalizedType = normalizeNullable(messageType);
+        String normalizedType = normalizeMessageType(normalizeNullable(messageType));
         String normalizedInvoiceNumber = normalizeNullable(invoiceNumber);
         String normalizedInvoiceAmount = normalizeNullable(invoiceAmount);
         String normalizedInvoiceDueDate = normalizeNullable(invoiceDueDate);
@@ -499,5 +499,15 @@ public class CompanyService {
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
             .replace("'", "&#39;");
+    }
+
+    private String normalizeMessageType(String rawType) {
+        if (rawType == null) {
+            return "general";
+        }
+        return switch (rawType.toLowerCase()) {
+            case "invoice", "billing_notice", "general" -> rawType.toLowerCase();
+            default -> "general";
+        };
     }
 }
