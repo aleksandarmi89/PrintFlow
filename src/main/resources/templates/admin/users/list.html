@@ -80,6 +80,11 @@
                 <p id="visibleUsersHint"
                    class="mt-3 text-xs text-gray-500"
                    th:attr="data-label=#{admin.users.list.visible_count}"></p>
+                <div id="usersFilterSmartHint"
+                     class="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800"
+                     th:text="#{admin.users.list.smart_filter.initial}">
+                    Filter helper: combine role and status to quickly find assignment-ready users.
+                </div>
                 <div id="usersNoResultsHint"
                      class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     <span th:text="#{admin.users.list.no_results}">No users match current filters.</span>
@@ -304,13 +309,61 @@
     
     <div th:replace="~{layout/footer :: footer}"></div>
     
+    <div id="usersSmartI18n"
+         class="hidden"
+         th:attr="data-initial=#{admin.users.list.smart_filter.initial},
+                  data-role-admin=#{admin.users.list.smart_filter.role_admin},
+                  data-role-manager=#{admin.users.list.smart_filter.role_manager},
+                  data-role-worker=#{admin.users.list.smart_filter.role_worker},
+                  data-inactive=#{admin.users.list.smart_filter.inactive},
+                  data-search=#{admin.users.list.smart_filter.search}">
+    </div>
     <script>
         const searchInput = document.getElementById('searchInput');
         const roleFilter = document.getElementById('roleFilter');
         const statusFilter = document.getElementById('statusFilter');
+        const usersFilterSmartHint = document.getElementById('usersFilterSmartHint');
         const visibleUsersHint = document.getElementById('visibleUsersHint');
         const usersNoResultsHint = document.getElementById('usersNoResultsHint');
         const resetUserFiltersBtn = document.getElementById('resetUserFiltersBtn');
+        const usersSmartI18n = document.getElementById('usersSmartI18n');
+        const usersSmartCopy = {
+            initial: usersSmartI18n?.getAttribute('data-initial') || 'Filter helper: combine role and status to quickly find assignment-ready users.',
+            roleAdmin: usersSmartI18n?.getAttribute('data-role-admin') || 'Admin + active is useful when assigning approvals and escalation tasks.',
+            roleManager: usersSmartI18n?.getAttribute('data-role-manager') || 'Manager + active is ideal for operational ownership and daily planning.',
+            roleWorker: usersSmartI18n?.getAttribute('data-role-worker') || 'Worker + active keeps production assignment lists clean.',
+            inactive: usersSmartI18n?.getAttribute('data-inactive') || 'Inactive users are shown for access audit and cleanup.',
+            search: usersSmartI18n?.getAttribute('data-search') || 'Search narrows by name, email, phone, and role.'
+        };
+
+        function updateUsersFilterHint() {
+            if (!usersFilterSmartHint) return;
+            const role = roleFilter?.value || 'all';
+            const status = statusFilter?.value || 'all';
+            const term = (searchInput?.value || '').trim();
+
+            if (status === 'inactive') {
+                usersFilterSmartHint.textContent = usersSmartCopy.inactive;
+                return;
+            }
+            if (role === 'admin' || role === 'super_admin') {
+                usersFilterSmartHint.textContent = usersSmartCopy.roleAdmin;
+                return;
+            }
+            if (role === 'manager') {
+                usersFilterSmartHint.textContent = usersSmartCopy.roleManager;
+                return;
+            }
+            if (role === 'worker') {
+                usersFilterSmartHint.textContent = usersSmartCopy.roleWorker;
+                return;
+            }
+            if (term.length > 0) {
+                usersFilterSmartHint.textContent = usersSmartCopy.search;
+                return;
+            }
+            usersFilterSmartHint.textContent = usersSmartCopy.initial;
+        }
 
         function applyUserFilters() {
             const rows = Array.from(document.querySelectorAll('tbody tr.user-row'));
@@ -341,6 +394,7 @@
             if (usersNoResultsHint) {
                 usersNoResultsHint.classList.toggle('hidden', !(rows.length > 0 && visibleCount === 0));
             }
+            updateUsersFilterHint();
         }
 
         if (searchInput) {
