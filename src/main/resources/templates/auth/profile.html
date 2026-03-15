@@ -23,6 +23,7 @@
                      th:text="${m != null ? m : errorMessage}"></div>
 
                 <form th:action="@{/profile}" method="post" class="mt-6 space-y-4">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700" th:text="#{auth.profile.first_name}">First name</label>

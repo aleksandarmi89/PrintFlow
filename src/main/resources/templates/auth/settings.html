@@ -25,6 +25,7 @@
                 <div class="mt-6 border-t border-gray-200 pt-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{auth.settings.change_password}">Change Password</h2>
                     <form th:action="@{/settings/password}" method="post" class="space-y-4">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <div>
                             <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.current_password}">Current password</label>
                             <input type="password" name="currentPassword" required autocomplete="current-password"
