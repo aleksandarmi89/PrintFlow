@@ -11,6 +11,11 @@
             <h1 class="text-2xl font-bold text-gray-900" th:text="#{admin.users.invite.heading}">Invite User</h1>
             <a th:href="@{/admin/users}" class="text-sm text-blue-600 hover:text-blue-700" th:text="#{admin.users.form.back_to_users}">Back to users</a>
         </div>
+        <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+            <p id="inviteSmartHint" class="text-xs text-sky-800" th:text="#{admin.users.invite.smart.initial}">
+                Use company email and the lowest required role. This keeps access safer and onboarding cleaner.
+            </p>
+        </div>
 
         <div th:if="${errorMessage}" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
             <p class="text-sm text-red-700"
@@ -36,6 +41,9 @@
                     <option th:each="r : ${roles}" th:value="${r}"
                             th:text="${#messages.msgOrNull('users.role.' + r) != null ? #messages.msg('users.role.' + r) : r}"></option>
                 </select>
+                <p id="inviteRoleHint" class="mt-1 text-xs text-gray-500" th:text="#{admin.users.form.smart.role.default}">
+                    Pick the lowest role that can do the job to keep permissions safer.
+                </p>
             </div>
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     th:text="#{admin.users.invite.create}">
@@ -43,5 +51,59 @@
             </button>
         </form>
     </main>
+    <script th:inline="javascript">
+        (function () {
+            const emailField = document.getElementById('email');
+            const roleField = document.getElementById('role');
+            const smartHint = document.getElementById('inviteSmartHint');
+            const roleHint = document.getElementById('inviteRoleHint');
+            if (!emailField || !roleField || !smartHint) return;
+
+            const i18n = {
+                initial: /*[[#{admin.users.invite.smart.initial}]]*/ 'Use company email and the lowest required role. This keeps access safer and onboarding cleaner.',
+                ready: /*[[#{admin.users.invite.smart.ready}]]*/ 'Invite looks good. Send the link through a trusted company channel.',
+                missingEmail: /*[[#{admin.users.invite.smart.missing_email}]]*/ 'Enter a valid email before creating invite.',
+                personalEmail: /*[[#{admin.users.invite.smart.personal_email}]]*/ 'Looks like a personal mailbox. Prefer company domain for accountability.',
+                roleDefault: /*[[#{admin.users.form.smart.role.default}]]*/ 'Pick the lowest role that can do the job to keep permissions safer.',
+                roleAdmin: /*[[#{admin.users.form.smart.role.admin}]]*/ 'Admin has broad access for company operations and user management.',
+                roleManager: /*[[#{admin.users.form.smart.role.manager}]]*/ 'Manager can coordinate work and assignments without full admin scope.',
+                roleWorker: /*[[#{admin.users.form.smart.role.worker}]]*/ 'Worker roles focus on task execution with limited configuration access.',
+                roleSuperAdmin: /*[[#{admin.users.form.smart.role.super_admin}]]*/ 'Super Admin should be limited to platform owners and top-level maintenance.'
+            };
+
+            const personalDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+
+            function updateRoleHint() {
+                if (!roleHint) return;
+                const value = roleField.value || '';
+                if (value === 'SUPER_ADMIN') roleHint.textContent = i18n.roleSuperAdmin;
+                else if (value === 'ADMIN') roleHint.textContent = i18n.roleAdmin;
+                else if (value === 'MANAGER') roleHint.textContent = i18n.roleManager;
+                else if (value.startsWith('WORKER')) roleHint.textContent = i18n.roleWorker;
+                else roleHint.textContent = i18n.roleDefault;
+            }
+
+            function updateSmartHint() {
+                const email = (emailField.value || '').trim().toLowerCase();
+                if (!email || !email.includes('@') || email.endsWith('@')) {
+                    smartHint.textContent = i18n.missingEmail;
+                    return;
+                }
+                const domain = email.split('@')[1] || '';
+                if (personalDomains.includes(domain)) {
+                    smartHint.textContent = i18n.personalEmail;
+                    return;
+                }
+                smartHint.textContent = i18n.ready;
+            }
+
+            emailField.addEventListener('input', updateSmartHint);
+            emailField.addEventListener('change', updateSmartHint);
+            roleField.addEventListener('change', updateRoleHint);
+            roleField.addEventListener('input', updateRoleHint);
+            updateRoleHint();
+            updateSmartHint();
+        })();
+    </script>
 </body>
 </html>
