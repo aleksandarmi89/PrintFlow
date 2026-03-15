@@ -10,7 +10,7 @@
 
 <main class="container mx-auto px-4 py-8">
     <div class="mb-8">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900" th:text="#{tasks.create.title}">
                     Create Task
@@ -38,7 +38,13 @@
             <form th:action="@{/admin/tasks/create}" th:object="${task}" method="post" class="p-6 space-y-6">
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <div th:if="${errorMessage}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <span th:text="${errorMessage}">Error creating task.</span>
+                    <span th:with="m=${#messages.msgOrNull(errorMessage)}"
+                          th:text="${m != null ? m : errorMessage}">Error creating task.</span>
+                </div>
+                <div th:if="${#fields.hasAnyErrors()}" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <ul class="list-disc pl-5">
+                        <li th:each="err : ${#fields.allErrors()}" th:text="${err.defaultMessage}"></li>
+                    </ul>
                 </div>
 
                 <div>
@@ -144,7 +150,7 @@
                                     th:value="${worker.id}"
                                     th:attr="data-role=${worker.role},data-available=${worker.available}"
                                     th:selected="${selectedAssignedToId != null && selectedAssignedToId == worker.id}"
-                                    th:text="${worker.fullName + ' (' + worker.role + ')' + (worker.available ? '' : ' (busy)')}"></option>
+                                    th:text="${worker.fullName + ' (' + (#messages.msgOrNull('users.role.' + worker.role) != null ? #messages.msg('users.role.' + worker.role) : worker.role) + ')' + (worker.available ? '' : ' (' + #messages.msg('workers.busy') + ')')}"></option>
                         </select>
                         <p th:if="${suggestedWorkerName != null}" class="mt-2 text-xs text-blue-700">
                             <span th:text="#{tasks.create.assign.suggested}">Suggested assignment:</span> <span th:text="${suggestedWorkerName}">Team member</span>
