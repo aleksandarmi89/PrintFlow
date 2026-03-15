@@ -57,11 +57,11 @@
                 <div class="flex items-center justify-between border border-gray-100 rounded-lg p-4 mb-6 bg-gray-50">
                     <div class="flex items-center space-x-3">
                         <img th:if="${companyBrand != null and companyBrand.logoUrl != null}"
-                             th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-10 rounded">
-                        <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 w-10 flex items-center justify-center">
-                            <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-16 w-auto object-contain"
+                             th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-auto object-contain">
+                        <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 w-10 flex items-center justify-center overflow-hidden">
+                            <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-10 w-auto object-contain"
                                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div style="display:none" class="h-16 w-16 bg-blue-600 rounded-lg items-center justify-center text-white font-bold">PF</div>
+                            <div style="display:none" class="h-10 w-10 bg-blue-600 rounded-lg items-center justify-center text-white font-bold">PF</div>
                         </div>
                         <div>
                             <div class="text-sm text-gray-500" th:text="#{track.company_label}">Company</div>
