@@ -28,22 +28,23 @@
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <div>
                             <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.current_password}">Current password</label>
-                            <input type="password" name="currentPassword" required autocomplete="current-password"
+                            <input id="currentPassword" type="password" name="currentPassword" required autocomplete="current-password"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.new_password}">New password</label>
-                            <input type="password" name="newPassword" required minlength="6" autocomplete="new-password"
+                            <input id="newPassword" type="password" name="newPassword" required minlength="6" autocomplete="new-password"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700" th:text="#{auth.settings.confirm_new_password}">Confirm new password</label>
-                            <input type="password" name="confirmPassword" required minlength="6" autocomplete="new-password"
+                            <input id="confirmPassword" type="password" name="confirmPassword" required minlength="6" autocomplete="new-password"
                                    class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                             <p class="mt-1 text-xs text-gray-500" th:text="#{auth.password_min}">Password must be at least 6 characters long.</p>
+                            <p id="passwordMismatchHint" class="mt-1 hidden text-xs text-red-600" th:text="#{auth.password_mismatch}">Passwords do not match!</p>
                         </div>
                         <div class="flex justify-end">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg" th:text="#{auth.settings.update_password}">Update password</button>
+                            <button id="updatePasswordBtn" type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" th:text="#{auth.settings.update_password}">Update password</button>
                         </div>
                     </form>
                 </div>
@@ -52,5 +53,34 @@
     </main>
 
     <div th:replace="~{layout/footer :: footer}"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const newPassword = document.getElementById('newPassword');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const mismatchHint = document.getElementById('passwordMismatchHint');
+            const submitBtn = document.getElementById('updatePasswordBtn');
+
+            function validatePasswordForm() {
+                if (!newPassword || !confirmPassword || !submitBtn) {
+                    return;
+                }
+                const newValue = newPassword.value || '';
+                const confirmValue = confirmPassword.value || '';
+                const hasBoth = newValue.length > 0 || confirmValue.length > 0;
+                const validLength = newValue.length >= 6 && confirmValue.length >= 6;
+                const matches = newValue === confirmValue;
+                const valid = !hasBoth || (validLength && matches);
+
+                if (mismatchHint) {
+                    mismatchHint.classList.toggle('hidden', !hasBoth || matches);
+                }
+                submitBtn.disabled = !valid;
+            }
+
+            newPassword?.addEventListener('input', validatePasswordForm);
+            confirmPassword?.addEventListener('input', validatePasswordForm);
+            validatePasswordForm();
+        });
+    </script>
 </body>
 </html>
