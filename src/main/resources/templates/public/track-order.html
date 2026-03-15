@@ -107,6 +107,7 @@
                         <p class="mt-1 text-xs text-gray-500">
                             <span th:text="#{track.code_example}">Example:</span> <span class="font-mono">ORD-123456-789</span>
                         </p>
+                        <p id="trackingCodeSmartHint" class="mt-2 text-xs text-blue-700"></p>
                     </div>
                     
                     <div th:if="${error != null || errorKey != null}" class="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -149,12 +150,22 @@
     </main>
     
     <div th:replace="~{layout/footer :: footer}"></div>
+    <div id="trackSmartI18n"
+         class="hidden"
+         th:attr="data-empty=#{track.smart.code_empty},
+                  data-short=#{track.smart.code_short},
+                  data-format=#{track.smart.code_format_hint},
+                  data-ready=#{track.smart.code_ready},
+                  data-company=#{track.smart.code_company_hint}">
+    </div>
     <script>
         (function () {
             const search = document.getElementById('companySearch');
             const select = document.getElementById('companySelect');
             const searchInfo = document.getElementById('companySearchInfo');
             const trackingCode = document.getElementById('trackingCode');
+            const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
+            const i18nEl = document.getElementById('trackSmartI18n');
             if (!search || !select) return;
 
             const baseOptions = Array.from(select.options).map(opt => ({
@@ -162,6 +173,13 @@
                 label: opt.text,
                 selected: opt.selected
             }));
+            const i18n = {
+                empty: i18nEl?.getAttribute('data-empty') || 'Paste the full code from your email.',
+                short: i18nEl?.getAttribute('data-short') || 'Code looks short. Check if you copied all characters.',
+                format: i18nEl?.getAttribute('data-format') || 'Use letters, numbers, and dashes (example: ORD-123456-789).',
+                ready: i18nEl?.getAttribute('data-ready') || 'Code format looks good. You can submit now.',
+                company: i18nEl?.getAttribute('data-company') || 'Tip: choose company for faster lookup and fewer mismatch errors.'
+            };
 
             function render(query) {
                 const q = (query || '').trim().toLowerCase();
@@ -183,17 +201,44 @@
                     searchInfo.textContent = visible > 0 ? `${label} ${visible}/${total}` : noMatch;
                 }
             }
+            function updateCodeSmartHint() {
+                if (!trackingCodeSmartHint || !trackingCode) return;
+                const raw = (trackingCode.value || '').trim();
+                const normalized = raw.replace(/\s+/g, '').toUpperCase();
+                const codeRegex = /^[A-Z0-9-]+$/;
+                const hints = [];
+                if (!normalized) {
+                    hints.push(i18n.empty);
+                } else {
+                    if (normalized.length < 8) {
+                        hints.push(i18n.short);
+                    }
+                    if (!codeRegex.test(normalized) || !normalized.includes('-')) {
+                        hints.push(i18n.format);
+                    } else if (normalized.length >= 8) {
+                        hints.push(i18n.ready);
+                    }
+                }
+                if (!select.value) {
+                    hints.push(i18n.company);
+                }
+                trackingCodeSmartHint.textContent = hints.join(' ');
+            }
 
             search.addEventListener('input', function () {
                 render(search.value);
             });
+            select.addEventListener('change', updateCodeSmartHint);
 
             if (trackingCode) {
                 trackingCode.addEventListener('blur', function () {
                     trackingCode.value = (trackingCode.value || '').trim().replace(/\s+/g, '').toUpperCase();
+                    updateCodeSmartHint();
                 });
+                trackingCode.addEventListener('input', updateCodeSmartHint);
             }
             render('');
+            updateCodeSmartHint();
         })();
     </script>
 </body>
