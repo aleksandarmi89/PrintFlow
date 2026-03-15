@@ -74,9 +74,20 @@
                 <div class="text-2xl font-bold text-gray-900">0</div>
             </div>
         </div>
+
+        <div th:if="${search != null and !#strings.isEmpty(search)}"
+             class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+            <span class="text-gray-600" th:text="#{clients.active_filters}">Active filters:</span>
+            <span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800"
+                  th:text="${search}">query</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-gray-700" th:text="#{clients.filtered_results(${#lists.size(clients)})}">0 results</span>
+            <a th:href="@{/admin/clients(size=${size})}" class="ml-auto text-blue-600 hover:text-blue-700 font-medium" th:text="#{common.clear}">Clear</a>
+        </div>
         
         <!-- Clients Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 pt-3 text-xs text-gray-500 md:hidden" th:text="#{clients.mobile.table_hint}">Swipe horizontally to view all client columns.</div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -126,94 +137,18 @@
                                              th:text="${client.companyName}">
                                             Company Name
                                         </div>
-                                        <!-- PREVOD ZA GRAD - REŠENJE 1 -->
-                                        <div class="text-sm text-gray-500">
-                                            <!-- Belgrade -> Beograd -->
-                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Belgrade')}">Beograd</span>
-                                            
-                                            <!-- Novi Sad ostaje Novi Sad (isti) -->
-                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Novi Sad')}" 
-                                                  th:text="${client.city}">Novi Sad</span>
-                                            
-                                            <!-- Nis ili Niš -> Niš -->
-                                            <span th:if="${client.city != null and (#strings.equalsIgnoreCase(client.city, 'Nis') or #strings.equalsIgnoreCase(client.city, 'Niš'))}">Niš</span>
-                                            
-                                            <!-- Kragujevac ostaje Kragujevac (isti) -->
-                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Kragujevac')}" 
-                                                  th:text="${client.city}">Kragujevac</span>
-                                            
-                                            <!-- Subotica ostaje Subotica (isti) -->
-                                            <span th:if="${client.city != null and #strings.equalsIgnoreCase(client.city, 'Subotica')}" 
-                                                  th:text="${client.city}">Subotica</span>
-                                            
-                                            <!-- Ostali gradovi koji nisu u listi -->
-                                            <span th:if="${client.city != null and 
-                                                          !#strings.equalsIgnoreCase(client.city, 'Belgrade') and 
-                                                          !#strings.equalsIgnoreCase(client.city, 'Novi Sad') and 
-                                                          !#strings.equalsIgnoreCase(client.city, 'Nis') and 
-                                                          !#strings.equalsIgnoreCase(client.city, 'Niš') and
-                                                          !#strings.equalsIgnoreCase(client.city, 'Kragujevac') and
-                                                          !#strings.equalsIgnoreCase(client.city, 'Subotica')}"
-                                                  th:text="${client.city}">
-                                            </span>
-                                            
-                                            <!-- Ako nema grada -->
-                                            <span th:if="${client.city == null}">-</span>
+                                        <div class="text-sm text-gray-500"
+                                             th:text="${client.city != null && !#strings.isEmpty(client.city) ? client.city : #messages.msg('common.na')}">
+                                            City
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             
-                            <!-- PREVOD ZA CONTACT PERSON - REŠENJE 1 -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">
-                                    <!-- Contact 1 -> Kontakt 1 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 1')}">Kontakt 1</span>
-                                    
-                                    <!-- Contact 2 -> Kontakt 2 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 2')}">Kontakt 2</span>
-                                    
-                                    <!-- Contact 3 -> Kontakt 3 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 3')}">Kontakt 3</span>
-                                    
-                                    <!-- Contact 4 -> Kontakt 4 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 4')}">Kontakt 4</span>
-                                    
-                                    <!-- Contact 5 -> Kontakt 5 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 5')}">Kontakt 5</span>
-                                    
-                                    <!-- Contact 6 -> Kontakt 6 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 6')}">Kontakt 6</span>
-                                    
-                                    <!-- Contact 7 -> Kontakt 7 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 7')}">Kontakt 7</span>
-                                    
-                                    <!-- Contact 8 -> Kontakt 8 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 8')}">Kontakt 8</span>
-                                    
-                                    <!-- Contact 9 -> Kontakt 9 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 9')}">Kontakt 9</span>
-                                    
-                                    <!-- Contact 10 -> Kontakt 10 -->
-                                    <span th:if="${client.contactPerson != null and #strings.equalsIgnoreCase(client.contactPerson, 'Contact 10')}">Kontakt 10</span>
-                                    
-                                    <!-- Ostali kontakti koji nisu Contact X -->
-                                    <span th:if="${client.contactPerson != null and 
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 1') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 2') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 3') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 4') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 5') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 6') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 7') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 8') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 9') and
-                                                  !#strings.equalsIgnoreCase(client.contactPerson, 'Contact 10')}"
-                                          th:text="${client.contactPerson}">
-                                    </span>
-                                    
-                                    <!-- Ako nema kontakt osobe -->
-                                    <span th:if="${client.contactPerson == null}">-</span>
+                                <div class="text-sm text-gray-900"
+                                     th:text="${client.contactPerson != null && !#strings.isEmpty(client.contactPerson) ? client.contactPerson : #messages.msg('common.na')}">
+                                    Contact
                                 </div>
                             </td>
                             
@@ -341,15 +276,6 @@
                     </form>
                 </div>
             </div>
-        </div>
-        
-        <!-- Debug info (opciono) -->
-        <div class="mt-8 p-4 bg-gray-100 rounded-lg text-sm">
-            <p><strong>Debug info:</strong> Locale: <span th:text="${#locale.language}">en</span></p>
-            <p>Test translations working: 
-                <span th:text="#{clients.title}">Clients</span>, 
-                <span th:text="#{clients.subtitle}">Manage your client database</span>
-            </p>
         </div>
     </main>
     
