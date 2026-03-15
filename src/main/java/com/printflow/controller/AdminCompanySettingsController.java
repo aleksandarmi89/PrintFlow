@@ -2,6 +2,8 @@ package com.printflow.controller;
 
 import com.printflow.dto.CompanyDTO;
 import com.printflow.entity.Company;
+import com.printflow.entity.User;
+import com.printflow.repository.UserRepository;
 import com.printflow.service.CompanyBrandingService;
 import com.printflow.service.CompanyService;
 import com.printflow.service.CurrentContextService;
@@ -27,18 +29,21 @@ public class AdminCompanySettingsController extends BaseController {
     private final CurrentContextService currentContextService;
     private final TenantContextService tenantContextService;
     private final MailSettingsService mailSettingsService;
+    private final UserRepository userRepository;
     private final boolean emailFallbackEnabled;
 
     public AdminCompanySettingsController(CompanyService companyService,
                                           CompanyBrandingService companyBrandingService,
                                           CurrentContextService currentContextService,
                                           MailSettingsService mailSettingsService,
+                                          UserRepository userRepository,
                                           TenantContextService tenantContextService,
                                           @org.springframework.beans.factory.annotation.Value("${app.notification.email.fallback-enabled:false}") boolean emailFallbackEnabled) {
         this.companyService = companyService;
         this.companyBrandingService = companyBrandingService;
         this.currentContextService = currentContextService;
         this.mailSettingsService = mailSettingsService;
+        this.userRepository = userRepository;
         this.tenantContextService = tenantContextService;
         this.emailFallbackEnabled = emailFallbackEnabled;
     }
@@ -46,10 +51,15 @@ public class AdminCompanySettingsController extends BaseController {
     @GetMapping
     public String settings(@RequestParam(required = false) String errorKey,
                            @RequestParam(required = false) String successKey,
+                           @RequestParam(required = false) String platformErrorKey,
+                           @RequestParam(required = false) String platformSuccessKey,
                            Model model) {
         String normalizedErrorKey = normalizeOptional(errorKey);
         String normalizedSuccessKey = normalizeOptional(successKey);
+        String normalizedPlatformErrorKey = normalizeOptional(platformErrorKey);
+        String normalizedPlatformSuccessKey = normalizeOptional(platformSuccessKey);
         Company company = currentContextService.currentCompany();
+        User currentUser = currentContextService.currentUser();
         CompanyDTO dto = companyService.getCompanyById(company.getId());
         var mailSettings = mailSettingsService.getOrCreate(company);
         String smtpSource = normalizeSmtpSource(mailSettingsService.resolveSmtpSource(company, mailSettings));
@@ -60,6 +70,11 @@ public class AdminCompanySettingsController extends BaseController {
         model.addAttribute("smtpFallbackEnabled", emailFallbackEnabled);
         model.addAttribute("errorKey", normalizedErrorKey);
         model.addAttribute("successKey", normalizedSuccessKey);
+        model.addAttribute("platformErrorKey", normalizedPlatformErrorKey);
+        model.addAttribute("platformSuccessKey", normalizedPlatformSuccessKey);
+        model.addAttribute("ownerName", resolveOwnerName(currentUser));
+        model.addAttribute("ownerEmail", normalizeOptional(currentUser.getEmail()));
+        model.addAttribute("ownerPhone", normalizeOptional(currentUser.getPhone()));
         return "admin/company/settings";
     }
 
@@ -175,6 +190,32 @@ public class AdminCompanySettingsController extends BaseController {
         }
     }
 
+    @PostMapping("/platform-contact")
+    public String updatePlatformContact(@RequestParam(required = false) String ownerName,
+                                        @RequestParam(required = false) String ownerEmail,
+                                        @RequestParam(required = false) String ownerPhone) {
+        if (!tenantContextService.isSuperAdmin()) {
+            return "redirect:/admin/company?platformErrorKey=company.platform_contact.error.forbidden";
+        }
+        User currentUser = currentContextService.currentUser();
+        String normalizedName = normalizeOptional(ownerName);
+        String normalizedEmail = normalizeOptional(ownerEmail);
+        String normalizedPhone = normalizeOptional(ownerPhone);
+
+        if (normalizedName == null) {
+            return "redirect:/admin/company?platformErrorKey=company.platform_contact.error.name_required";
+        }
+        if (normalizedEmail == null || !normalizedEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            return "redirect:/admin/company?platformErrorKey=company.platform_contact.error.email_invalid";
+        }
+
+        applyOwnerName(currentUser, normalizedName);
+        currentUser.setEmail(normalizedEmail);
+        currentUser.setPhone(normalizedPhone);
+        userRepository.save(currentUser);
+        return "redirect:/admin/company?platformSuccessKey=company.platform_contact.updated";
+    }
+
     private String validateSmtpSettings(Company company, String host, Integer port, String user, String password) {
         boolean anyProvided = (host != null && !host.isBlank())
             || port != null
@@ -222,6 +263,35 @@ public class AdminCompanySettingsController extends BaseController {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String resolveOwnerName(User user) {
+        if (user == null) {
+            return null;
+        }
+        String fullName = normalizeOptional(user.getFullName());
+        if (fullName != null) {
+            return fullName;
+        }
+        String firstName = normalizeOptional(user.getFirstName());
+        String lastName = normalizeOptional(user.getLastName());
+        if (firstName != null && lastName != null) {
+            return firstName + " " + lastName;
+        }
+        if (firstName != null) {
+            return firstName;
+        }
+        return normalizeOptional(user.getUsername());
+    }
+
+    private void applyOwnerName(User user, String ownerName) {
+        if (user == null || ownerName == null) {
+            return;
+        }
+        String[] parts = ownerName.trim().split("\\s+", 2);
+        user.setFirstName(parts[0]);
+        user.setLastName(parts.length > 1 ? parts[1] : "");
+        user.setFullName(ownerName.trim());
     }
 
     @GetMapping("/logo")

@@ -3,6 +3,8 @@ package com.printflow.controller;
 import com.printflow.dto.CompanyDTO;
 import com.printflow.entity.Company;
 import com.printflow.entity.MailSettings;
+import com.printflow.entity.User;
+import com.printflow.repository.UserRepository;
 import com.printflow.service.CompanyBrandingService;
 import com.printflow.service.CompanyService;
 import com.printflow.service.CurrentContextService;
@@ -29,10 +31,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
         );
         Company company = new Company();
         company.setId(15L);
@@ -59,10 +62,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
         );
         Company company = new Company();
         company.setId(16L);
@@ -94,10 +98,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
         );
         Company company = new Company();
         company.setId(17L);
@@ -113,13 +118,16 @@ class AdminCompanySettingsControllerTest {
         dto.setName("Tenant 17");
 
         when(contextService.currentCompany()).thenReturn(company);
+        User currentUser = new User();
+        currentUser.setUsername("superadmin");
+        when(contextService.currentUser()).thenReturn(currentUser);
         when(companyService.getCompanyById(17L)).thenReturn(dto);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(true);
         when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("mail_settings");
 
         Model model = new ExtendedModelMap();
-        String view = controller.settings(null, null, model);
+        String view = controller.settings(null, null, null, null, model);
 
         assertEquals("admin/company/settings", view);
         assertEquals("mail_settings", model.getAttribute("smtpSource"));
@@ -132,10 +140,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
         );
         Company company = new Company();
         company.setId(18L);
@@ -151,13 +160,16 @@ class AdminCompanySettingsControllerTest {
         dto.setName("Tenant 18");
 
         when(contextService.currentCompany()).thenReturn(company);
+        User currentUser = new User();
+        currentUser.setUsername("superadmin");
+        when(contextService.currentUser()).thenReturn(currentUser);
         when(companyService.getCompanyById(18L)).thenReturn(dto);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.isConfigured(settings)).thenReturn(false);
         when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("legacy_company");
 
         Model model = new ExtendedModelMap();
-        String view = controller.settings(null, null, model);
+        String view = controller.settings(null, null, null, null, model);
 
         assertEquals("admin/company/settings", view);
         assertEquals("legacy_company", model.getAttribute("smtpSource"));
@@ -170,10 +182,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, true
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, true
         );
         Company company = new Company();
         company.setId(19L);
@@ -209,10 +222,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
         );
         Company company = new Company();
         company.setId(20L);
@@ -224,16 +238,21 @@ class AdminCompanySettingsControllerTest {
         dto.setName("Tenant 20");
 
         when(contextService.currentCompany()).thenReturn(company);
+        User currentUser = new User();
+        currentUser.setUsername("superadmin");
+        when(contextService.currentUser()).thenReturn(currentUser);
         when(companyService.getCompanyById(20L)).thenReturn(dto);
         when(mailSettingsService.getOrCreate(company)).thenReturn(settings);
         when(mailSettingsService.resolveSmtpSource(company, settings)).thenReturn("none");
 
         Model model = new ExtendedModelMap();
-        String view = controller.settings("  company.smtp.error.invalid_email  ", "  company.smtp.test_sent  ", model);
+        String view = controller.settings("  company.smtp.error.invalid_email  ", "  company.smtp.test_sent  ", "  company.platform_contact.error.name_required  ", "  company.platform_contact.updated  ", model);
 
         assertEquals("admin/company/settings", view);
         assertEquals("company.smtp.error.invalid_email", model.getAttribute("errorKey"));
         assertEquals("company.smtp.test_sent", model.getAttribute("successKey"));
+        assertEquals("company.platform_contact.error.name_required", model.getAttribute("platformErrorKey"));
+        assertEquals("company.platform_contact.updated", model.getAttribute("platformSuccessKey"));
     }
 
     @Test
@@ -242,10 +261,11 @@ class AdminCompanySettingsControllerTest {
         CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
         TenantContextService tenantContextService = mock(TenantContextService.class);
 
         AdminCompanySettingsController controller = new AdminCompanySettingsController(
-            companyService, brandingService, contextService, mailSettingsService, tenantContextService, false
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
         );
         Company company = new Company();
         company.setId(21L);
@@ -265,5 +285,51 @@ class AdminCompanySettingsControllerTest {
         assertEquals("redirect:/admin/company?successKey=company.smtp.test_sent", view);
         verify(companyService).sendTestSmtpEmail(21L, "test@example.com");
         verify(companyService, never()).sendTestSmtpEmail(21L, "  test@example.com  ");
+    }
+
+    @Test
+    void platformContactRejectsNonSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
+        );
+
+        String view = controller.updatePlatformContact("Owner", "owner@example.com", "+381");
+        assertEquals("redirect:/admin/company?platformErrorKey=company.platform_contact.error.forbidden", view);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void platformContactUpdatesCurrentSuperAdminProfile() {
+        CompanyService companyService = mock(CompanyService.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        CurrentContextService contextService = mock(CurrentContextService.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        User user = new User();
+        user.setUsername("superadmin");
+        when(contextService.currentUser()).thenReturn(user);
+
+        AdminCompanySettingsController controller = new AdminCompanySettingsController(
+            companyService, brandingService, contextService, mailSettingsService, userRepository, tenantContextService, false
+        );
+
+        String view = controller.updatePlatformContact("Owner Name", "owner@example.com", "+381 11 123");
+
+        assertEquals("redirect:/admin/company?platformSuccessKey=company.platform_contact.updated", view);
+        verify(userRepository).save(user);
+        assertEquals("Owner", user.getFirstName());
+        assertEquals("Name", user.getLastName());
+        assertEquals("owner@example.com", user.getEmail());
+        assertEquals("+381 11 123", user.getPhone());
     }
 }
