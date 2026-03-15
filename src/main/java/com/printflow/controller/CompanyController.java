@@ -91,6 +91,7 @@ public class CompanyController extends BaseController {
         model.addAttribute("size", pageSize);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
         model.addAttribute("totalCompanies", companiesPage.getTotalElements());
+        model.addAttribute("isSuperAdmin", tenantContextService.isSuperAdmin());
         return "admin/companies/list";
     }
 

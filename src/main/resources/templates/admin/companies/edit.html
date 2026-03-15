@@ -316,7 +316,7 @@
                 </div>
             </div>
 
-            <div th:if="${isSuperAdmin}" class="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
+            <div id="superadmin-message" th:if="${isSuperAdmin}" class="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-900" th:text="#{admin.companies.message.title}">Send Message to Company</h3>
                 </div>
@@ -346,6 +346,9 @@
                                        name="toEmail"
                                        th:value="${company.billingEmail != null ? company.billingEmail : company.email}"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div class="text-xs text-gray-500 mt-1" th:text="#{admin.companies.message.to_hint}">
+                                    Leave blank to use company billing email automatically.
+                                </div>
                             </div>
                         </div>
                         <div>

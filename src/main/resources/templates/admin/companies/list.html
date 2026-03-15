@@ -188,6 +188,10 @@
                                     <a th:href="@{/admin/companies/edit/{id}(id=${company.id})}"
                                        class="text-blue-600 hover:text-blue-900"
                                        th:text="#{common.edit}">Edit</a>
+                                    <a th:if="${isSuperAdmin}"
+                                       th:href="@{/admin/companies/edit/{id}(id=${company.id}) + '#superadmin-message'}"
+                                       class="text-indigo-600 hover:text-indigo-900"
+                                       th:text="#{admin.companies.action.message}">Message</a>
                                     <form th:if="${company.active}"
                                           th:action="@{/admin/companies/disable/{id}(id=${company.id})}"
                                           method="post"
