@@ -1,6 +1,7 @@
 package com.printflow.service;
 
 import com.printflow.dto.CompanyDTO;
+import com.printflow.dto.EmailMessage;
 import com.printflow.entity.Company;
 import com.printflow.repository.ClientRepository;
 import com.printflow.repository.CompanyRepository;
@@ -15,9 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 class CompanyServiceTest {
 
@@ -466,5 +470,90 @@ class CompanyServiceTest {
         service.activateProOverrideForDays(22L, 365);
 
         verify(billingAccessService).invalidateCompanyCache(22L);
+    }
+
+    @Test
+    void sendSuperAdminCompanyMessageNormalizesUnknownTypeToGeneral() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        EmailService emailService = mock(EmailService.class);
+
+        Company company = new Company();
+        company.setId(30L);
+        company.setName("Tenant A");
+        when(companyRepository.findById(30L)).thenReturn(Optional.of(company));
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService,
+            emailService
+        );
+
+        service.sendSuperAdminCompanyMessage(30L, "billing@tenant.test", "Subject", "Body", "unexpected_type");
+
+        ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailService).sendNow(captor.capture(), isNull(), eq("superadmin-company-message"));
+        EmailMessage sent = captor.getValue();
+        assertEquals("general", sent.getMetadata().get("type"));
+        assertFalse(sent.getTextBody().contains("Invoice details"));
+    }
+
+    @Test
+    void sendSuperAdminCompanyMessageIncludesInvoiceDetailsWhenTypeInvoice() {
+        CompanyRepository companyRepository = mock(CompanyRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ClientRepository clientRepository = mock(ClientRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        com.printflow.storage.FileStorage fileStorage = mock(com.printflow.storage.FileStorage.class);
+        TemplateSeederService templateSeederService = mock(TemplateSeederService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        EmailService emailService = mock(EmailService.class);
+
+        Company company = new Company();
+        company.setId(31L);
+        company.setName("Tenant B");
+        when(companyRepository.findById(31L)).thenReturn(Optional.of(company));
+
+        CompanyService service = new CompanyService(
+            companyRepository,
+            userRepository,
+            clientRepository,
+            workOrderRepository,
+            fileStorage,
+            14,
+            templateSeederService,
+            notificationService,
+            emailService
+        );
+
+        service.sendSuperAdminCompanyMessage(
+            31L,
+            "billing@tenant.test",
+            "Invoice Subject",
+            "Please pay.",
+            "invoice",
+            "INV-2026-0099",
+            "4500.00 RSD",
+            "2026-04-01"
+        );
+
+        ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailService).sendNow(captor.capture(), isNull(), eq("superadmin-company-message"));
+        EmailMessage sent = captor.getValue();
+        assertEquals("invoice", sent.getMetadata().get("type"));
+        assertEquals("INV-2026-0099", sent.getMetadata().get("invoiceNumber"));
+        assertTrue(sent.getTextBody().contains("Invoice number: INV-2026-0099"));
+        assertTrue(sent.getHtmlBody().contains("Invoice details"));
     }
 }
