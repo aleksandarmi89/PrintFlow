@@ -233,7 +233,6 @@
                                     </a>
                                     <div class="border-t border-gray-200"></div>
                                     <form th:action="@{/logout}" method="post">
-                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                                         <button type="submit" 
                                                 class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
                                             <span th:text="#{auth.sign_out}">Sign out</span>
@@ -406,7 +405,6 @@
                                 <span th:text="#{nav.profile}">Profile</span>
                             </a>
                             <form th:action="@{/logout}" method="post" class="mt-2">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                                 <button type="submit" 
                                         class="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
                                     <span th:text="#{auth.sign_out}">Sign out</span>
