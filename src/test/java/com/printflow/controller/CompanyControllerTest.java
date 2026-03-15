@@ -590,4 +590,106 @@ class CompanyControllerTest {
         assertEquals(5, captured.get(0).getPageNumber());
         assertEquals(0, captured.get(1).getPageNumber());
     }
+
+    @Test
+    void sendCompanyMessageIsForbiddenForNonSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.sendCompanyMessage(
+            55L,
+            "billing@tenant.test",
+            "Invoice",
+            "Body",
+            "invoice",
+            "INV-001",
+            "1500 RSD",
+            "2026-03-31",
+            model
+        );
+
+        assertEquals("redirect:/admin/companies/edit/55", view);
+        verifyNoInteractions(companyService);
+    }
+
+    @Test
+    void sendCompanyMessageCallsServiceWithInvoiceFieldsForSuperAdmin() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.sendCompanyMessage(
+            56L,
+            "billing@tenant.test",
+            "Invoice",
+            "Body",
+            "invoice",
+            "INV-2026-0001",
+            "1250.00 RSD",
+            "2026-03-31",
+            model
+        );
+
+        assertEquals("redirect:/admin/companies/edit/56", view);
+        verify(companyService).sendSuperAdminCompanyMessage(
+            56L,
+            "billing@tenant.test",
+            "Invoice",
+            "Body",
+            "invoice",
+            "INV-2026-0001",
+            "1250.00 RSD",
+            "2026-03-31"
+        );
+    }
+
+    @Test
+    void sendCompanyMessageMapsEmailServiceUnavailableErrorToKey() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        doThrow(new RuntimeException("Email service is not configured"))
+            .when(companyService)
+            .sendSuperAdminCompanyMessage(any(), any(), any(), any(), any(), any(), any(), any());
+        Model model = new ExtendedModelMap();
+
+        String view = controller.sendCompanyMessage(
+            57L,
+            "billing@tenant.test",
+            "Notice",
+            "Body",
+            "general",
+            null,
+            null,
+            null,
+            model
+        );
+
+        assertEquals("redirect:/admin/companies/edit/57", view);
+        assertEquals("admin.companies.message.error.email_service_unavailable", model.getAttribute("errorMessage"));
+    }
 }
