@@ -23,6 +23,13 @@
         <p class="text-gray-600 mt-2">
             <span th:text="#{public.order.form.company}">Kompanija</span>: <strong th:text="${company.name}">PrintFlow</strong>
         </p>
+        <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+            <h2 class="text-sm font-semibold text-blue-900" th:text="#{public.order.form.smart.title}">Quick request helper</h2>
+            <p class="mt-1 text-xs text-blue-800" th:text="#{public.order.form.smart.subtitle}">
+                Add dimensions, deadline, and at least one file to get a faster and more accurate quote.
+            </p>
+            <div id="publicRequestSmartHint" class="mt-2 text-xs text-blue-900"></div>
+        </div>
 
         <div th:if="${errorMessage}" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" th:text="${errorMessage}"></div>
 
@@ -58,7 +65,8 @@
                 <div class="grid md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.product_type}">Tip proizvoda *</label>
-                        <input type="text" th:field="*{productType}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="text" th:field="*{productType}" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                               th:placeholder="#{public.order.form.product_type.placeholder}">
                         <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('productType')}" th:errors="*{productType}"></p>
                     </div>
                     <div>
@@ -72,11 +80,13 @@
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.material}">Materijal</label>
-                        <input type="text" th:field="*{material}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="text" th:field="*{material}" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                               th:placeholder="#{public.order.form.material.placeholder}">
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.finishing}">Dorada</label>
-                        <input type="text" th:field="*{finishing}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="text" th:field="*{finishing}" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                               th:placeholder="#{public.order.form.finishing.placeholder}">
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.deadline}">Rok</label>
@@ -84,15 +94,17 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.notes}">Napomena</label>
-                        <textarea th:field="*{notes}" rows="4" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+                        <textarea th:field="*{notes}" rows="4" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                  th:placeholder="#{public.order.form.notes.placeholder}"></textarea>
                     </div>
                 </div>
             </section>
 
             <section>
                 <h2 class="text-sm font-semibold text-gray-900 mb-3" th:text="#{public.order.form.files}">Fajlovi</h2>
-                <input type="file" name="files" multiple class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                <input id="publicOrderFiles" type="file" name="files" multiple class="w-full rounded-lg border border-gray-300 px-3 py-2">
                 <p class="text-xs text-gray-500 mt-1" th:text="#{public.order.form.files.hint}">PDF, JPG, PNG, SVG, AI, PSD. Maksimalno 5 fajlova.</p>
+                <p id="publicOrderFilesHint" class="text-xs text-gray-500 mt-1"></p>
             </section>
 
             <div class="pt-2">
@@ -103,5 +115,49 @@
         </form>
     </div>
 </main>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        const dimensions = document.querySelector('input[name="dimensions"]');
+        const deadline = document.querySelector('input[name="deadline"]');
+        const notes = document.querySelector('textarea[name="notes"]');
+        const files = document.getElementById('publicOrderFiles');
+        const smartHint = document.getElementById('publicRequestSmartHint');
+        const filesHint = document.getElementById('publicOrderFilesHint');
+        const i18n = {
+            ready: /*[[#{public.order.form.smart.ready}]]*/ 'Request looks good for fast processing.',
+            missingPrefix: /*[[#{public.order.form.smart.missing_prefix}]]*/ 'For faster processing, add:',
+            missingDimensions: /*[[#{public.order.form.smart.missing.dimensions}]]*/ 'dimensions',
+            missingDeadline: /*[[#{public.order.form.smart.missing.deadline}]]*/ 'deadline',
+            missingFiles: /*[[#{public.order.form.smart.missing.files}]]*/ 'at least one file',
+            noteTip: /*[[#{public.order.form.smart.notes_tip}]]*/ 'Tip: add preferred print finish or packaging notes.',
+            filesCount: /*[[#{public.order.form.smart.files_count}]]*/ '__COUNT__ file(s) selected.'
+        };
+
+        function updatePublicSmartHint() {
+            const missing = [];
+            if (!dimensions || !dimensions.value.trim()) missing.push(i18n.missingDimensions);
+            if (!deadline || !deadline.value.trim()) missing.push(i18n.missingDeadline);
+            const fileCount = files && files.files ? files.files.length : 0;
+            if (fileCount === 0) missing.push(i18n.missingFiles);
+            if (smartHint) {
+                if (missing.length === 0) {
+                    smartHint.textContent = i18n.ready + ' ' + i18n.noteTip;
+                } else {
+                    smartHint.textContent = i18n.missingPrefix + ' ' + missing.join(', ') + '.';
+                }
+            }
+            if (filesHint) {
+                filesHint.textContent = fileCount > 0 ? i18n.filesCount.replace('__COUNT__', String(fileCount)) : '';
+            }
+        }
+
+        [dimensions, deadline, notes, files].forEach(el => {
+            if (!el) return;
+            el.addEventListener('input', updatePublicSmartHint);
+            el.addEventListener('change', updatePublicSmartHint);
+        });
+        updatePublicSmartHint();
+    });
+</script>
 </body>
 </html>

@@ -30,6 +30,23 @@
             <p class="text-gray-600 mt-2" th:text="#{orders.create.subtitle}">
                 Fill in the details to create a new printing order
             </p>
+            <div id="smartOrderAssistant" class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-blue-900" th:text="#{orders.create.smart.title}">Smart Order Assistant</h2>
+                    <span id="assistantProgress" class="text-xs text-blue-700" th:text="#{orders.create.smart.progress(0,5)}">0/5 complete</span>
+                </div>
+                <p class="mt-1 text-xs text-blue-800" th:text="#{orders.create.smart.subtitle}">
+                    Complete key fields first to reduce production rework.
+                </p>
+                <ul class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    <li id="checkClient" class="text-gray-700" th:text="#{orders.create.smart.check.client.todo}">○ Client selected</li>
+                    <li id="checkTitle" class="text-gray-700" th:text="#{orders.create.smart.check.title.todo}">○ Title defined</li>
+                    <li id="checkDescription" class="text-gray-700" th:text="#{orders.create.smart.check.description.todo}">○ Clear brief</li>
+                    <li id="checkDeadline" class="text-gray-700" th:text="#{orders.create.smart.check.deadline.todo}">○ Deadline set</li>
+                    <li id="checkFiles" class="text-gray-700" th:text="#{orders.create.smart.check.files.todo}">○ Reference files attached</li>
+                </ul>
+                <div id="orderSmartWarnings" class="mt-3 hidden rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800"></div>
+            </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -111,7 +128,11 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1"
                                    th:text="#{orders.create.field.description}">Description *</label>
                             <textarea th:field="*{description}" id="orderDescription" rows="3"
+                                      th:placeholder="#{orders.create.field.description.placeholder}"
                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
+                            <p class="mt-1 text-xs text-gray-500" th:text="#{orders.create.field.description.hint}">
+                                Include dimensions, material, finishing, and delivery notes.
+                            </p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -239,6 +260,9 @@
                         </label>
                         <span th:if="${billingExpired}" class="ml-2 text-xs text-red-600" th:text="#{billing.lock.badge}">LOCKED</span>
                         <div id="fileList" class="mt-4 space-y-2 text-left"></div>
+                        <p class="mt-3 text-xs text-gray-500" th:text="#{orders.create.files.smart_hint}">
+                            Best practice: upload print-ready PDF and one visual reference to avoid clarification delays.
+                        </p>
                     </div>
                 </div>
 
@@ -344,6 +368,96 @@
         // Ostali event listener-i
         const clientSelect = document.getElementById('clientSelect');
         const clientInfo = document.getElementById('clientInfo');
+        const fileUpload = document.getElementById('fileUpload');
+        const fileList = document.getElementById('fileList');
+        const quantityInput = document.getElementById('quantity');
+        const titleInput = document.getElementById('orderTitle');
+        const descriptionInput = document.getElementById('orderDescription');
+        const assistantProgress = document.getElementById('assistantProgress');
+        const warningsBox = document.getElementById('orderSmartWarnings');
+        const checks = {
+            client: document.getElementById('checkClient'),
+            title: document.getElementById('checkTitle'),
+            description: document.getElementById('checkDescription'),
+            deadline: document.getElementById('checkDeadline'),
+            files: document.getElementById('checkFiles')
+        };
+        const i18n = {
+            doneClient: /*[[#{orders.create.smart.check.client.done}]]*/ 'Client selected',
+            todoClient: /*[[#{orders.create.smart.check.client.todo}]]*/ '○ Client selected',
+            doneTitle: /*[[#{orders.create.smart.check.title.done}]]*/ 'Title defined',
+            todoTitle: /*[[#{orders.create.smart.check.title.todo}]]*/ '○ Title defined',
+            doneDescription: /*[[#{orders.create.smart.check.description.done}]]*/ 'Clear brief',
+            todoDescription: /*[[#{orders.create.smart.check.description.todo}]]*/ '○ Clear brief',
+            doneDeadline: /*[[#{orders.create.smart.check.deadline.done}]]*/ 'Deadline set',
+            todoDeadline: /*[[#{orders.create.smart.check.deadline.todo}]]*/ '○ Deadline set',
+            doneFiles: /*[[#{orders.create.smart.check.files.done}]]*/ 'Reference files attached',
+            todoFiles: /*[[#{orders.create.smart.check.files.todo}]]*/ '○ Reference files attached',
+            warnNoFiles: /*[[#{orders.create.smart.warn.no_files}]]*/ 'No files attached yet. Add at least one reference to reduce back-and-forth.',
+            warnTightDeadline: /*[[#{orders.create.smart.warn.tight_deadline}]]*/ 'High quantity with a near deadline may be risky. Confirm capacity before saving.',
+            warnShortBrief: /*[[#{orders.create.smart.warn.short_brief}]]*/ 'Description is very short. Add dimensions/material/finishing for fewer clarification calls.',
+            progressTemplate: /*[[#{orders.create.smart.progress_label}]]*/ '__DONE__/__TOTAL__ complete'
+        };
+
+        function setCheck(element, done, doneLabel, todoLabel) {
+            if (!element) return;
+            element.textContent = done ? ('✓ ' + doneLabel) : todoLabel;
+            element.className = done ? 'text-green-700' : 'text-gray-700';
+        }
+
+        function parseDeadlineValue(value) {
+            if (!value) return null;
+            const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+            const parsed = new Date(normalized);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        function updateSmartAssistant() {
+            const hasClient = !!(clientSelect && clientSelect.value);
+            const hasTitle = !!(titleInput && titleInput.value.trim().length >= 3);
+            const descLength = descriptionInput ? descriptionInput.value.trim().length : 0;
+            const hasDescription = descLength >= 20;
+            const hasDeadline = !!(deadlinePicker && deadlinePicker.value.trim().length > 0);
+            const hasFiles = !!(fileUpload && fileUpload.files && fileUpload.files.length > 0);
+
+            setCheck(checks.client, hasClient, i18n.doneClient, i18n.todoClient);
+            setCheck(checks.title, hasTitle, i18n.doneTitle, i18n.todoTitle);
+            setCheck(checks.description, hasDescription, i18n.doneDescription, i18n.todoDescription);
+            setCheck(checks.deadline, hasDeadline, i18n.doneDeadline, i18n.todoDeadline);
+            setCheck(checks.files, hasFiles, i18n.doneFiles, i18n.todoFiles);
+
+            const doneCount = [hasClient, hasTitle, hasDescription, hasDeadline, hasFiles].filter(Boolean).length;
+            if (assistantProgress) {
+                assistantProgress.textContent = i18n.progressTemplate
+                    .replace('__DONE__', String(doneCount))
+                    .replace('__TOTAL__', '5');
+            }
+
+            const warnings = [];
+            if (!hasFiles) {
+                warnings.push(i18n.warnNoFiles);
+            }
+            if (descLength > 0 && descLength < 20) {
+                warnings.push(i18n.warnShortBrief);
+            }
+            const qty = quantityInput ? Number(quantityInput.value || 0) : 0;
+            const parsedDeadline = parseDeadlineValue(deadlinePicker ? deadlinePicker.value : '');
+            if (qty >= 5000 && parsedDeadline) {
+                const diffHours = (parsedDeadline.getTime() - Date.now()) / (1000 * 60 * 60);
+                if (diffHours > 0 && diffHours < 24) {
+                    warnings.push(i18n.warnTightDeadline);
+                }
+            }
+            if (warningsBox) {
+                if (warnings.length === 0) {
+                    warningsBox.classList.add('hidden');
+                    warningsBox.innerHTML = '';
+                } else {
+                    warningsBox.classList.remove('hidden');
+                    warningsBox.innerHTML = warnings.map(item => `<div>• ${item}</div>`).join('');
+                }
+            }
+        }
 
         if (clientSelect && clientInfo) {
             clientSelect.addEventListener('change', function() {
@@ -357,11 +471,9 @@
                 } else {
                     clientInfo.classList.add('hidden');
                 }
+                updateSmartAssistant();
             });
         }
-
-        const fileUpload = document.getElementById('fileUpload');
-        const fileList = document.getElementById('fileList');
 
         if (fileUpload && fileList) {
             fileUpload.addEventListener('change', function() {
@@ -372,8 +484,15 @@
                     div.innerHTML = `<span>${file.name}</span> <span class="text-gray-400">${Math.round(file.size/1024)} KB</span>`;
                     fileList.appendChild(div);
                 });
+                updateSmartAssistant();
             });
         }
+        [titleInput, descriptionInput, quantityInput, deadlinePicker].forEach(element => {
+            if (!element) return;
+            element.addEventListener('input', updateSmartAssistant);
+            element.addEventListener('change', updateSmartAssistant);
+        });
+        updateSmartAssistant();
     });
 
     function loadTemplate(type) {
