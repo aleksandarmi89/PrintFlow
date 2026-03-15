@@ -16,10 +16,35 @@
                th:text="${messageKey != null ? #messages.msg(messageKey) : #messages.msg('public.design_feedback.approved')}">
                 Thank you for your feedback.
             </p>
+            <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left">
+                <h2 class="text-sm font-semibold text-blue-900" th:text="#{public.design_feedback.smart.title}">Next steps</h2>
+                <ul class="mt-2 space-y-1 text-xs text-blue-800">
+                    <li th:if="${messageKey == null || messageKey == 'public.design_feedback.approved'}"
+                        th:text="#{public.design_feedback.smart.approved.step1}">
+                        Production planning starts and status updates will follow.
+                    </li>
+                    <li th:if="${messageKey == null || messageKey == 'public.design_feedback.approved'}"
+                        th:text="#{public.design_feedback.smart.approved.step2}">
+                        Keep your email/phone available for delivery confirmation.
+                    </li>
+                    <li th:if="${messageKey == 'public.design_feedback.revision_requested'}"
+                        th:text="#{public.design_feedback.smart.revision.step1}">
+                        Design team will revise and send an updated preview.
+                    </li>
+                    <li th:if="${messageKey == 'public.design_feedback.revision_requested'}"
+                        th:text="#{public.design_feedback.smart.revision.step2}">
+                        Add specific comments to speed up the next revision.
+                    </li>
+                </ul>
+            </div>
             <div class="mt-6">
                 <a th:href="@{/public/track(lang=${langParam})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                    th:text="#{order_not_found.track_another}">
                     Track another order
+                </a>
+                <a th:href="@{/public/contact(lang=${langParam})}" class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                   th:text="#{order_not_found.contact}">
+                    Contact
                 </a>
             </div>
         </div>
