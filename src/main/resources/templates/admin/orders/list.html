@@ -64,7 +64,7 @@
                                 <option th:each="opt : ${allowedSizes}"
                                         th:value="${opt}"
                                         th:selected="${size == opt}"
-                                        th:text="#{pagination.size.option(${opt} + ' / page')}">20 / page</option>
+                                        th:text="${opt + ' ' + #messages.msg('pagination.per_page')}">20 / page</option>
                             </select>
                             <a th:href="@{/admin/orders}" 
                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
