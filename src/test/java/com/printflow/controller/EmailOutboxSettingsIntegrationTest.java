@@ -30,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -177,6 +178,39 @@ class EmailOutboxSettingsIntegrationTest {
         mockMvc.perform(get("/settings").session(workerSession))
             .andExpect(status().isOk())
             .andExpect(content().string(org.hamcrest.Matchers.containsString("/settings/password")));
+    }
+
+    @Test
+    void nonAdminCanChangeOwnPasswordViaSettings() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        TenantTestFixture.TenantIds ids = fixture.createTenantData();
+        Company company1 = companyRepository.findById(ids.company1Id()).orElseThrow();
+
+        User worker = new User();
+        worker.setUsername("tenant1_worker_password");
+        worker.setPassword(passwordEncoder.encode("password"));
+        worker.setRole(User.Role.WORKER_GENERAL);
+        worker.setCompany(company1);
+        worker.setFirstName("Worker");
+        worker.setLastName("Password");
+        worker.setActive(true);
+        userRepository.save(worker);
+
+        MockHttpSession workerSession = fixture.login("tenant1_worker_password", "password");
+
+        mockMvc.perform(post("/settings/password")
+                .with(csrf())
+                .session(workerSession)
+                .param("currentPassword", "password")
+                .param("newPassword", "new-pass-123")
+                .param("confirmPassword", "new-pass-123"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/settings"))
+            .andExpect(flash().attribute("successMessage", "auth.password_updated"));
+
+        MockHttpSession relogin = fixture.login("tenant1_worker_password", "new-pass-123");
+        assertThat(relogin).isNotNull();
     }
 
     @Test
