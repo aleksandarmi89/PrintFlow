@@ -241,13 +241,13 @@
                         <li th:text="${(footerCompanyAddress != null && !#strings.isEmpty(footerCompanyAddress)) ? footerCompanyAddress : (companyBrand != null && companyBrand.address != null && !#strings.isEmpty(companyBrand.address) ? companyBrand.address : #messages.msg('footer.location'))}">Belgrade, Serbia</li>
                         <li th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email) ? companyBrand.email : #messages.msg('footer.email'))}">info@printflow.com</li>
                         <li th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : (companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone) ? companyBrand.phone : #messages.msg('footer.phone'))}">+381 11 123 4567</li>
-                        <li th:if="${companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)}"
-                            th:text="${companyBrand.website}">https://example.com</li>
+                        <li th:if="${(footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite)) || (companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website))}"
+                            th:text="${(footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite)) ? footerCompanyWebsite : companyBrand.website}">https://example.com</li>
                     </ul>
                 </div>
             </div>
             <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-                <p>&copy; <span th:text="${currentYear}">2024</span> <span th:text="${companyBrand != null && companyBrand.name != null && !#strings.isEmpty(companyBrand.name) ? companyBrand.name : #messages.msg('public.brand_footer')}">PrintFlow SaaS</span>. <span th:text="#{public.brand_footer_rights}">All rights reserved.</span></p>
+                <p>&copy; <span th:text="${currentYear}">2024</span> <span th:text="${(footerCompanyName != null && !#strings.isEmpty(footerCompanyName)) ? footerCompanyName : (companyBrand != null && companyBrand.name != null && !#strings.isEmpty(companyBrand.name) ? companyBrand.name : #messages.msg('public.brand_footer'))}">PrintFlow SaaS</span>. <span th:text="#{public.brand_footer_rights}">All rights reserved.</span></p>
             </div>
         </div>
     </footer>
