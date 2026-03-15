@@ -26,6 +26,16 @@
             <p class="mt-2 text-center text-sm text-gray-600" th:text="#{auth.sign_in_subtitle}">
                 Use your company credentials to access PrintFlow.
             </p>
+            <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                <h3 class="text-sm font-semibold text-blue-900" th:text="#{auth.login.smart.title}">Login helper</h3>
+                <p class="mt-1 text-xs text-blue-800" th:text="#{auth.login.smart.subtitle}">
+                    Enter your company username and password to continue.
+                </p>
+                <p id="loginSmartHint" class="mt-2 text-xs text-blue-900"></p>
+                <p id="capsLockHint" class="mt-1 hidden text-xs text-amber-800" th:text="#{auth.login.smart.caps_lock}">
+                    Caps Lock appears to be on.
+                </p>
+            </div>
         </div>
         
         <!-- Login Form -->
@@ -107,5 +117,77 @@
             </a>
         </div>
     </div>
+    <div id="loginSmartI18n"
+         class="hidden"
+         th:attr="data-empty=#{auth.login.smart.empty},
+                  data-short-user=#{auth.login.smart.short_user},
+                  data-user-ok=#{auth.login.smart.user_ok},
+                  data-password-short=#{auth.login.smart.password_short},
+                  data-ready=#{auth.login.smart.ready},
+                  data-remember=#{auth.login.smart.remember}">
+    </div>
+    <script>
+        (function () {
+            const username = document.getElementById('username');
+            const password = document.getElementById('password');
+            const remember = document.getElementById('remember-me');
+            const hint = document.getElementById('loginSmartHint');
+            const capsLockHint = document.getElementById('capsLockHint');
+            const i18nEl = document.getElementById('loginSmartI18n');
+            if (!username || !password || !hint || !i18nEl) return;
+
+            const i18n = {
+                empty: i18nEl.getAttribute('data-empty') || 'Start with your username or email.',
+                shortUser: i18nEl.getAttribute('data-short-user') || 'Username looks short. Check for typos.',
+                userOk: i18nEl.getAttribute('data-user-ok') || 'Username looks good.',
+                passwordShort: i18nEl.getAttribute('data-password-short') || 'Password appears short. Check before submitting.',
+                ready: i18nEl.getAttribute('data-ready') || 'Credentials look ready. You can sign in.',
+                remember: i18nEl.getAttribute('data-remember') || 'Remember me is enabled on this device.'
+            };
+
+            function normalizeUsername() {
+                username.value = (username.value || '').trim();
+            }
+
+            function updateHint() {
+                const user = (username.value || '').trim();
+                const pass = password.value || '';
+                const messages = [];
+                if (!user) {
+                    messages.push(i18n.empty);
+                } else if (user.length < 3) {
+                    messages.push(i18n.shortUser);
+                } else {
+                    messages.push(i18n.userOk);
+                }
+                if (pass && pass.length < 6) {
+                    messages.push(i18n.passwordShort);
+                } else if (user.length >= 3 && pass.length >= 6) {
+                    messages.push(i18n.ready);
+                }
+                if (remember && remember.checked) {
+                    messages.push(i18n.remember);
+                }
+                hint.textContent = messages.join(' ');
+            }
+
+            function handleCapsLock(event) {
+                if (!capsLockHint || !event || typeof event.getModifierState !== 'function') return;
+                const isOn = event.getModifierState('CapsLock');
+                capsLockHint.classList.toggle('hidden', !isOn);
+            }
+
+            username.addEventListener('blur', function () {
+                normalizeUsername();
+                updateHint();
+            });
+            username.addEventListener('input', updateHint);
+            password.addEventListener('input', updateHint);
+            password.addEventListener('keyup', handleCapsLock);
+            password.addEventListener('keydown', handleCapsLock);
+            if (remember) remember.addEventListener('change', updateHint);
+            updateHint();
+        })();
+    </script>
 </body>
 </html>
