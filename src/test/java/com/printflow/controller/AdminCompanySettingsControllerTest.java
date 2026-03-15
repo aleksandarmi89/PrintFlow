@@ -43,8 +43,9 @@ class AdminCompanySettingsControllerTest {
 
         Model model = new ExtendedModelMap();
         String view = controller.update(
-            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com", "#111111",
-            "RSD", null, null, null, null, null, null, model
+            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com",
+            null, null, null, null, null, null,
+            "#111111", "RSD", null, null, null, null, null, null, model
         );
 
         assertEquals("redirect:/admin/company", view);
@@ -76,8 +77,9 @@ class AdminCompanySettingsControllerTest {
 
         Model model = new ExtendedModelMap();
         String view = controller.update(
-            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com", "#111111",
-            "RSD", null, null, null, null, null, null, model
+            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com",
+            null, null, null, null, null, null,
+            "#111111", "RSD", null, null, null, null, null, null, model
         );
 
         assertEquals("admin/company/settings", view);
@@ -189,8 +191,9 @@ class AdminCompanySettingsControllerTest {
 
         Model model = new ExtendedModelMap();
         String view = controller.update(
-            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com", "#111111",
-            "RSD", "smtp.example.com", 587, "", "", true, null, model
+            null, "ignored", "team@example.com", "+38111111", "Main 1", "example.com",
+            null, null, null, null, null, null,
+            "#111111", "RSD", "smtp.example.com", 587, "", "", true, null, model
         );
 
         assertEquals("admin/company/settings", view);

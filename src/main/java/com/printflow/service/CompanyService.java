@@ -55,6 +55,19 @@ public class CompanyService {
         this.emailService = emailService;
     }
 
+    // Backward-compatible constructor used by older tests that do not need outbound email sending.
+    public CompanyService(CompanyRepository companyRepository,
+                          UserRepository userRepository,
+                          ClientRepository clientRepository,
+                          WorkOrderRepository workOrderRepository,
+                          com.printflow.storage.FileStorage fileStorage,
+                          int trialDays,
+                          TemplateSeederService templateSeederService,
+                          NotificationService notificationService) {
+        this(companyRepository, userRepository, clientRepository, workOrderRepository, fileStorage, trialDays,
+            templateSeederService, notificationService, null);
+    }
+
     public List<CompanyDTO> getCompanies(String search) {
         String normalizedSearch = search == null ? "" : search.trim();
         List<Company> companies;
@@ -242,6 +255,9 @@ public class CompanyService {
                                              String subject,
                                              String body,
                                              String messageType) {
+        if (emailService == null) {
+            throw new RuntimeException("Email service is not configured");
+        }
         Company company = companyRepository.findById(companyId)
             .orElseThrow(() -> new RuntimeException("Company not found"));
         String normalizedTo = normalizeNullable(toEmail);
