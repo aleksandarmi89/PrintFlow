@@ -12,20 +12,21 @@
     <!-- Navigation -->
     <nav class="bg-white shadow-lg">
         <div class="container mx-auto px-4">
-            <div class="py-3 flex flex-col gap-3 md:gap-0 md:h-20 md:flex-row md:justify-between md:items-center">
+            <div class="py-2 flex flex-col gap-3 md:gap-0 md:h-16 md:flex-row md:justify-between md:items-center">
                 <div class="flex items-center">
                     <a th:href="@{/}" class="flex items-center space-x-2">
-                        <div class="h-24 md:h-28 flex items-center justify-center">
-                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-20 md:h-24 w-auto object-contain">
-                            <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-20 md:h-24 flex items-center justify-center">
-                                <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-24 md:h-28 w-auto object-contain"
+                        <div class="h-12 md:h-14 flex items-center justify-center">
+                            <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 md:h-12 w-auto object-contain">
+                            <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 md:h-12 flex items-center justify-center">
+                                <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-10 md:h-12 w-auto object-contain"
                                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                                <div style="display:none" class="w-24 h-24 bg-blue-600 rounded-lg items-center justify-center">
+                                <div style="display:none" class="w-10 h-10 bg-blue-600 rounded-lg items-center justify-center">
                                     <span class="text-white font-bold">PF</span>
                                 </div>
                             </div>
                         </div>
-                        <span class="text-xl font-bold text-gray-800"
+                        <span th:if="${companyBrand != null and companyBrand.logoUrl != null}"
+                              class="text-xl font-bold text-gray-800"
                               th:text="${(companyBrand != null && companyBrand.name != null && !#strings.isEmpty(companyBrand.name)) ? companyBrand.name : 'ProPrintFlow'}">ProPrintFlow</span>
                     </a>
                 </div>
