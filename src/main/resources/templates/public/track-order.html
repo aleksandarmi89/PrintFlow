@@ -11,6 +11,14 @@
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 mb-2" th:text="#{track.title}">Track Your Order</h1>
                 <p class="text-gray-600" th:text="#{track.subtitle}">Enter your order tracking code to check the status</p>
+                <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left">
+                    <h2 class="text-sm font-semibold text-blue-900" th:text="#{track.smart.title}">Tracking helper</h2>
+                    <ul class="mt-2 space-y-1 text-xs text-blue-800">
+                        <li th:text="#{track.smart.step1}">Select company first for faster lookup.</li>
+                        <li th:text="#{track.smart.step2}">Use full code from email (example: ORD-123456-789).</li>
+                        <li th:text="#{track.smart.step3}">If code is not found, contact the print shop directly.</li>
+                    </ul>
+                </div>
                 <div class="mt-3 flex items-center justify-center gap-2 text-xs text-gray-600">
                     <span th:text="#{nav.language}">Language</span>
                     <a th:href="@{/public/track(lang='sr',company=${companyParam},token=${tokenParam})}"
@@ -36,6 +44,8 @@
                             <input id="companySearch" type="text"
                                    class="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                    th:placeholder="#{track.search_company_placeholder}" />
+                            <p id="companySearchInfo" class="mb-2 text-xs text-gray-500"
+                               th:attr="data-label=#{track.smart.visible_companies},data-no-match=#{track.smart.no_company_match}"></p>
                             <select id="companySelect" name="company"
                                     onchange="this.form.submit()"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -143,6 +153,8 @@
         (function () {
             const search = document.getElementById('companySearch');
             const select = document.getElementById('companySelect');
+            const searchInfo = document.getElementById('companySearchInfo');
+            const trackingCode = document.getElementById('trackingCode');
             if (!search || !select) return;
 
             const baseOptions = Array.from(select.options).map(opt => ({
@@ -163,11 +175,25 @@
                     option.selected = o.value === currentValue || (currentValue === '' && o.selected);
                     select.appendChild(option);
                 });
+                if (searchInfo) {
+                    const visible = Math.max(0, filtered.length - 1);
+                    const total = Math.max(0, baseOptions.length - 1);
+                    const label = searchInfo.getAttribute('data-label') || 'Visible companies:';
+                    const noMatch = searchInfo.getAttribute('data-no-match') || 'No matching companies.';
+                    searchInfo.textContent = visible > 0 ? `${label} ${visible}/${total}` : noMatch;
+                }
             }
 
             search.addEventListener('input', function () {
                 render(search.value);
             });
+
+            if (trackingCode) {
+                trackingCode.addEventListener('blur', function () {
+                    trackingCode.value = (trackingCode.value || '').trim().replace(/\s+/g, '').toUpperCase();
+                });
+            }
+            render('');
         })();
     </script>
 </body>
