@@ -110,14 +110,6 @@ public class GlobalModelAttributes {
             if (superAdmin.getPhone() != null && !superAdmin.getPhone().isBlank()) {
                 model.addAttribute("footerCompanyPhone", superAdmin.getPhone());
             }
-            if (superAdmin.getCompany() != null) {
-                if (superAdmin.getCompany().getAddress() != null && !superAdmin.getCompany().getAddress().isBlank()) {
-                    model.addAttribute("footerCompanyAddress", superAdmin.getCompany().getAddress());
-                }
-                if (superAdmin.getCompany().getWebsite() != null && !superAdmin.getCompany().getWebsite().isBlank()) {
-                    model.addAttribute("footerCompanyWebsite", superAdmin.getCompany().getWebsite());
-                }
-            }
         });
     }
 }
