@@ -8,15 +8,20 @@
 
 <main class="container mx-auto px-4 py-8">
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900" th:text="#{email.settings.title}">Email Settings</h1>
-        <p class="text-gray-600 mt-2" th:text="#{email.settings.subtitle}">Configure SMTP for your company.</p>
-        <div class="mt-3 flex flex-wrap items-center gap-2">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
             <a th:href="@{/admin/company}"
                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                th:text="#{email.settings.back_company}">
                 Back to Company Settings
             </a>
+            <a th:href="@{/admin/billing}"
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+               th:text="#{company.settings.quick_billing}">
+                Open Billing
+            </a>
         </div>
+        <h1 class="text-3xl font-bold text-gray-900" th:text="#{email.settings.title}">Email Settings</h1>
+        <p class="text-gray-600 mt-2" th:text="#{email.settings.subtitle}">Configure SMTP for your company.</p>
     </div>
 
     <div class="max-w-3xl mx-auto">
@@ -29,7 +34,8 @@
                      th:with="m=${#messages.msgOrNull(errorKey)}"
                      th:text="${m != null ? m : errorKey}">Error</div>
                 <div th:if="${errorMessage != null}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 break-all"
-                     th:text="${errorMessage}">SMTP detail</div>
+                     th:with="m=${#messages.msgOrNull(errorMessage)}"
+                     th:text="${m != null ? m : errorMessage}">SMTP detail</div>
                 <div th:if="${successKey != null}" class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
                      th:with="m=${#messages.msgOrNull(successKey)}"
                      th:text="${m != null ? m : successKey}">Saved</div>
@@ -197,7 +203,7 @@
                         </div>
                     </div>
 
-                    <form method="get" th:action="@{/settings/email}" class="mb-3 flex items-center gap-2">
+                    <form method="get" th:action="@{/settings/email}" class="mb-3 flex flex-wrap items-center gap-2">
                         <label for="outboxStatus" class="text-sm text-gray-700" th:text="#{email.settings.outbox.filter_status}">Filter status:</label>
                         <select id="outboxStatus" name="outboxStatus"
                                 class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
