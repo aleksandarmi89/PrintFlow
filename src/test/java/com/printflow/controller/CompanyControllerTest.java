@@ -725,4 +725,47 @@ class CompanyControllerTest {
         assertEquals("redirect:/admin/companies/edit/58", view);
         assertEquals("admin.companies.message.error.recipient_invalid", model.getAttribute("errorMessage"));
     }
+
+    @Test
+    void sendCompanyMessageFallsBackToBillingEmailWhenRecipientMissing() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        CompanyDTO dto = new CompanyDTO();
+        dto.setBillingEmail("billing@tenant.test");
+        dto.setEmail("info@tenant.test");
+        when(companyService.getCompanyById(59L)).thenReturn(dto);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.sendCompanyMessage(
+            59L,
+            "   ",
+            "Notice",
+            "Body",
+            "general",
+            null,
+            null,
+            null,
+            model
+        );
+
+        assertEquals("redirect:/admin/companies/edit/59", view);
+        verify(companyService).sendSuperAdminCompanyMessage(
+            59L,
+            "billing@tenant.test",
+            "Notice",
+            "Body",
+            "general",
+            null,
+            null,
+            null
+        );
+    }
 }

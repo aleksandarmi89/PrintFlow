@@ -245,7 +245,15 @@ public class CompanyController extends BaseController {
             return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
         }
         try {
-            companyService.sendSuperAdminCompanyMessage(id, toEmail, subject, body, type, invoiceNumber, invoiceAmount, invoiceDueDate);
+            String normalizedToEmail = normalizeOptional(toEmail);
+            if (normalizedToEmail == null) {
+                CompanyDTO company = companyService.getCompanyById(id);
+                normalizedToEmail = normalizeOptional(company.getBillingEmail());
+                if (normalizedToEmail == null) {
+                    normalizedToEmail = normalizeOptional(company.getEmail());
+                }
+            }
+            companyService.sendSuperAdminCompanyMessage(id, normalizedToEmail, subject, body, type, invoiceNumber, invoiceAmount, invoiceDueDate);
             return redirectWithSuccess("/admin/companies/edit/" + id, "admin.companies.message.sent", model);
         } catch (RuntimeException e) {
             return redirectWithError("/admin/companies/edit/" + id, mapCompanyErrorToKey(e.getMessage()), model);
