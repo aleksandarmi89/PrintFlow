@@ -8,17 +8,18 @@
     
     <main class="container mx-auto px-4 py-8">
         <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <span th:with="m=${#messages.msgOrNull(billingLockMessageKey)}"
+                  th:text="${m != null ? m : (#messages.msgOrNull('billing.lock.expired') != null ? #messages.msg('billing.lock.expired') : 'Premium features are locked. Please upgrade.')}">Premium features are locked. Please upgrade.</span>
             <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
         </div>
         <!-- Page Header -->
         <div class="mb-8">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900" th:text="#{worker.tasks.details.task_title(${task.orderNumber})}">Task</h1>
                     <p class="text-gray-600 mt-2" th:text="${task.title}"></p>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex flex-wrap gap-3">
                     <a th:href="@{/worker/my-tasks}" 
                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                         <span th:text="#{worker.tasks.details.back_to_tasks}">← Back to Tasks</span>
@@ -47,7 +48,7 @@
             <div class="lg:col-span-2 space-y-8">
                 <!-- Status and Actions -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.details.task_status}">Task Status</h2>
                             <div class="mt-2">
@@ -81,12 +82,12 @@
                         </div>
                         
                         <!-- Status Actions -->
-                        <div class="flex space-x-3">
+                        <div class="flex w-full xl:w-auto">
                             <form th:action="@{/worker/task/{id}/update-status(id=${task.id})}"
                                   method="post"
-                                  class="flex flex-col gap-2">
+                                  class="flex w-full flex-col gap-2">
                                 <input type="hidden" name="_csrf" th:value="${_csrf != null ? _csrf.token : ''}"/>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                                     <select name="status"
                                             class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
                                         <option value="IN_PROGRESS" th:selected="${task.status == 'IN_PROGRESS'}" th:text="#{tasks.status.IN_PROGRESS}">In Progress</option>
@@ -247,7 +248,7 @@
                 
                 <!-- Admin Instructions / Reference -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.details.admin_instructions}">Admin Instructions</h2>
                         <span class="text-xs text-gray-500" th:text="#{worker.tasks.details.admin_instructions_hint}">Images & notes from admin</span>
                     </div>
@@ -298,7 +299,7 @@
 
                 <!-- Proof of Work -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.details.proof.title}">Proof of Completion</h2>
                         <span class="text-xs text-gray-500" th:text="#{worker.tasks.details.proof.subtitle}">Upload image + description</span>
                     </div>
@@ -404,7 +405,7 @@
 
                 <!-- Attachments -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h2 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.details.attachments_title}">All Attachments</h2>
                         <span class="text-xs text-gray-500" th:text="#{worker.tasks.details.attachments_subtitle}">Work order files</span>
                     </div>
@@ -471,12 +472,12 @@
                     <div class="space-y-4">
                         <!-- Current Session -->
                         <div th:if="${task.timerStartedAt != null}" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                            <div class="flex justify-between items-center">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-blue-900" th:text="#{worker.tasks.details.currently_working}">Currently Working</p>
                                     <p class="text-2xl font-bold text-blue-900" id="currentTimer">00:00:00</p>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-2">
                                     <form th:action="@{/worker/task/{id}/pause-timer(id=${task.id})}" method="post" data-timer-form="pause">
                                         <input type="hidden" name="_csrf" th:value="${_csrf != null ? _csrf.token : ''}"/>
                                         <button type="submit"
@@ -893,7 +894,7 @@
         <div id="comment-preview-modal" class="hidden fixed inset-0 z-50">
             <div class="absolute inset-0 bg-black/50" onclick="closeCommentPreview()"></div>
             <div class="relative max-w-4xl mx-auto mt-16 bg-white rounded-xl shadow-lg border border-gray-200 p-4">
-                <div class="flex justify-between items-center mb-3">
+                <div class="mb-3 flex items-center justify-between gap-3">
                     <h3 class="text-lg font-semibold text-gray-900" th:text="#{worker.tasks.details.attachment_preview}">Attachment Preview</h3>
                     <button type="button" onclick="closeCommentPreview()" class="text-gray-500 hover:text-gray-700">✕</button>
                 </div>
