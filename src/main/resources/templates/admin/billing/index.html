@@ -271,6 +271,9 @@
                     <div id="priceMissingWarning" class="hidden text-xs text-red-600" th:text="#{billing.checkout.missing_price}">
                         Missing Stripe price ID for selected plan.
                     </div>
+                    <p id="checkoutSmartHint" class="text-xs text-sky-700" th:text="#{billing.checkout.smart.initial}">
+                        Pick interval and verify plan price before starting checkout.
+                    </p>
                     <button id="checkoutSubmit" type="submit"
                             th:classappend="${stripeConfigured == false} ? 'opacity-60 cursor-not-allowed' : ''"
                             th:disabled="${stripeConfigured == false}"
@@ -351,6 +354,15 @@
         const selectedPlan = /*[[${selectedPlan}]]*/ 'PRO';
         const selectedInterval = /*[[${selectedInterval}]]*/ 'MONTHLY';
         const stripeConfigured = /*[[${stripeConfigured}]]*/ true;
+        const checkoutHint = document.getElementById('checkoutSmartHint');
+        const i18n = {
+            selectedPrefix: /*[[#{billing.checkout.selected_plan}]]*/ 'Selected plan:',
+            initial: /*[[#{billing.checkout.smart.initial}]]*/ 'Pick interval and verify plan price before starting checkout.',
+            missingPrice: /*[[#{billing.checkout.smart.missing_price}]]*/ 'Selected plan has no Stripe price ID. Choose another interval/plan or configure price IDs.',
+            stripeMissing: /*[[#{billing.checkout.smart.stripe_missing}]]*/ 'Stripe is not connected. Checkout is disabled until keys are configured.',
+            ready: /*[[#{billing.checkout.smart.ready}]]*/ 'Checkout is ready. Continue to Stripe to complete subscription safely.',
+            yearlyTip: /*[[#{billing.checkout.smart.yearly_tip}]]*/ 'Yearly billing reduces renewal interruptions for teams.'
+        };
 
         function setSelected(card) {
             if (!card || !priceInput) return;
@@ -376,7 +388,7 @@
             const missing = !priceInput.value;
             const blocked = missing || !stripeConfigured;
             if (label) {
-                label.textContent = /*[[#{billing.checkout.selected_plan}]]*/ 'Selected plan:' + ' ' + plan + ' / ' + interval;
+                label.textContent = i18n.selectedPrefix + ' ' + plan + ' / ' + interval;
             }
             if (warning) {
                 warning.classList.toggle('hidden', !missing);
@@ -385,6 +397,17 @@
                 submit.disabled = blocked;
                 submit.classList.toggle('opacity-60', blocked);
                 submit.classList.toggle('cursor-not-allowed', blocked);
+            }
+            if (checkoutHint) {
+                if (!stripeConfigured) {
+                    checkoutHint.textContent = i18n.stripeMissing;
+                } else if (missing) {
+                    checkoutHint.textContent = i18n.missingPrice;
+                } else if (interval === 'YEARLY') {
+                    checkoutHint.textContent = i18n.ready + ' ' + i18n.yearlyTip;
+                } else {
+                    checkoutHint.textContent = i18n.ready;
+                }
             }
         }
 
