@@ -87,6 +87,9 @@ public class HomeController extends BaseController {
         if (normalizedNewPassword == null || !Objects.equals(normalizedNewPassword, normalizedConfirmPassword)) {
             return redirectWithError("/settings", "auth.password_mismatch", model);
         }
+        if (normalizedNewPassword.length() < 6) {
+            return redirectWithError("/settings", "auth.password_min", model);
+        }
         User user = currentContextService.currentUser();
         boolean changed = userService.changePassword(user.getId(), normalizedCurrentPassword, normalizedNewPassword);
         if (!changed) {

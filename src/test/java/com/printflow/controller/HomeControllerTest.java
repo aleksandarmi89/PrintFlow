@@ -72,6 +72,20 @@ class HomeControllerTest {
     }
 
     @Test
+    void changePasswordRejectsTooShortPassword() {
+        CurrentContextService currentContextService = mock(CurrentContextService.class);
+        UserService userService = mock(UserService.class);
+        HomeController controller = new HomeController(currentContextService, userService);
+        Model model = new ExtendedModelMap();
+
+        String view = controller.changePassword("old-pass", "12345", "12345", model);
+
+        assertEquals("redirect:/settings", view);
+        assertEquals("auth.password_min", model.getAttribute("errorMessage"));
+        verify(userService, never()).changePassword(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void changePasswordUsesI18nKeyWhenCurrentPasswordIsWrong() {
         CurrentContextService currentContextService = mock(CurrentContextService.class);
         UserService userService = mock(UserService.class);
