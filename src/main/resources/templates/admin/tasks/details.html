@@ -42,7 +42,7 @@
                         </button>
                     </form>
                     <div th:if="${task.status == 'AWAITING_REVIEW'}" class="flex items-center gap-2">
-                        <form th:if="${!proofAttachments.empty}"
+                        <form id="approveTaskForm" th:if="${!proofAttachments.empty}"
                               th:action="@{/admin/tasks/{id}/approve(id=${task.id})}"
                               method="post"
                               th:attr="onsubmit=|return confirm('${#messages.msg('admin.tasks.details.confirm_approve')}');|">
@@ -60,6 +60,7 @@
                             Approve Task
                         </button>
                         <button type="button"
+                                id="showRejectBoxBtn"
                                 onclick="document.getElementById('reject-box').classList.toggle('hidden')"
                                 class="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
                                 th:text="#{common.reject}">
@@ -97,7 +98,7 @@
                     </form>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div id="taskProofSection" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.tasks.details.task_information}">Task Information</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
@@ -189,6 +190,35 @@
             </div>
 
             <div class="space-y-8">
+                <div class="bg-white rounded-xl shadow-sm border border-blue-200 p-6">
+                    <h2 class="text-lg font-semibold text-blue-900 mb-2" th:text="#{admin.tasks.details.smart.title}">Suggested next action</h2>
+                    <p class="text-sm text-blue-700 mb-4" th:text="#{admin.tasks.details.smart.subtitle}">
+                        Use guided actions to move this task to completion with less back-and-forth.
+                    </p>
+                    <div class="grid grid-cols-1 gap-2">
+                        <label for="taskSmartActionSelect" class="text-xs font-medium text-blue-900" th:text="#{admin.tasks.details.smart.action.label}">
+                            Next action
+                        </label>
+                        <select id="taskSmartActionSelect"
+                                class="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800">
+                            <option value="edit" th:text="#{admin.tasks.details.smart.action.edit}">Edit task details</option>
+                            <option value="proofs" th:text="#{admin.tasks.details.smart.action.proofs}">Review proof attachments</option>
+                            <option value="approve" th:if="${task.status == 'AWAITING_REVIEW' and !proofAttachments.empty}"
+                                    th:text="#{admin.tasks.details.smart.action.approve}">Approve task</option>
+                            <option value="reject" th:if="${task.status == 'AWAITING_REVIEW'}"
+                                    th:text="#{admin.tasks.details.smart.action.reject}">Reject with reason</option>
+                            <option value="back" th:text="#{admin.tasks.details.smart.action.back}">Back to task list</option>
+                        </select>
+                        <button id="taskSmartActionCta"
+                                type="button"
+                                class="inline-flex justify-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                                th:text="#{admin.tasks.details.smart.action.cta.default}">
+                            Open action
+                        </button>
+                    </div>
+                    <p id="taskSmartActionHint" class="mt-2 text-xs text-blue-900"></p>
+                </div>
+
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{common.activity}">Activity</h2>
                     <div class="space-y-4">
@@ -204,5 +234,87 @@
             </div>
         </div>
     </main>
+    <div id="taskDetailsSmartI18n"
+         class="hidden"
+         th:attr="data-hint-edit=#{admin.tasks.details.smart.hint.edit},
+                  data-hint-proofs=#{admin.tasks.details.smart.hint.proofs},
+                  data-hint-approve=#{admin.tasks.details.smart.hint.approve},
+                  data-hint-reject=#{admin.tasks.details.smart.hint.reject},
+                  data-hint-back=#{admin.tasks.details.smart.hint.back},
+                  data-cta-edit=#{admin.tasks.details.smart.action.cta.edit},
+                  data-cta-proofs=#{admin.tasks.details.smart.action.cta.proofs},
+                  data-cta-approve=#{admin.tasks.details.smart.action.cta.approve},
+                  data-cta-reject=#{admin.tasks.details.smart.action.cta.reject},
+                  data-cta-back=#{admin.tasks.details.smart.action.cta.back},
+                  data-url-edit=@{/admin/tasks/edit/{id}(id=${task.id})},
+                  data-url-back=@{/admin/tasks}">
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const select = document.getElementById('taskSmartActionSelect');
+            const cta = document.getElementById('taskSmartActionCta');
+            const hint = document.getElementById('taskSmartActionHint');
+            const i18nEl = document.getElementById('taskDetailsSmartI18n');
+            if (!select || !cta || !hint || !i18nEl) return;
+
+            const map = {
+                edit: {
+                    hint: i18nEl.getAttribute('data-hint-edit'),
+                    cta: i18nEl.getAttribute('data-cta-edit'),
+                    run: () => {
+                        const url = i18nEl.getAttribute('data-url-edit');
+                        if (url) window.location.href = url;
+                    }
+                },
+                proofs: {
+                    hint: i18nEl.getAttribute('data-hint-proofs'),
+                    cta: i18nEl.getAttribute('data-cta-proofs'),
+                    run: () => {
+                        const proofSection = document.getElementById('taskProofSection');
+                        if (proofSection) proofSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                approve: {
+                    hint: i18nEl.getAttribute('data-hint-approve'),
+                    cta: i18nEl.getAttribute('data-cta-approve'),
+                    run: () => {
+                        const form = document.getElementById('approveTaskForm');
+                        if (form) form.requestSubmit();
+                    }
+                },
+                reject: {
+                    hint: i18nEl.getAttribute('data-hint-reject'),
+                    cta: i18nEl.getAttribute('data-cta-reject'),
+                    run: () => {
+                        const box = document.getElementById('reject-box');
+                        const btn = document.getElementById('showRejectBoxBtn');
+                        if (box && box.classList.contains('hidden') && btn) btn.click();
+                        if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                back: {
+                    hint: i18nEl.getAttribute('data-hint-back'),
+                    cta: i18nEl.getAttribute('data-cta-back'),
+                    run: () => {
+                        const url = i18nEl.getAttribute('data-url-back');
+                        if (url) window.location.href = url;
+                    }
+                }
+            };
+
+            function updateSmartActionUi() {
+                const key = select.value in map ? select.value : 'edit';
+                hint.textContent = map[key].hint || '';
+                cta.textContent = map[key].cta || '';
+            }
+
+            select.addEventListener('change', updateSmartActionUi);
+            cta.addEventListener('click', function () {
+                const key = select.value in map ? select.value : 'edit';
+                map[key].run();
+            });
+            updateSmartActionUi();
+        });
+    </script>
 </body>
 </html>
