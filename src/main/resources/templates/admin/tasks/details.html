@@ -55,7 +55,8 @@
                         </form>
                         <button th:if="${proofAttachments.empty}" type="button"
                                 class="px-4 py-2 bg-green-600 text-white rounded-lg opacity-60 cursor-not-allowed"
-                                th:title="#{admin.tasks.details.no_proof}">
+                                th:title="#{admin.tasks.details.no_proof}"
+                                th:text="#{admin.tasks.details.approve_task}">
                             Approve Task
                         </button>
                         <button type="button"
@@ -83,7 +84,8 @@
                         <div class="flex items-center justify-end gap-2">
                             <button type="button"
                                     onclick="document.getElementById('reject-box').classList.add('hidden')"
-                                    class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                    class="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                    th:text="#{common.cancel}">
                                 Cancel
                             </button>
                             <button type="submit"
