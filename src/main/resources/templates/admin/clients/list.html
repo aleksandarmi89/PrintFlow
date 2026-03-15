@@ -63,15 +63,15 @@
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
                 <div class="text-sm text-gray-600" th:text="#{clients.active}">Active</div>
-                <div class="text-2xl font-bold text-gray-900" th:text="${totalClients}">0</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${#lists.size(clients.?[active])}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
                 <div class="text-sm text-gray-600" th:text="#{clients.with_orders}">With Orders</div>
-                <div class="text-2xl font-bold text-gray-900">0</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${#lists.size(clients.?[totalOrders > 0])}">0</div>
             </div>
             <div class="bg-white p-4 rounded-lg border border-gray-200">
-                <div class="text-sm text-gray-600" th:text="#{clients.new_this_month}">New This Month</div>
-                <div class="text-2xl font-bold text-gray-900">0</div>
+                <div class="text-sm text-gray-600" th:text="#{clients.pending_orders}">Pending Orders</div>
+                <div class="text-2xl font-bold text-gray-900" th:text="${#lists.size(clients.?[pendingOrders > 0])}">0</div>
             </div>
         </div>
 
