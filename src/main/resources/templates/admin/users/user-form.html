@@ -8,9 +8,17 @@
     <div th:replace="~{layout/header :: header}"></div>
     
     <main class="container mx-auto px-4 py-8">
+        <div th:if="${successMessage}" class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+            <span th:with="m=${#messages.msgOrNull(successMessage)}"
+                  th:text="${m != null ? m : successMessage}">Success</span>
+        </div>
+        <div th:if="${errorMessage}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:with="m=${#messages.msgOrNull(errorMessage)}"
+                  th:text="${m != null ? m : errorMessage}">Error</span>
+        </div>
         <!-- Page Header -->
         <div class="mb-8">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900" th:if="${user.id}" th:text="#{admin.users.form.header.edit(${user.firstName + ' ' + user.lastName})}"></h1>
                     <h1 class="text-3xl font-bold text-gray-900" th:unless="${user.id}" th:text="#{admin.users.form.header.create}">Create New User</h1>
@@ -38,12 +46,9 @@
     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                      
                      
-                   <div th:if="${errorMessage}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-    <span th:text="${errorMessage}">Error message</span>
-</div>
                    <div th:if="${#fields.hasAnyErrors()}" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
     <ul>
-        <li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li>
+        <li th:each="err : ${#fields.allErrors()}" th:text="${err.defaultMessage}"></li>
     </ul>
 </div>
                     
