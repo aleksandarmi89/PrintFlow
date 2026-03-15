@@ -11,6 +11,11 @@
             <div>
                 <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.audit.title}">Audit Logs</h1>
                 <p class="text-gray-600 mt-1" th:text="#{admin.audit.subtitle}">System activity tracking</p>
+                <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                    <span th:text="#{admin.audit.smart_hint}">
+                        Smart tip: start with action + query filters, then narrow by entity/user for faster incident tracing.
+                    </span>
+                </div>
             </div>
             <a th:href="@{/admin/audit-logs/export(companyId=${companyId},action=${action},query=${query},userId=${userId},entityId=${entityId},entityType=${entityType},page=${page},size=${size})}"
                class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
@@ -139,7 +144,22 @@
                             </td>
                         </tr>
                         <tr th:if="${logs == null || logs.size() == 0}">
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-500" th:text="#{admin.audit.empty}">No audit logs.</td>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                <div class="text-sm" th:if="${(companyId == null) and (action == null or action.isBlank()) and (query == null or query.isBlank()) and (userId == null) and (entityId == null) and (entityType == null or entityType.isBlank())}"
+                                     th:text="#{admin.audit.empty}">
+                                    No audit logs.
+                                </div>
+                                <div class="text-sm" th:if="${(companyId != null) or (action != null and !action.isBlank()) or (query != null and !query.isBlank()) or (userId != null) or (entityId != null) or (entityType != null and !entityType.isBlank())}"
+                                     th:text="#{admin.audit.empty.filtered}">
+                                    No audit logs match current filters.
+                                </div>
+                                <a th:if="${(companyId != null) or (action != null and !action.isBlank()) or (query != null and !query.isBlank()) or (userId != null) or (entityId != null) or (entityType != null and !entityType.isBlank())}"
+                                   th:href="@{/admin/audit-logs(size=${size})}"
+                                   class="mt-3 inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                                   th:text="#{admin.audit.empty.filtered_clear}">
+                                    Clear filters
+                                </a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
