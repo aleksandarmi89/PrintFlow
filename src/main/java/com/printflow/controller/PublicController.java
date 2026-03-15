@@ -568,6 +568,7 @@ public class PublicController extends BaseController {
         model.addAttribute("companyParam", company);
         model.addAttribute("tokenParam", normalizedToken);
         applyTrackBranding(model, company, normalizedToken);
+        applyTrackCompanyDetails(model, company, normalizedToken);
         return "public/track-order";
     }
     
@@ -759,6 +760,7 @@ public class PublicController extends BaseController {
         } else {
             model.addAttribute("companyBrand", defaultBranding());
         }
+        applyTrackCompanyDetails(model, company, normalizedToken);
         return "public/track-order";
     }
 
@@ -781,5 +783,22 @@ public class PublicController extends BaseController {
             return;
         }
         model.addAttribute("companyBrand", defaultBranding());
+    }
+
+    private void applyTrackCompanyDetails(Model model, Long company, String normalizedToken) {
+        Long resolvedCompanyId = null;
+        if (normalizedToken != null) {
+            resolvedCompanyId = workOrderRepository
+                .findCompanyIdByPublicTokenAndPublicTokenExpiresAtAfter(normalizedToken, LocalDateTime.now())
+                .orElse(null);
+        }
+        if (resolvedCompanyId == null) {
+            resolvedCompanyId = company;
+        }
+        if (resolvedCompanyId == null) {
+            model.addAttribute("trackCompany", null);
+            return;
+        }
+        model.addAttribute("trackCompany", companyRepository.findById(resolvedCompanyId).orElse(null));
     }
 }
