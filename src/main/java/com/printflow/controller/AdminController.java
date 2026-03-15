@@ -194,9 +194,9 @@ public class AdminController extends BaseController {
             }
             return "admin/clients/edit";
         } catch (ResourceNotFoundException e) {
-            return redirectWithError("/admin/clients", "Client not found", model);
+            return redirectWithError("/admin/clients", "admin.clients.flash.not_found", model);
         } catch (Exception e) {
-            return redirectWithError("/admin/clients", "Client not found", model);
+            return redirectWithError("/admin/clients", "admin.clients.flash.not_found", model);
         }
     }
 
@@ -505,9 +505,9 @@ public class AdminController extends BaseController {
 
             return "admin/orders/details";
         } catch (ResourceNotFoundException e) {
-            return redirectWithError("/admin/orders", "Order not found", model);
+            return redirectWithError("/admin/orders", "admin.orders.flash.not_found", model);
         } catch (Exception e) {
-            return redirectWithError("/admin/orders", "Order not found", model);
+            return redirectWithError("/admin/orders", "admin.orders.flash.not_found", model);
         }
     }
 
@@ -557,9 +557,9 @@ public class AdminController extends BaseController {
                 ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
             return "admin/orders/edit";
         } catch (ResourceNotFoundException e) {
-            return redirectWithError("/admin/orders", "Order not found", model);
+            return redirectWithError("/admin/orders", "admin.orders.flash.not_found", model);
         } catch (Exception e) {
-            return redirectWithError("/admin/orders", "Order not found", model);
+            return redirectWithError("/admin/orders", "admin.orders.flash.not_found", model);
         }
     }
 
