@@ -156,6 +156,30 @@ class EmailOutboxSettingsIntegrationTest {
     }
 
     @Test
+    void nonAdminCanOpenOwnSettingsPasswordPage() throws Exception {
+        fixture = new TenantTestFixture(mockMvc, companyRepository, userRepository, clientRepository,
+            workOrderRepository, taskRepository, attachmentRepository, passwordEncoder);
+        TenantTestFixture.TenantIds ids = fixture.createTenantData();
+        Company company1 = companyRepository.findById(ids.company1Id()).orElseThrow();
+
+        User worker = new User();
+        worker.setUsername("tenant1_worker_settings");
+        worker.setPassword(passwordEncoder.encode("password"));
+        worker.setRole(User.Role.WORKER_GENERAL);
+        worker.setCompany(company1);
+        worker.setFirstName("Worker");
+        worker.setLastName("Settings");
+        worker.setActive(true);
+        userRepository.save(worker);
+
+        MockHttpSession workerSession = fixture.login("tenant1_worker_settings", "password");
+
+        mockMvc.perform(get("/settings").session(workerSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("/settings/password")));
+    }
+
+    @Test
     void anonymousUserIsRedirectedToLoginForEmailSettings() throws Exception {
         mockMvc.perform(get("/settings/email"))
             .andExpect(status().is3xxRedirection())
