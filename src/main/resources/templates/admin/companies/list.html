@@ -18,6 +18,11 @@
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.companies.title}">Companies</h1>
                     <p class="text-gray-600 mt-2" th:text="#{admin.companies.subtitle}">Manage tenant companies</p>
+                    <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                        <span th:text="#{admin.companies.smart_hint}">
+                            Smart tip: combine plan and override filters to quickly review tenants that need billing attention.
+                        </span>
+                    </div>
                 </div>
                 <a th:href="@{/admin/companies/create}"
                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -219,14 +224,26 @@
                             <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="text-gray-500">
                                     <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{admin.companies.empty.title}">No companies</h3>
-                                    <p class="mt-1 text-sm text-gray-500">
+                                    <p class="mt-1 text-sm text-gray-500"
+                                       th:if="${(search == null or search.isBlank()) and (plan == null or plan.isBlank()) and (override == null or override.isBlank())}">
                                         <span th:text="#{admin.companies.empty.subtitle}">Get started by creating a new company.</span>
+                                    </p>
+                                    <p class="mt-1 text-sm text-gray-500"
+                                       th:if="${(search != null and !search.isBlank()) or (plan != null and !plan.isBlank()) or (override != null and !override.isBlank())}"
+                                       th:text="#{admin.companies.empty.filtered}">
+                                        No companies match your current filters.
                                     </p>
                                     <div class="mt-6">
                                         <a th:href="@{/admin/companies/create}"
                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
                                            th:text="#{admin.companies.add}">
                                             + Add Company
+                                        </a>
+                                        <a th:if="${(search != null and !search.isBlank()) or (plan != null and !plan.isBlank()) or (override != null and !override.isBlank())}"
+                                           th:href="@{/admin/companies(size=${size})}"
+                                           class="ml-2 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                                           th:text="#{admin.companies.empty.filtered_clear}">
+                                            Clear filters
                                         </a>
                                     </div>
                                 </div>
