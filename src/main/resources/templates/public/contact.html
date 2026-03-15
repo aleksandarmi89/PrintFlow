@@ -53,15 +53,15 @@
                         <div class="space-y-3 text-gray-700">
                             <div>
                                 <span class="text-sm text-gray-500" th:text="#{contact.email_label}">Email</span>
-                                <div class="font-medium" th:text="${companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value')}">support@printflow.app</div>
+                                <div class="font-medium" th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value'))}">support@printflow.app</div>
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500" th:text="#{contact.phone_label}">Phone</span>
-                                <div class="font-medium" th:text="${companyBrand != null && companyBrand.phone != null ? companyBrand.phone : #messages.msg('contact.phone_value')}">+1 (555) 123-4567</div>
+                                <div class="font-medium" th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : (companyBrand != null && companyBrand.phone != null ? companyBrand.phone : #messages.msg('contact.phone_value'))}">+1 (555) 123-4567</div>
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500" th:text="#{contact.address_label}">Address</span>
-                                <div class="font-medium" th:text="${companyBrand != null && companyBrand.address != null ? companyBrand.address : #messages.msg('contact.address_value')}">Main Street 123, Print City</div>
+                                <div class="font-medium" th:text="${(footerCompanyAddress != null && !#strings.isEmpty(footerCompanyAddress)) ? footerCompanyAddress : (companyBrand != null && companyBrand.address != null ? companyBrand.address : #messages.msg('contact.address_value'))}">Main Street 123, Print City</div>
                             </div>
                         </div>
                     </div>
