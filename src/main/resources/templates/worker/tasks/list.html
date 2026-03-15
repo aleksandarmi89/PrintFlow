@@ -17,6 +17,11 @@
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900" th:text="#{worker.tasks.heading}">My Tasks</h1>
                     <p class="text-gray-600 mt-2" th:text="#{worker.tasks.subtitle}">Orders assigned to you and their current status</p>
+                    <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                        <p id="workerTasksSmartHint" class="text-xs text-sky-800" th:text="#{worker.tasks.smart.initial}">
+                            Prioritize overdue and high-priority items, then use status updates to keep handoff clear.
+                        </p>
+                    </div>
                 </div>
                 <div class="flex flex-col md:flex-row gap-3 md:items-center w-full md:w-auto">
                     <button onclick="refreshTasks()" 
@@ -144,7 +149,7 @@
         </div>
         
         <!-- Tasks Grid/List -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div id="workerTasksGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div th:each="task : ${tasks}" 
                  class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                 <div class="p-6">
@@ -326,13 +331,24 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
             <h3 class="mt-2 text-sm font-medium text-gray-900" th:text="#{worker.tasks.empty_title}">No tasks assigned</h3>
-            <p class="mt-1 text-sm text-gray-500" th:text="#{worker.tasks.empty_subtitle}">You don't have any tasks assigned to you yet.</p>
+            <p class="mt-1 text-sm text-gray-500"
+               th:if="${(status == null or status.isBlank()) and (filter == null or filter.isBlank()) and (q == null or q.isBlank())}"
+               th:text="#{worker.tasks.empty_subtitle}">You don't have any tasks assigned to you yet.</p>
+            <p class="mt-1 text-sm text-gray-500"
+               th:if="${(status != null and !status.isBlank()) or (filter != null and !filter.isBlank()) or (q != null and !q.isBlank())}"
+               th:text="#{worker.tasks.smart.no_results}">No tasks match current filters.</p>
+            <a th:if="${(status != null and !status.isBlank()) or (filter != null and !filter.isBlank()) or (q != null and !q.isBlank())}"
+               th:href="@{/worker/my-tasks(size=${size})}"
+               class="mt-3 inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+               th:text="#{worker.tasks.smart.reset}">
+                Reset filters
+            </a>
         </div>
     </main>
     
     <div th:replace="~{layout/footer :: footer}"></div>
     
-    <script>
+    <script th:inline="javascript">
         function refreshTasks() {
             window.location.reload();
         }
@@ -353,6 +369,44 @@
             return true;
         }
                 
+        var workerTasksSmartHint = document.getElementById('workerTasksSmartHint');
+        var filterStatusEl = document.querySelector('form[method="get"] select[name="status"]');
+        var filterTypeEl = document.querySelector('form[method="get"] select[name="filter"]');
+        var queryEl = document.querySelector('form[method="get"] input[name="q"]');
+        var sortEl = document.querySelector('form[method="get"] select[name="sort"]');
+        var workerTasksI18n = {
+            initial: /*[[#{worker.tasks.smart.initial}]]*/ 'Prioritize overdue and high-priority items, then use status updates to keep handoff clear.',
+            filtered: /*[[#{worker.tasks.smart.filtered}]]*/ 'Filtered view active. Review list and clear filters if expected tasks are missing.',
+            noResults: /*[[#{worker.tasks.smart.no_results}]]*/ 'No tasks match current filters.',
+            sorted: /*[[#{worker.tasks.smart.sorted}]]*/ 'Sorting is active. Use due date sort to process time-sensitive tasks first.'
+        };
+
+        function updateWorkerSmartHint() {
+            if (!workerTasksSmartHint) return;
+            var hasStatus = filterStatusEl && filterStatusEl.value;
+            var hasFilter = filterTypeEl && filterTypeEl.value;
+            var hasQuery = queryEl && queryEl.value && queryEl.value.trim().length > 0;
+            var hasSort = sortEl && sortEl.value;
+            var hasCards = document.querySelectorAll('#workerTasksGrid > div.bg-white.rounded-xl').length > 0;
+
+            if ((hasStatus || hasFilter || hasQuery) && !hasCards) {
+                workerTasksSmartHint.textContent = workerTasksI18n.noResults;
+            } else if (hasSort) {
+                workerTasksSmartHint.textContent = workerTasksI18n.sorted;
+            } else if (hasStatus || hasFilter || hasQuery) {
+                workerTasksSmartHint.textContent = workerTasksI18n.filtered;
+            } else {
+                workerTasksSmartHint.textContent = workerTasksI18n.initial;
+            }
+        }
+
+        [filterStatusEl, filterTypeEl, queryEl, sortEl].forEach(function (el) {
+            if (!el) return;
+            el.addEventListener('change', updateWorkerSmartHint);
+            el.addEventListener('input', updateWorkerSmartHint);
+        });
+        updateWorkerSmartHint();
+
         // Auto-refresh every 60 seconds
         setInterval(refreshTasks, 60000);
 
