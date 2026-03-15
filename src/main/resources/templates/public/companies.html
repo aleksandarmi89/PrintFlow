@@ -40,6 +40,29 @@
     <div class="mb-6">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-900" th:text="#{public.companies.heading}">Choose company</h1>
         <p class="text-gray-600 mt-2" th:text="#{public.companies.subtitle}">Submit an order request without asking for a direct link.</p>
+        <div th:if="${!#lists.isEmpty(companies)}" class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
+             th:text="#{public.companies.smart_hint}">
+            Smart tip: search by company name to quickly find the right print shop.
+        </div>
+        <div th:if="${!#lists.isEmpty(companies)}" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input id="companySearchInput" type="text"
+                   th:placeholder="#{public.companies.search_placeholder}"
+                   class="w-full sm:max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <p id="companyVisibleHint"
+               class="text-xs text-gray-500"
+               th:attr="data-label=#{public.companies.visible_count}">
+            </p>
+        </div>
+        <div id="companyNoMatch"
+             class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <span th:text="#{public.companies.no_match}">No companies match your search.</span>
+            <button id="resetCompanySearch"
+                    type="button"
+                    class="ml-2 font-semibold underline hover:no-underline"
+                    th:text="#{public.companies.no_match_reset}">
+                Reset
+            </button>
+        </div>
     </div>
 
     <div th:if="${#lists.isEmpty(companies)}" class="bg-white border border-gray-200 rounded-xl p-6 text-gray-600">
@@ -47,7 +70,9 @@
     </div>
 
     <div th:if="${!#lists.isEmpty(companies)}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <article th:each="company : ${companies}" class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
+        <article th:each="company : ${companies}"
+                 class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4 company-card"
+                 th:attr="data-search=${((company.name ?: '') + ' ' + (company.slug ?: '')).toLowerCase()}">
             <div class="flex items-center gap-3">
                 <img th:if="${company.logoPath != null and !#strings.isEmpty(company.logoPath)}"
                      th:src="@{/public/company-logo/{id}(id=${company.id})}"
@@ -86,5 +111,41 @@
         </div>
     </div>
 </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('companySearchInput');
+        const cards = Array.from(document.querySelectorAll('.company-card'));
+        const visibleHint = document.getElementById('companyVisibleHint');
+        const noMatch = document.getElementById('companyNoMatch');
+        const resetBtn = document.getElementById('resetCompanySearch');
+
+        function applyFilter() {
+            const term = (searchInput?.value || '').trim().toLowerCase();
+            let visible = 0;
+            cards.forEach(card => {
+                const haystack = card.getAttribute('data-search') || '';
+                const show = !term || haystack.includes(term);
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            if (visibleHint) {
+                const label = visibleHint.getAttribute('data-label') || '';
+                visibleHint.textContent = `${label} ${visible}/${cards.length}`;
+            }
+            if (noMatch) {
+                noMatch.classList.toggle('hidden', !(cards.length > 0 && visible === 0));
+            }
+        }
+
+        if (searchInput) searchInput.addEventListener('input', applyFilter);
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (searchInput) searchInput.value = '';
+                applyFilter();
+            });
+        }
+        if (cards.length > 0) applyFilter();
+    });
+</script>
 </body>
 </html>
