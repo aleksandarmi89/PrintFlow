@@ -93,9 +93,18 @@
                         <input type="datetime-local" th:field="*{deadline}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.notes}">Napomena</label>
+                        <div class="mb-1 flex items-center justify-between gap-2">
+                            <label class="block text-sm text-gray-700" th:text="#{public.order.form.notes}">Napomena</label>
+                            <button id="insertBriefTemplate"
+                                    type="button"
+                                    class="text-xs rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                    th:text="#{public.order.form.smart.brief_template_cta}">
+                                Insert brief template
+                            </button>
+                        </div>
                         <textarea th:field="*{notes}" rows="4" class="w-full rounded-lg border border-gray-300 px-3 py-2"
                                   th:placeholder="#{public.order.form.notes.placeholder}"></textarea>
+                        <p id="publicOrderBriefHint" class="mt-1 text-xs text-gray-500"></p>
                     </div>
                 </div>
             </section>
@@ -130,8 +139,24 @@
             missingDeadline: /*[[#{public.order.form.smart.missing.deadline}]]*/ 'deadline',
             missingFiles: /*[[#{public.order.form.smart.missing.files}]]*/ 'at least one file',
             noteTip: /*[[#{public.order.form.smart.notes_tip}]]*/ 'Tip: add preferred print finish or packaging notes.',
-            filesCount: /*[[#{public.order.form.smart.files_count}]]*/ '__COUNT__ file(s) selected.'
+            filesCount: /*[[#{public.order.form.smart.files_count}]]*/ '__COUNT__ file(s) selected.',
+            detailsHintBase: /*[[#{public.order.form.smart.details_hint_base}]]*/ 'For clearer quote, include:',
+            detailsDimensions: /*[[#{public.order.form.smart.details.dimensions}]]*/ 'exact dimensions',
+            detailsMaterial: /*[[#{public.order.form.smart.details.material}]]*/ 'material',
+            detailsFinishing: /*[[#{public.order.form.smart.details.finishing}]]*/ 'finishing',
+            detailsColor: /*[[#{public.order.form.smart.details.color}]]*/ 'color count',
+            detailsReady: /*[[#{public.order.form.smart.details_ready}]]*/ 'Great, key production details are already present.',
+            briefTemplateCta: /*[[#{public.order.form.smart.brief_template_cta}]]*/ 'Insert brief template',
+            briefTemplate: /*[[#{public.order.form.smart.brief_template}]]*/ 'Print type:\nDimensions:\nMaterial:\nColors:\nFinishing:\nDeadline:\nPackaging note:',
+            briefHintEmpty: /*[[#{public.order.form.smart.brief_hint_empty}]]*/ 'Use the brief template to speed up accurate quoting.',
+            briefHintFilled: /*[[#{public.order.form.smart.brief_hint_filled}]]*/ 'Good: brief text added. Include exact dimensions and deadline for best estimate.'
         };
+        const productType = document.querySelector('input[name="productType"]');
+        const material = document.querySelector('input[name="material"]');
+        const finishing = document.querySelector('input[name="finishing"]');
+        const quantity = document.querySelector('input[name="quantity"]');
+        const briefHint = document.getElementById('publicOrderBriefHint');
+        const insertBriefTemplate = document.getElementById('insertBriefTemplate');
 
         function updatePublicSmartHint() {
             const missing = [];
@@ -145,17 +170,48 @@
                 } else {
                     smartHint.textContent = i18n.missingPrefix + ' ' + missing.join(', ') + '.';
                 }
+                const details = [];
+                const productTypeValue = (productType?.value || '').toLowerCase();
+                const looksLikePrintProduct = ['vizit', 'flajer', 'plakat', 'poster', 'etiket', 'sticker', 'brochure', 'flyer', 'label', 'banner', 'rollup', 'majica', 'shirt', 'dtf', 'uv', 'laser']
+                    .some(keyword => productTypeValue.includes(keyword));
+                if (looksLikePrintProduct || productTypeValue.trim().length > 0) {
+                    if (!dimensions || !dimensions.value.trim()) details.push(i18n.detailsDimensions);
+                    if (!material || !material.value.trim()) details.push(i18n.detailsMaterial);
+                    if (!finishing || !finishing.value.trim()) details.push(i18n.detailsFinishing);
+                    const noteValue = (notes?.value || '').toLowerCase();
+                    if (!noteValue.includes('color') && !noteValue.includes('boja')) details.push(i18n.detailsColor);
+                }
+                if (details.length > 0) {
+                    smartHint.textContent += ' ' + i18n.detailsHintBase + ' ' + details.join(', ') + '.';
+                } else if ((quantity?.value || '').trim().length > 0) {
+                    smartHint.textContent += ' ' + i18n.detailsReady;
+                }
             }
             if (filesHint) {
                 filesHint.textContent = fileCount > 0 ? i18n.filesCount.replace('__COUNT__', String(fileCount)) : '';
             }
+            if (briefHint) {
+                briefHint.textContent = notes && notes.value && notes.value.trim().length > 0 ? i18n.briefHintFilled : i18n.briefHintEmpty;
+            }
         }
 
-        [dimensions, deadline, notes, files].forEach(el => {
+        [dimensions, deadline, notes, files, productType, material, finishing, quantity].forEach(el => {
             if (!el) return;
             el.addEventListener('input', updatePublicSmartHint);
             el.addEventListener('change', updatePublicSmartHint);
         });
+        if (insertBriefTemplate && notes) {
+            insertBriefTemplate.addEventListener('click', function () {
+                const hasText = notes.value && notes.value.trim().length > 0;
+                if (hasText) {
+                    notes.value += '\n\n' + i18n.briefTemplate;
+                } else {
+                    notes.value = i18n.briefTemplate;
+                }
+                notes.focus();
+                updatePublicSmartHint();
+            });
+        }
         updatePublicSmartHint();
     });
 </script>
