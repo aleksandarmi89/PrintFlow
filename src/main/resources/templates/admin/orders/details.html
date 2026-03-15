@@ -400,6 +400,45 @@
             
             <!-- Right Column: Actions and History -->
             <div class="space-y-8">
+                <!-- Smart Next Steps -->
+                <div class="bg-white rounded-xl shadow-sm border border-blue-200 p-6">
+                    <h2 class="text-lg font-semibold text-blue-900 mb-2" th:text="#{orders.details.smart.title}">Recommended next steps</h2>
+                    <p class="text-sm text-blue-700 mb-4" th:text="#{orders.details.smart.subtitle}">
+                        Keep this order production-ready by completing the checklist below.
+                    </p>
+                    <ul class="space-y-3 text-sm">
+                        <li th:if="${order.assignedToId == null}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.missing_assignee}">Assign a team member so ownership is clear.</span>
+                        </li>
+                        <li th:if="${order.deadline == null}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.missing_deadline}">Set a deadline to improve planning accuracy.</span>
+                        </li>
+                        <li th:if="${attachments == null || attachments.isEmpty()}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.missing_attachments}">Upload at least one reference/design file.</span>
+                        </li>
+                        <li th:if="${orderItems == null || orderItems.isEmpty()}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.missing_items}">Add order items so pricing and production are aligned.</span>
+                        </li>
+                        <li th:if="${order.status == 'IN_DESIGN'}" class="flex items-start gap-2 text-blue-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.design_status}">When design is approved internally, send for client approval.</span>
+                        </li>
+                        <li th:if="${order.status == 'WAITING_CLIENT_APPROVAL'}" class="flex items-start gap-2 text-blue-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.awaiting_client}">Follow up with the client and send a reminder if needed.</span>
+                        </li>
+                        <li th:if="${order.assignedToId != null && order.deadline != null && attachments != null && !attachments.isEmpty() && orderItems != null && !orderItems.isEmpty()}"
+                            class="flex items-start gap-2 text-green-700">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.ready}">Core fields are complete. This order is ready for smooth execution.</span>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- Quick Actions -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{orders.details.quick_actions}">Quick Actions</h2>
