@@ -42,6 +42,43 @@
                 </div>
             </div>
         </div>
+
+        <div class="mb-8 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-emerald-900" th:text="#{dashboard.smart.title}">Smart assistant</h2>
+                    <p class="mt-1 text-xs text-emerald-800" th:text="#{dashboard.smart.subtitle}">
+                        Recommended next actions based on current data.
+                    </p>
+                </div>
+            </div>
+            <ul class="mt-3 space-y-2 text-sm">
+                <li th:if="${stats.totalClients == 0}" class="text-emerald-900">
+                    <a th:href="@{/admin/clients/create}" class="underline hover:no-underline" th:text="#{dashboard.smart.no_clients}">
+                        Add your first client to start creating real work orders.
+                    </a>
+                </li>
+                <li th:if="${stats.totalClients > 0 && stats.activeOrders == 0}" class="text-emerald-900">
+                    <a th:href="@{/admin/orders/create}" class="underline hover:no-underline" th:text="#{dashboard.smart.no_orders}">
+                        No active orders right now. Create one from a real client request.
+                    </a>
+                </li>
+                <li th:if="${stats.activeOrders > 0 && stats.waitingApprovalOrders > 0}" class="text-emerald-900">
+                    <a th:href="@{/admin/orders(status=WAITING_CLIENT_APPROVAL)}" class="underline hover:no-underline" th:text="#{dashboard.smart.waiting_approval}">
+                        You have orders waiting for approval. Follow up to avoid delays.
+                    </a>
+                </li>
+                <li th:if="${stats.overdueOrders > 0}" class="text-amber-800">
+                    <a th:href="@{/admin/orders(status=OVERDUE)}" class="underline hover:no-underline" th:text="#{dashboard.smart.overdue}">
+                        Some orders are overdue. Prioritize them to protect delivery targets.
+                    </a>
+                </li>
+                <li th:if="${stats.totalClients > 0 && stats.activeOrders > 0 && stats.waitingApprovalOrders == 0 && stats.overdueOrders == 0}" class="text-emerald-900"
+                    th:text="#{dashboard.smart.healthy}">
+                    Workflow looks healthy. Keep momentum by reviewing new and in-design orders.
+                </li>
+            </ul>
+        </div>
         
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
