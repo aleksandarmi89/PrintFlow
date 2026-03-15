@@ -63,9 +63,14 @@
         </section>
 
         <aside class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+            <div class="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+                <p id="publicRequestSmartHint" class="text-xs text-sky-800" th:text="#{public.requests.details.smart.initial}">
+                    Update status first, then choose conversion action that matches request complexity.
+                </p>
+            </div>
             <div>
                 <div class="text-sm text-gray-500" th:text="#{public.requests.details.current_status}">Current status</div>
-                <div class="text-base font-semibold text-gray-900" th:text="${requestStatusLabel}">NEW</div>
+                <div id="currentRequestStatus" class="text-base font-semibold text-gray-900" th:text="${requestStatusLabel}">NEW</div>
             </div>
 
             <form th:action="@{/admin/public-requests/{id}/status(id=${requestItem.id})}" method="post" class="space-y-2">
@@ -97,7 +102,7 @@
                   method="post">
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <label class="block text-xs text-gray-600 mb-1" th:text="#{public.requests.details.template}">Task template</label>
-                <select name="template" class="w-full mb-2 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <select id="requestTemplate" name="template" class="w-full mb-2 rounded-lg border border-gray-300 px-3 py-2 text-sm">
                     <option value="basic" th:text="#{public.requests.details.template.basic}">Basic (3 tasks)</option>
                     <option value="advanced" th:text="#{public.requests.details.template.advanced}">Advanced (5 tasks)</option>
                 </select>
@@ -131,5 +136,46 @@
         </aside>
     </div>
 </main>
+<script th:inline="javascript">
+    (function () {
+        const hint = document.getElementById('publicRequestSmartHint');
+        const statusEl = document.getElementById('currentRequestStatus');
+        const templateEl = document.getElementById('requestTemplate');
+        if (!hint) return;
+
+        const i18n = {
+            initial: /*[[#{public.requests.details.smart.initial}]]*/ 'Update status first, then choose conversion action that matches request complexity.',
+            converted: /*[[#{public.requests.details.smart.converted}]]*/ 'Request is already converted. Use order/task links below for next actions.',
+            underReview: /*[[#{public.requests.details.smart.under_review}]]*/ 'Under review: confirm notes, attachments, and deadline before conversion.',
+            rejected: /*[[#{public.requests.details.smart.rejected}]]*/ 'Rejected request: convert only if customer submitted corrected requirements.',
+            templateBasic: /*[[#{public.requests.details.smart.template_basic}]]*/ 'Basic template is good for simple requests with fewer production steps.',
+            templateAdvanced: /*[[#{public.requests.details.smart.template_advanced}]]*/ 'Advanced template is better for multi-step jobs needing tighter coordination.'
+        };
+
+        function updateHint() {
+            const status = ((statusEl && statusEl.textContent) || '').toLowerCase();
+            const template = templateEl ? templateEl.value : '';
+
+            if (status.includes('convert')) {
+                hint.textContent = i18n.converted;
+                return;
+            }
+
+            const parts = [];
+            if (status.includes('review')) parts.push(i18n.underReview);
+            if (status.includes('reject')) parts.push(i18n.rejected);
+            if (template === 'basic') parts.push(i18n.templateBasic);
+            if (template === 'advanced') parts.push(i18n.templateAdvanced);
+
+            hint.textContent = parts.length > 0 ? parts.join(' ') : i18n.initial;
+        }
+
+        if (templateEl) {
+            templateEl.addEventListener('change', updateHint);
+            templateEl.addEventListener('input', updateHint);
+        }
+        updateHint();
+    })();
+</script>
 </body>
 </html>
