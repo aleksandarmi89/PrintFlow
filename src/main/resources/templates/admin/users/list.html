@@ -35,18 +35,25 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <!-- Table Header -->
             <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex-1">
                         <input type="text" 
                                th:placeholder="#{admin.users.list.search.placeholder}" 
                                class="px-4 py-2 border border-gray-300 rounded-lg w-full max-w-md"
                                id="searchInput">
                     </div>
-                    <div class="flex space-x-3">
-                        <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option th:text="#{admin.users.list.role_filter.all}">All Roles</option>
-                            <option th:text="#{admin.users.list.role_filter.admin}">Admin</option>
-                            <option th:text="#{admin.users.list.role_filter.worker}">Worker</option>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <select id="roleFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="all" th:text="#{admin.users.list.role_filter.all}">All Roles</option>
+                            <option value="super_admin" th:text="#{admin.users.list.role_filter.super_admin}">Super Admin</option>
+                            <option value="admin" th:text="#{admin.users.list.role_filter.admin}">Admin</option>
+                            <option value="manager" th:text="#{admin.users.list.role_filter.manager}">Manager</option>
+                            <option value="worker" th:text="#{admin.users.list.role_filter.worker}">Worker</option>
+                        </select>
+                        <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="all" th:text="#{common.all}">All</option>
+                            <option value="active" th:text="#{common.active}">Active</option>
+                            <option value="inactive" th:text="#{common.inactive}">Inactive</option>
                         </select>
                         <button onclick="exportUsers()" 
                                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center">
@@ -57,6 +64,7 @@
                         </button>
                     </div>
                 </div>
+                <p id="visibleUsersHint" class="mt-3 text-xs text-gray-500"></p>
             </div>
             
             <!-- Users List -->
@@ -85,7 +93,11 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        <tr th:each="user : ${users}">
+                        <tr th:each="user : ${users}"
+                            class="user-row"
+                            th:attr="data-search=${((user.firstName ?: '') + ' ' + (user.lastName ?: '') + ' ' + (user.email ?: '') + ' ' + (user.phone ?: '') + ' ' + (user.role ?: '')).toLowerCase()},
+                                     data-role-group=${user.role == 'SUPER_ADMIN' ? 'super_admin' : (user.role == 'ADMIN' ? 'admin' : (user.role == 'MANAGER' ? 'manager' : 'worker'))},
+                                     data-active=${user.active ? 'active' : 'inactive'}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -103,10 +115,22 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + 
-                                    (user.role == 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-                                     user.role == 'WORKER' ? 'bg-green-100 text-green-800' :
-                                     'bg-gray-100 text-gray-800')}">
-                                    <span th:text="${user.role}"></span>
+                                    (user.role == 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' :
+                                     (user.role == 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                                     (user.role == 'MANAGER' ? 'bg-indigo-100 text-indigo-800' :
+                                     (user.role == 'WORKER_DESIGN' ? 'bg-sky-100 text-sky-800' :
+                                     (user.role == 'WORKER_PRINT' ? 'bg-emerald-100 text-emerald-800' :
+                                     (user.role == 'WORKER_GENERAL' ? 'bg-green-100 text-green-800' :
+                                     'bg-gray-100 text-gray-800'))))))}">
+                                    <span th:switch="${user.role}">
+                                        <span th:case="'SUPER_ADMIN'" th:text="#{admin.users.role.super_admin}">Super Admin</span>
+                                        <span th:case="'ADMIN'" th:text="#{admin.users.role.admin}">Admin</span>
+                                        <span th:case="'MANAGER'" th:text="#{admin.users.role.manager}">Manager</span>
+                                        <span th:case="'WORKER_DESIGN'" th:text="#{admin.users.role.worker_design}">Design Worker</span>
+                                        <span th:case="'WORKER_PRINT'" th:text="#{admin.users.role.worker_print}">Print Worker</span>
+                                        <span th:case="'WORKER_GENERAL'" th:text="#{admin.users.role.worker_general}">General Worker</span>
+                                        <span th:case="*" th:text="${user.role}">Role</span>
+                                    </span>
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -255,16 +279,48 @@
     <div th:replace="~{layout/footer :: footer}"></div>
     
     <script>
-        // Simple search functionality
-        document.getElementById('searchInput').addEventListener('keyup', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
-            
+        const searchInput = document.getElementById('searchInput');
+        const roleFilter = document.getElementById('roleFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const visibleUsersHint = document.getElementById('visibleUsersHint');
+
+        function applyUserFilters() {
+            const rows = Array.from(document.querySelectorAll('tbody tr.user-row'));
+            const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+            const role = roleFilter?.value || 'all';
+            const status = statusFilter?.value || 'all';
+            let visibleCount = 0;
+
             rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                const rowSearch = row.getAttribute('data-search') || '';
+                const rowRole = row.getAttribute('data-role-group') || '';
+                const rowStatus = row.getAttribute('data-active') || '';
+                const searchMatch = !searchTerm || rowSearch.includes(searchTerm);
+                const roleMatch = role === 'all' || role === rowRole;
+                const statusMatch = status === 'all' || status === rowStatus;
+                const visible = searchMatch && roleMatch && statusMatch;
+                row.style.display = visible ? '' : 'none';
+                if (visible) {
+                    visibleCount++;
+                }
             });
-        });
+
+            if (visibleUsersHint) {
+                const total = rows.length;
+                visibleUsersHint.textContent = `${visibleCount}/${total}`;
+            }
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applyUserFilters);
+        }
+        if (roleFilter) {
+            roleFilter.addEventListener('change', applyUserFilters);
+        }
+        if (statusFilter) {
+            statusFilter.addEventListener('change', applyUserFilters);
+        }
+        applyUserFilters();
         
         function exportUsers() {
             // In production, this would call an export endpoint
