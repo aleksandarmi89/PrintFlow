@@ -11,6 +11,11 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                 <h1 class="text-2xl font-bold text-gray-900 mb-2" th:text="#{auth.profile_title}">Profile</h1>
                 <p class="text-gray-600" th:text="#{auth.profile_subtitle}">Manage your personal information and account details.</p>
+                <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                    <p id="profileSmartHint" class="text-xs text-sky-800" th:text="#{auth.profile.smart.initial}">
+                        Keep contact details up to date so task assignments and notifications reach you quickly.
+                    </p>
+                </div>
                 <div class="mt-3">
                     <a th:href="@{/settings}" class="text-sm text-blue-600 hover:text-blue-700" th:text="#{auth.settings_title}">Settings</a>
                     <span class="mx-2 text-gray-300">|</span>
@@ -81,5 +86,61 @@
     </main>
 
     <div th:replace="~{layout/footer :: footer}"></div>
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstName = document.querySelector('input[name="firstName"]');
+            const lastName = document.querySelector('input[name="lastName"]');
+            const email = document.querySelector('input[name="email"]');
+            const phone = document.querySelector('input[name="phone"]');
+            const department = document.querySelector('input[name="department"]');
+            const position = document.querySelector('input[name="position"]');
+            const notes = document.querySelector('textarea[name="notes"]');
+            const hint = document.getElementById('profileSmartHint');
+            if (!hint) return;
+
+            const i18n = {
+                ready: /*[[#{auth.profile.smart.ready}]]*/ 'Profile is complete and ready.',
+                missingPrefix: /*[[#{auth.profile.smart.missing_prefix}]]*/ 'Recommended to complete:',
+                missingFirstName: /*[[#{auth.profile.smart.missing.first_name}]]*/ 'first name',
+                missingLastName: /*[[#{auth.profile.smart.missing.last_name}]]*/ 'last name',
+                missingEmail: /*[[#{auth.profile.smart.missing.email}]]*/ 'email',
+                suggestPhone: /*[[#{auth.profile.smart.suggest.phone}]]*/ 'Add phone so urgent updates can reach you faster.',
+                suggestDepartment: /*[[#{auth.profile.smart.suggest.department}]]*/ 'Add department for better assignment routing.',
+                suggestPosition: /*[[#{auth.profile.smart.suggest.position}]]*/ 'Add position so responsibilities are clear in collaboration.',
+                suggestNotes: /*[[#{auth.profile.smart.suggest.notes}]]*/ 'Optional: use notes for working hours or handoff preferences.'
+            };
+
+            function updateHint() {
+                const missing = [];
+                const suggestions = [];
+
+                if (!firstName || firstName.value.trim().length < 2) missing.push(i18n.missingFirstName);
+                if (!lastName || lastName.value.trim().length < 2) missing.push(i18n.missingLastName);
+                if (!email || email.value.trim().length < 5) missing.push(i18n.missingEmail);
+
+                if (!phone || phone.value.trim().length < 5) suggestions.push(i18n.suggestPhone);
+                if (!department || department.value.trim().length < 2) suggestions.push(i18n.suggestDepartment);
+                if (!position || position.value.trim().length < 2) suggestions.push(i18n.suggestPosition);
+                if (!notes || notes.value.trim().length === 0) suggestions.push(i18n.suggestNotes);
+
+                if (missing.length === 0 && suggestions.length === 0) {
+                    hint.textContent = i18n.ready;
+                    return;
+                }
+
+                const parts = [];
+                if (missing.length > 0) parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+                if (suggestions.length > 0) parts.push(suggestions.slice(0, 2).join(' '));
+                hint.textContent = parts.join(' ');
+            }
+
+            [firstName, lastName, email, phone, department, position, notes].forEach(el => {
+                if (!el) return;
+                el.addEventListener('input', updateHint);
+                el.addEventListener('change', updateHint);
+            });
+            updateHint();
+        });
+    </script>
 </body>
 </html>
