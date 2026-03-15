@@ -18,6 +18,12 @@
                 <p class="text-gray-600 mt-2" th:text="#{tasks.create.subtitle}">
                     Create and assign a task
                 </p>
+                <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                    <h2 class="text-sm font-semibold text-blue-900" th:text="#{tasks.create.smart.title}">Smart task helper</h2>
+                    <p id="taskSmartHint" class="mt-1 text-xs text-blue-800" th:text="#{tasks.create.smart.initial}">
+                        Add title, owner, due date and a clear description to reduce back-and-forth.
+                    </p>
+                </div>
             </div>
             <a th:href="@{/admin/tasks}"
                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
@@ -56,6 +62,7 @@
                            id="title"
                            name="title"
                            th:field="*{title}"
+                           th:placeholder="#{tasks.create.field.title.placeholder}"
                            required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
@@ -69,7 +76,11 @@
                               name="description"
                               th:field="*{description}"
                               rows="4"
+                              th:placeholder="#{tasks.create.field.description.placeholder}"
                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    <p class="mt-1 text-xs text-gray-500" th:text="#{tasks.create.field.description.hint}">
+                        Include what to do, print specs, and expected outcome.
+                    </p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -176,11 +187,28 @@
         </div>
     </div>
 </main>
-<script>
+<script th:inline="javascript">
     (function () {
         const orderSelect = document.getElementById('workOrderId');
         const workerSelect = document.getElementById('assignedToId');
+        const titleInput = document.getElementById('title');
+        const descriptionInput = document.getElementById('description');
+        const dueDateInput = document.getElementById('dueDate');
+        const estimatedHoursInput = document.getElementById('estimatedHours');
+        const hintEl = document.getElementById('taskSmartHint');
         if (!orderSelect || !workerSelect) return;
+
+        const i18n = {
+            initial: /*[[#{tasks.create.smart.initial}]]*/ 'Add title, owner, due date and a clear description to reduce back-and-forth.',
+            ready: /*[[#{tasks.create.smart.ready}]]*/ 'Task is ready to assign.',
+            missingPrefix: /*[[#{tasks.create.smart.missing_prefix}]]*/ 'Recommended before saving:',
+            missingTitle: /*[[#{tasks.create.smart.missing.title}]]*/ 'title',
+            missingAssignee: /*[[#{tasks.create.smart.missing.assignee}]]*/ 'assignee',
+            missingDueDate: /*[[#{tasks.create.smart.missing.due_date}]]*/ 'due date',
+            missingDescription: /*[[#{tasks.create.smart.missing.description}]]*/ 'clear description',
+            warnNoHours: /*[[#{tasks.create.smart.warn.no_hours}]]*/ 'Estimated hours are not set. Add estimate for better planning.',
+            warnOverdueDate: /*[[#{tasks.create.smart.warn.past_due}]]*/ 'Due date is in the past. Please pick a future date.'
+        };
 
         function desiredRole(status, printType) {
             if (status === 'IN_DESIGN' || status === 'WAITING_CLIENT_APPROVAL') return 'WORKER_DESIGN';
@@ -209,8 +237,45 @@
             if (candidate) workerSelect.value = candidate;
         }
 
+        function updateSmartHint() {
+            if (!hintEl) return;
+            const missing = [];
+            if (!titleInput || titleInput.value.trim().length < 3) missing.push(i18n.missingTitle);
+            if (!workerSelect || !workerSelect.value) missing.push(i18n.missingAssignee);
+            if (!dueDateInput || !dueDateInput.value) missing.push(i18n.missingDueDate);
+            if (!descriptionInput || descriptionInput.value.trim().length < 20) missing.push(i18n.missingDescription);
+
+            const warnings = [];
+            const hours = estimatedHoursInput ? Number(estimatedHoursInput.value || 0) : 0;
+            if (!Number.isNaN(hours) && hours <= 0) warnings.push(i18n.warnNoHours);
+            if (dueDateInput && dueDateInput.value) {
+                const due = new Date(dueDateInput.value);
+                if (!Number.isNaN(due.getTime()) && due.getTime() < Date.now()) warnings.push(i18n.warnOverdueDate);
+            }
+
+            if (missing.length === 0 && warnings.length === 0) {
+                hintEl.textContent = i18n.ready;
+                return;
+            }
+
+            const parts = [];
+            if (missing.length > 0) {
+                parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+            }
+            if (warnings.length > 0) {
+                parts.push(warnings.join(' '));
+            }
+            hintEl.textContent = parts.join(' ');
+        }
+
         orderSelect.addEventListener('change', autoSuggest);
+        [titleInput, descriptionInput, dueDateInput, estimatedHoursInput, workerSelect].forEach(el => {
+            if (!el) return;
+            el.addEventListener('input', updateSmartHint);
+            el.addEventListener('change', updateSmartHint);
+        });
         autoSuggest();
+        updateSmartHint();
     })();
 </script>
 </body>
