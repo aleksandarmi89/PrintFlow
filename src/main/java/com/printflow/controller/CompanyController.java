@@ -237,12 +237,15 @@ public class CompanyController extends BaseController {
                                      @RequestParam(required = false) String subject,
                                      @RequestParam(required = false) String body,
                                      @RequestParam(required = false, defaultValue = "general") String type,
+                                     @RequestParam(required = false) String invoiceNumber,
+                                     @RequestParam(required = false) String invoiceAmount,
+                                     @RequestParam(required = false) String invoiceDueDate,
                                      Model model) {
         if (!tenantContextService.isSuperAdmin()) {
             return redirectWithError("/admin/companies/edit/" + id, "billing.override.forbidden", model);
         }
         try {
-            companyService.sendSuperAdminCompanyMessage(id, toEmail, subject, body, type);
+            companyService.sendSuperAdminCompanyMessage(id, toEmail, subject, body, type, invoiceNumber, invoiceAmount, invoiceDueDate);
             return redirectWithSuccess("/admin/companies/edit/" + id, "admin.companies.message.sent", model);
         } catch (RuntimeException e) {
             return redirectWithError("/admin/companies/edit/" + id, mapCompanyErrorToKey(e.getMessage()), model);
@@ -275,6 +278,7 @@ public class CompanyController extends BaseController {
             case "Company recipient email is required" -> "admin.companies.message.error.recipient_required";
             case "Email subject is required" -> "admin.companies.message.error.subject_required";
             case "Email body is required" -> "admin.companies.message.error.body_required";
+            case "Email service is not configured" -> "admin.companies.message.error.email_service_unavailable";
             default -> "admin.companies.error.generic";
         };
     }

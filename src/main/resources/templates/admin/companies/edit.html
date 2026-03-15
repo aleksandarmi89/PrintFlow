@@ -326,7 +326,14 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="messageType" class="block text-sm font-medium text-gray-700 mb-2" th:text="#{admin.companies.message.type}">Message type</label>
-                                <select id="messageType" name="type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select id="messageType" name="type"
+                                        th:attr="data-subject-invoice=#{admin.companies.message.default.invoice.subject},
+                                                 data-body-invoice=#{admin.companies.message.default.invoice.body},
+                                                 data-subject-billing=#{admin.companies.message.default.billing.subject},
+                                                 data-body-billing=#{admin.companies.message.default.billing.body},
+                                                 data-subject-general=#{admin.companies.message.default.general.subject},
+                                                 data-body-general=#{admin.companies.message.default.general.body}"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="invoice" th:text="#{admin.companies.message.type.invoice}">Monthly invoice</option>
                                     <option value="billing_notice" th:text="#{admin.companies.message.type.billing}">Billing notice</option>
                                     <option value="general" th:text="#{admin.companies.message.type.general}">General</option>
@@ -357,6 +364,36 @@
                                       th:placeholder="#{admin.companies.message.body_placeholder}"
                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
                         </div>
+                        <div id="invoiceFields" class="hidden rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="invoiceNumber" class="block text-sm font-medium text-gray-700 mb-2"
+                                           th:text="#{admin.companies.message.invoice_number}">Invoice number</label>
+                                    <input type="text"
+                                           id="invoiceNumber"
+                                           name="invoiceNumber"
+                                           th:placeholder="#{admin.companies.message.invoice_number_placeholder}"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="invoiceAmount" class="block text-sm font-medium text-gray-700 mb-2"
+                                           th:text="#{admin.companies.message.invoice_amount}">Amount</label>
+                                    <input type="text"
+                                           id="invoiceAmount"
+                                           name="invoiceAmount"
+                                           th:placeholder="#{admin.companies.message.invoice_amount_placeholder}"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="invoiceDueDate" class="block text-sm font-medium text-gray-700 mb-2"
+                                           th:text="#{admin.companies.message.invoice_due_date}">Due date</label>
+                                    <input type="date"
+                                           id="invoiceDueDate"
+                                           name="invoiceDueDate"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
                         <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                             <button type="submit"
                                     class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -374,21 +411,44 @@
             const type = document.getElementById('messageType');
             const subject = document.getElementById('messageSubject');
             const body = document.getElementById('messageBody');
+            const invoiceFields = document.getElementById('invoiceFields');
             if (!type || !subject || !body) return;
+            const defaults = {
+                invoice: {
+                    subject: type.getAttribute('data-subject-invoice') || 'Monthly invoice and billing details',
+                    body: type.getAttribute('data-body-invoice') || 'Hello,\n\nPlease find your monthly invoice details and payment instructions attached/outlined in this message.\n\nRegards,\nPrintFlow Billing Team'
+                },
+                billing_notice: {
+                    subject: type.getAttribute('data-subject-billing') || 'Important billing notice',
+                    body: type.getAttribute('data-body-billing') || 'Hello,\n\nWe are contacting you regarding your company billing status. Please review your billing settings and payment status.\n\nRegards,\nPrintFlow Team'
+                },
+                general: {
+                    subject: type.getAttribute('data-subject-general') || 'Important update from PrintFlow',
+                    body: type.getAttribute('data-body-general') || 'Hello,\n\nThis is a message from PrintFlow Super Admin.\n\nRegards,\nPrintFlow Team'
+                }
+            };
+            const toggleInvoiceFields = () => {
+                if (!invoiceFields) return;
+                invoiceFields.classList.toggle('hidden', type.value !== 'invoice');
+            };
             const fillDefaults = () => {
                 if (subject.value.trim() || body.value.trim()) return;
                 if (type.value === 'invoice') {
-                    subject.value = 'Monthly invoice and billing details';
-                    body.value = 'Hello,\n\nPlease find your monthly invoice details and payment instructions attached/outlined in this message.\n\nRegards,\nPrintFlow Billing Team';
+                    subject.value = defaults.invoice.subject;
+                    body.value = defaults.invoice.body;
                 } else if (type.value === 'billing_notice') {
-                    subject.value = 'Important billing notice';
-                    body.value = 'Hello,\n\nWe are contacting you regarding your company billing status. Please review your billing settings and payment status.\n\nRegards,\nPrintFlow Team';
+                    subject.value = defaults.billing_notice.subject;
+                    body.value = defaults.billing_notice.body;
                 } else {
-                    subject.value = 'Important update from PrintFlow';
-                    body.value = 'Hello,\n\nThis is a message from PrintFlow Super Admin.\n\nRegards,\nPrintFlow Team';
+                    subject.value = defaults.general.subject;
+                    body.value = defaults.general.body;
                 }
             };
-            type.addEventListener('change', fillDefaults);
+            type.addEventListener('change', () => {
+                toggleInvoiceFields();
+                fillDefaults();
+            });
+            toggleInvoiceFields();
             fillDefaults();
         })();
     </script>

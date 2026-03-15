@@ -255,6 +255,17 @@ public class CompanyService {
                                              String subject,
                                              String body,
                                              String messageType) {
+        sendSuperAdminCompanyMessage(companyId, toEmail, subject, body, messageType, null, null, null);
+    }
+
+    public void sendSuperAdminCompanyMessage(Long companyId,
+                                             String toEmail,
+                                             String subject,
+                                             String body,
+                                             String messageType,
+                                             String invoiceNumber,
+                                             String invoiceAmount,
+                                             String invoiceDueDate) {
         if (emailService == null) {
             throw new RuntimeException("Email service is not configured");
         }
@@ -264,6 +275,9 @@ public class CompanyService {
         String normalizedSubject = normalizeNullable(subject);
         String normalizedBody = normalizeNullable(body);
         String normalizedType = normalizeNullable(messageType);
+        String normalizedInvoiceNumber = normalizeNullable(invoiceNumber);
+        String normalizedInvoiceAmount = normalizeNullable(invoiceAmount);
+        String normalizedInvoiceDueDate = normalizeNullable(invoiceDueDate);
         if (normalizedTo == null) {
             throw new RuntimeException("Company recipient email is required");
         }
@@ -276,9 +290,22 @@ public class CompanyService {
         EmailMessage message = new EmailMessage();
         message.setTo(normalizedTo);
         message.setSubject(normalizedSubject);
-        message.setTextBody(normalizedBody);
-        message.setHtmlBody(buildSuperAdminHtmlMessage(company, normalizedBody, normalizedType));
-        message.setMetadata(Map.of("type", normalizedType != null ? normalizedType : "general"));
+        String plainBody = normalizedBody + buildInvoiceDetailsPlain(normalizedType, normalizedInvoiceNumber, normalizedInvoiceAmount, normalizedInvoiceDueDate);
+        message.setTextBody(plainBody);
+        message.setHtmlBody(buildSuperAdminHtmlMessage(company, normalizedBody, normalizedType,
+            normalizedInvoiceNumber, normalizedInvoiceAmount, normalizedInvoiceDueDate));
+        java.util.Map<String, String> metadata = new java.util.LinkedHashMap<>();
+        metadata.put("type", normalizedType != null ? normalizedType : "general");
+        if (normalizedInvoiceNumber != null) {
+            metadata.put("invoiceNumber", normalizedInvoiceNumber);
+        }
+        if (normalizedInvoiceAmount != null) {
+            metadata.put("invoiceAmount", normalizedInvoiceAmount);
+        }
+        if (normalizedInvoiceDueDate != null) {
+            metadata.put("invoiceDueDate", normalizedInvoiceDueDate);
+        }
+        message.setMetadata(metadata);
         emailService.sendNow(message, null, "superadmin-company-message");
     }
 
@@ -392,14 +419,14 @@ public class CompanyService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private String buildSuperAdminHtmlMessage(Company company, String body, String messageType) {
-        String safeBody = body
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&#39;")
-            .replace("\n", "<br/>");
+    private String buildSuperAdminHtmlMessage(Company company,
+                                              String body,
+                                              String messageType,
+                                              String invoiceNumber,
+                                              String invoiceAmount,
+                                              String invoiceDueDate) {
+        String safeBody = escapeHtml(body).replace("\n", "<br/>");
+        String invoiceHtml = buildInvoiceDetailsHtml(messageType, invoiceNumber, invoiceAmount, invoiceDueDate);
         String typeLabel = messageType != null ? messageType.toUpperCase() : "GENERAL";
         String companyName = company.getName() != null ? company.getName() : "Company";
         return """
@@ -407,7 +434,66 @@ public class CompanyService {
               <p style="margin:0 0 8px 0;font-size:12px;color:#6b7280;">PrintFlow Super Admin • %s</p>
               <h2 style="margin:0 0 12px 0;">%s</h2>
               <div style="line-height:1.6;">%s</div>
+              %s
             </div>
-            """.formatted(typeLabel, companyName, safeBody);
+            """.formatted(typeLabel, companyName, safeBody, invoiceHtml);
+    }
+
+    private String buildInvoiceDetailsPlain(String messageType,
+                                            String invoiceNumber,
+                                            String invoiceAmount,
+                                            String invoiceDueDate) {
+        if (!"invoice".equalsIgnoreCase(messageType)) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (invoiceNumber != null || invoiceAmount != null || invoiceDueDate != null) {
+            sb.append("\n\n--- Invoice details ---");
+            if (invoiceNumber != null) {
+                sb.append("\nInvoice number: ").append(invoiceNumber);
+            }
+            if (invoiceAmount != null) {
+                sb.append("\nAmount: ").append(invoiceAmount);
+            }
+            if (invoiceDueDate != null) {
+                sb.append("\nDue date: ").append(invoiceDueDate);
+            }
+        }
+        return sb.toString();
+    }
+
+    private String buildInvoiceDetailsHtml(String messageType,
+                                           String invoiceNumber,
+                                           String invoiceAmount,
+                                           String invoiceDueDate) {
+        if (!"invoice".equalsIgnoreCase(messageType)) {
+            return "";
+        }
+        if (invoiceNumber == null && invoiceAmount == null && invoiceDueDate == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div style=\"margin-top:16px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;\">");
+        sb.append("<p style=\"margin:0 0 8px 0;font-weight:600;\">Invoice details</p>");
+        if (invoiceNumber != null) {
+            sb.append("<p style=\"margin:0 0 4px 0;\">Invoice number: ").append(escapeHtml(invoiceNumber)).append("</p>");
+        }
+        if (invoiceAmount != null) {
+            sb.append("<p style=\"margin:0 0 4px 0;\">Amount: ").append(escapeHtml(invoiceAmount)).append("</p>");
+        }
+        if (invoiceDueDate != null) {
+            sb.append("<p style=\"margin:0;\">Due date: ").append(escapeHtml(invoiceDueDate)).append("</p>");
+        }
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    private String escapeHtml(String value) {
+        return value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 }
