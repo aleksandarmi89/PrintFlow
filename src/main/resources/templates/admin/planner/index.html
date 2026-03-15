@@ -9,7 +9,27 @@
 <div th:replace="~{layout/header :: header}"></div>
 
 <main class="container mx-auto px-4 py-8">
+    <div th:if="${successMessage}" class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+        <span th:with="m=${#messages.msgOrNull(successMessage)}"
+              th:text="${m != null ? m : successMessage}">Success</span>
+    </div>
+    <div th:if="${errorMessage}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <span th:with="m=${#messages.msgOrNull(errorMessage)}"
+              th:text="${m != null ? m : errorMessage}">Error</span>
+    </div>
     <div class="mb-6">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <a th:href="@{/admin/dashboard}"
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+               th:text="#{nav.dashboard}">
+                Dashboard
+            </a>
+            <a th:href="@{/admin/billing}"
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+               th:text="#{company.settings.quick_billing}">
+                Open Billing
+            </a>
+        </div>
         <h1 class="text-3xl font-bold text-gray-900" th:text="#{planner.title}">
             Production Planner
         </h1>
