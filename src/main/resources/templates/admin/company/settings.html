@@ -8,9 +8,12 @@
 
 <main class="container mx-auto px-4 py-8">
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900" th:text="#{company.settings.title}">Company Settings</h1>
-        <p class="text-gray-600 mt-2" th:text="#{company.settings.subtitle}">Update your company profile and branding.</p>
-        <div class="mt-3 flex flex-wrap items-center gap-2">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <a th:href="@{/admin/dashboard}"
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+               th:text="#{nav.dashboard}">
+                Dashboard
+            </a>
             <a th:href="@{/settings/email}"
                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                th:text="#{company.settings.quick_email}">
@@ -22,6 +25,8 @@
                 Open Billing
             </a>
         </div>
+        <h1 class="text-3xl font-bold text-gray-900" th:text="#{company.settings.title}">Company Settings</h1>
+        <p class="text-gray-600 mt-2" th:text="#{company.settings.subtitle}">Update your company profile and branding.</p>
     </div>
 
     <div class="max-w-3xl mx-auto">
@@ -43,6 +48,10 @@
                 <div th:if="${successKey}" class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
                     <span th:with="m=${#messages.msgOrNull(successKey)}"
                           th:text="${m != null ? m : successKey}">Success</span>
+                </div>
+                <div th:if="${successMessage}" class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    <span th:with="m=${#messages.msgOrNull(successMessage)}"
+                          th:text="${m != null ? m : successMessage}">Success</span>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex flex-col gap-1">
