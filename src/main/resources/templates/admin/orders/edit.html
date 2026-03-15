@@ -101,9 +101,18 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.details.description}">Description</label>
+                <div class="mb-1 flex items-center justify-between gap-2">
+                    <label class="block text-sm font-medium text-gray-700" th:text="#{orders.details.description}">Description</label>
+                    <button id="insertEditBriefTemplate"
+                            type="button"
+                            class="text-xs rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                            th:text="#{orders.edit.smart.brief_template_cta}">
+                        Insert brief template
+                    </button>
+                </div>
                 <textarea id="description" th:field="*{description}" rows="4"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                <p id="orderEditBriefHint" class="mt-1 text-xs text-blue-700"></p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.details.specifications}">Specifications</label>
@@ -135,6 +144,8 @@
             const priceEl = document.getElementById('price');
             const costEl = document.getElementById('cost');
             const paidEl = document.getElementById('paid');
+            const briefHintEl = document.getElementById('orderEditBriefHint');
+            const insertBriefBtn = document.getElementById('insertEditBriefTemplate');
             if (!hintEl) return;
 
             const i18n = {
@@ -143,7 +154,12 @@
                 missingDeadline: /*[[#{orders.edit.smart.missing.deadline}]]*/ 'deadline',
                 missingDescription: /*[[#{orders.edit.smart.missing.description}]]*/ 'clear description',
                 warnPriceCost: /*[[#{orders.edit.smart.warn.price_below_cost}]]*/ 'Price is below cost. This order may be unprofitable.',
-                warnPaidNoPrice: /*[[#{orders.edit.smart.warn.paid_without_price}]]*/ 'Order is marked as paid, but price is empty.'
+                warnPaidNoPrice: /*[[#{orders.edit.smart.warn.paid_without_price}]]*/ 'Order is marked as paid, but price is empty.',
+                briefTemplateCta: /*[[#{orders.edit.smart.brief_template_cta}]]*/ 'Insert brief template',
+                briefTemplate: /*[[#{orders.edit.smart.brief_template}]]*/ 'Product:\nDimensions:\nMaterial:\nFinishing:\nQuantity:\nDeadline:\nDelivery note:',
+                briefHintEmpty: /*[[#{orders.edit.smart.brief_hint_empty}]]*/ 'Use the brief template for consistent production handoff.',
+                briefHintPartial: /*[[#{orders.edit.smart.brief_hint_partial}]]*/ 'Description can be clearer: add dimensions, material, finishing, and deadline.',
+                briefHintReady: /*[[#{orders.edit.smart.brief_hint_ready}]]*/ 'Brief coverage looks good for execution.'
             };
 
             function updateHint() {
@@ -172,13 +188,26 @@
 
                 if (missing.length === 0 && warnings.length === 0) {
                     hintEl.textContent = i18n.ready;
-                    return;
+                } else {
+                    const parts = [];
+                    if (missing.length > 0) parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+                    if (warnings.length > 0) parts.push(warnings.join(' '));
+                    hintEl.textContent = parts.join(' ');
                 }
 
-                const parts = [];
-                if (missing.length > 0) parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
-                if (warnings.length > 0) parts.push(warnings.join(' '));
-                hintEl.textContent = parts.join(' ');
+                if (briefHintEl) {
+                    const descText = description.toLowerCase();
+                    if (!descText) {
+                        briefHintEl.textContent = i18n.briefHintEmpty;
+                    } else {
+                        const hasDims = descText.includes('mm') || descText.includes('cm') || descText.includes('x');
+                        const hasMaterial = descText.includes('paper') || descText.includes('papir') || descText.includes('material');
+                        const hasFinishing = descText.includes('lamination') || descText.includes('plast') || descText.includes('finish') || descText.includes('dorad');
+                        const hasDeadlineInfo = descText.includes('deadline') || descText.includes('rok') || descText.includes('isporuk');
+                        const completedParts = [hasDims, hasMaterial, hasFinishing, hasDeadlineInfo].filter(Boolean).length;
+                        briefHintEl.textContent = completedParts >= 3 ? i18n.briefHintReady : i18n.briefHintPartial;
+                    }
+                }
             }
 
             [titleEl, descriptionEl, deadlineEl, priceEl, costEl, paidEl].forEach(el => {
@@ -186,6 +215,17 @@
                 el.addEventListener('input', updateHint);
                 el.addEventListener('change', updateHint);
             });
+            if (insertBriefBtn && descriptionEl) {
+                insertBriefBtn.addEventListener('click', function () {
+                    if (descriptionEl.value && descriptionEl.value.trim().length > 0) {
+                        descriptionEl.value += '\n\n' + i18n.briefTemplate;
+                    } else {
+                        descriptionEl.value = i18n.briefTemplate;
+                    }
+                    descriptionEl.focus();
+                    updateHint();
+                });
+            }
             updateHint();
         })();
     </script>
