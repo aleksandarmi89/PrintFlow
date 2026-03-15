@@ -46,6 +46,7 @@
                                    th:placeholder="#{track.search_company_placeholder}" />
                             <p id="companySearchInfo" class="mb-2 text-xs text-gray-500"
                                th:attr="data-label=#{track.smart.visible_companies},data-no-match=#{track.smart.no_company_match}"></p>
+                            <p id="companyMemoryHint" class="mb-2 text-xs text-emerald-700"></p>
                             <select id="companySelect" name="company"
                                     onchange="this.form.submit()"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -232,13 +233,16 @@
                   data-next-submit=#{track.smart.next.submit},
                   data-paste-success=#{track.smart.paste_success},
                   data-paste-failed=#{track.smart.paste_failed},
-                  data-paste-unsupported=#{track.smart.paste_unsupported}">
+                  data-paste-unsupported=#{track.smart.paste_unsupported},
+                  data-company-remembered=#{track.smart.company_remembered},
+                  data-company-remembered-invalid=#{track.smart.company_remembered_invalid}">
     </div>
     <script>
         (function () {
             const search = document.getElementById('companySearch');
             const select = document.getElementById('companySelect');
             const searchInfo = document.getElementById('companySearchInfo');
+            const companyMemoryHint = document.getElementById('companyMemoryHint');
             const trackingCode = document.getElementById('trackingCode');
             const pasteTrackingCodeBtn = document.getElementById('pasteTrackingCodeBtn');
             const pasteTrackingCodeHint = document.getElementById('pasteTrackingCodeHint');
@@ -264,7 +268,9 @@
                 nextSubmit: i18nEl?.getAttribute('data-next-submit') || 'Ready: click Track Order to see live status.',
                 pasteSuccess: i18nEl?.getAttribute('data-paste-success') || 'Tracking code pasted from clipboard.',
                 pasteFailed: i18nEl?.getAttribute('data-paste-failed') || 'Unable to paste automatically. Paste manually.',
-                pasteUnsupported: i18nEl?.getAttribute('data-paste-unsupported') || 'Clipboard paste is not available in this browser context.'
+                pasteUnsupported: i18nEl?.getAttribute('data-paste-unsupported') || 'Clipboard paste is not available in this browser context.',
+                companyRemembered: i18nEl?.getAttribute('data-company-remembered') || 'Loaded your last selected company.',
+                companyRememberedInvalid: i18nEl?.getAttribute('data-company-remembered-invalid') || 'Previously selected company is no longer available.'
             };
 
             function render(query) {
@@ -357,6 +363,32 @@
                         if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteFailed;
                     }
                 });
+            }
+            try {
+                const storageKey = 'printflow.track.companyId';
+                const currentValue = select.value || '';
+                if (!currentValue) {
+                    const remembered = localStorage.getItem(storageKey) || '';
+                    if (remembered) {
+                        const exists = Array.from(select.options).some(opt => opt.value === remembered);
+                        if (exists) {
+                            select.value = remembered;
+                            if (companyMemoryHint) companyMemoryHint.textContent = i18n.companyRemembered;
+                        } else if (companyMemoryHint) {
+                            companyMemoryHint.textContent = i18n.companyRememberedInvalid;
+                        }
+                    }
+                }
+                select.addEventListener('change', function () {
+                    const selected = String(select.value || '');
+                    if (selected) {
+                        localStorage.setItem(storageKey, selected);
+                    } else {
+                        localStorage.removeItem(storageKey);
+                    }
+                });
+            } catch (e) {
+                // localStorage may be disabled; continue without persistence
             }
             render('');
             updateCodeSmartHint();
