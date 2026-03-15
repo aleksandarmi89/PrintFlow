@@ -129,7 +129,7 @@
                                     <option value="" th:text="#{admin.users.form.select_role}">Select Role</option>
                                     <option th:each="roleItem : ${roles}"
                                             th:value="${roleItem.name()}"
-                                            th:text="${roleItem.name()}"
+                                            th:text="${#messages.msgOrNull('users.role.' + roleItem.name()) != null ? #messages.msg('users.role.' + roleItem.name()) : roleItem.name()}"
                                             th:selected="${user.role == roleItem.name()}">
                                     </option>
                                 </select>
