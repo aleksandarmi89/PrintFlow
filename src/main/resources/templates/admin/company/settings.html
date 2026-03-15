@@ -58,6 +58,10 @@
                     Company profile is complete and ready for daily operations.
                 </li>
             </ul>
+            <div id="companySmartLiveCard" class="mt-3 rounded-lg border border-sky-200 bg-white/80 px-3 py-2 text-xs text-sky-900">
+                <p id="companySmartLiveSummary" class="font-medium"></p>
+                <ul id="companySmartLiveList" class="mt-1 space-y-1"></ul>
+            </div>
         </div>
     </div>
 
@@ -333,5 +337,108 @@
         </div>
     </div>
 </main>
+<div id="companySmartI18n"
+     class="hidden"
+     th:attr="data-summary-missing=#{company.settings.smart.dynamic.summary_missing},
+              data-summary-ready=#{company.settings.smart.dynamic.summary_ready},
+              data-focus=#{company.settings.smart.dynamic.focus},
+              data-missing-email=#{company.settings.smart.missing.email},
+              data-missing-phone=#{company.settings.smart.missing.phone},
+              data-missing-address=#{company.settings.smart.missing.address},
+              data-missing-tax-id=#{company.settings.smart.missing.tax_id},
+              data-missing-bank-account=#{company.settings.smart.missing.bank_account},
+              data-missing-smtp=#{company.settings.smart.missing.smtp},
+              data-optional-website=#{company.settings.smart.dynamic.optional_website},
+              data-optional-logo=#{company.settings.smart.dynamic.optional_logo},
+              data-smtp-configured=${smtpConfigured == true}">
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fields = {
+            email: document.getElementById('email'),
+            phone: document.getElementById('phone'),
+            address: document.getElementById('address'),
+            taxId: document.getElementById('taxId'),
+            bankAccount: document.getElementById('bankAccount'),
+            website: document.getElementById('website'),
+            logo: document.getElementById('logo')
+        };
+        const card = document.getElementById('companySmartLiveCard');
+        const summary = document.getElementById('companySmartLiveSummary');
+        const list = document.getElementById('companySmartLiveList');
+        const i18nEl = document.getElementById('companySmartI18n');
+        if (!card || !summary || !list || !i18nEl) {
+            return;
+        }
+        const i18n = {
+            summaryMissing: i18nEl.getAttribute('data-summary-missing') || 'Complete __COUNT__ more item(s) to make your company profile operationally ready.',
+            summaryReady: i18nEl.getAttribute('data-summary-ready') || 'Great, key fields are complete. You can still improve brand trust with optional website/logo.',
+            focus: i18nEl.getAttribute('data-focus') || 'Start with:',
+            missingEmail: i18nEl.getAttribute('data-missing-email') || 'Add company email used for outgoing notifications.',
+            missingPhone: i18nEl.getAttribute('data-missing-phone') || 'Add phone so clients can reach you quickly.',
+            missingAddress: i18nEl.getAttribute('data-missing-address') || 'Add address to complete footer and billing profile.',
+            missingTaxId: i18nEl.getAttribute('data-missing-tax-id') || 'Add tax ID/PIB for professional invoices.',
+            missingBankAccount: i18nEl.getAttribute('data-missing-bank-account') || 'Add bank account for payment instructions.',
+            missingSmtp: i18nEl.getAttribute('data-missing-smtp') || 'Configure SMTP in Email Settings so notifications can be sent.',
+            optionalWebsite: i18nEl.getAttribute('data-optional-website') || 'Optional: add website so public pages look more credible.',
+            optionalLogo: i18nEl.getAttribute('data-optional-logo') || 'Optional: upload a logo for stronger branding on public pages.'
+        };
+        const smtpConfigured = i18nEl.getAttribute('data-smtp-configured') === 'true';
+
+        function hasValue(input) {
+            if (!input) return false;
+            return String(input.value || '').trim().length > 0;
+        }
+
+        function updateSmartAssistant() {
+            const missing = [];
+            if (!hasValue(fields.email)) missing.push(i18n.missingEmail);
+            if (!hasValue(fields.phone)) missing.push(i18n.missingPhone);
+            if (!hasValue(fields.address)) missing.push(i18n.missingAddress);
+            if (!hasValue(fields.taxId)) missing.push(i18n.missingTaxId);
+            if (!hasValue(fields.bankAccount)) missing.push(i18n.missingBankAccount);
+            if (!smtpConfigured) missing.push(i18n.missingSmtp);
+
+            const optional = [];
+            if (!hasValue(fields.website)) optional.push(i18n.optionalWebsite);
+            if (fields.logo && fields.logo.files && fields.logo.files.length === 0) optional.push(i18n.optionalLogo);
+
+            if (missing.length === 0) {
+                summary.textContent = i18n.summaryReady;
+                summary.className = 'font-medium text-emerald-800';
+            } else {
+                summary.textContent = i18n.summaryMissing.replace('__COUNT__', String(missing.length));
+                summary.className = 'font-medium text-amber-800';
+            }
+
+            list.innerHTML = '';
+            if (missing.length > 0) {
+                const first = document.createElement('li');
+                first.className = 'text-amber-800';
+                first.textContent = i18n.focus + ' ' + missing[0];
+                list.appendChild(first);
+                missing.slice(1).forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'text-amber-700';
+                    li.textContent = '- ' + item;
+                    list.appendChild(li);
+                });
+            }
+            optional.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'text-sky-700';
+                li.textContent = item;
+                list.appendChild(li);
+            });
+        }
+
+        Object.values(fields).forEach(input => {
+            if (!input) return;
+            input.addEventListener('input', updateSmartAssistant);
+            input.addEventListener('change', updateSmartAssistant);
+        });
+        updateSmartAssistant();
+    });
+</script>
 </body>
 </html>
