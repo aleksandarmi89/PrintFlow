@@ -526,8 +526,8 @@
             <span th:text="#{order_tracking.footer_note}">Order tracking system.</span>
         </p>
         <p class="mt-2 text-xs text-gray-500"
-           th:if="${companyBrand != null && ((companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) || (companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)))}"
-           th:text="${(companyBrand.email != null && !#strings.isEmpty(companyBrand.email) ? companyBrand.email : '') + ((companyBrand.email != null && !#strings.isEmpty(companyBrand.email) && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? ' • ' : '') + (companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone) ? companyBrand.phone : '')}">
+           th:if="${(companyBrand != null && ((companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) || (companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)))) || (footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
+           th:text="${((companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : (footerCompanyEmail != null ? footerCompanyEmail : '')) + ((((companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : (footerCompanyEmail != null ? footerCompanyEmail : '')) != '' && ((companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : (footerCompanyPhone != null ? footerCompanyPhone : '')) != '') ? ' • ' : '') + ((companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : (footerCompanyPhone != null ? footerCompanyPhone : ''))}">
             support@example.com • +381 11 123 456
         </p>
     </div>

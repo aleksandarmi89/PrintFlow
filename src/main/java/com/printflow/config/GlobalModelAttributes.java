@@ -1,10 +1,12 @@
 package com.printflow.config;
 
 import com.printflow.repository.MailSettingsRepository;
+import com.printflow.repository.UserRepository;
 import com.printflow.service.MailSettingsService;
 import com.printflow.service.NotificationService;
 import com.printflow.service.TenantContextService;
 import com.printflow.service.BillingAccessService;
+import com.printflow.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -20,17 +22,20 @@ public class GlobalModelAttributes {
     private final BillingAccessService billingAccessService;
     private final MailSettingsRepository mailSettingsRepository;
     private final MailSettingsService mailSettingsService;
+    private final UserRepository userRepository;
 
     public GlobalModelAttributes(TenantContextService tenantContextService,
                                  NotificationService notificationService,
                                  BillingAccessService billingAccessService,
                                  MailSettingsRepository mailSettingsRepository,
-                                 MailSettingsService mailSettingsService) {
+                                 MailSettingsService mailSettingsService,
+                                 UserRepository userRepository) {
         this.tenantContextService = tenantContextService;
         this.notificationService = notificationService;
         this.billingAccessService = billingAccessService;
         this.mailSettingsRepository = mailSettingsRepository;
         this.mailSettingsService = mailSettingsService;
+        this.userRepository = userRepository;
     }
 
     @ModelAttribute
@@ -38,6 +43,7 @@ public class GlobalModelAttributes {
         if (request != null) {
             model.addAttribute("requestUri", request.getRequestURI());
         }
+        addPlatformFooterDefaults(model);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return;
@@ -92,5 +98,27 @@ public class GlobalModelAttributes {
             model.addAttribute("trialEnd", trialEnd);
             model.addAttribute("billingLockMessageKey", "billing.lock.trial");
         }
+    }
+
+    private void addPlatformFooterDefaults(Model model) {
+        userRepository.findByRoleAndActiveTrue(User.Role.SUPER_ADMIN).stream().findFirst().ifPresent(superAdmin -> {
+            if (superAdmin.getFullName() != null && !superAdmin.getFullName().isBlank()) {
+                model.addAttribute("footerCompanyName", superAdmin.getFullName());
+            }
+            if (superAdmin.getEmail() != null && !superAdmin.getEmail().isBlank()) {
+                model.addAttribute("footerCompanyEmail", superAdmin.getEmail());
+            }
+            if (superAdmin.getPhone() != null && !superAdmin.getPhone().isBlank()) {
+                model.addAttribute("footerCompanyPhone", superAdmin.getPhone());
+            }
+            if (superAdmin.getCompany() != null) {
+                if (superAdmin.getCompany().getAddress() != null && !superAdmin.getCompany().getAddress().isBlank()) {
+                    model.addAttribute("footerCompanyAddress", superAdmin.getCompany().getAddress());
+                }
+                if (superAdmin.getCompany().getWebsite() != null && !superAdmin.getCompany().getWebsite().isBlank()) {
+                    model.addAttribute("footerCompanyWebsite", superAdmin.getCompany().getWebsite());
+                }
+            }
+        });
     }
 }

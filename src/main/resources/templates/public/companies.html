@@ -129,6 +129,11 @@
                     <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>.
                     <span th:text="#{public.brand_footer_rights}">All rights reserved.</span>
                 </p>
+                <p class="mt-1 text-xs text-gray-400"
+                   th:if="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
+                   th:text="${(footerCompanyEmail != null ? footerCompanyEmail : '') + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail) && footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? ' • ' : '') + (footerCompanyPhone != null ? footerCompanyPhone : '')}">
+                    info@printflow.com • +381 11 123 4567
+                </p>
                 <div class="mt-2 flex flex-wrap items-center gap-4">
                     <a th:href="@{/public/track}" class="hover:text-white" th:text="#{footer.track_order}">Track order</a>
                     <a th:href="@{/public/contact}" class="hover:text-white" th:text="#{footer.contact}">Contact</a>

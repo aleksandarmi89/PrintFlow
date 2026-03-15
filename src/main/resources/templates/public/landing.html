@@ -238,9 +238,9 @@
                 <div>
                     <h4 class="font-semibold mb-4" th:text="#{footer.contact_info}">Contact Info</h4>
                     <ul class="space-y-2 text-gray-400">
-                        <li th:text="${companyBrand != null && companyBrand.address != null && !#strings.isEmpty(companyBrand.address) ? companyBrand.address : #messages.msg('footer.location')}">Belgrade, Serbia</li>
-                        <li th:text="${companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email) ? companyBrand.email : #messages.msg('footer.email')}">info@printflow.com</li>
-                        <li th:text="${companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone) ? companyBrand.phone : #messages.msg('footer.phone')}">+381 11 123 4567</li>
+                        <li th:text="${(footerCompanyAddress != null && !#strings.isEmpty(footerCompanyAddress)) ? footerCompanyAddress : (companyBrand != null && companyBrand.address != null && !#strings.isEmpty(companyBrand.address) ? companyBrand.address : #messages.msg('footer.location'))}">Belgrade, Serbia</li>
+                        <li th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email) ? companyBrand.email : #messages.msg('footer.email'))}">info@printflow.com</li>
+                        <li th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : (companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone) ? companyBrand.phone : #messages.msg('footer.phone'))}">+381 11 123 4567</li>
                         <li th:if="${companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)}"
                             th:text="${companyBrand.website}">https://example.com</li>
                     </ul>
