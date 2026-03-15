@@ -692,4 +692,37 @@ class CompanyControllerTest {
         assertEquals("redirect:/admin/companies/edit/57", view);
         assertEquals("admin.companies.message.error.email_service_unavailable", model.getAttribute("errorMessage"));
     }
+
+    @Test
+    void sendCompanyMessageMapsInvalidRecipientErrorToKey() {
+        CompanyService companyService = mock(CompanyService.class);
+        PaginationConfig paginationConfig = mock(PaginationConfig.class);
+        CompanyBrandingService brandingService = mock(CompanyBrandingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+
+        CompanyController controller = new CompanyController(
+            companyService, paginationConfig, brandingService, tenantContextService, auditLogService
+        );
+        when(tenantContextService.isSuperAdmin()).thenReturn(true);
+        doThrow(new RuntimeException("Company recipient email is invalid"))
+            .when(companyService)
+            .sendSuperAdminCompanyMessage(any(), any(), any(), any(), any(), any(), any(), any());
+        Model model = new ExtendedModelMap();
+
+        String view = controller.sendCompanyMessage(
+            58L,
+            "bad-email",
+            "Notice",
+            "Body",
+            "general",
+            null,
+            null,
+            null,
+            model
+        );
+
+        assertEquals("redirect:/admin/companies/edit/58", view);
+        assertEquals("admin.companies.message.error.recipient_invalid", model.getAttribute("errorMessage"));
+    }
 }

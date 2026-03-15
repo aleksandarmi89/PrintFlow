@@ -276,6 +276,7 @@ public class CompanyController extends BaseController {
             case "Company name already exists" -> "admin.companies.error.name_exists";
             case "Logo must be PNG, JPG or SVG" -> "admin.companies.error.logo_type";
             case "Company recipient email is required" -> "admin.companies.message.error.recipient_required";
+            case "Company recipient email is invalid" -> "admin.companies.message.error.recipient_invalid";
             case "Email subject is required" -> "admin.companies.message.error.subject_required";
             case "Email body is required" -> "admin.companies.message.error.body_required";
             case "Email service is not configured" -> "admin.companies.message.error.email_service_unavailable";

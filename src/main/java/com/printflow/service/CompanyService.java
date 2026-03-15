@@ -282,6 +282,9 @@ public class CompanyService {
         if (normalizedTo == null) {
             throw new RuntimeException("Company recipient email is required");
         }
+        if (!normalizedTo.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new RuntimeException("Company recipient email is invalid");
+        }
         if (normalizedSubject == null) {
             throw new RuntimeException("Email subject is required");
         }
