@@ -157,6 +157,35 @@
         </div>
     </div>
 
+    <div class="mb-6 rounded-xl border border-sky-200 bg-sky-50/70 p-4">
+        <h2 class="text-sm font-semibold text-sky-900" th:text="#{planner.smart.title}">Planner assistant</h2>
+        <p class="mt-1 text-xs text-sky-800" th:text="#{planner.smart.subtitle}">
+            Quick recommendations based on workload, deadlines, and assignment coverage.
+        </p>
+        <ul class="mt-3 space-y-2 text-sm">
+            <li th:if="${stats.overdueOrders > 0}" class="text-amber-800">
+                <a th:href="@{/admin/orders(status=OVERDUE)}" class="underline hover:no-underline" th:text="#{planner.smart.overdue}">
+                    Overdue work exists. Re-prioritize delayed orders first.
+                </a>
+            </li>
+            <li th:if="${stats.unassignedOrders > 0}" class="text-sky-900">
+                <a th:href="@{/admin/orders}" class="underline hover:no-underline" th:text="#{planner.smart.unassigned}">
+                    Some orders are still unassigned. Assign owners to avoid bottlenecks.
+                </a>
+            </li>
+            <li th:if="${stats.capacityUtilization > 0.90}" class="text-amber-800" th:text="#{planner.smart.high_capacity}">
+                Capacity is above 90%. Move non-urgent tasks or increase coverage.
+            </li>
+            <li th:if="${stats.totalOpenOrders > 0 && stats.overdueOrders == 0 && stats.unassignedOrders == 0 && stats.capacityUtilization <= 0.90}"
+                class="text-emerald-800" th:text="#{planner.smart.healthy}">
+                Planner looks balanced. Keep monitoring due-soon orders and trend changes.
+            </li>
+            <li th:if="${stats.totalOpenOrders == 0}" class="text-sky-900" th:text="#{planner.smart.no_open_orders}">
+                No open orders for selected filters. Clear filters or create a new order.
+            </li>
+        </ul>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <!-- Capacity -->
