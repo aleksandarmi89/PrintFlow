@@ -10,6 +10,13 @@
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
     <div class="max-w-md w-full space-y-6 p-8 bg-white rounded-xl shadow-lg">
         <h2 class="text-2xl font-bold text-gray-900 text-center" th:text="#{auth.accept_invite.heading}">Accept Invitation</h2>
+        <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+            <h3 class="text-sm font-semibold text-blue-900" th:text="#{auth.accept_invite.smart.title}">Invite onboarding helper</h3>
+            <p class="mt-1 text-xs text-blue-800" th:text="#{auth.accept_invite.smart.subtitle}">
+                Create your credentials once, then use them for daily sign-in.
+            </p>
+            <p id="acceptInviteSmartHint" class="mt-2 text-xs text-blue-900"></p>
+        </div>
 
         <div th:if="${errorMessage}" class="bg-red-50 border border-red-200 rounded-lg p-4">
             <p class="text-sm text-red-700"
@@ -48,16 +55,115 @@
                 <label class="block text-sm font-medium text-gray-700" for="password" th:text="#{auth.accept_invite.password_required}">Password *</label>
                 <input id="password" name="password" type="password" required
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"/>
+                <p id="acceptInvitePasswordHint" class="mt-1 text-xs text-gray-500"></p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700" for="confirmPassword" th:text="#{auth.accept_invite.confirm_password_required}">Confirm Password *</label>
                 <input id="confirmPassword" name="confirmPassword" type="password" required
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"/>
+                <p id="acceptInviteMatchHint" class="mt-1 text-xs text-gray-500"></p>
             </div>
+            <div id="acceptInviteFormError" class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
             <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{auth.accept_invite.create_account}">
                 Create Account
             </button>
         </form>
     </div>
+    <div id="acceptInviteI18n"
+         class="hidden"
+         th:attr="data-missing-prefix=#{auth.accept_invite.smart.missing_prefix},
+                  data-missing-username=#{auth.accept_invite.smart.missing_username},
+                  data-missing-password=#{auth.accept_invite.smart.missing_password},
+                  data-ready=#{auth.accept_invite.smart.ready},
+                  data-optional-full-name=#{auth.accept_invite.smart.optional_full_name},
+                  data-password-weak=#{auth.accept_invite.smart.password_weak},
+                  data-password-ok=#{auth.accept_invite.smart.password_ok},
+                  data-match-pending=#{auth.accept_invite.smart.match_pending},
+                  data-match-ok=#{auth.accept_invite.smart.match_ok},
+                  data-match-fail=#{auth.accept_invite.smart.match_fail},
+                  data-submit-error=#{auth.reset_invalid}">
+    </div>
+    <script>
+        (function () {
+            const form = document.querySelector('form');
+            const username = document.getElementById('username');
+            const fullName = document.getElementById('fullName');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const smartHint = document.getElementById('acceptInviteSmartHint');
+            const passwordHint = document.getElementById('acceptInvitePasswordHint');
+            const matchHint = document.getElementById('acceptInviteMatchHint');
+            const formError = document.getElementById('acceptInviteFormError');
+            const i18nEl = document.getElementById('acceptInviteI18n');
+            if (!form || !username || !password || !confirmPassword || !smartHint || !passwordHint || !matchHint || !i18nEl) return;
+
+            const i18n = {
+                missingPrefix: i18nEl.getAttribute('data-missing-prefix') || 'Complete required fields:',
+                missingUsername: i18nEl.getAttribute('data-missing-username') || 'username',
+                missingPassword: i18nEl.getAttribute('data-missing-password') || 'password',
+                ready: i18nEl.getAttribute('data-ready') || 'Credentials look good. You can create your account.',
+                optionalFullName: i18nEl.getAttribute('data-optional-full-name') || 'Optional: add full name for better team visibility.',
+                passwordWeak: i18nEl.getAttribute('data-password-weak') || 'Password is weak. Use at least 8 characters with letters and numbers.',
+                passwordOk: i18nEl.getAttribute('data-password-ok') || 'Password strength looks good.',
+                matchPending: i18nEl.getAttribute('data-match-pending') || 'Confirm password to avoid typing mistakes.',
+                matchOk: i18nEl.getAttribute('data-match-ok') || 'Passwords match.',
+                matchFail: i18nEl.getAttribute('data-match-fail') || 'Passwords do not match.',
+                submitError: i18nEl.getAttribute('data-submit-error') || 'Please enter a valid password and confirm it.'
+            };
+
+            function hasValue(el) {
+                return !!el && String(el.value || '').trim().length > 0;
+            }
+            function isStrong(value) {
+                if (!value || value.length < 8) return false;
+                return /[A-Za-z]/.test(value) && /[0-9]/.test(value);
+            }
+            function updateHints() {
+                const missing = [];
+                if (!hasValue(username)) missing.push(i18n.missingUsername);
+                if (!hasValue(password)) missing.push(i18n.missingPassword);
+
+                if (missing.length > 0) {
+                    smartHint.textContent = i18n.missingPrefix + ' ' + missing.join(', ') + '.';
+                } else {
+                    smartHint.textContent = i18n.ready + (hasValue(fullName) ? '' : ' ' + i18n.optionalFullName);
+                }
+
+                const pass = password.value || '';
+                passwordHint.textContent = pass ? (isStrong(pass) ? i18n.passwordOk : i18n.passwordWeak) : '';
+
+                const confirm = confirmPassword.value || '';
+                if (!confirm) {
+                    matchHint.textContent = i18n.matchPending;
+                } else if (pass === confirm) {
+                    matchHint.textContent = i18n.matchOk;
+                } else {
+                    matchHint.textContent = i18n.matchFail;
+                }
+            }
+
+            [username, fullName, password, confirmPassword].forEach(el => {
+                el.addEventListener('input', updateHints);
+                el.addEventListener('change', updateHints);
+            });
+
+            form.addEventListener('submit', function (e) {
+                if (formError) {
+                    formError.classList.add('hidden');
+                    formError.textContent = '';
+                }
+                const pass = password.value || '';
+                const confirm = confirmPassword.value || '';
+                if (!isStrong(pass) || pass !== confirm) {
+                    e.preventDefault();
+                    if (formError) {
+                        formError.textContent = i18n.submitError;
+                        formError.classList.remove('hidden');
+                    }
+                }
+            });
+            updateHints();
+        })();
+    </script>
 </body>
 </html>
