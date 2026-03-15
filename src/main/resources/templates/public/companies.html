@@ -107,38 +107,59 @@
     </div>
 </main>
 
-<footer class="mt-12 bg-gray-800 text-white">
-    <div class="container mx-auto px-4 py-7">
-        <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div class="flex items-center gap-3">
-                <div class="h-12 w-12 shrink-0 flex items-center justify-center">
-                    <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-12 object-contain"
-                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                    <span style="display:none" class="h-12 w-12 rounded-lg bg-blue-600 text-white font-bold items-center justify-center">PF</span>
-                </div>
-                <div>
-                    <div class="text-2xl font-extrabold tracking-tight text-white">ProPrintFlow</div>
-                    <div class="text-[11px] tracking-[0.2em] uppercase text-blue-100/90" th:text="#{footer.brand_tagline}">
-                        Professional Print Workflow
+<footer class="bg-gray-800 text-white mt-12 py-12">
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <div class="flex items-center space-x-2 mb-4">
+                    <div class="h-16 w-16 flex items-center justify-center shrink-0">
+                        <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-16 w-16 object-contain"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                        <div style="display:none" class="w-16 h-16 bg-blue-500 rounded-lg items-center justify-center">
+                            <span class="text-white font-bold">PF</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-extrabold tracking-tight text-white">ProPrintFlow</div>
+                        <div class="text-xs tracking-[0.22em] uppercase text-blue-100/90" th:text="#{footer.brand_tagline}">Professional Print Workflow</div>
                     </div>
                 </div>
-            </div>
-            <div class="text-sm text-gray-300">
-                <p>
-                    &copy; <span th:text="${currentYear}">2024</span>
-                    <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>.
-                    <span th:text="#{public.brand_footer_rights}">All rights reserved.</span>
+                <p class="text-gray-400" th:text="#{footer.description}">
+                    Professional workflow management for printing companies.
                 </p>
-                <p class="mt-1 text-xs text-gray-400"
-                   th:if="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
-                   th:text="${(footerCompanyEmail != null ? footerCompanyEmail : '') + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail) && footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? ' • ' : '') + (footerCompanyPhone != null ? footerCompanyPhone : '')}">
-                    info@printflow.com • +381 11 123 4567
-                </p>
-                <div class="mt-2 flex flex-wrap items-center gap-4">
-                    <a th:href="@{/public/track}" class="hover:text-white" th:text="#{footer.track_order}">Track order</a>
-                    <a th:href="@{/public/contact}" class="hover:text-white" th:text="#{footer.contact}">Contact</a>
-                </div>
             </div>
+            <div>
+                <h4 class="font-semibold mb-4" th:text="#{footer.quick_links}">Quick Links</h4>
+                <ul class="space-y-2">
+                    <li><a th:href="@{/public/}" class="text-gray-400 hover:text-white" th:text="#{footer.home}">Home</a></li>
+                    <li><a th:href="@{/public/track}" class="text-gray-400 hover:text-white" th:text="#{footer.track_order}">Track Order</a></li>
+                    <li><a th:href="@{/public/contact}" class="text-gray-400 hover:text-white" th:text="#{footer.contact}">Contact</a></li>
+                    <li><a th:href="@{/login}" class="text-gray-400 hover:text-white" th:text="#{footer.login}">Login</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold mb-4" th:text="#{landing.features_title}">Features</h4>
+                <ul class="space-y-2">
+                    <li class="text-gray-400" th:text="#{landing.feature1_title}">Order Management</li>
+                    <li class="text-gray-400" th:text="#{landing.feature2_title}">Client Portal</li>
+                    <li class="text-gray-400" th:text="#{landing.feature3_title}">File Storage</li>
+                    <li class="text-gray-400" th:text="#{landing.feature4_title}">Design Approval</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold mb-4" th:text="#{footer.contact_info}">Contact Info</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li th:text="${(footerCompanyAddress != null && !#strings.isEmpty(footerCompanyAddress)) ? footerCompanyAddress : #messages.msg('footer.location')}">Belgrade, Serbia</li>
+                    <li th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : #messages.msg('footer.email')}">info@printflow.com</li>
+                    <li th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : #messages.msg('footer.phone')}">+381 11 123 4567</li>
+                    <li th:if="${footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite)}"
+                        th:text="${footerCompanyWebsite}">https://example.com</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; <span th:text="${currentYear}">2024</span> <span th:text="#{public.brand_footer}">PrintFlow SaaS</span>. <span th:text="#{public.brand_footer_rights}">All rights reserved.</span></p>
         </div>
     </div>
 </footer>
