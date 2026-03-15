@@ -20,6 +20,12 @@
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.tasks.edit.heading}">Edit Task</h1>
                     <p class="text-gray-600 mt-2" th:text="#{admin.tasks.edit.subtitle}">Update task details</p>
+                    <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                        <h2 class="text-sm font-semibold text-blue-900" th:text="#{admin.tasks.edit.smart.title}">Smart task helper</h2>
+                        <p id="taskEditSmartHint" class="mt-1 text-xs text-blue-800" th:text="#{admin.tasks.edit.smart.initial}">
+                            Keep title clear, set realistic due date, and note expected output so reassignment stays smooth.
+                        </p>
+                    </div>
                 </div>
                 <a th:href="@{/admin/tasks/{id}(id=${task.id})}"
                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
@@ -141,5 +147,60 @@
             </div>
         </div>
     </main>
+    <script th:inline="javascript">
+        (function () {
+            const titleInput = document.getElementById('title');
+            const descriptionInput = document.getElementById('description');
+            const dueDateInput = document.getElementById('dueDate');
+            const estimatedHoursInput = document.getElementById('estimatedHours');
+            const assigneeInput = document.getElementById('assignedToId');
+            const hintEl = document.getElementById('taskEditSmartHint');
+            if (!hintEl) return;
+
+            const i18n = {
+                ready: /*[[#{admin.tasks.edit.smart.ready}]]*/ 'Task update is consistent and ready to save.',
+                missingPrefix: /*[[#{admin.tasks.edit.smart.missing_prefix}]]*/ 'Recommended before saving:',
+                missingTitle: /*[[#{admin.tasks.edit.smart.missing.title}]]*/ 'clear title',
+                missingDescription: /*[[#{admin.tasks.edit.smart.missing.description}]]*/ 'description with expected output',
+                warnNoAssignee: /*[[#{admin.tasks.edit.smart.warn.no_assignee}]]*/ 'Task is unassigned. Add owner for better accountability.',
+                warnNoHours: /*[[#{admin.tasks.edit.smart.warn.no_hours}]]*/ 'Estimated hours are missing. Add estimate for planning accuracy.',
+                warnPastDue: /*[[#{admin.tasks.edit.smart.warn.past_due}]]*/ 'Due date is in the past. Confirm if this is intentional.'
+            };
+
+            function updateHint() {
+                const missing = [];
+                const warnings = [];
+
+                if (!titleInput || titleInput.value.trim().length < 3) missing.push(i18n.missingTitle);
+                if (!descriptionInput || descriptionInput.value.trim().length < 20) missing.push(i18n.missingDescription);
+                if (!assigneeInput || !assigneeInput.value) warnings.push(i18n.warnNoAssignee);
+
+                const hours = estimatedHoursInput ? Number(estimatedHoursInput.value || 0) : 0;
+                if (!Number.isNaN(hours) && hours <= 0) warnings.push(i18n.warnNoHours);
+
+                if (dueDateInput && dueDateInput.value) {
+                    const due = new Date(dueDateInput.value);
+                    if (!Number.isNaN(due.getTime()) && due.getTime() < Date.now()) warnings.push(i18n.warnPastDue);
+                }
+
+                if (missing.length === 0 && warnings.length === 0) {
+                    hintEl.textContent = i18n.ready;
+                    return;
+                }
+
+                const parts = [];
+                if (missing.length > 0) parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+                if (warnings.length > 0) parts.push(warnings.join(' '));
+                hintEl.textContent = parts.join(' ');
+            }
+
+            [titleInput, descriptionInput, dueDateInput, estimatedHoursInput, assigneeInput].forEach(el => {
+                if (!el) return;
+                el.addEventListener('input', updateHint);
+                el.addEventListener('change', updateHint);
+            });
+            updateHint();
+        })();
+    </script>
 </body>
 </html>
