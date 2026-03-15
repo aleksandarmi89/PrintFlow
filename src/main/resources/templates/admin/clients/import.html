@@ -93,6 +93,11 @@
             <!-- Import Form -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{admin.clients.import.upload_file}">Upload File</h2>
+                <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                    <p id="importSmartHint" class="text-xs text-sky-800" th:text="#{admin.clients.import.smart.initial}">
+                        Upload template-first file. Use clear company names and valid phones to reduce skipped rows.
+                    </p>
+                </div>
                 
                 <form th:action="@{/admin/clients/import}" 
                       method="post" 
@@ -166,6 +171,7 @@
                                 Cancel
                             </a>
                             <button type="submit" 
+                                    id="startImportBtn"
                                     class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                     th:text="#{admin.clients.import.start_import}">
                                 Start Import
@@ -210,10 +216,50 @@
     
     <div th:replace="~{layout/footer :: footer}"></div>
     
-    <script>
+    <script th:inline="javascript">
         // Drag and drop file upload
         const dropArea = document.querySelector('.border-dashed');
         const fileInput = document.getElementById('file');
+        const smartHint = document.getElementById('importSmartHint');
+        const startImportBtn = document.getElementById('startImportBtn');
+        const importMessages = {
+            initial: /*[[#{admin.clients.import.smart.initial}]]*/ 'Upload template-first file. Use clear company names and valid phones to reduce skipped rows.',
+            ready: /*[[#{admin.clients.import.smart.ready}]]*/ 'File looks ready for import. Review skipped-row summary after upload.',
+            missingFile: /*[[#{admin.clients.import.smart.missing_file}]]*/ 'Select a file to start import.',
+            invalidType: /*[[#{admin.clients.import.smart.invalid_type}]]*/ 'Only .xlsx, .xls, or .csv files are allowed.',
+            largeFile: /*[[#{admin.clients.import.smart.large_file}]]*/ 'Large file detected. Consider splitting into smaller batches for easier troubleshooting.',
+            suspiciousName: /*[[#{admin.clients.import.smart.suspicious_name}]]*/ 'Filename contains unusual characters. Rename file for easier audit/history.',
+            selectedPrefix: /*[[#{admin.clients.import.smart.selected_prefix}]]*/ 'Selected file:'
+        };
+
+        function evaluateFileReadiness(file) {
+            if (!smartHint) return;
+            if (!file) {
+                smartHint.textContent = importMessages.missingFile;
+                if (startImportBtn) startImportBtn.disabled = true;
+                return;
+            }
+
+            const lower = (file.name || '').toLowerCase();
+            const allowed = ['.xlsx', '.xls', '.csv'];
+            const validType = allowed.some(ext => lower.endsWith(ext));
+            const suspicious = /[^a-zA-Z0-9._-]/.test(file.name || '');
+            const large = file.size > 5 * 1024 * 1024;
+
+            if (!validType) {
+                smartHint.textContent = importMessages.invalidType;
+                if (startImportBtn) startImportBtn.disabled = true;
+                return;
+            }
+
+            const notes = [importMessages.selectedPrefix + ' ' + file.name];
+            if (large) notes.push(importMessages.largeFile);
+            if (suspicious) notes.push(importMessages.suspiciousName);
+            if (!large && !suspicious) notes.push(importMessages.ready);
+
+            smartHint.textContent = notes.join(' ');
+            if (startImportBtn) startImportBtn.disabled = false;
+        }
         
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, preventDefaults, false);
@@ -251,8 +297,17 @@
             const label = dropArea.querySelector('span');
             if (files.length > 0) {
                 label.textContent = files[0].name;
+                evaluateFileReadiness(files[0]);
             }
         }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;
+                evaluateFileReadiness(file);
+            });
+        }
+        evaluateFileReadiness(null);
     </script>
 </body>
 </html>
