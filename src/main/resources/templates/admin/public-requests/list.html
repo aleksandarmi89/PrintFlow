@@ -27,6 +27,12 @@
         </form>
     </div>
 
+    <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+        <p id="publicRequestsSmartHint" class="text-xs text-sky-800" th:text="#{public.requests.smart.initial}">
+            Review status + SLA first, then run bulk conversion on selected rows.
+        </p>
+    </div>
+
     <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <div class="p-3 border-b border-gray-200 flex flex-wrap gap-2 items-center">
             <form id="bulk-form" method="post" th:action="@{/admin/public-requests/bulk-action}" class="flex flex-wrap gap-2 items-center">
@@ -37,7 +43,7 @@
                 <option value="auto-basic" th:text="#{public.requests.bulk.auto_basic}">Convert + Auto (basic)</option>
                 <option value="auto-advanced" th:text="#{public.requests.bulk.auto_advanced}">Convert + Auto (advanced)</option>
             </select>
-            <button type="submit" form="bulk-form" class="rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700"
+            <button id="bulkApplyBtn" type="submit" form="bulk-form" class="rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700"
                     th:text="#{public.requests.bulk.apply}">
                 Apply
             </button>
@@ -131,14 +137,66 @@
         </div>
     </div>
 </main>
-<script>
+<script th:inline="javascript">
     (function () {
         const selectAll = document.getElementById('select-all-requests');
+        const actionSelect = document.querySelector('#bulk-form select[name="action"]');
+        const applyBtn = document.getElementById('bulkApplyBtn');
+        const smartHint = document.getElementById('publicRequestsSmartHint');
         if (!selectAll) return;
         const boxes = () => Array.from(document.querySelectorAll('.request-select'));
+
+        const i18n = {
+            initial: /*[[#{public.requests.smart.initial}]]*/ 'Review status + SLA first, then run bulk conversion on selected rows.',
+            selectedPrefix: /*[[#{public.requests.smart.selected_prefix}]]*/ 'Selected requests:',
+            chooseAction: /*[[#{public.requests.smart.choose_action}]]*/ 'Choose bulk action to continue.',
+            noSelection: /*[[#{public.requests.smart.no_selection}]]*/ 'Select at least one request for bulk action.',
+            ready: /*[[#{public.requests.smart.ready}]]*/ 'Bulk action is ready. Validate selected rows before applying.',
+            actionConvert: /*[[#{public.requests.smart.action.convert}]]*/ 'Convert selected requests into work orders.',
+            actionAutoBasic: /*[[#{public.requests.smart.action.auto_basic}]]*/ 'Convert and create a basic task automatically.',
+            actionAutoAdvanced: /*[[#{public.requests.smart.action.auto_advanced}]]*/ 'Convert and generate advanced tasks automatically.'
+        };
+
+        function selectedCount() {
+            return boxes().filter(cb => cb.checked).length;
+        }
+
+        function actionText(action) {
+            if (action === 'convert') return i18n.actionConvert;
+            if (action === 'auto-basic') return i18n.actionAutoBasic;
+            if (action === 'auto-advanced') return i18n.actionAutoAdvanced;
+            return i18n.chooseAction;
+        }
+
+        function updateBulkState() {
+            if (!actionSelect || !applyBtn || !smartHint) return;
+            const count = selectedCount();
+            const action = actionSelect.value || 'none';
+            const hasAction = action !== 'none';
+            const canApply = count > 0 && hasAction;
+            applyBtn.disabled = !canApply;
+            applyBtn.classList.toggle('opacity-60', !canApply);
+            applyBtn.classList.toggle('cursor-not-allowed', !canApply);
+
+            const parts = [i18n.selectedPrefix + ' ' + count + '.'];
+            if (count <= 0) parts.push(i18n.noSelection);
+            if (!hasAction) parts.push(i18n.chooseAction);
+            if (count > 0 && hasAction) parts.push(i18n.ready + ' ' + actionText(action));
+            smartHint.textContent = parts.join(' ');
+        }
+
         selectAll.addEventListener('change', function () {
             boxes().forEach(cb => { cb.checked = selectAll.checked; });
+            updateBulkState();
         });
+        boxes().forEach(cb => {
+            cb.addEventListener('change', updateBulkState);
+        });
+        if (actionSelect) {
+            actionSelect.addEventListener('change', updateBulkState);
+            actionSelect.addEventListener('input', updateBulkState);
+        }
+        updateBulkState();
     })();
 </script>
 </body>
