@@ -68,10 +68,18 @@
                 </div>
 
                 <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2"
-                           th:text="#{tasks.create.field.description}">
-                        Description
-                    </label>
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700"
+                               th:text="#{tasks.create.field.description}">
+                            Description
+                        </label>
+                        <button id="insertTaskCreateTemplate"
+                                type="button"
+                                class="text-xs rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                th:text="#{tasks.create.smart.brief_template_cta}">
+                            Insert task template
+                        </button>
+                    </div>
                     <textarea id="description"
                               name="description"
                               th:field="*{description}"
@@ -81,6 +89,7 @@
                     <p class="mt-1 text-xs text-gray-500" th:text="#{tasks.create.field.description.hint}">
                         Include what to do, print specs, and expected outcome.
                     </p>
+                    <p id="taskCreateBriefHint" class="mt-1 text-xs text-blue-700"></p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -196,6 +205,8 @@
         const dueDateInput = document.getElementById('dueDate');
         const estimatedHoursInput = document.getElementById('estimatedHours');
         const hintEl = document.getElementById('taskSmartHint');
+        const briefHintEl = document.getElementById('taskCreateBriefHint');
+        const insertTemplateBtn = document.getElementById('insertTaskCreateTemplate');
         if (!orderSelect || !workerSelect) return;
 
         const i18n = {
@@ -207,7 +218,11 @@
             missingDueDate: /*[[#{tasks.create.smart.missing.due_date}]]*/ 'due date',
             missingDescription: /*[[#{tasks.create.smart.missing.description}]]*/ 'clear description',
             warnNoHours: /*[[#{tasks.create.smart.warn.no_hours}]]*/ 'Estimated hours are not set. Add estimate for better planning.',
-            warnOverdueDate: /*[[#{tasks.create.smart.warn.past_due}]]*/ 'Due date is in the past. Please pick a future date.'
+            warnOverdueDate: /*[[#{tasks.create.smart.warn.past_due}]]*/ 'Due date is in the past. Please pick a future date.',
+            briefTemplate: /*[[#{tasks.create.smart.brief_template}]]*/ 'Objective:\nExpected output:\nPrint specs (if any):\nDependencies:\nDeadline notes:',
+            briefHintEmpty: /*[[#{tasks.create.smart.brief_hint_empty}]]*/ 'Use the task template to keep handoff clear and consistent.',
+            briefHintPartial: /*[[#{tasks.create.smart.brief_hint_partial}]]*/ 'Description can be clearer: objective, expected output, and dependencies.',
+            briefHintReady: /*[[#{tasks.create.smart.brief_hint_ready}]]*/ 'Description coverage looks good for execution.'
         };
 
         function desiredRole(status, printType) {
@@ -255,17 +270,29 @@
 
             if (missing.length === 0 && warnings.length === 0) {
                 hintEl.textContent = i18n.ready;
-                return;
+            } else {
+                const parts = [];
+                if (missing.length > 0) {
+                    parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+                }
+                if (warnings.length > 0) {
+                    parts.push(warnings.join(' '));
+                }
+                hintEl.textContent = parts.join(' ');
             }
 
-            const parts = [];
-            if (missing.length > 0) {
-                parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+            if (briefHintEl) {
+                const desc = descriptionInput ? descriptionInput.value.trim().toLowerCase() : '';
+                if (!desc) {
+                    briefHintEl.textContent = i18n.briefHintEmpty;
+                } else {
+                    const hasObjective = desc.includes('objective') || desc.includes('cilj');
+                    const hasOutput = desc.includes('output') || desc.includes('ishod');
+                    const hasDependency = desc.includes('depend') || desc.includes('zavis');
+                    const covered = [hasObjective, hasOutput, hasDependency].filter(Boolean).length;
+                    briefHintEl.textContent = covered >= 2 ? i18n.briefHintReady : i18n.briefHintPartial;
+                }
             }
-            if (warnings.length > 0) {
-                parts.push(warnings.join(' '));
-            }
-            hintEl.textContent = parts.join(' ');
         }
 
         orderSelect.addEventListener('change', autoSuggest);
@@ -274,6 +301,17 @@
             el.addEventListener('input', updateSmartHint);
             el.addEventListener('change', updateSmartHint);
         });
+        if (insertTemplateBtn && descriptionInput) {
+            insertTemplateBtn.addEventListener('click', function () {
+                if (descriptionInput.value && descriptionInput.value.trim().length > 0) {
+                    descriptionInput.value += '\n\n' + i18n.briefTemplate;
+                } else {
+                    descriptionInput.value = i18n.briefTemplate;
+                }
+                descriptionInput.focus();
+                updateSmartHint();
+            });
+        }
         autoSuggest();
         updateSmartHint();
     })();
