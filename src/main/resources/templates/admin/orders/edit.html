@@ -12,6 +12,14 @@
                   th:text="${m != null ? m : (#messages.msgOrNull('billing.lock.expired') != null ? #messages.msg('billing.lock.expired') : 'Premium features are locked. Please upgrade.')}">Premium features are locked. Please upgrade.</span>
             <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
         </div>
+        <div th:if="${successMessage}" class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+            <span th:with="m=${#messages.msgOrNull(successMessage)}"
+                  th:text="${m != null ? m : successMessage}">Success</span>
+        </div>
+        <div th:if="${errorMessage}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            <span th:with="m=${#messages.msgOrNull(errorMessage)}"
+                  th:text="${m != null ? m : errorMessage}">Error</span>
+        </div>
         <div class="mb-6">
             <a th:href="@{/admin/orders/{id}(id=${order.id})}"
                class="text-sm text-blue-600 hover:text-blue-800" th:text="#{orders.edit.back_to_order}">← Back to order</a>
