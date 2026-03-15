@@ -437,6 +437,29 @@
                             <span th:text="#{orders.details.smart.ready}">Core fields are complete. This order is ready for smooth execution.</span>
                         </li>
                     </ul>
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                        <div class="sm:col-span-2">
+                            <label for="orderSmartActionSelect" class="block text-xs font-medium text-blue-900 mb-1"
+                                   th:text="#{orders.details.smart.action.label}">
+                                Suggested action
+                            </label>
+                            <select id="orderSmartActionSelect"
+                                    class="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800">
+                                <option value="edit" th:text="#{orders.details.smart.action.edit}">Update deadline/price</option>
+                                <option value="assign" th:text="#{orders.details.smart.action.assign}">Assign owner</option>
+                                <option value="items" th:text="#{orders.details.smart.action.items}">Add order item</option>
+                                <option value="attachments" th:text="#{orders.details.smart.action.attachments}">Upload attachment</option>
+                                <option value="task" th:text="#{orders.details.smart.action.task}">Create task</option>
+                            </select>
+                        </div>
+                        <button id="orderSmartActionCta"
+                                type="button"
+                                class="inline-flex justify-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                                th:text="#{orders.details.smart.action.cta.default}">
+                            Open action
+                        </button>
+                    </div>
+                    <p id="orderSmartActionHint" class="mt-2 text-xs text-blue-900"></p>
                 </div>
 
                 <!-- Quick Actions -->
@@ -484,7 +507,7 @@
                             <div class="text-sm text-gray-500" th:text="#{orders.details.preview_email_help}">See what the client will receive</div>
                         </a>
                         
-                        <form th:action="@{/admin/orders/{id}/assign-worker(id=${order.id})}" method="post"
+                        <form id="orderAssignWorkerForm" th:action="@{/admin/orders/{id}/assign-worker(id=${order.id})}" method="post"
                               class="block w-full px-4 py-3 border border-gray-300 rounded-lg">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <div class="font-medium text-gray-900" th:text="#{orders.details.assign_worker}">Assign to Team Member</div>
@@ -739,7 +762,19 @@
                   data-old=#{audit.old_label},
                   data-new=#{audit.new_label},
                   data-from=#{audit.from_label},
-                  data-to=#{audit.to_label}"
+                  data-to=#{audit.to_label},
+                  data-smart-hint-edit=#{orders.details.smart.action.hint.edit},
+                  data-smart-hint-assign=#{orders.details.smart.action.hint.assign},
+                  data-smart-hint-items=#{orders.details.smart.action.hint.items},
+                  data-smart-hint-attachments=#{orders.details.smart.action.hint.attachments},
+                  data-smart-hint-task=#{orders.details.smart.action.hint.task},
+                  data-smart-cta-edit=#{orders.details.smart.action.cta.edit},
+                  data-smart-cta-assign=#{orders.details.smart.action.cta.assign},
+                  data-smart-cta-items=#{orders.details.smart.action.cta.items},
+                  data-smart-cta-attachments=#{orders.details.smart.action.cta.attachments},
+                  data-smart-cta-task=#{orders.details.smart.action.cta.task},
+                  data-smart-url-edit=@{/admin/orders/{id}/edit(id=${order.id})},
+                  data-smart-url-task=@{/admin/tasks/create(workOrderId=${order.id})}"
          class="hidden"></div>
 
     <div id="copyToast"
@@ -886,6 +921,73 @@
                     }
                 }, 100);
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const select = document.getElementById('orderSmartActionSelect');
+            const cta = document.getElementById('orderSmartActionCta');
+            const hint = document.getElementById('orderSmartActionHint');
+            const i18nEl = document.getElementById('i18n');
+            if (!select || !cta || !hint || !i18nEl) return;
+
+            const map = {
+                edit: {
+                    cta: i18nEl.getAttribute('data-smart-cta-edit'),
+                    hint: i18nEl.getAttribute('data-smart-hint-edit'),
+                    run: () => {
+                        const url = i18nEl.getAttribute('data-smart-url-edit');
+                        if (url) window.location.href = url;
+                    }
+                },
+                assign: {
+                    cta: i18nEl.getAttribute('data-smart-cta-assign'),
+                    hint: i18nEl.getAttribute('data-smart-hint-assign'),
+                    run: () => {
+                        const el = document.getElementById('orderAssignWorkerForm');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                items: {
+                    cta: i18nEl.getAttribute('data-smart-cta-items'),
+                    hint: i18nEl.getAttribute('data-smart-hint-items'),
+                    run: () => {
+                        const el = document.getElementById('order-items');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                attachments: {
+                    cta: i18nEl.getAttribute('data-smart-cta-attachments'),
+                    hint: i18nEl.getAttribute('data-smart-hint-attachments'),
+                    run: () => {
+                        const form = document.getElementById('attachmentForm');
+                        if (form && form.classList.contains('hidden')) {
+                            toggleAttachmentForm();
+                        }
+                        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                task: {
+                    cta: i18nEl.getAttribute('data-smart-cta-task'),
+                    hint: i18nEl.getAttribute('data-smart-hint-task'),
+                    run: () => {
+                        const url = i18nEl.getAttribute('data-smart-url-task');
+                        if (url) window.location.href = url;
+                    }
+                }
+            };
+
+            function updateUi() {
+                const key = select.value in map ? select.value : 'edit';
+                hint.textContent = map[key].hint || '';
+                cta.textContent = map[key].cta || '';
+            }
+
+            select.addEventListener('change', updateUi);
+            cta.addEventListener('click', function () {
+                const key = select.value in map ? select.value : 'edit';
+                map[key].run();
+            });
+            updateUi();
         });
     </script>
 </body>
