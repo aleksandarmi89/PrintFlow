@@ -41,6 +41,11 @@
                 <h2 class="text-lg font-semibold text-gray-900" th:text="#{clients.form.title}">
                     Client Information
                 </h2>
+                <div class="mt-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                    <p id="clientSmartHint" class="text-xs text-sky-800" th:text="#{clients.create.smart.initial}">
+                        Start with company name, contact person, and phone. Add email/city for better follow-up.
+                    </p>
+                </div>
             </div>
 
             <form th:action="@{/admin/clients/create}"
@@ -287,5 +292,57 @@
 </main>
 
 <div th:replace="~{layout/footer :: footer}"></div>
+<script th:inline="javascript">
+    (function () {
+        const companyName = document.getElementById('companyName');
+        const contactPerson = document.getElementById('contactPerson');
+        const phone = document.getElementById('phone');
+        const email = document.getElementById('email');
+        const city = document.getElementById('city');
+        const notes = document.getElementById('notes');
+        const hint = document.getElementById('clientSmartHint');
+        if (!hint) return;
+
+        const i18n = {
+            ready: /*[[#{clients.create.smart.ready}]]*/ 'Client profile looks complete for daily operations.',
+            missingPrefix: /*[[#{clients.create.smart.missing_prefix}]]*/ 'Recommended before saving:',
+            missingCompany: /*[[#{clients.create.smart.missing.company}]]*/ 'company name',
+            missingContact: /*[[#{clients.create.smart.missing.contact}]]*/ 'contact person',
+            missingPhone: /*[[#{clients.create.smart.missing.phone}]]*/ 'phone',
+            suggestEmail: /*[[#{clients.create.smart.suggest.email}]]*/ 'Add email to enable quick updates and approvals.',
+            suggestCity: /*[[#{clients.create.smart.suggest.city}]]*/ 'Add city for cleaner segmentation and routing.',
+            suggestNotes: /*[[#{clients.create.smart.suggest.notes}]]*/ 'Optional: add notes for print preferences or payment habits.'
+        };
+
+        function updateHint() {
+            const missing = [];
+            const suggestions = [];
+
+            if (!companyName || companyName.value.trim().length < 2) missing.push(i18n.missingCompany);
+            if (!contactPerson || contactPerson.value.trim().length < 2) missing.push(i18n.missingContact);
+            if (!phone || phone.value.trim().length < 5) missing.push(i18n.missingPhone);
+            if (!email || email.value.trim().length === 0) suggestions.push(i18n.suggestEmail);
+            if (!city || city.value.trim().length === 0) suggestions.push(i18n.suggestCity);
+            if (!notes || notes.value.trim().length === 0) suggestions.push(i18n.suggestNotes);
+
+            if (missing.length === 0 && suggestions.length === 0) {
+                hint.textContent = i18n.ready;
+                return;
+            }
+
+            const parts = [];
+            if (missing.length > 0) parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+            if (suggestions.length > 0) parts.push(suggestions.slice(0, 2).join(' '));
+            hint.textContent = parts.join(' ');
+        }
+
+        [companyName, contactPerson, phone, email, city, notes].forEach(el => {
+            if (!el) return;
+            el.addEventListener('input', updateHint);
+            el.addEventListener('change', updateHint);
+        });
+        updateHint();
+    })();
+</script>
 </body>
 </html>
