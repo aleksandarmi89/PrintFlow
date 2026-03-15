@@ -35,6 +35,7 @@ public class CompanyService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BillingAccessService billingAccessService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public CompanyService(CompanyRepository companyRepository,
                           UserRepository userRepository,
                           ClientRepository clientRepository,
