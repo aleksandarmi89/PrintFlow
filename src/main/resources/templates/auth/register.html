@@ -31,6 +31,13 @@
                     sign in to existing account
                 </a>
             </p>
+            <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                <h3 class="text-sm font-semibold text-blue-900" th:text="#{auth.register.smart.title}">Registration helper</h3>
+                <p class="mt-1 text-xs text-blue-800" th:text="#{auth.register.smart.subtitle}">
+                    Complete required fields to create your company and first admin user.
+                </p>
+                <p id="registerSmartHint" class="mt-2 text-xs text-blue-900"></p>
+            </div>
         </div>
         
         <!-- Register Form -->
@@ -103,6 +110,7 @@
                     <input id="password" name="password" type="password" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                            th:placeholder="#{auth.password_placeholder}">
+                    <p id="registerPasswordHint" class="mt-1 text-xs text-gray-500"></p>
                 </div>
                 
                 <div>
@@ -110,6 +118,7 @@
                     <input id="confirmPassword" name="confirmPassword" type="password" required
                            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                            th:placeholder="#{auth.confirm_password_placeholder}">
+                    <p id="registerPasswordMatchHint" class="mt-1 text-xs text-gray-500"></p>
                 </div>
                 
                 <div class="text-xs text-gray-500">
@@ -129,6 +138,8 @@
             <div class="text-center text-xs text-gray-600">
                 <p th:text="#{auth.terms_notice}">By creating an account, you agree to our Terms of Service and Privacy Policy.</p>
             </div>
+            <div id="registerFormError"
+                 class="hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
         </form>
         
         <!-- Back to Home -->
@@ -139,26 +150,122 @@
         </div>
     </div>
     
-    <script>
-        // Password confirmation validation
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+    <script th:inline="javascript">
+        (function () {
+            const form = document.querySelector('form');
+            const companyName = document.getElementById('companyName');
+            const username = document.getElementById('username');
+            const fullName = document.getElementById('fullName');
+            const email = document.getElementById('email');
+            const phone = document.getElementById('phone');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const smartHint = document.getElementById('registerSmartHint');
+            const passwordHint = document.getElementById('registerPasswordHint');
+            const matchHint = document.getElementById('registerPasswordMatchHint');
+            const formError = document.getElementById('registerFormError');
             const msgMismatch = document.body.getAttribute('data-pass-mismatch') || 'Passwords do not match!';
             const msgMin = document.body.getAttribute('data-pass-min') || 'Password must be at least 6 characters long!';
-            
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                alert(msgMismatch);
-                return false;
+            const i18n = {
+                summaryMissingPrefix: /*[[#{auth.register.smart.missing_prefix}]]*/ 'To continue, complete:',
+                needCompany: /*[[#{auth.register.smart.need_company}]]*/ 'company name',
+                needUsername: /*[[#{auth.register.smart.need_username}]]*/ 'username',
+                needFullName: /*[[#{auth.register.smart.need_full_name}]]*/ 'full name',
+                needPassword: /*[[#{auth.register.smart.need_password}]]*/ 'password',
+                ready: /*[[#{auth.register.smart.ready}]]*/ 'Core fields look good. You can create the account.',
+                suggestEmail: /*[[#{auth.register.smart.suggest_email}]]*/ 'Optional: add email for password recovery and notifications.',
+                suggestPhone: /*[[#{auth.register.smart.suggest_phone}]]*/ 'Optional: add phone for faster support contact.',
+                passwordWeak: /*[[#{auth.register.smart.password_weak}]]*/ 'Password is weak. Use at least 8 characters with letters and numbers.',
+                passwordOk: /*[[#{auth.register.smart.password_ok}]]*/ 'Password strength looks acceptable.',
+                matchPending: /*[[#{auth.register.smart.match_pending}]]*/ 'Confirm password to avoid typing mistakes.',
+                matchOk: /*[[#{auth.register.smart.match_ok}]]*/ 'Passwords match.',
+                matchFail: /*[[#{auth.register.smart.match_fail}]]*/ 'Passwords do not match.'
+            };
+
+            function hasValue(el) {
+                return !!el && String(el.value || '').trim().length > 0;
             }
-            
-            if (password.length < 6) {
-                e.preventDefault();
-                alert(msgMin);
-                return false;
+
+            function passwordStrongEnough(value) {
+                if (!value || value.length < 8) return false;
+                const hasLetter = /[A-Za-z]/.test(value);
+                const hasNumber = /[0-9]/.test(value);
+                return hasLetter && hasNumber;
             }
-        });
+
+            function updateHints() {
+                const missing = [];
+                if (!hasValue(companyName)) missing.push(i18n.needCompany);
+                if (!hasValue(username)) missing.push(i18n.needUsername);
+                if (!hasValue(fullName)) missing.push(i18n.needFullName);
+                if (!hasValue(password)) missing.push(i18n.needPassword);
+
+                if (smartHint) {
+                    if (missing.length > 0) {
+                        smartHint.textContent = i18n.summaryMissingPrefix + ' ' + missing.join(', ') + '.';
+                    } else {
+                        const extras = [];
+                        if (!hasValue(email)) extras.push(i18n.suggestEmail);
+                        if (!hasValue(phone)) extras.push(i18n.suggestPhone);
+                        smartHint.textContent = i18n.ready + (extras.length ? ' ' + extras.join(' ') : '');
+                    }
+                }
+
+                if (passwordHint) {
+                    const pass = password ? password.value : '';
+                    if (!pass) {
+                        passwordHint.textContent = '';
+                    } else {
+                        passwordHint.textContent = passwordStrongEnough(pass) ? i18n.passwordOk : i18n.passwordWeak;
+                    }
+                }
+
+                if (matchHint) {
+                    const pass = password ? password.value : '';
+                    const confirm = confirmPassword ? confirmPassword.value : '';
+                    if (!confirm) {
+                        matchHint.textContent = i18n.matchPending;
+                    } else if (pass === confirm) {
+                        matchHint.textContent = i18n.matchOk;
+                    } else {
+                        matchHint.textContent = i18n.matchFail;
+                    }
+                }
+            }
+
+            [companyName, username, fullName, email, phone, password, confirmPassword].forEach(el => {
+                if (!el) return;
+                el.addEventListener('input', updateHints);
+                el.addEventListener('change', updateHints);
+            });
+
+            form.addEventListener('submit', function (e) {
+                const pass = password ? password.value : '';
+                const confirm = confirmPassword ? confirmPassword.value : '';
+                if (formError) {
+                    formError.classList.add('hidden');
+                    formError.textContent = '';
+                }
+                if (pass !== confirm) {
+                    e.preventDefault();
+                    if (formError) {
+                        formError.textContent = msgMismatch;
+                        formError.classList.remove('hidden');
+                    }
+                    return false;
+                }
+                if (pass.length < 6) {
+                    e.preventDefault();
+                    if (formError) {
+                        formError.textContent = msgMin;
+                        formError.classList.remove('hidden');
+                    }
+                    return false;
+                }
+            });
+
+            updateHints();
+        })();
     </script>
 </body>
 </html>
