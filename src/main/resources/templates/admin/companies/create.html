@@ -12,6 +12,11 @@
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900" th:text="#{admin.companies.create.heading}">Add Company</h1>
                     <p class="text-gray-600 mt-2" th:text="#{admin.companies.create.subtitle}">Create a new tenant company</p>
+                    <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                        <p id="companyFormSmartHint" class="text-xs text-sky-800" th:text="#{admin.companies.form.smart.initial}">
+                            Start with legal/company identity, then billing details so invoices and email sender stay consistent.
+                        </p>
+                    </div>
                 </div>
                 <a th:href="@{/admin/companies}"
                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
@@ -208,5 +213,76 @@
             </div>
         </div>
     </main>
+    <script th:inline="javascript">
+        (function () {
+            const nameField = document.getElementById('name');
+            const emailField = document.getElementById('email');
+            const websiteField = document.getElementById('website');
+            const legalNameField = document.getElementById('legalName');
+            const billingEmailField = document.getElementById('billingEmail');
+            const taxIdField = document.getElementById('taxId');
+            const regField = document.getElementById('registrationNumber');
+            const bankField = document.getElementById('bankAccount');
+            const hint = document.getElementById('companyFormSmartHint');
+            if (!hint) return;
+
+            const i18n = {
+                ready: /*[[#{admin.companies.form.smart.ready}]]*/ 'Company profile is ready for onboarding.',
+                missingPrefix: /*[[#{admin.companies.form.smart.missing_prefix}]]*/ 'Recommended before saving:',
+                missingName: /*[[#{admin.companies.form.smart.missing.name}]]*/ 'company name',
+                suggestLegalName: /*[[#{admin.companies.form.smart.suggest.legal_name}]]*/ 'Add legal name for cleaner invoices and contracts.',
+                suggestBillingEmail: /*[[#{admin.companies.form.smart.suggest.billing_email}]]*/ 'Add billing email to route invoices to finance contact.',
+                suggestTaxId: /*[[#{admin.companies.form.smart.suggest.tax_id}]]*/ 'Add tax ID/PIB for accounting readiness.',
+                suggestRegistration: /*[[#{admin.companies.form.smart.suggest.registration}]]*/ 'Add registration number for legal records.',
+                suggestBank: /*[[#{admin.companies.form.smart.suggest.bank}]]*/ 'Add bank account for payment instructions.',
+                warnSenderMismatch: /*[[#{admin.companies.form.smart.warn.sender_mismatch}]]*/ 'Sender email and billing email use different domains. Confirm this is intentional.',
+                warnWebsiteFormat: /*[[#{admin.companies.form.smart.warn.website_format}]]*/ 'Website should start with http:// or https:// for clickable links.'
+            };
+
+            function domain(email) {
+                const raw = (email || '').trim().toLowerCase();
+                if (!raw.includes('@')) return '';
+                return raw.split('@')[1] || '';
+            }
+
+            function updateHint() {
+                const missing = [];
+                const suggestions = [];
+                const warnings = [];
+
+                if (!nameField || nameField.value.trim().length < 2) missing.push(i18n.missingName);
+                if (!legalNameField || legalNameField.value.trim().length < 2) suggestions.push(i18n.suggestLegalName);
+                if (!billingEmailField || billingEmailField.value.trim().length < 5) suggestions.push(i18n.suggestBillingEmail);
+                if (!taxIdField || taxIdField.value.trim().length < 6) suggestions.push(i18n.suggestTaxId);
+                if (!regField || regField.value.trim().length < 4) suggestions.push(i18n.suggestRegistration);
+                if (!bankField || bankField.value.trim().length < 6) suggestions.push(i18n.suggestBank);
+
+                const senderDomain = domain(emailField ? emailField.value : '');
+                const billingDomain = domain(billingEmailField ? billingEmailField.value : '');
+                if (senderDomain && billingDomain && senderDomain !== billingDomain) warnings.push(i18n.warnSenderMismatch);
+
+                const website = (websiteField ? websiteField.value : '').trim();
+                if (website && !/^https?:\/\//i.test(website)) warnings.push(i18n.warnWebsiteFormat);
+
+                if (missing.length === 0 && suggestions.length === 0 && warnings.length === 0) {
+                    hint.textContent = i18n.ready;
+                    return;
+                }
+
+                const parts = [];
+                if (missing.length > 0) parts.push(i18n.missingPrefix + ' ' + missing.join(', ') + '.');
+                if (suggestions.length > 0) parts.push(suggestions.slice(0, 2).join(' '));
+                if (warnings.length > 0) parts.push(warnings.join(' '));
+                hint.textContent = parts.join(' ');
+            }
+
+            [nameField, emailField, websiteField, legalNameField, billingEmailField, taxIdField, regField, bankField].forEach(el => {
+                if (!el) return;
+                el.addEventListener('input', updateHint);
+                el.addEventListener('change', updateHint);
+            });
+            updateHint();
+        })();
+    </script>
 </body>
 </html>
