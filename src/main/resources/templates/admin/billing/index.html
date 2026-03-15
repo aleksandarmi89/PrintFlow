@@ -15,7 +15,7 @@
     </div>
 
     <div th:if="${errorKey != null}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-        <span th:text="#{${errorKey}}">Error</span>
+        <span th:with="m=${#messages.msgOrNull(errorKey)}" th:text="${m != null ? m : errorKey}">Error</span>
     </div>
     <div th:if="${error != null and errorKey == null}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
         <span th:text="${error}">Error</span>

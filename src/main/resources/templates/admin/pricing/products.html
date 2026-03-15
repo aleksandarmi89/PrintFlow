@@ -14,7 +14,8 @@
              th:with="m=${#messages.msgOrNull(errorMessage)}"
              th:text="${m != null ? m : errorMessage}"></div>
         <div th:if="${billingExpired}" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-            <span th:text="#{${billingLockMessageKey}}">Premium features are locked. Please upgrade.</span>
+            <span th:with="m=${#messages.msgOrNull(billingLockMessageKey)}"
+                  th:text="${m != null ? m : (#messages.msgOrNull('billing.lock.expired') != null ? #messages.msg('billing.lock.expired') : 'Premium features are locked. Please upgrade.')}">Premium features are locked. Please upgrade.</span>
             <a class="ml-2 underline" th:href="@{/admin/billing}" th:text="#{billing.notice.cta}">Manage billing</a>
         </div>
     <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
