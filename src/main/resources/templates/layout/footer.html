@@ -74,15 +74,17 @@
                                        th:text="${(companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : ((footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : #messages.msg('footer.phone'))}">+381 11 123 4567</a>
                                 </li>
                                 <li class="flex items-center space-x-2"
-                                    th:if="${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}">
+                                    th:if="${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
+                                    th:with="resolvedWebsite=${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) ? companyBrand.website : footerCompanyWebsite},
+                                             resolvedWebsiteHref=${#strings.startsWith(resolvedWebsite, 'http://') || #strings.startsWith(resolvedWebsite, 'https://') ? resolvedWebsite : 'https://' + resolvedWebsite}">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                               d="M13.828 10.172a4 4 0 010 5.656l-2 2a4 4 0 11-5.656-5.656l1.5-1.5m8.328 2.828a4 4 0 010-5.656l-2-2a4 4 0 10-5.656 5.656l1.5 1.5"/>
                                     </svg>
                                     <a class="hover:text-primary-600 underline-offset-2 hover:underline"
                                        target="_blank" rel="noopener noreferrer"
-                                       th:href="${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) ? companyBrand.website : footerCompanyWebsite}"
-                                       th:text="${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) ? companyBrand.website : footerCompanyWebsite}">https://printflow.app</a>
+                                       th:href="${resolvedWebsiteHref}"
+                                       th:text="${resolvedWebsite}">https://printflow.app</a>
                                 </li>
                             </ul>
                         </div>

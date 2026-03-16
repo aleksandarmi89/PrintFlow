@@ -100,8 +100,13 @@
                              th:text="${companyBrand != null && companyBrand.email != null ? companyBrand.email : footerCompanyEmail}">email</div>
                         <div th:if="${(companyBrand != null && companyBrand.phone != null) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
                              th:text="${companyBrand != null && companyBrand.phone != null ? companyBrand.phone : footerCompanyPhone}">phone</div>
-                        <div th:if="${(companyBrand != null && companyBrand.website != null) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
-                             th:text="${companyBrand != null && companyBrand.website != null ? companyBrand.website : footerCompanyWebsite}">website</div>
+                        <a th:if="${(companyBrand != null && companyBrand.website != null) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
+                           class="text-blue-700 hover:text-blue-800 hover:underline"
+                           target="_blank" rel="noopener noreferrer"
+                           th:with="trackWebsite=${companyBrand != null && companyBrand.website != null ? companyBrand.website : footerCompanyWebsite},
+                                    trackWebsiteHref=${#strings.startsWith(trackWebsite, 'http://') || #strings.startsWith(trackWebsite, 'https://') ? trackWebsite : 'https://' + trackWebsite}"
+                           th:href="${trackWebsiteHref}"
+                           th:text="${trackWebsite}">website</a>
                     </div>
                     </div>
                     <div class="mt-4 border-t border-gray-200 pt-3">
@@ -114,9 +119,13 @@
                                 <span class="font-medium text-gray-500" th:text="#{common.address}">Address</span>:
                                 <span th:text="${trackCompany.address}">Address</span>
                             </div>
-                            <div th:if="${trackCompany.website != null && !#strings.isEmpty(trackCompany.website)}">
+                            <div th:if="${trackCompany.website != null && !#strings.isEmpty(trackCompany.website)}"
+                                 th:with="companyWebsiteHref=${#strings.startsWith(trackCompany.website, 'http://') || #strings.startsWith(trackCompany.website, 'https://') ? trackCompany.website : 'https://' + trackCompany.website}">
                                 <span class="font-medium text-gray-500" th:text="#{company.settings.website}">Website</span>:
-                                <span th:text="${trackCompany.website}">Website</span>
+                                <a class="text-blue-700 hover:text-blue-800 hover:underline"
+                                   target="_blank" rel="noopener noreferrer"
+                                   th:href="${companyWebsiteHref}"
+                                   th:text="${trackCompany.website}">Website</a>
                             </div>
                             <div th:if="${trackCompany.legalName != null && !#strings.isEmpty(trackCompany.legalName)}">
                                 <span class="font-medium text-gray-500" th:text="#{track.company_profile.legal_name}">Legal name</span>:
