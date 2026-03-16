@@ -96,6 +96,12 @@
                    th:text="#{landing.continue_last_company}">
                     Continue with last selected company
                 </a>
+                <button id="landingClearHelperDataBtn"
+                        type="button"
+                        class="ml-3 hidden text-sm text-gray-600 underline hover:text-gray-800"
+                        th:text="#{landing.clear_helper_data}">
+                    Clear helper data
+                </button>
             </div>
         </div>
     </section>
@@ -208,6 +214,7 @@
     <script>
         (function () {
             const btn = document.getElementById('landingLastCompanyCta');
+            const clearBtn = document.getElementById('landingClearHelperDataBtn');
             const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
             if (!btn) return;
             try {
@@ -221,8 +228,27 @@
                 btn.setAttribute('href', `/p/company/${encodedId}/order`);
                 btn.textContent = `${btn.textContent}: ${parsed.name}`;
                 btn.classList.remove('hidden');
+                if (clearBtn) {
+                    clearBtn.classList.remove('hidden');
+                }
             } catch (e) {
                 // ignore localStorage/parse issues
+            }
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function () {
+                    try {
+                        localStorage.removeItem('printflow.public.lastCompany');
+                        localStorage.removeItem('printflow.track.recentCodes');
+                        localStorage.removeItem('printflow.track.companyId');
+                        localStorage.removeItem('printflow.public.requester');
+                        localStorage.removeItem('printflow.public.contactIntent');
+                    } catch (e) {
+                        // ignore localStorage issues
+                    }
+                    trackLinks.forEach(link => link.setAttribute('href', '/public/track'));
+                    btn.classList.add('hidden');
+                    clearBtn.classList.add('hidden');
+                });
             }
         })();
     </script>
