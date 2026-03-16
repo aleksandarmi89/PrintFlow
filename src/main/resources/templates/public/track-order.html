@@ -509,9 +509,20 @@
             }
             try {
                 const storageKey = 'printflow.track.companyId';
+                const publicLastCompanyKey = 'printflow.public.lastCompany';
                 const currentValue = select.value || '';
                 if (!currentValue) {
-                    const remembered = localStorage.getItem(storageKey) || '';
+                    let remembered = localStorage.getItem(storageKey) || '';
+                    if (!remembered) {
+                        try {
+                            const lastPublicCompany = JSON.parse(localStorage.getItem(publicLastCompanyKey) || '{}');
+                            if (lastPublicCompany && lastPublicCompany.id) {
+                                remembered = String(lastPublicCompany.id);
+                            }
+                        } catch (e) {
+                            // ignore parse errors
+                        }
+                    }
                     if (remembered) {
                         const exists = Array.from(select.options).some(opt => opt.value === remembered);
                         if (exists) {
@@ -526,6 +537,13 @@
                     const selected = String(select.value || '');
                     if (selected) {
                         localStorage.setItem(storageKey, selected);
+                        const selectedOption = select.options[select.selectedIndex];
+                        if (selectedOption && selectedOption.textContent) {
+                            localStorage.setItem(publicLastCompanyKey, JSON.stringify({
+                                id: selected,
+                                name: selectedOption.textContent.trim()
+                            }));
+                        }
                     } else {
                         localStorage.removeItem(storageKey);
                     }
@@ -538,7 +556,10 @@
                 resetCompanySelectionBtn.addEventListener('click', function () {
                     if (!select) return;
                     select.value = '';
-                    try { localStorage.removeItem('printflow.track.companyId'); } catch (e) {}
+                    try {
+                        localStorage.removeItem('printflow.track.companyId');
+                        localStorage.removeItem('printflow.public.lastCompany');
+                    } catch (e) {}
                     updateCompanyActions();
                     if (companyMemoryHint) companyMemoryHint.textContent = '';
                     if (select.form && typeof select.form.requestSubmit === 'function') {
