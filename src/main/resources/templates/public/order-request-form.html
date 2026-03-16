@@ -199,6 +199,12 @@
 
         try {
             const rememberedRequester = JSON.parse(localStorage.getItem(requesterStorageKey) || '{}');
+            const hasUsefulRememberedData = rememberedRequester && (
+                (rememberedRequester.name && String(rememberedRequester.name).trim().length > 0) ||
+                (rememberedRequester.companyName && String(rememberedRequester.companyName).trim().length > 0) ||
+                (rememberedRequester.email && String(rememberedRequester.email).trim().length > 0) ||
+                (rememberedRequester.phone && String(rememberedRequester.phone).trim().length > 0)
+            );
             let applied = false;
             if (customerName && !customerName.value && rememberedRequester.name) {
                 customerName.value = String(rememberedRequester.name);
@@ -219,7 +225,7 @@
             if (applied && requesterPrefillHint) {
                 requesterPrefillHint.classList.remove('hidden');
             }
-            if ((applied || (rememberedRequester && Object.keys(rememberedRequester).length > 0)) && clearRequesterPrefillBtn) {
+            if ((applied || hasUsefulRememberedData) && clearRequesterPrefillBtn) {
                 clearRequesterPrefillBtn.classList.remove('hidden');
             }
         } catch (e) {
@@ -299,12 +305,18 @@
         if (formEl) {
             formEl.addEventListener('submit', function () {
                 try {
-                    localStorage.setItem(requesterStorageKey, JSON.stringify({
+                    const payload = {
                         name: (customerName?.value || '').trim(),
                         companyName: (customerCompanyName?.value || '').trim(),
                         email: (customerEmail?.value || '').trim(),
                         phone: (customerPhone?.value || '').trim()
-                    }));
+                    };
+                    const hasAnyValue = Object.values(payload).some(v => String(v || '').trim().length > 0);
+                    if (hasAnyValue) {
+                        localStorage.setItem(requesterStorageKey, JSON.stringify(payload));
+                    } else {
+                        localStorage.removeItem(requesterStorageKey);
+                    }
                 } catch (e) {
                     // ignore localStorage issues
                 }
