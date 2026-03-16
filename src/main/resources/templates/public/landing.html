@@ -216,8 +216,9 @@
                     trackLinks.forEach(link => link.setAttribute('href', '/public/track'));
                     return;
                 }
-                trackLinks.forEach(link => link.setAttribute('href', `/public/track?company=${parsed.id}`));
-                btn.setAttribute('href', `/p/company/${parsed.id}/order`);
+                const encodedId = encodeURIComponent(String(parsed.id));
+                trackLinks.forEach(link => link.setAttribute('href', `/public/track?company=${encodedId}`));
+                btn.setAttribute('href', `/p/company/${encodedId}/order`);
                 btn.textContent = `${btn.textContent}: ${parsed.name}`;
                 btn.classList.remove('hidden');
             } catch (e) {

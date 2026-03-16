@@ -184,7 +184,7 @@
                 return;
             }
             lastCompanyName.textContent = entry.name;
-            lastCompanyContinue.setAttribute('href', `/p/company/${entry.id}/order`);
+            lastCompanyContinue.setAttribute('href', `/p/company/${encodeURIComponent(String(entry.id))}/order`);
             lastCompanyHint.classList.remove('hidden');
         }
 
@@ -221,7 +221,7 @@
         function applyRememberedCompanyToTrackLinks(entry) {
             if (!trackLinks.length) return;
             const href = entry && entry.id
-                ? `/public/track?company=${entry.id}`
+                ? `/public/track?company=${encodeURIComponent(String(entry.id))}`
                 : '/public/track';
             trackLinks.forEach(link => {
                 link.setAttribute('href', href);
