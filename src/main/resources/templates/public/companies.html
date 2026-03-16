@@ -112,7 +112,13 @@
                     C
                 </div>
                 <div class="min-w-0">
-                    <h2 class="font-semibold text-gray-900 truncate" th:text="${company.name}">Company</h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-semibold text-gray-900 truncate" th:text="${company.name}">Company</h2>
+                        <span class="hidden rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 company-last-used-badge"
+                              th:text="#{public.companies.last_used_badge}">
+                            Last used
+                        </span>
+                    </div>
                     <p class="text-xs text-gray-500 truncate" th:text="'/' + ${company.slug}">/company-slug</p>
                 </div>
             </div>
@@ -181,6 +187,24 @@
             lastCompanyHint.classList.remove('hidden');
         }
 
+        function highlightLastUsedCard(entry) {
+            cards.forEach(card => {
+                card.classList.remove('border-blue-300', 'ring-1', 'ring-blue-100');
+                const badge = card.querySelector('.company-last-used-badge');
+                if (badge) badge.classList.add('hidden');
+            });
+            if (!entry) return;
+            const target = cards.find(card => String(card.getAttribute('data-company-id') || '') === String(entry.id));
+            if (!target) return;
+            target.classList.add('border-blue-300', 'ring-1', 'ring-blue-100');
+            const badge = target.querySelector('.company-last-used-badge');
+            if (badge) badge.classList.remove('hidden');
+            const grid = target.parentElement;
+            if (grid && grid.firstElementChild !== target) {
+                grid.insertBefore(target, grid.firstElementChild);
+            }
+        }
+
         function clearLastCompany() {
             try {
                 localStorage.removeItem(lastCompanyStorageKey);
@@ -213,7 +237,9 @@
         if (lastCompanyClear) {
             lastCompanyClear.addEventListener('click', clearLastCompany);
         }
-        showLastCompanyHint(loadLastCompany());
+        const rememberedCompany = loadLastCompany();
+        showLastCompanyHint(rememberedCompany);
+        highlightLastUsedCard(rememberedCompany);
         if (cards.length > 0) applyFilter();
     });
 </script>
