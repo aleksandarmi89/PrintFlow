@@ -549,6 +549,16 @@
                 const storageKey = 'printflow.track.companyId';
                 const publicLastCompanyKey = 'printflow.public.lastCompany';
                 const currentValue = select.value || '';
+                if (currentValue) {
+                    const selectedOption = select.options[select.selectedIndex];
+                    if (selectedOption && selectedOption.textContent) {
+                        localStorage.setItem(storageKey, currentValue);
+                        localStorage.setItem(publicLastCompanyKey, JSON.stringify({
+                            id: currentValue,
+                            name: selectedOption.textContent.trim()
+                        }));
+                    }
+                }
                 if (!currentValue) {
                     let remembered = localStorage.getItem(storageKey) || '';
                     if (!remembered) {
