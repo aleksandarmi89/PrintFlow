@@ -502,6 +502,14 @@
                     </div>
 
                     <div id="fileList" class="mt-3 space-y-3 text-sm text-gray-700"></div>
+                    <div class="mt-2">
+                        <button type="button"
+                                id="clearSelectedFilesBtn"
+                                class="hidden text-xs text-gray-600 underline hover:text-gray-800"
+                                th:text="#{order_tracking.clear_selected_files}">
+                            Clear selected files
+                        </button>
+                    </div>
                     <div id="uploadClientError" class="text-xs text-red-600 hidden"></div>
                     <div id="uploadClientWarning" class="text-xs text-amber-600 hidden"></div>
                     <div id="uploadTotals" class="text-xs text-gray-500 mt-2"></div>
@@ -628,6 +636,7 @@
         const printTrackingBtn = document.getElementById('printTrackingBtn');
         const copyTrackingLinkBtn = document.getElementById('copyTrackingLinkBtn');
         const copyTrackingLinkHint = document.getElementById('copyTrackingLinkHint');
+        const clearSelectedFilesBtn = document.getElementById('clearSelectedFilesBtn');
         const i18nEl = document.getElementById('i18n');
         const i18n = {
             fileTooLarge: i18nEl ? i18nEl.getAttribute('data-file-too-large') : 'File "{name}" is too large.',
@@ -720,14 +729,6 @@
             selectedFiles.forEach(file => dataTransfer.items.add(file));
             fileInput.files = dataTransfer.files;
         }
-        const uploadForm = submitBtn ? submitBtn.closest('form') : null;
-        if (uploadForm && submitBtn) {
-            uploadForm.addEventListener('submit', function () {
-                if (submitBtn.disabled) return;
-                submitBtn.disabled = true;
-                if (uploadSubmitBtnText) uploadSubmitBtnText.textContent = i18n.uploadLoading;
-            });
-        }
 
         function updateMetaJson() {
             const meta = selectedFiles.map((file, idx) => ({
@@ -785,9 +786,11 @@
         function renderFiles() {
             fileList.innerHTML = '';
             if (!selectedFiles || selectedFiles.length === 0) {
+                if (clearSelectedFilesBtn) clearSelectedFilesBtn.classList.add('hidden');
                 updateTotals();
                 return;
             }
+            if (clearSelectedFilesBtn) clearSelectedFilesBtn.classList.remove('hidden');
 
             selectedFiles.forEach((file, idx) => {
                 const row = document.createElement('div');
@@ -869,6 +872,20 @@
 
             updateMetaJson();
             updateTotals();
+        }
+
+        if (clearSelectedFilesBtn) {
+            clearSelectedFilesBtn.addEventListener('click', () => {
+                selectedFiles = [];
+                descriptions = [];
+                syncInputFiles();
+                renderFiles();
+                updateMetaJson();
+                const errorEl = document.getElementById('uploadClientError');
+                const warnEl = document.getElementById('uploadClientWarning');
+                if (errorEl) errorEl.classList.add('hidden');
+                if (warnEl) warnEl.classList.add('hidden');
+            });
         }
 
         selectBtn.addEventListener('click', () => fileInput.click());
@@ -976,6 +993,11 @@
                         errorEl.classList.remove('hidden');
                     }
                     e.preventDefault();
+                    return;
+                }
+                if (submitBtn && !submitBtn.disabled) {
+                    submitBtn.disabled = true;
+                    if (uploadSubmitBtnText) uploadSubmitBtnText.textContent = i18n.uploadLoading;
                 }
             });
         }
