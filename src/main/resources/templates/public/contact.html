@@ -42,6 +42,7 @@
                             Open tracking
                         </a>
                     </div>
+                    <p id="contactIntentMemoryHint" class="mt-2 hidden text-xs text-emerald-700"></p>
                     <p id="contactSmartAdvice" class="mt-2 text-xs text-blue-900"></p>
                 </div>
             </div>
@@ -123,6 +124,7 @@
                   data-cta-quote=#{contact.smart.intent.cta.quote},
                   data-cta-account=#{contact.smart.intent.cta.account},
                   data-cta-other=#{contact.smart.intent.cta.other},
+                  data-intent-remembered=#{contact.smart.intent.remembered},
                   data-last-company-ready=#{contact.smart.last_company_ready}">
     </div>
     <script>
@@ -131,9 +133,11 @@
             const advice = document.getElementById('contactSmartAdvice');
             const cta = document.getElementById('contactSmartCta');
             const lastCompanyHint = document.getElementById('contactLastCompanyHint');
+            const intentMemoryHint = document.getElementById('contactIntentMemoryHint');
             const i18nEl = document.getElementById('contactSmartI18n');
             if (!select || !advice || !cta || !i18nEl) return;
             const lastCompanyStorageKey = 'printflow.public.lastCompany';
+            const contactIntentStorageKey = 'printflow.public.contactIntent';
 
             const map = {
                 tracking: {
@@ -188,7 +192,30 @@
                 }
             }
 
-            select.addEventListener('change', updateIntentHint);
+            select.addEventListener('change', function () {
+                try {
+                    localStorage.setItem(contactIntentStorageKey, select.value || 'other');
+                } catch (e) {
+                    // ignore localStorage issues
+                }
+                if (intentMemoryHint) {
+                    intentMemoryHint.classList.add('hidden');
+                }
+                updateIntentHint();
+            });
+
+            try {
+                const rememberedIntent = localStorage.getItem(contactIntentStorageKey) || '';
+                if (rememberedIntent && map[rememberedIntent]) {
+                    select.value = rememberedIntent;
+                    if (intentMemoryHint) {
+                        intentMemoryHint.textContent = i18nEl.getAttribute('data-intent-remembered') || 'Loaded your last request type.';
+                        intentMemoryHint.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                // ignore localStorage issues
+            }
             updateIntentHint();
         })();
     </script>
