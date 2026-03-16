@@ -71,6 +71,12 @@
                                 th:text="#{common.copy}">
                             Copy
                         </button>
+                        <button type="button"
+                                id="printTrackingBtn"
+                                class="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
+                                th:text="#{order_tracking.print}">
+                            Print
+                        </button>
                     </div>
                     <p id="copyOrderNumberHint" class="mt-1 text-xs text-gray-500"></p>
                 </div>
@@ -619,6 +625,7 @@
         const copyTrackingNumberHint = document.getElementById('copyTrackingNumberHint');
         const copyOrderNumberBtn = document.getElementById('copyOrderNumberBtn');
         const copyOrderNumberHint = document.getElementById('copyOrderNumberHint');
+        const printTrackingBtn = document.getElementById('printTrackingBtn');
         const copyTrackingLinkBtn = document.getElementById('copyTrackingLinkBtn');
         const copyTrackingLinkHint = document.getElementById('copyTrackingLinkHint');
         const i18nEl = document.getElementById('i18n');
@@ -677,6 +684,11 @@
                 } catch (e) {
                     if (copyOrderNumberHint) copyOrderNumberHint.textContent = i18n.copyFailed;
                 }
+            });
+        }
+        if (printTrackingBtn) {
+            printTrackingBtn.addEventListener('click', function () {
+                window.print();
             });
         }
         if (copyTrackingLinkBtn) {
