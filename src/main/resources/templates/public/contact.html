@@ -130,6 +130,7 @@
                   data-cta-quote=#{contact.smart.intent.cta.quote},
                   data-cta-account=#{contact.smart.intent.cta.account},
                   data-cta-other=#{contact.smart.intent.cta.other},
+                  data-url-contact=@{/public/contact(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
                   data-intent-remembered=#{contact.smart.intent.remembered},
                   data-last-company-ready=#{contact.smart.last_company_ready}">
     </div>
@@ -169,7 +170,7 @@
                 other: {
                     advice: i18nEl.getAttribute('data-advice-other'),
                     cta: i18nEl.getAttribute('data-cta-other'),
-                    href: '/public/contact'
+                    href: i18nEl.getAttribute('data-url-contact') || '/public/contact'
                 }
             };
             function getLastCompany() {
