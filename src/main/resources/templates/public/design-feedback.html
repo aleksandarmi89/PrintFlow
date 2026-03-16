@@ -47,6 +47,12 @@
                     Contact
                 </a>
             </div>
+            <button id="designFeedbackClearHelperBtn"
+                    type="button"
+                    class="mt-3 hidden text-xs text-gray-600 underline hover:text-gray-800"
+                    th:text="#{common.clear_helper_data}">
+                Clear helper data
+            </button>
         </div>
     </div>
     <div id="publicFeedbackCompany"
@@ -58,6 +64,7 @@
         (function () {
             const companyEl = document.getElementById('publicFeedbackCompany');
             const btn = document.getElementById('designFeedbackTrackBtn');
+            const clearBtn = document.getElementById('designFeedbackClearHelperBtn');
             try {
                 if (companyEl) {
                     const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
@@ -72,8 +79,29 @@
                 const currentHref = btn.getAttribute('href') || '/public/track';
                 const separator = currentHref.includes('?') ? '&' : '?';
                 btn.setAttribute('href', `${currentHref}${separator}company=${encodeURIComponent(parsed.id)}`);
+                if (clearBtn) {
+                    clearBtn.classList.remove('hidden');
+                }
             } catch (e) {
                 // ignore localStorage/parse issues
+            }
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function () {
+                    try {
+                        localStorage.removeItem('printflow.public.lastCompany');
+                        localStorage.removeItem('printflow.track.recentCodes');
+                        localStorage.removeItem('printflow.track.companyId');
+                        localStorage.removeItem('printflow.public.requester');
+                        localStorage.removeItem('printflow.public.contactIntent');
+                    } catch (e) {
+                        // ignore localStorage issues
+                    }
+                    if (btn) {
+                        const currentHref = btn.getAttribute('href') || '/public/track';
+                        btn.setAttribute('href', currentHref.replace(/([?&])company=[^&]*/g, '').replace(/[?&]$/, ''));
+                    }
+                    clearBtn.classList.add('hidden');
+                });
             }
         })();
     </script>
