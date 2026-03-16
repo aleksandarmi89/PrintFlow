@@ -202,6 +202,7 @@
                            th:text="#{track.smart.token_prefilled}">
                             Tracking code is pre-filled from your link.
                         </p>
+                        <p id="lastCodeHint" class="mt-1 text-xs text-emerald-700 hidden"></p>
                         <p class="mt-2 text-sm text-gray-500" th:text="#{track.code_help}">
                             Find your tracking code in the email we sent you when your order was created.
                         </p>
@@ -285,6 +286,7 @@
                   data-company-remembered=#{track.smart.company_remembered},
                   data-company-remembered-invalid=#{track.smart.company_remembered_invalid},
                   data-recent-codes=#{track.smart.recent_codes},
+                  data-last-code-prefilled=#{track.smart.last_code_prefilled},
                   data-open-request-active=#{track.smart.open_request_active},
                   data-open-request-disabled=#{track.smart.open_request_disabled},
                   data-submit-loading=#{track.smart.submit_loading}">
@@ -303,6 +305,7 @@
             const recentTrackCodesWrap = document.getElementById('recentTrackCodesWrap');
             const recentTrackCodesList = document.getElementById('recentTrackCodesList');
             const clearRecentTrackCodesBtn = document.getElementById('clearRecentTrackCodesBtn');
+            const lastCodeHint = document.getElementById('lastCodeHint');
             const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
             const trackNextStepHint = document.getElementById('trackNextStepHint');
             const trackSubmitBtn = document.getElementById('trackSubmitBtn');
@@ -331,6 +334,7 @@
                 companyRemembered: i18nEl?.getAttribute('data-company-remembered') || 'Loaded your last selected company.',
                 companyRememberedInvalid: i18nEl?.getAttribute('data-company-remembered-invalid') || 'Previously selected company is no longer available.',
                 recentCodes: i18nEl?.getAttribute('data-recent-codes') || 'Recent codes',
+                lastCodePrefilled: i18nEl?.getAttribute('data-last-code-prefilled') || 'Loaded your last tracking code.',
                 openRequestActive: i18nEl?.getAttribute('data-open-request-active') || 'Open request form',
                 openRequestDisabled: i18nEl?.getAttribute('data-open-request-disabled') || 'Select company first',
                 submitLoading: i18nEl?.getAttribute('data-submit-loading') || 'Searching...'
@@ -578,6 +582,13 @@
                 });
             }
             recentCodes = loadRecentCodes();
+            if (trackingCode && !((trackingCode.value || '').trim()) && recentCodes.length > 0) {
+                trackingCode.value = recentCodes[0];
+                if (lastCodeHint) {
+                    lastCodeHint.textContent = i18n.lastCodePrefilled;
+                    lastCodeHint.classList.remove('hidden');
+                }
+            }
             renderRecentCodes();
             render('');
             updateCodeSmartHint();
