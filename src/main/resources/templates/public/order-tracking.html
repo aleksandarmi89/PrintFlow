@@ -318,7 +318,15 @@
                                            th:text="${order.trackingNumber}">
                                             TRACK123456
                                         </a>
+                                        <button type="button"
+                                                id="copyTrackingNumberBtn"
+                                                class="ml-2 rounded border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
+                                                th:attr="data-value=${order.trackingNumber}"
+                                                th:text="#{common.copy}">
+                                            Copy
+                                        </button>
                                     </p>
+                                    <p id="copyTrackingNumberHint" class="text-xs text-gray-500"></p>
                                 </div>
                             </div>
 
@@ -568,7 +576,10 @@
               data-move-down=#{order_tracking.js_move_down},
               data-remove=#{order_tracking.js_remove},
               data-desc-placeholder=#{order_tracking.js_desc_placeholder},
-              data-file-badge=#{order_tracking.js_file_badge}"
+              data-file-badge=#{order_tracking.js_file_badge},
+              data-copy-success=#{order_tracking.copy_success},
+              data-copy-failed=#{order_tracking.copy_failed},
+              data-copy-unsupported=#{order_tracking.copy_unsupported}"
      class="hidden"></div>
 
 <script>
@@ -579,6 +590,8 @@
         const fileList = document.getElementById('fileList');
         const totalsEl = document.getElementById('uploadTotals');
         const submitBtn = document.getElementById('uploadSubmitBtn');
+        const copyTrackingNumberBtn = document.getElementById('copyTrackingNumberBtn');
+        const copyTrackingNumberHint = document.getElementById('copyTrackingNumberHint');
         const i18nEl = document.getElementById('i18n');
         const i18n = {
             fileTooLarge: i18nEl ? i18nEl.getAttribute('data-file-too-large') : 'File "{name}" is too large.',
@@ -591,13 +604,33 @@
             moveDown: i18nEl ? i18nEl.getAttribute('data-move-down') : 'Down',
             remove: i18nEl ? i18nEl.getAttribute('data-remove') : 'Remove',
             descPlaceholder: i18nEl ? i18nEl.getAttribute('data-desc-placeholder') : 'Description for this file (optional)',
-            fileBadge: i18nEl ? i18nEl.getAttribute('data-file-badge') : 'FILE'
+            fileBadge: i18nEl ? i18nEl.getAttribute('data-file-badge') : 'FILE',
+            copySuccess: i18nEl ? i18nEl.getAttribute('data-copy-success') : 'Tracking number copied.',
+            copyFailed: i18nEl ? i18nEl.getAttribute('data-copy-failed') : 'Copy failed. Please copy manually.',
+            copyUnsupported: i18nEl ? i18nEl.getAttribute('data-copy-unsupported') : 'Clipboard copy is not available in this browser context.'
         };
         let selectedFiles = [];
         let descriptions = [];
 
         if (!dropzone || !fileInput || !selectBtn || !fileList) {
             return;
+        }
+
+        if (copyTrackingNumberBtn) {
+            copyTrackingNumberBtn.addEventListener('click', async function () {
+                const value = copyTrackingNumberBtn.getAttribute('data-value') || '';
+                if (!value) return;
+                if (!navigator.clipboard || !navigator.clipboard.writeText) {
+                    if (copyTrackingNumberHint) copyTrackingNumberHint.textContent = i18n.copyUnsupported;
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(value);
+                    if (copyTrackingNumberHint) copyTrackingNumberHint.textContent = i18n.copySuccess;
+                } catch (e) {
+                    if (copyTrackingNumberHint) copyTrackingNumberHint.textContent = i18n.copyFailed;
+                }
+            });
         }
 
         function syncInputFiles() {
