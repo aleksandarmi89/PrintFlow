@@ -44,10 +44,11 @@
                         Open tracking
                     </a>
                 </div>
+                <p id="orderNotFoundLastCompanyHint" class="mt-2 hidden text-xs text-emerald-700"></p>
                 <p id="orderNotFoundIntentHint" class="mt-2 text-xs text-blue-900"></p>
             </div>
             <div class="mt-6 flex items-center justify-center gap-3">
-                <a th:href="@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{order_not_found.track_another}">
+                <a id="orderNotFoundTrackAnotherBtn" th:href="@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" th:text="#{order_not_found.track_another}">
                     Track another order
                 </a>
                 <a th:href="@{/public/(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50" th:text="#{order_not_found.public_home}">
@@ -68,6 +69,7 @@
                   data-cta-track=#{order_not_found.smart.intent.cta.track},
                   data-cta-home=#{order_not_found.smart.intent.cta.home},
                   data-cta-contact=#{order_not_found.smart.intent.cta.contact},
+                  data-last-company-ready=#{contact.smart.last_company_ready},
                   data-url-track=@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
                   data-url-home=@{/public/(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
                   data-url-contact=@{/public/contact(lang=${#locale.language == 'en' ? 'en' : 'sr'})}">
@@ -77,8 +79,21 @@
             const select = document.getElementById('orderNotFoundIntent');
             const cta = document.getElementById('orderNotFoundIntentCta');
             const hint = document.getElementById('orderNotFoundIntentHint');
+            const lastCompanyHint = document.getElementById('orderNotFoundLastCompanyHint');
+            const trackAnotherBtn = document.getElementById('orderNotFoundTrackAnotherBtn');
             const i18nEl = document.getElementById('orderNotFoundSmartI18n');
             if (!select || !cta || !hint || !i18nEl) return;
+            const lastCompanyStorageKey = 'printflow.public.lastCompany';
+
+            function getLastCompany() {
+                try {
+                    const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
+                    if (!parsed || !parsed.id || !parsed.name) return null;
+                    return parsed;
+                } catch (e) {
+                    return null;
+                }
+            }
 
             const map = {
                 track: {
@@ -97,6 +112,19 @@
                     hint: i18nEl.getAttribute('data-hint-contact')
                 }
             };
+            const rememberedCompany = getLastCompany();
+            if (rememberedCompany) {
+                const rememberedTrackUrl = `${map.track.href}&company=${encodeURIComponent(rememberedCompany.id)}`;
+                map.track.href = rememberedTrackUrl;
+                if (trackAnotherBtn) {
+                    trackAnotherBtn.setAttribute('href', rememberedTrackUrl);
+                }
+                if (lastCompanyHint) {
+                    const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
+                    lastCompanyHint.textContent = `${label} ${rememberedCompany.name}`;
+                    lastCompanyHint.classList.remove('hidden');
+                }
+            }
 
             function updateIntent() {
                 const key = select.value in map ? select.value : 'track';
