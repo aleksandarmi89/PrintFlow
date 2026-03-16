@@ -114,7 +114,12 @@
             };
             const rememberedCompany = getLastCompany();
             if (rememberedCompany) {
-                const rememberedTrackUrl = `${map.track.href}&company=${encodeURIComponent(rememberedCompany.id)}`;
+                const baseTrackUrl = String(map.track.href || '');
+                const hasCompanyParam = /([?&])company=/.test(baseTrackUrl);
+                const separator = baseTrackUrl.includes('?') ? '&' : '?';
+                const rememberedTrackUrl = hasCompanyParam
+                    ? baseTrackUrl.replace(/([?&])company=[^&]*/g, `$1company=${encodeURIComponent(rememberedCompany.id)}`)
+                    : `${baseTrackUrl}${separator}company=${encodeURIComponent(rememberedCompany.id)}`;
                 map.track.href = rememberedTrackUrl;
                 if (trackAnotherBtn) {
                     trackAnotherBtn.setAttribute('href', rememberedTrackUrl);
