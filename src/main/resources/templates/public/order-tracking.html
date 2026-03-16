@@ -145,6 +145,12 @@
                     Contact
                 </a>
             </div>
+            <button id="orderTrackingClearHelperBtn"
+                    type="button"
+                    class="mt-3 hidden text-xs text-gray-600 underline hover:text-gray-800"
+                    th:text="#{common.clear_helper_data}">
+                Clear helper data
+            </button>
         </div>
 
         <!-- Items Summary -->
@@ -644,6 +650,7 @@
         const copyTrackingLinkBtn = document.getElementById('copyTrackingLinkBtn');
         const copyTrackingLinkHint = document.getElementById('copyTrackingLinkHint');
         const clearSelectedFilesBtn = document.getElementById('clearSelectedFilesBtn');
+        const orderTrackingClearHelperBtn = document.getElementById('orderTrackingClearHelperBtn');
         const i18nEl = document.getElementById('i18n');
         const i18n = {
             fileTooLarge: i18nEl ? i18nEl.getAttribute('data-file-too-large') : 'File "{name}" is too large.',
@@ -667,6 +674,16 @@
         let descriptions = [];
 
         try {
+            const hasHelperData = !!(
+                localStorage.getItem('printflow.public.lastCompany') ||
+                localStorage.getItem('printflow.track.recentCodes') ||
+                localStorage.getItem('printflow.track.companyId') ||
+                localStorage.getItem('printflow.public.requester') ||
+                localStorage.getItem('printflow.public.contactIntent')
+            );
+            if (orderTrackingClearHelperBtn && hasHelperData) {
+                orderTrackingClearHelperBtn.classList.remove('hidden');
+            }
             if (publicOrderCompany) {
                 const companyId = String(publicOrderCompany.getAttribute('data-company-id') || '').trim();
                 const companyName = String(publicOrderCompany.getAttribute('data-company-name') || '').trim();
@@ -681,6 +698,21 @@
             }
         } catch (e) {
             // ignore localStorage/parse issues
+        }
+        if (orderTrackingClearHelperBtn) {
+            orderTrackingClearHelperBtn.addEventListener('click', function () {
+                try {
+                    localStorage.removeItem('printflow.public.lastCompany');
+                    localStorage.removeItem('printflow.track.recentCodes');
+                    localStorage.removeItem('printflow.track.companyId');
+                    localStorage.removeItem('printflow.public.requester');
+                    localStorage.removeItem('printflow.public.contactIntent');
+                } catch (e) {
+                    // ignore localStorage issues
+                }
+                trackLinks.forEach(link => link.setAttribute('href', '/public/track'));
+                orderTrackingClearHelperBtn.classList.add('hidden');
+            });
         }
 
         if (!dropzone || !fileInput || !selectBtn || !fileList) {
