@@ -106,6 +106,7 @@
                             Send email
                         </a>
                     </div>
+                    <p id="contactLastCompanyHint" class="mt-3 hidden text-xs text-emerald-700"></p>
                 </div>
             </div>
         </div>
@@ -121,15 +122,18 @@
                   data-cta-tracking=#{contact.smart.intent.cta.tracking},
                   data-cta-quote=#{contact.smart.intent.cta.quote},
                   data-cta-account=#{contact.smart.intent.cta.account},
-                  data-cta-other=#{contact.smart.intent.cta.other}">
+                  data-cta-other=#{contact.smart.intent.cta.other},
+                  data-last-company-ready=#{contact.smart.last_company_ready}">
     </div>
     <script>
         (function () {
             const select = document.getElementById('contactIntent');
             const advice = document.getElementById('contactSmartAdvice');
             const cta = document.getElementById('contactSmartCta');
+            const lastCompanyHint = document.getElementById('contactLastCompanyHint');
             const i18nEl = document.getElementById('contactSmartI18n');
             if (!select || !advice || !cta || !i18nEl) return;
+            const lastCompanyStorageKey = 'printflow.public.lastCompany';
 
             const map = {
                 tracking: {
@@ -153,12 +157,35 @@
                     href: '/public/contact'
                 }
             };
+            function getLastCompany() {
+                try {
+                    const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
+                    if (!parsed || !parsed.id || !parsed.name) return null;
+                    return parsed;
+                } catch (e) {
+                    return null;
+                }
+            }
 
             function updateIntentHint() {
                 const key = select.value in map ? select.value : 'other';
                 advice.textContent = map[key].advice || '';
                 cta.textContent = map[key].cta || '';
+                const remembered = getLastCompany();
+                if (key === 'quote' && remembered) {
+                    cta.setAttribute('href', `/p/company/${remembered.id}/order`);
+                    if (lastCompanyHint) {
+                        const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
+                        lastCompanyHint.textContent = `${label} ${remembered.name}`;
+                        lastCompanyHint.classList.remove('hidden');
+                    }
+                    return;
+                }
                 cta.setAttribute('href', map[key].href);
+                if (lastCompanyHint) {
+                    lastCompanyHint.textContent = '';
+                    lastCompanyHint.classList.add('hidden');
+                }
             }
 
             select.addEventListener('change', updateIntentHint);
