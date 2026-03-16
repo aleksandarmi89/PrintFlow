@@ -176,6 +176,15 @@
                 advice.textContent = map[key].advice || '';
                 cta.textContent = map[key].cta || '';
                 const remembered = getLastCompany();
+                if (key === 'tracking' && remembered) {
+                    cta.setAttribute('href', `/public/track?company=${remembered.id}`);
+                    if (lastCompanyHint) {
+                        const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
+                        lastCompanyHint.textContent = `${label} ${remembered.name}`;
+                        lastCompanyHint.classList.remove('hidden');
+                    }
+                    return;
+                }
                 if (key === 'quote' && remembered) {
                     cta.setAttribute('href', `/p/company/${remembered.id}/order`);
                     if (lastCompanyHint) {
