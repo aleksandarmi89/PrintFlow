@@ -216,6 +216,7 @@
             const btn = document.getElementById('landingLastCompanyCta');
             const clearBtn = document.getElementById('landingClearHelperDataBtn');
             const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
+            const baseTrackHref = (trackLinks[0] && trackLinks[0].getAttribute('href')) || '/public/track';
             const baseCtaText = btn ? btn.textContent : '';
             const lastCompanyStorageKey = 'printflow.public.lastCompany';
             const recentCodesStorageKey = 'printflow.track.recentCodes';
@@ -243,7 +244,13 @@
             }
 
             function updateTrackLinksForCompany(companyId) {
-                const href = companyId ? `/public/track?company=${encodeURIComponent(String(companyId))}` : '/public/track';
+                const hasCompanyParam = /([?&])company=/.test(baseTrackHref);
+                const separator = baseTrackHref.includes('?') ? '&' : '?';
+                const href = companyId
+                    ? (hasCompanyParam
+                        ? baseTrackHref.replace(/([?&])company=[^&]*/g, `$1company=${encodeURIComponent(String(companyId))}`)
+                        : `${baseTrackHref}${separator}company=${encodeURIComponent(String(companyId))}`)
+                    : baseTrackHref;
                 trackLinks.forEach(link => link.setAttribute('href', href));
             }
 

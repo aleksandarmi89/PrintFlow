@@ -152,6 +152,7 @@
         const clearHelperDataBtn = document.getElementById('clearHelperDataBtn');
         const requestLinks = Array.from(document.querySelectorAll('.company-request-link'));
         const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
+        const baseTrackHref = (trackLinks[0] && trackLinks[0].getAttribute('href')) || '/public/track';
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
         const recentCodesStorageKey = 'printflow.track.recentCodes';
         const trackCompanyStorageKey = 'printflow.track.companyId';
@@ -244,7 +245,7 @@
             }
             if (lastCompanyHint) lastCompanyHint.classList.add('hidden');
             trackLinks.forEach(link => {
-                link.setAttribute('href', '/public/track');
+                link.setAttribute('href', baseTrackHref);
             });
             updateClearHelperDataVisibility();
         }
@@ -265,9 +266,13 @@
 
         function applyRememberedCompanyToTrackLinks(entry) {
             if (!trackLinks.length) return;
+            const hasCompanyParam = /([?&])company=/.test(baseTrackHref);
+            const separator = baseTrackHref.includes('?') ? '&' : '?';
             const href = entry && entry.id
-                ? `/public/track?company=${encodeURIComponent(String(entry.id))}`
-                : '/public/track';
+                ? (hasCompanyParam
+                    ? baseTrackHref.replace(/([?&])company=[^&]*/g, `$1company=${encodeURIComponent(String(entry.id))}`)
+                    : `${baseTrackHref}${separator}company=${encodeURIComponent(String(entry.id))}`)
+                : baseTrackHref;
             trackLinks.forEach(link => {
                 link.setAttribute('href', href);
             });
