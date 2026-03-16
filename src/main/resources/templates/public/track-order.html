@@ -569,8 +569,10 @@
                     recentCodes = [];
                     try {
                         localStorage.removeItem(recentCodesStorageKey);
-                        localStorage.removeItem('printflow.track.companyId');
-                        localStorage.removeItem('printflow.public.lastCompany');
+                        localStorage.removeItem(trackCompanyStorageKey);
+                        localStorage.removeItem(publicLastCompanyKey);
+                        localStorage.removeItem(requesterStorageKey);
+                        localStorage.removeItem(contactIntentStorageKey);
                     } catch (e) {
                         // ignore storage failures
                     }
