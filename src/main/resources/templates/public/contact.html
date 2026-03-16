@@ -95,7 +95,7 @@
 
                 <div class="mt-8 pt-6 border-t border-gray-200 text-center">
                     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <a th:href="@{/public/track}" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" th:text="#{contact.track_cta}">
+                        <a th:href="@{/public/track}" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 track-link-with-last-company" th:text="#{contact.track_cta}">
                             Track an order instead
                         </a>
                         <a th:href="@{/public/companies}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" th:text="#{contact.request_cta}">
@@ -132,6 +132,7 @@
             const select = document.getElementById('contactIntent');
             const advice = document.getElementById('contactSmartAdvice');
             const cta = document.getElementById('contactSmartCta');
+            const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
             const lastCompanyHint = document.getElementById('contactLastCompanyHint');
             const intentMemoryHint = document.getElementById('contactIntentMemoryHint');
             const i18nEl = document.getElementById('contactSmartI18n');
@@ -176,6 +177,10 @@
                 advice.textContent = map[key].advice || '';
                 cta.textContent = map[key].cta || '';
                 const remembered = getLastCompany();
+                const trackHref = remembered && remembered.id
+                    ? `/public/track?company=${encodeURIComponent(remembered.id)}`
+                    : '/public/track';
+                trackLinks.forEach(link => link.setAttribute('href', trackHref));
                 if (key === 'tracking' && remembered) {
                     cta.setAttribute('href', `/public/track?company=${remembered.id}`);
                     if (lastCompanyHint) {
