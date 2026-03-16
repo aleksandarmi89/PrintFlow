@@ -38,7 +38,7 @@
                 </ul>
             </div>
             <div class="mt-6">
-                <a th:href="@{/public/track(lang=${langParam})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                <a id="designFeedbackTrackBtn" th:href="@{/public/track(lang=${langParam})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                    th:text="#{order_not_found.track_another}">
                     Track another order
                 </a>
@@ -49,5 +49,20 @@
             </div>
         </div>
     </div>
+    <script>
+        (function () {
+            const btn = document.getElementById('designFeedbackTrackBtn');
+            if (!btn) return;
+            try {
+                const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
+                if (!parsed || !parsed.id) return;
+                const currentHref = btn.getAttribute('href') || '/public/track';
+                const separator = currentHref.includes('?') ? '&' : '?';
+                btn.setAttribute('href', `${currentHref}${separator}company=${encodeURIComponent(parsed.id)}`);
+            } catch (e) {
+                // ignore localStorage/parse issues
+            }
+        })();
+    </script>
 </body>
 </html>
