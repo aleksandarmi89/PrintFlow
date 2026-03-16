@@ -146,6 +146,9 @@
             if (!select || !advice || !cta || !i18nEl) return;
             const lastCompanyStorageKey = 'printflow.public.lastCompany';
             const contactIntentStorageKey = 'printflow.public.contactIntent';
+            const recentCodesStorageKey = 'printflow.track.recentCodes';
+            const trackCompanyStorageKey = 'printflow.track.companyId';
+            const requesterStorageKey = 'printflow.public.requester';
 
             const map = {
                 tracking: {
@@ -176,6 +179,20 @@
                     return parsed;
                 } catch (e) {
                     return null;
+                }
+            }
+
+            function hasAnyHelperData() {
+                try {
+                    return Boolean(
+                        localStorage.getItem(lastCompanyStorageKey) ||
+                        localStorage.getItem(contactIntentStorageKey) ||
+                        localStorage.getItem(recentCodesStorageKey) ||
+                        localStorage.getItem(trackCompanyStorageKey) ||
+                        localStorage.getItem(requesterStorageKey)
+                    );
+                } catch (e) {
+                    return false;
                 }
             }
 
@@ -234,8 +251,7 @@
                         intentMemoryHint.classList.remove('hidden');
                     }
                 }
-                const rememberedCompany = getLastCompany();
-                if ((rememberedIntent && map[rememberedIntent]) || rememberedCompany) {
+                if (hasAnyHelperData()) {
                     if (resetMemoryBtn) resetMemoryBtn.classList.remove('hidden');
                 }
             } catch (e) {
@@ -246,6 +262,9 @@
                     try {
                         localStorage.removeItem(contactIntentStorageKey);
                         localStorage.removeItem(lastCompanyStorageKey);
+                        localStorage.removeItem(recentCodesStorageKey);
+                        localStorage.removeItem(trackCompanyStorageKey);
+                        localStorage.removeItem(requesterStorageKey);
                     } catch (e) {
                         // ignore localStorage issues
                     }
