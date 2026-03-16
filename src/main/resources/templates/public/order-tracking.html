@@ -428,11 +428,12 @@
                 </div>
 
                 <div class="pt-4">
-                        <button type="submit"
+                        <button id="approveSubmitBtn"
+                                type="submit"
                                 th:disabled="${billingExpired}"
                                 th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
-                                class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700">
-                            <span th:text="#{order_tracking.submit_feedback}">Submit Feedback</span>
+                                class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70">
+                            <span id="approveSubmitBtnText" th:text="#{order_tracking.submit_feedback}">Submit Feedback</span>
                             <span th:if="${billingExpired}" class="ml-2 text-xs" th:text="#{billing.lock.badge}">LOCKED</span>
                         </button>
                 </div>
@@ -494,8 +495,8 @@
                 <button type="submit" id="uploadSubmitBtn"
                         th:disabled="${billingExpired}"
                         th:classappend="${billingExpired} ? ' opacity-60 cursor-not-allowed' : ''"
-                        class="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700">
-                    <span th:text="#{files.upload}">Upload</span>
+                        class="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70">
+                    <span id="uploadSubmitBtnText" th:text="#{files.upload}">Upload</span>
                     <span th:if="${billingExpired}" class="ml-2 text-xs" th:text="#{billing.lock.badge}">LOCKED</span>
                 </button>
             </form>
@@ -577,6 +578,8 @@
               data-remove=#{order_tracking.js_remove},
               data-desc-placeholder=#{order_tracking.js_desc_placeholder},
               data-file-badge=#{order_tracking.js_file_badge},
+              data-approve-loading=#{order_tracking.approve_loading},
+              data-upload-loading=#{order_tracking.upload_loading},
               data-copy-success=#{order_tracking.copy_success},
               data-copy-failed=#{order_tracking.copy_failed},
               data-copy-unsupported=#{order_tracking.copy_unsupported}"
@@ -589,7 +592,10 @@
         const selectBtn = document.getElementById('selectFilesBtn');
         const fileList = document.getElementById('fileList');
         const totalsEl = document.getElementById('uploadTotals');
+        const approveSubmitBtn = document.getElementById('approveSubmitBtn');
+        const approveSubmitBtnText = document.getElementById('approveSubmitBtnText');
         const submitBtn = document.getElementById('uploadSubmitBtn');
+        const uploadSubmitBtnText = document.getElementById('uploadSubmitBtnText');
         const copyTrackingNumberBtn = document.getElementById('copyTrackingNumberBtn');
         const copyTrackingNumberHint = document.getElementById('copyTrackingNumberHint');
         const i18nEl = document.getElementById('i18n');
@@ -605,6 +611,8 @@
             remove: i18nEl ? i18nEl.getAttribute('data-remove') : 'Remove',
             descPlaceholder: i18nEl ? i18nEl.getAttribute('data-desc-placeholder') : 'Description for this file (optional)',
             fileBadge: i18nEl ? i18nEl.getAttribute('data-file-badge') : 'FILE',
+            approveLoading: i18nEl ? i18nEl.getAttribute('data-approve-loading') : 'Submitting...',
+            uploadLoading: i18nEl ? i18nEl.getAttribute('data-upload-loading') : 'Uploading...',
             copySuccess: i18nEl ? i18nEl.getAttribute('data-copy-success') : 'Tracking number copied.',
             copyFailed: i18nEl ? i18nEl.getAttribute('data-copy-failed') : 'Copy failed. Please copy manually.',
             copyUnsupported: i18nEl ? i18nEl.getAttribute('data-copy-unsupported') : 'Clipboard copy is not available in this browser context.'
@@ -632,11 +640,27 @@
                 }
             });
         }
+        const approveForm = approveSubmitBtn ? approveSubmitBtn.closest('form') : null;
+        if (approveForm && approveSubmitBtn) {
+            approveForm.addEventListener('submit', function () {
+                if (approveSubmitBtn.disabled) return;
+                approveSubmitBtn.disabled = true;
+                if (approveSubmitBtnText) approveSubmitBtnText.textContent = i18n.approveLoading;
+            });
+        }
 
         function syncInputFiles() {
             const dataTransfer = new DataTransfer();
             selectedFiles.forEach(file => dataTransfer.items.add(file));
             fileInput.files = dataTransfer.files;
+        }
+        const uploadForm = submitBtn ? submitBtn.closest('form') : null;
+        if (uploadForm && submitBtn) {
+            uploadForm.addEventListener('submit', function () {
+                if (submitBtn.disabled) return;
+                submitBtn.disabled = true;
+                if (uploadSubmitBtnText) uploadSubmitBtnText.textContent = i18n.uploadLoading;
+            });
         }
 
         function updateMetaJson() {
