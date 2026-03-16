@@ -50,6 +50,7 @@
                     Open tracking
                 </a>
             </div>
+            <p id="successLastCompanyHint" class="mt-2 hidden text-xs text-emerald-700"></p>
             <p id="successNextStepHint" class="mt-2 text-xs text-blue-900"></p>
         </div>
         <p class="mt-4 text-xs text-gray-500" th:text="#{public.order.success.smart.tip}">
@@ -58,7 +59,7 @@
         <a th:href="@{/p/{slug}/order(slug=${companySlug})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
             <span th:text="#{public.order.success.new_request}">Send new request</span>
         </a>
-        <a th:href="@{/public/track}" class="inline-flex mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+        <a id="successTrackOrderBtn" th:href="@{/public/track}" class="inline-flex mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
             <span th:text="#{public.order.success.track}">Track an order</span>
         </a>
     </div>
@@ -71,20 +72,26 @@
               data-cta-track=#{public.order.success.smart.intent.cta.track},
               data-cta-new-request=#{public.order.success.smart.intent.cta.new_request},
               data-cta-contact=#{public.order.success.smart.intent.cta.contact},
-              data-new-request-url=@{/p/{slug}/order(slug=${companySlug})}">
+              data-new-request-url=@{/p/{slug}/order(slug=${companySlug})},
+              data-url-track=@{/public/track},
+              data-last-company-ready=#{contact.smart.last_company_ready}">
 </div>
 <script>
     (function () {
         const select = document.getElementById('successNextStep');
         const cta = document.getElementById('successNextStepCta');
         const hint = document.getElementById('successNextStepHint');
+        const trackOrderBtn = document.getElementById('successTrackOrderBtn');
+        const lastCompanyHint = document.getElementById('successLastCompanyHint');
         const i18nEl = document.getElementById('orderSuccessSmartI18n');
         if (!select || !cta || !hint || !i18nEl) return;
 
         const hrefNewRequest = i18nEl.getAttribute('data-new-request-url') || '/public/track';
+        const trackUrlBase = i18nEl.getAttribute('data-url-track') || '/public/track';
+        const lastCompanyStorageKey = 'printflow.public.lastCompany';
         const map = {
             track: {
-                href: '/public/track',
+                href: trackUrlBase,
                 cta: i18nEl.getAttribute('data-cta-track'),
                 hint: i18nEl.getAttribute('data-hint-track')
             },
@@ -99,6 +106,23 @@
                 hint: i18nEl.getAttribute('data-hint-contact')
             }
         };
+        try {
+            const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
+            if (parsed && parsed.id && parsed.name) {
+                const trackUrl = `${trackUrlBase}?company=${encodeURIComponent(parsed.id)}`;
+                map.track.href = trackUrl;
+                if (trackOrderBtn) {
+                    trackOrderBtn.setAttribute('href', trackUrl);
+                }
+                if (lastCompanyHint) {
+                    const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
+                    lastCompanyHint.textContent = `${label} ${parsed.name}`;
+                    lastCompanyHint.classList.remove('hidden');
+                }
+            }
+        } catch (e) {
+            // ignore localStorage/parse issues
+        }
 
         function update() {
             const key = select.value in map ? select.value : 'track';
