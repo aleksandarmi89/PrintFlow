@@ -312,9 +312,9 @@
                                     <p class="text-sm" th:if="${order.trackingNumber}">
                                         <span th:text="#{order_tracking.tracking_number}">Tracking Number:</span>
                                         <a class="font-medium text-blue-600 hover:text-blue-800"
-                                           th:href="${order.courierName != null
-                                               ? ('https://tracking.' + #strings.toLowerCase(order.courierName) + '.com/' + order.trackingNumber)
-                                               : '#'}"
+                                           target="_blank" rel="noopener noreferrer"
+                                           th:with="courierQuery=${(order.courierName != null ? order.courierName : '') + ' tracking ' + order.trackingNumber}"
+                                           th:href="${'https://www.google.com/search?q=' + #strings.replace(courierQuery, ' ', '+')}"
                                            th:text="${order.trackingNumber}">
                                             TRACK123456
                                         </a>
