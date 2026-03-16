@@ -183,12 +183,20 @@
                                    th:text="#{track.code_label}">
                                 Tracking Code
                             </label>
-                            <button id="pasteTrackingCodeBtn"
-                                    type="button"
-                                    class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                    th:text="#{track.smart.paste_code}">
-                                Paste code
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button id="clearTrackingCodeBtn"
+                                        type="button"
+                                        class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                        th:text="#{track.smart.clear_code}">
+                                    Clear code
+                                </button>
+                                <button id="pasteTrackingCodeBtn"
+                                        type="button"
+                                        class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                        th:text="#{track.smart.paste_code}">
+                                    Paste code
+                                </button>
+                            </div>
                         </div>
                         <input type="text" 
                                id="trackingCode" 
@@ -300,6 +308,7 @@
             const resetCompanySelectionBtn = document.getElementById('resetCompanySelectionBtn');
             const openCompanyRequestBtn = document.getElementById('openCompanyRequestBtn');
             const trackingCode = document.getElementById('trackingCode');
+            const clearTrackingCodeBtn = document.getElementById('clearTrackingCodeBtn');
             const pasteTrackingCodeBtn = document.getElementById('pasteTrackingCodeBtn');
             const pasteTrackingCodeHint = document.getElementById('pasteTrackingCodeHint');
             const recentTrackCodesWrap = document.getElementById('recentTrackCodesWrap');
@@ -495,6 +504,21 @@
                     } catch (e) {
                         if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteFailed;
                     }
+                });
+            }
+            if (clearTrackingCodeBtn) {
+                clearTrackingCodeBtn.addEventListener('click', function () {
+                    if (!trackingCode) return;
+                    trackingCode.value = '';
+                    trackingCode.focus();
+                    if (pasteTrackingCodeHint) {
+                        pasteTrackingCodeHint.textContent = '';
+                    }
+                    if (lastCodeHint) {
+                        lastCodeHint.textContent = '';
+                        lastCodeHint.classList.add('hidden');
+                    }
+                    updateCodeSmartHint();
                 });
             }
             if (clearRecentTrackCodesBtn) {
