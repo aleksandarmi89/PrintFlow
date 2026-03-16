@@ -144,19 +144,27 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                 <div th:if="${companyBrand != null && companyBrand.email != null}">
                     <div class="text-gray-500" th:text="#{contact.email_label}">Email</div>
-                    <div th:text="${companyBrand.email}">email</div>
+                    <a class="text-blue-700 hover:text-blue-800 hover:underline"
+                       th:href="${'mailto:' + companyBrand.email}"
+                       th:text="${companyBrand.email}">email</a>
                 </div>
                 <div th:if="${companyBrand != null && companyBrand.phone != null}">
                     <div class="text-gray-500" th:text="#{contact.phone_label}">Phone</div>
-                    <div th:text="${companyBrand.phone}">phone</div>
+                    <a class="text-blue-700 hover:text-blue-800 hover:underline"
+                       th:href="${'tel:' + companyBrand.phone}"
+                       th:text="${companyBrand.phone}">phone</a>
                 </div>
                 <div th:if="${companyBrand != null && companyBrand.address != null}">
                     <div class="text-gray-500" th:text="#{contact.address_label}">Address</div>
                     <div th:text="${companyBrand.address}">address</div>
                 </div>
-                <div th:if="${companyBrand != null && companyBrand.website != null}">
+                <div th:if="${companyBrand != null && companyBrand.website != null}"
+                     th:with="trackingWebsiteHref=${#strings.startsWith(companyBrand.website, 'http://') || #strings.startsWith(companyBrand.website, 'https://') ? companyBrand.website : 'https://' + companyBrand.website}">
                     <div class="text-gray-500" th:text="#{contact.website_label}">Website</div>
-                    <div th:text="${companyBrand.website}">website</div>
+                    <a class="text-blue-700 hover:text-blue-800 hover:underline"
+                       target="_blank" rel="noopener noreferrer"
+                       th:href="${trackingWebsiteHref}"
+                       th:text="${companyBrand.website}">website</a>
                 </div>
             </div>
         </div>
