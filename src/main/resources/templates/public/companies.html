@@ -19,7 +19,7 @@
             </span>
         </a>
         <div class="flex items-center gap-3">
-            <a th:href="@{/public/track}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.track_order}">Track order</a>
+            <a th:href="@{/public/track}" class="text-sm text-gray-700 hover:text-blue-600 track-link-with-last-company" th:text="#{footer.track_order}">Track order</a>
             <a th:href="@{/public/contact}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.contact}">Contact</a>
             <div class="flex items-center gap-2 text-xs text-gray-600">
                 <span th:text="#{nav.language}">Language</span>
@@ -83,7 +83,7 @@
                 <span class="text-amber-700" th:text="#{public.companies.no_match_advice}">
                     If you already have a tracking code, use Track Order directly.
                 </span>
-                <a th:href="@{/public/track}" class="font-semibold underline hover:no-underline" th:text="#{public.companies.no_match_track}">
+                <a th:href="@{/public/track}" class="font-semibold underline hover:no-underline track-link-with-last-company" th:text="#{public.companies.no_match_track}">
                     Open Track Order
                 </a>
                 <a th:href="@{/public/contact}" class="font-semibold underline hover:no-underline" th:text="#{public.companies.no_match_contact}">
@@ -144,6 +144,7 @@
         const lastCompanyContinue = document.getElementById('lastCompanyContinue');
         const lastCompanyClear = document.getElementById('lastCompanyClear');
         const requestLinks = Array.from(document.querySelectorAll('.company-request-link'));
+        const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
 
         function applyFilter() {
@@ -212,6 +213,19 @@
                 // ignore storage failures
             }
             if (lastCompanyHint) lastCompanyHint.classList.add('hidden');
+            trackLinks.forEach(link => {
+                link.setAttribute('href', '/public/track');
+            });
+        }
+
+        function applyRememberedCompanyToTrackLinks(entry) {
+            if (!trackLinks.length) return;
+            const href = entry && entry.id
+                ? `/public/track?company=${entry.id}`
+                : '/public/track';
+            trackLinks.forEach(link => {
+                link.setAttribute('href', href);
+            });
         }
 
         if (searchInput) searchInput.addEventListener('input', applyFilter);
@@ -240,6 +254,7 @@
         const rememberedCompany = loadLastCompany();
         showLastCompanyHint(rememberedCompany);
         highlightLastUsedCard(rememberedCompany);
+        applyRememberedCompanyToTrackLinks(rememberedCompany);
         if (cards.length > 0) applyFilter();
     });
 </script>
