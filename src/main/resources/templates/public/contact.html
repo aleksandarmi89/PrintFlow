@@ -196,6 +196,11 @@
                 }
             }
 
+            function updateResetMemoryVisibility() {
+                if (!resetMemoryBtn) return;
+                resetMemoryBtn.classList.toggle('hidden', !hasAnyHelperData());
+            }
+
             function updateIntentHint() {
                 const key = select.value in map ? select.value : 'other';
                 advice.textContent = map[key].advice || '';
@@ -239,6 +244,7 @@
                 if (intentMemoryHint) {
                     intentMemoryHint.classList.add('hidden');
                 }
+                updateResetMemoryVisibility();
                 updateIntentHint();
             });
 
@@ -251,9 +257,7 @@
                         intentMemoryHint.classList.remove('hidden');
                     }
                 }
-                if (hasAnyHelperData()) {
-                    if (resetMemoryBtn) resetMemoryBtn.classList.remove('hidden');
-                }
+                updateResetMemoryVisibility();
             } catch (e) {
                 // ignore localStorage issues
             }
@@ -277,11 +281,12 @@
                         lastCompanyHint.classList.add('hidden');
                         lastCompanyHint.textContent = '';
                     }
-                    resetMemoryBtn.classList.add('hidden');
+                    updateResetMemoryVisibility();
                     updateIntentHint();
                 });
             }
             updateIntentHint();
+            updateResetMemoryVisibility();
         })();
     </script>
 </body>
