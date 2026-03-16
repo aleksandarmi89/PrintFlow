@@ -190,6 +190,20 @@
                             <span th:text="#{track.code_example}">Example:</span> <span class="font-mono">ORD-123456-789</span>
                         </p>
                         <p id="pasteTrackingCodeHint" class="mt-1 text-xs text-gray-500"></p>
+                        <div id="recentTrackCodesWrap" class="mt-2 hidden">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-medium text-gray-600" th:text="#{track.smart.recent_codes}">
+                                    Recent codes
+                                </span>
+                                <button id="clearRecentTrackCodesBtn"
+                                        type="button"
+                                        class="text-xs text-gray-500 hover:text-gray-700"
+                                        th:text="#{common.clear}">
+                                    Clear
+                                </button>
+                            </div>
+                            <div id="recentTrackCodesList" class="mt-2 flex flex-wrap gap-2"></div>
+                        </div>
                         <p id="trackingCodeSmartHint" class="mt-2 text-xs text-blue-700"></p>
                     </div>
                     
@@ -250,6 +264,7 @@
                   data-paste-unsupported=#{track.smart.paste_unsupported},
                   data-company-remembered=#{track.smart.company_remembered},
                   data-company-remembered-invalid=#{track.smart.company_remembered_invalid},
+                  data-recent-codes=#{track.smart.recent_codes},
                   data-open-request-active=#{track.smart.open_request_active},
                   data-open-request-disabled=#{track.smart.open_request_disabled}">
     </div>
@@ -264,6 +279,9 @@
             const trackingCode = document.getElementById('trackingCode');
             const pasteTrackingCodeBtn = document.getElementById('pasteTrackingCodeBtn');
             const pasteTrackingCodeHint = document.getElementById('pasteTrackingCodeHint');
+            const recentTrackCodesWrap = document.getElementById('recentTrackCodesWrap');
+            const recentTrackCodesList = document.getElementById('recentTrackCodesList');
+            const clearRecentTrackCodesBtn = document.getElementById('clearRecentTrackCodesBtn');
             const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
             const trackNextStepHint = document.getElementById('trackNextStepHint');
             const i18nEl = document.getElementById('trackSmartI18n');
@@ -289,9 +307,12 @@
                 pasteUnsupported: i18nEl?.getAttribute('data-paste-unsupported') || 'Clipboard paste is not available in this browser context.',
                 companyRemembered: i18nEl?.getAttribute('data-company-remembered') || 'Loaded your last selected company.',
                 companyRememberedInvalid: i18nEl?.getAttribute('data-company-remembered-invalid') || 'Previously selected company is no longer available.',
+                recentCodes: i18nEl?.getAttribute('data-recent-codes') || 'Recent codes',
                 openRequestActive: i18nEl?.getAttribute('data-open-request-active') || 'Open request form',
                 openRequestDisabled: i18nEl?.getAttribute('data-open-request-disabled') || 'Select company first'
             };
+            const recentCodesStorageKey = 'printflow.track.recentCodes';
+            let recentCodes = [];
 
             function updateCompanyActions() {
                 if (!openCompanyRequestBtn) return;
@@ -370,6 +391,55 @@
                 trackNextStepHint.textContent = i18n.nextSubmit;
             }
 
+            function loadRecentCodes() {
+                try {
+                    const parsed = JSON.parse(localStorage.getItem(recentCodesStorageKey) || '[]');
+                    if (!Array.isArray(parsed)) return [];
+                    return parsed
+                        .map(code => String(code || '').trim().toUpperCase())
+                        .filter(code => code.length > 0)
+                        .slice(0, 5);
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function saveRecentCode(code) {
+                if (!code) return;
+                const normalized = String(code).trim().replace(/\s+/g, '').toUpperCase();
+                if (!normalized) return;
+                const deduped = [normalized, ...recentCodes.filter(item => item !== normalized)].slice(0, 5);
+                recentCodes = deduped;
+                try {
+                    localStorage.setItem(recentCodesStorageKey, JSON.stringify(deduped));
+                } catch (e) {
+                    // ignore storage failures
+                }
+            }
+
+            function renderRecentCodes() {
+                if (!recentTrackCodesWrap || !recentTrackCodesList) return;
+                recentTrackCodesList.innerHTML = '';
+                if (!recentCodes.length) {
+                    recentTrackCodesWrap.classList.add('hidden');
+                    return;
+                }
+                recentTrackCodesWrap.classList.remove('hidden');
+                recentCodes.forEach(code => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-mono text-gray-700 hover:bg-gray-50';
+                    chip.textContent = code;
+                    chip.addEventListener('click', function () {
+                        if (!trackingCode) return;
+                        trackingCode.value = code;
+                        updateCodeSmartHint();
+                        trackingCode.focus();
+                    });
+                    recentTrackCodesList.appendChild(chip);
+                });
+            }
+
             search.addEventListener('input', function () {
                 render(search.value);
             });
@@ -397,6 +467,24 @@
                     } catch (e) {
                         if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteFailed;
                     }
+                });
+            }
+            if (clearRecentTrackCodesBtn) {
+                clearRecentTrackCodesBtn.addEventListener('click', function () {
+                    recentCodes = [];
+                    try {
+                        localStorage.removeItem(recentCodesStorageKey);
+                    } catch (e) {
+                        // ignore storage failures
+                    }
+                    renderRecentCodes();
+                });
+            }
+            const trackingForm = trackingCode ? trackingCode.closest('form') : null;
+            if (trackingForm) {
+                trackingForm.addEventListener('submit', function () {
+                    const normalized = (trackingCode.value || '').trim().replace(/\s+/g, '').toUpperCase();
+                    saveRecentCode(normalized);
                 });
             }
             try {
@@ -433,8 +521,13 @@
                     try { localStorage.removeItem('printflow.track.companyId'); } catch (e) {}
                     updateCompanyActions();
                     if (companyMemoryHint) companyMemoryHint.textContent = '';
+                    if (select.form && typeof select.form.requestSubmit === 'function') {
+                        select.form.requestSubmit();
+                    }
                 });
             }
+            recentCodes = loadRecentCodes();
+            renderRecentCodes();
             render('');
             updateCodeSmartHint();
         })();
