@@ -31,7 +31,7 @@
                     </a>
                 </div>
                 <div class="w-full md:w-auto flex flex-wrap items-center justify-start md:justify-end gap-2 md:gap-3">
-                    <a th:href="@{/public/track}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                    <a th:href="@{/public/track}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium track-link-with-last-company"
                        th:text="#{footer.track_order}">
                         Track Order
                     </a>
@@ -81,7 +81,7 @@
                     <span th:text="#{landing.start_free_trial}">Start Free Trial</span>
                 </a>
                 <a th:href="@{/public/track}" 
-                   class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-medium border border-blue-600 hover:bg-blue-50 transition-colors">
+                   class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-medium border border-blue-600 hover:bg-blue-50 transition-colors track-link-with-last-company">
                     <span th:text="#{landing.track_order_cta}">Track Your Order</span>
                 </a>
                 <a th:href="@{/public/companies}"
@@ -208,10 +208,15 @@
     <script>
         (function () {
             const btn = document.getElementById('landingLastCompanyCta');
+            const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
             if (!btn) return;
             try {
                 const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
-                if (!parsed || !parsed.id || !parsed.name) return;
+                if (!parsed || !parsed.id || !parsed.name) {
+                    trackLinks.forEach(link => link.setAttribute('href', '/public/track'));
+                    return;
+                }
+                trackLinks.forEach(link => link.setAttribute('href', `/public/track?company=${parsed.id}`));
                 btn.setAttribute('href', `/p/company/${parsed.id}/order`);
                 btn.textContent = `${btn.textContent}: ${parsed.name}`;
                 btn.classList.remove('hidden');
