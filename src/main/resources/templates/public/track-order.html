@@ -190,8 +190,13 @@
                                name="trackingCode" 
                                required
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                               th:value="${submittedTrackingCode}"
+                               th:value="${submittedTrackingCode != null ? submittedTrackingCode : tokenParam}"
                                th:placeholder="#{track.code_placeholder}">
+                        <p th:if="${submittedTrackingCode == null && tokenParam != null && !#strings.isEmpty(tokenParam)}"
+                           class="mt-1 text-xs text-emerald-700"
+                           th:text="#{track.smart.token_prefilled}">
+                            Tracking code is pre-filled from your link.
+                        </p>
                         <p class="mt-2 text-sm text-gray-500" th:text="#{track.code_help}">
                             Find your tracking code in the email we sent you when your order was created.
                         </p>
