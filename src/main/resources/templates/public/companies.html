@@ -53,6 +53,23 @@
                th:attr="data-label=#{public.companies.visible_count}">
             </p>
         </div>
+        <div id="lastCompanyHint"
+             class="mt-3 hidden rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+            <span th:text="#{public.companies.last_used}">Last selected company:</span>
+            <span id="lastCompanyName" class="font-semibold"></span>
+            <a id="lastCompanyContinue"
+               href="#"
+               class="ml-2 font-semibold underline hover:no-underline"
+               th:text="#{public.companies.continue_last}">
+                Continue with this company
+            </a>
+            <button id="lastCompanyClear"
+                    type="button"
+                    class="ml-2 font-semibold underline hover:no-underline"
+                    th:text="#{public.companies.clear_last}">
+                Forget
+            </button>
+        </div>
         <div id="companyNoMatch"
              class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             <span th:text="#{public.companies.no_match}">No companies match your search.</span>
@@ -83,7 +100,7 @@
     <div th:if="${!#lists.isEmpty(companies)}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <article th:each="company : ${companies}"
                  class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4 company-card"
-                 th:attr="data-search=${((company.name ?: '') + ' ' + (company.slug ?: '')).toLowerCase()}">
+                 th:attr="data-search=${((company.name ?: '') + ' ' + (company.slug ?: '')).toLowerCase()},data-company-id=${company.id},data-company-name=${company.name}">
             <div class="flex items-center gap-3">
                 <img th:if="${company.logoPath != null and !#strings.isEmpty(company.logoPath)}"
                      th:src="@{/public/company-logo/{id}(id=${company.id})}"
@@ -100,7 +117,8 @@
                 </div>
             </div>
             <a th:href="@{/p/company/{id}/order(id=${company.id})}"
-               class="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-medium py-2.5 hover:bg-blue-700">
+               class="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-medium py-2.5 hover:bg-blue-700 company-request-link"
+               th:attr="data-company-id=${company.id},data-company-name=${company.name}">
                 <span th:text="#{public.companies.send_request}">Send request</span>
             </a>
         </article>
@@ -115,6 +133,12 @@
         const visibleHint = document.getElementById('companyVisibleHint');
         const noMatch = document.getElementById('companyNoMatch');
         const resetBtn = document.getElementById('resetCompanySearch');
+        const lastCompanyHint = document.getElementById('lastCompanyHint');
+        const lastCompanyName = document.getElementById('lastCompanyName');
+        const lastCompanyContinue = document.getElementById('lastCompanyContinue');
+        const lastCompanyClear = document.getElementById('lastCompanyClear');
+        const requestLinks = Array.from(document.querySelectorAll('.company-request-link'));
+        const lastCompanyStorageKey = 'printflow.public.lastCompany';
 
         function applyFilter() {
             const term = (searchInput?.value || '').trim().toLowerCase();
@@ -134,6 +158,38 @@
             }
         }
 
+        function loadLastCompany() {
+            try {
+                const raw = localStorage.getItem(lastCompanyStorageKey);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !parsed.id || !parsed.name) return null;
+                return parsed;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function showLastCompanyHint(entry) {
+            if (!lastCompanyHint || !lastCompanyName || !lastCompanyContinue) return;
+            if (!entry) {
+                lastCompanyHint.classList.add('hidden');
+                return;
+            }
+            lastCompanyName.textContent = entry.name;
+            lastCompanyContinue.setAttribute('href', `/p/company/${entry.id}/order`);
+            lastCompanyHint.classList.remove('hidden');
+        }
+
+        function clearLastCompany() {
+            try {
+                localStorage.removeItem(lastCompanyStorageKey);
+            } catch (e) {
+                // ignore storage failures
+            }
+            if (lastCompanyHint) lastCompanyHint.classList.add('hidden');
+        }
+
         if (searchInput) searchInput.addEventListener('input', applyFilter);
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
@@ -142,6 +198,22 @@
                 if (searchInput) searchInput.focus();
             });
         }
+        requestLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const id = link.getAttribute('data-company-id');
+                const name = link.getAttribute('data-company-name');
+                if (!id || !name) return;
+                try {
+                    localStorage.setItem(lastCompanyStorageKey, JSON.stringify({ id, name }));
+                } catch (e) {
+                    // ignore storage failures
+                }
+            });
+        });
+        if (lastCompanyClear) {
+            lastCompanyClear.addEventListener('click', clearLastCompany);
+        }
+        showLastCompanyHint(loadLastCompany());
         if (cards.length > 0) applyFilter();
     });
 </script>
