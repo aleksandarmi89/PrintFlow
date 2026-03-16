@@ -182,7 +182,7 @@
                     : '/public/track';
                 trackLinks.forEach(link => link.setAttribute('href', trackHref));
                 if (key === 'tracking' && remembered) {
-                    cta.setAttribute('href', `/public/track?company=${remembered.id}`);
+                    cta.setAttribute('href', `/public/track?company=${encodeURIComponent(remembered.id)}`);
                     if (lastCompanyHint) {
                         const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
                         lastCompanyHint.textContent = `${label} ${remembered.name}`;
@@ -191,7 +191,7 @@
                     return;
                 }
                 if (key === 'quote' && remembered) {
-                    cta.setAttribute('href', `/p/company/${remembered.id}/order`);
+                    cta.setAttribute('href', `/p/company/${encodeURIComponent(remembered.id)}/order`);
                     if (lastCompanyHint) {
                         const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
                         lastCompanyHint.textContent = `${label} ${remembered.name}`;
