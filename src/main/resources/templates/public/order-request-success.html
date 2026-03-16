@@ -102,6 +102,10 @@
         const hrefNewRequest = i18nEl.getAttribute('data-new-request-url') || '/public/track';
         const trackUrlBase = i18nEl.getAttribute('data-url-track') || '/public/track';
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
+        const recentCodesStorageKey = 'printflow.track.recentCodes';
+        const trackCompanyStorageKey = 'printflow.track.companyId';
+        const requesterStorageKey = 'printflow.public.requester';
+        const contactIntentStorageKey = 'printflow.public.contactIntent';
         const map = {
             track: {
                 href: trackUrlBase,
@@ -119,7 +123,23 @@
                 hint: i18nEl.getAttribute('data-hint-contact')
             }
         };
+        function hasAnyHelperData() {
+            try {
+                return Boolean(
+                    localStorage.getItem(lastCompanyStorageKey) ||
+                    localStorage.getItem(recentCodesStorageKey) ||
+                    localStorage.getItem(trackCompanyStorageKey) ||
+                    localStorage.getItem(requesterStorageKey) ||
+                    localStorage.getItem(contactIntentStorageKey)
+                );
+            } catch (e) {
+                return false;
+            }
+        }
         try {
+            if (clearHelperBtn && hasAnyHelperData()) {
+                clearHelperBtn.classList.remove('hidden');
+            }
             if (companyEl) {
                 const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
                 const companyName = String(companyEl.getAttribute('data-company-name') || '').trim();
@@ -156,10 +176,10 @@
             clearHelperBtn.addEventListener('click', function () {
                 try {
                     localStorage.removeItem(lastCompanyStorageKey);
-                    localStorage.removeItem('printflow.track.recentCodes');
-                    localStorage.removeItem('printflow.track.companyId');
-                    localStorage.removeItem('printflow.public.requester');
-                    localStorage.removeItem('printflow.public.contactIntent');
+                    localStorage.removeItem(recentCodesStorageKey);
+                    localStorage.removeItem(trackCompanyStorageKey);
+                    localStorage.removeItem(requesterStorageKey);
+                    localStorage.removeItem(contactIntentStorageKey);
                 } catch (e) {
                     // ignore localStorage issues
                 }
