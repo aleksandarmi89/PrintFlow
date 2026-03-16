@@ -500,13 +500,32 @@
                 If you have any questions about your order, please contact the printing company directly.
             </p>
             <div class="space-y-2">
-                <p class="text-blue-800">
+                <p class="text-blue-800"
+                   th:if="${(companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}">
                     <span class="font-medium" th:text="#{order_tracking.phone_label}">Phone:</span>
-                    <span th:text="#{order_tracking.phone_value}">Contact the number provided by the printing company</span>
+                    <a class="hover:underline"
+                       th:href="${'tel:' + ((companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : footerCompanyPhone)}"
+                       th:text="${(companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : footerCompanyPhone}">+381 11 123 4567</a>
                 </p>
-                <p class="text-blue-800">
+                <p class="text-blue-800"
+                   th:if="${(companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) || (footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail))}">
                     <span class="font-medium" th:text="#{order_tracking.email_label}">Email:</span>
-                    <span th:text="#{order_tracking.email_value}">Contact the email address provided by the printing company</span>
+                    <a class="hover:underline"
+                       th:href="${'mailto:' + ((companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : footerCompanyEmail)}"
+                       th:text="${(companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : footerCompanyEmail}">support@printflow.app</a>
+                </p>
+                <p class="text-blue-800"
+                   th:if="${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
+                   th:with="helpWebsite=${(companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)) ? companyBrand.website : footerCompanyWebsite},
+                            helpWebsiteHref=${#strings.startsWith(helpWebsite, 'http://') || #strings.startsWith(helpWebsite, 'https://') ? helpWebsite : 'https://' + helpWebsite}">
+                    <span class="font-medium" th:text="#{contact.website_label}">Website:</span>
+                    <a class="hover:underline"
+                       target="_blank" rel="noopener noreferrer"
+                       th:href="${helpWebsiteHref}"
+                       th:text="${helpWebsite}">https://printflow.app</a>
+                </p>
+                <p class="text-xs text-blue-700 pt-2" th:text="#{order_not_found.smart.intent.hint.home}">
+                    Go back to public home to start a new request flow.
                 </p>
             </div>
         </div>
