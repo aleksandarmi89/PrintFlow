@@ -44,7 +44,7 @@
                     </select>
                 </div>
                 <a id="successNextStepCta"
-                   th:href="@{/public/track}"
+                   th:href="@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})}"
                    class="inline-flex justify-center rounded-lg bg-white border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
                    th:text="#{public.order.success.smart.intent.cta.track}">
                     Open tracking
@@ -65,7 +65,7 @@
         <a th:href="@{/p/{slug}/order(slug=${companySlug})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
             <span th:text="#{public.order.success.new_request}">Send new request</span>
         </a>
-        <a id="successTrackOrderBtn" th:href="@{/public/track}" class="inline-flex mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+        <a id="successTrackOrderBtn" th:href="@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="inline-flex mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
             <span th:text="#{public.order.success.track}">Track an order</span>
         </a>
     </div>
@@ -79,7 +79,7 @@
               data-cta-new-request=#{public.order.success.smart.intent.cta.new_request},
               data-cta-contact=#{public.order.success.smart.intent.cta.contact},
               data-new-request-url=@{/p/{slug}/order(slug=${companySlug})},
-              data-url-track=@{/public/track},
+              data-url-track=@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
               data-url-contact=@{/public/contact(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
               data-last-company-ready=#{contact.smart.last_company_ready}">
 </div>
