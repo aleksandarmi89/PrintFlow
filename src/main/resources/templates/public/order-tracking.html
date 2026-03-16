@@ -555,32 +555,7 @@
     </div>
 </main>
 
-<!-- Simple footer for public pages -->
-<footer class="bg-gray-800 text-white py-8">
-    <div class="container mx-auto px-4 text-center">
-        <div class="mb-5 flex items-center justify-center gap-3">
-            <div class="h-12 w-12 flex items-center justify-center shrink-0">
-                <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-12 object-contain"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <div style="display:none" class="h-12 w-12 bg-blue-600 rounded-lg items-center justify-center text-white font-bold">PF</div>
-            </div>
-            <div class="text-left">
-                <div class="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">ProPrintFlow</div>
-                <div class="text-[11px] tracking-[0.2em] uppercase text-blue-100/90" th:text="#{footer.brand_tagline}">Professional Print Workflow</div>
-            </div>
-        </div>
-        <p class="text-gray-400">
-            &copy; <span th:text="${currentYear}">2024</span>
-            <span th:text="${(footerCompanyName != null && !#strings.isEmpty(footerCompanyName)) ? footerCompanyName : (companyBrand != null && companyBrand.name != null && !#strings.isEmpty(companyBrand.name) ? companyBrand.name : #messages.msg('public.brand_footer'))}">PrintFlow SaaS</span>.
-            <span th:text="#{order_tracking.footer_note}">Order tracking system.</span>
-        </p>
-        <p class="mt-2 text-xs text-gray-500"
-           th:if="${(companyBrand != null && ((companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) || (companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)))) || (footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
-           th:text="${((companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : (footerCompanyEmail != null ? footerCompanyEmail : '')) + ((((companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : (footerCompanyEmail != null ? footerCompanyEmail : '')) != '' && ((companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : (footerCompanyPhone != null ? footerCompanyPhone : '')) != '') ? ' • ' : '') + ((companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)) ? companyBrand.phone : (footerCompanyPhone != null ? footerCompanyPhone : ''))}">
-            support@example.com • +381 11 123 456
-        </p>
-    </div>
-</footer>
+<div th:replace="~{layout/footer :: footer}"></div>
 
 <div id="i18n"
      th:attr="data-file-too-large=#{order_tracking.js_file_too_large},
