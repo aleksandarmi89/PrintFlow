@@ -53,11 +53,24 @@
                         <div class="space-y-3 text-gray-700">
                             <div>
                                 <span class="text-sm text-gray-500" th:text="#{contact.email_label}">Email</span>
-                                <div class="font-medium" th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value'))}">support@printflow.app</div>
+                                <a class="block font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                                   th:href="${'mailto:' + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value')))}"
+                                   th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value'))}">support@printflow.app</a>
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500" th:text="#{contact.phone_label}">Phone</span>
-                                <div class="font-medium" th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : (companyBrand != null && companyBrand.phone != null ? companyBrand.phone : #messages.msg('contact.phone_value'))}">+1 (555) 123-4567</div>
+                                <a class="block font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                                   th:href="${'tel:' + ((footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : (companyBrand != null && companyBrand.phone != null ? companyBrand.phone : #messages.msg('contact.phone_value')))}"
+                                   th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : (companyBrand != null && companyBrand.phone != null ? companyBrand.phone : #messages.msg('contact.phone_value'))}">+1 (555) 123-4567</a>
+                            </div>
+                            <div th:if="${(footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite)) || (companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website))}"
+                                 th:with="contactWebsite=${(footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite)) ? footerCompanyWebsite : companyBrand.website},
+                                          contactWebsiteHref=${#strings.startsWith(contactWebsite, 'http://') || #strings.startsWith(contactWebsite, 'https://') ? contactWebsite : 'https://' + contactWebsite}">
+                                <span class="text-sm text-gray-500" th:text="#{contact.website_label}">Website</span>
+                                <a class="block font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                                   target="_blank" rel="noopener noreferrer"
+                                   th:href="${contactWebsiteHref}"
+                                   th:text="${contactWebsite}">https://printflow.app</a>
                             </div>
                             <div>
                                 <span class="text-sm text-gray-500" th:text="#{contact.address_label}">Address</span>
@@ -86,6 +99,11 @@
                         </a>
                         <a th:href="@{/public/companies}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" th:text="#{contact.request_cta}">
                             Submit request
+                        </a>
+                        <a th:href="${'mailto:' + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value')))}"
+                           class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                           th:text="#{contact.email_cta}">
+                            Send email
                         </a>
                     </div>
                 </div>
