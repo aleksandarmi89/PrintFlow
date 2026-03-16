@@ -69,6 +69,12 @@
                     th:text="#{public.companies.clear_last}">
                 Forget
             </button>
+            <button id="clearHelperDataBtn"
+                    type="button"
+                    class="ml-2 font-semibold underline hover:no-underline"
+                    th:text="#{public.companies.clear_helper_data}">
+                Clear helper data
+            </button>
         </div>
         <div id="companyNoMatch"
              class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -143,6 +149,7 @@
         const lastCompanyName = document.getElementById('lastCompanyName');
         const lastCompanyContinue = document.getElementById('lastCompanyContinue');
         const lastCompanyClear = document.getElementById('lastCompanyClear');
+        const clearHelperDataBtn = document.getElementById('clearHelperDataBtn');
         const requestLinks = Array.from(document.querySelectorAll('.company-request-link'));
         const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
@@ -218,6 +225,19 @@
             });
         }
 
+        function clearAllHelperData() {
+            try {
+                localStorage.removeItem(lastCompanyStorageKey);
+                localStorage.removeItem('printflow.track.recentCodes');
+                localStorage.removeItem('printflow.track.companyId');
+                localStorage.removeItem('printflow.public.requester');
+                localStorage.removeItem('printflow.public.contactIntent');
+            } catch (e) {
+                // ignore storage failures
+            }
+            clearLastCompany();
+        }
+
         function applyRememberedCompanyToTrackLinks(entry) {
             if (!trackLinks.length) return;
             const href = entry && entry.id
@@ -250,6 +270,9 @@
         });
         if (lastCompanyClear) {
             lastCompanyClear.addEventListener('click', clearLastCompany);
+        }
+        if (clearHelperDataBtn) {
+            clearHelperDataBtn.addEventListener('click', clearAllHelperData);
         }
         const rememberedCompany = loadLastCompany();
         showLastCompanyHint(rememberedCompany);
