@@ -76,6 +76,11 @@
               data-url-track=@{/public/track},
               data-last-company-ready=#{contact.smart.last_company_ready}">
 </div>
+<div id="publicSuccessCompany"
+     class="hidden"
+     th:if="${company != null && company.id != null && company.name != null}"
+     th:attr="data-company-id=${company.id},data-company-name=${company.name}">
+</div>
 <script>
     (function () {
         const select = document.getElementById('successNextStep');
@@ -83,6 +88,7 @@
         const hint = document.getElementById('successNextStepHint');
         const trackOrderBtn = document.getElementById('successTrackOrderBtn');
         const lastCompanyHint = document.getElementById('successLastCompanyHint');
+        const companyEl = document.getElementById('publicSuccessCompany');
         const i18nEl = document.getElementById('orderSuccessSmartI18n');
         if (!select || !cta || !hint || !i18nEl) return;
 
@@ -107,6 +113,13 @@
             }
         };
         try {
+            if (companyEl) {
+                const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
+                const companyName = String(companyEl.getAttribute('data-company-name') || '').trim();
+                if (companyId && companyName) {
+                    localStorage.setItem(lastCompanyStorageKey, JSON.stringify({ id: companyId, name: companyName }));
+                }
+            }
             const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
             if (parsed && parsed.id && parsed.name) {
                 const trackUrl = `${trackUrlBase}?company=${encodeURIComponent(parsed.id)}`;

@@ -124,8 +124,14 @@
         </form>
     </div>
 </main>
+<div id="publicRequestCompany"
+     class="hidden"
+     th:if="${company != null && company.id != null && company.name != null}"
+     th:attr="data-company-id=${company.id},data-company-name=${company.name}">
+</div>
 <script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function () {
+        const companyEl = document.getElementById('publicRequestCompany');
         const dimensions = document.querySelector('input[name="dimensions"]');
         const deadline = document.querySelector('input[name="deadline"]');
         const notes = document.querySelector('textarea[name="notes"]');
@@ -157,6 +163,18 @@
         const quantity = document.querySelector('input[name="quantity"]');
         const briefHint = document.getElementById('publicOrderBriefHint');
         const insertBriefTemplate = document.getElementById('insertBriefTemplate');
+
+        try {
+            if (companyEl) {
+                const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
+                const companyName = String(companyEl.getAttribute('data-company-name') || '').trim();
+                if (companyId && companyName) {
+                    localStorage.setItem('printflow.public.lastCompany', JSON.stringify({ id: companyId, name: companyName }));
+                }
+            }
+        } catch (e) {
+            // ignore localStorage/parse issues
+        }
 
         function updatePublicSmartHint() {
             const missing = [];
