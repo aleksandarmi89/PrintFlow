@@ -65,6 +65,19 @@
             const companyEl = document.getElementById('publicFeedbackCompany');
             const btn = document.getElementById('designFeedbackTrackBtn');
             const clearBtn = document.getElementById('designFeedbackClearHelperBtn');
+            const hasAnyHelperData = function () {
+                try {
+                    return Boolean(
+                        localStorage.getItem('printflow.public.lastCompany') ||
+                        localStorage.getItem('printflow.track.recentCodes') ||
+                        localStorage.getItem('printflow.track.companyId') ||
+                        localStorage.getItem('printflow.public.requester') ||
+                        localStorage.getItem('printflow.public.contactIntent')
+                    );
+                } catch (e) {
+                    return false;
+                }
+            };
             try {
                 if (companyEl) {
                     const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
@@ -73,15 +86,15 @@
                         localStorage.setItem('printflow.public.lastCompany', JSON.stringify({ id: companyId, name: companyName }));
                     }
                 }
+                if (clearBtn && hasAnyHelperData()) {
+                    clearBtn.classList.remove('hidden');
+                }
                 if (!btn) return;
                 const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
                 if (!parsed || !parsed.id) return;
                 const currentHref = btn.getAttribute('href') || '/public/track';
                 const separator = currentHref.includes('?') ? '&' : '?';
                 btn.setAttribute('href', `${currentHref}${separator}company=${encodeURIComponent(parsed.id)}`);
-                if (clearBtn) {
-                    clearBtn.classList.remove('hidden');
-                }
             } catch (e) {
                 // ignore localStorage/parse issues
             }
