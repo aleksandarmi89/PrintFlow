@@ -49,11 +49,24 @@
             </div>
         </div>
     </div>
+    <div id="publicFeedbackCompany"
+         class="hidden"
+         th:if="${publicCompanyId != null && publicCompanyName != null}"
+         th:attr="data-company-id=${publicCompanyId},data-company-name=${publicCompanyName}">
+    </div>
     <script>
         (function () {
+            const companyEl = document.getElementById('publicFeedbackCompany');
             const btn = document.getElementById('designFeedbackTrackBtn');
-            if (!btn) return;
             try {
+                if (companyEl) {
+                    const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
+                    const companyName = String(companyEl.getAttribute('data-company-name') || '').trim();
+                    if (companyId && companyName) {
+                        localStorage.setItem('printflow.public.lastCompany', JSON.stringify({ id: companyId, name: companyName }));
+                    }
+                }
+                if (!btn) return;
                 const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
                 if (!parsed || !parsed.id) return;
                 const currentHref = btn.getAttribute('href') || '/public/track';

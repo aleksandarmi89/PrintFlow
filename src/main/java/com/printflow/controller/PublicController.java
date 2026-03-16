@@ -208,6 +208,10 @@ public class PublicController extends BaseController {
             model.addAttribute("companyBrand", companyBrandingService.toBranding(orderEntity.getCompany(), normalizedToken, "order"));
             model.addAttribute("companyCurrency", orderEntity.getCompany() != null && orderEntity.getCompany().getCurrency() != null
                 ? orderEntity.getCompany().getCurrency() : "RSD");
+            if (orderEntity.getCompany() != null) {
+                model.addAttribute("publicCompanyId", orderEntity.getCompany().getId());
+                model.addAttribute("publicCompanyName", orderEntity.getCompany().getName());
+            }
             model.addAttribute("publicAllowedFileTypes", publicAllowedFileTypes);
             model.addAttribute("publicMaxFileSizeLabel", formatBytes(publicMaxFileSize));
             model.addAttribute("publicMaxFilesPerOrder", publicMaxFilesPerOrder);
@@ -264,8 +268,13 @@ public class PublicController extends BaseController {
             }
             }
             WorkOrderDTO order = workOrderService.getWorkOrderByPublicToken(normalizedToken);
+            com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityByPublicToken(normalizedToken);
             String normalizedLang = normalizePublicLang(lang);
             model.addAttribute("langParam", normalizedLang != null ? normalizedLang : "sr");
+            if (orderEntity.getCompany() != null) {
+                model.addAttribute("publicCompanyId", orderEntity.getCompany().getId());
+                model.addAttribute("publicCompanyName", orderEntity.getCompany().getName());
+            }
             
             // Procesuiraj odobrenje
             workOrderService.approveDesign(order.getId(), normalizedToken, approved, comment);

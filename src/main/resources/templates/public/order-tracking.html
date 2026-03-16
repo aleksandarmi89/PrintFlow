@@ -598,6 +598,11 @@
 </main>
 
 <div th:replace="~{layout/footer :: footer}"></div>
+<div id="publicOrderCompany"
+     class="hidden"
+     th:if="${publicCompanyId != null && publicCompanyName != null}"
+     th:attr="data-company-id=${publicCompanyId},data-company-name=${publicCompanyName}">
+</div>
 
 <div id="i18n"
      th:attr="data-file-too-large=#{order_tracking.js_file_too_large},
@@ -621,6 +626,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
+        const publicOrderCompany = document.getElementById('publicOrderCompany');
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('referenceFiles');
         const selectBtn = document.getElementById('selectFilesBtn');
@@ -661,6 +667,13 @@
         let descriptions = [];
 
         try {
+            if (publicOrderCompany) {
+                const companyId = String(publicOrderCompany.getAttribute('data-company-id') || '').trim();
+                const companyName = String(publicOrderCompany.getAttribute('data-company-name') || '').trim();
+                if (companyId && companyName) {
+                    localStorage.setItem('printflow.public.lastCompany', JSON.stringify({ id: companyId, name: companyName }));
+                }
+            }
             const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
             if (trackLinks.length > 0) {
                 const href = (parsed && parsed.id) ? `/public/track?company=${encodeURIComponent(parsed.id)}` : '/public/track';
