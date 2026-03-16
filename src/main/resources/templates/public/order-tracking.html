@@ -100,6 +100,28 @@
             </div>
         </div>
 
+        <!-- Smart next actions -->
+        <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 mb-6">
+            <h2 class="text-sm font-semibold text-blue-900" th:text="#{order_not_found.smart.intent_label}">What do you want to do next?</h2>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <a th:href="@{/public/track}"
+                   class="inline-flex rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                   th:text="#{order_not_found.track_another}">
+                    Track another order
+                </a>
+                <a th:href="@{/public/}"
+                   class="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100"
+                   th:text="#{order_not_found.public_home}">
+                    Public home
+                </a>
+                <a th:href="@{/public/contact}"
+                   class="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100"
+                   th:text="#{order_not_found.contact}">
+                    Contact
+                </a>
+            </div>
+        </div>
+
         <!-- Items Summary -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4" th:text="#{orders.items.title}">Items</h2>
