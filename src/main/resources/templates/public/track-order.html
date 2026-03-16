@@ -356,7 +356,30 @@
                 submitLoading: i18nEl?.getAttribute('data-submit-loading') || 'Searching...'
             };
             const recentCodesStorageKey = 'printflow.track.recentCodes';
+            const trackCompanyStorageKey = 'printflow.track.companyId';
+            const publicLastCompanyKey = 'printflow.public.lastCompany';
+            const requesterStorageKey = 'printflow.public.requester';
+            const contactIntentStorageKey = 'printflow.public.contactIntent';
             let recentCodes = [];
+
+            function hasAnyHelperData() {
+                try {
+                    return Boolean(
+                        localStorage.getItem(recentCodesStorageKey) ||
+                        localStorage.getItem(trackCompanyStorageKey) ||
+                        localStorage.getItem(publicLastCompanyKey) ||
+                        localStorage.getItem(requesterStorageKey) ||
+                        localStorage.getItem(contactIntentStorageKey)
+                    );
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function updateClearMemoryVisibility() {
+                if (!clearTrackMemoryBtn) return;
+                clearTrackMemoryBtn.classList.toggle('hidden', !hasAnyHelperData());
+            }
 
             function updateCompanyActions() {
                 if (!openCompanyRequestBtn) return;
@@ -466,16 +489,11 @@
                 recentTrackCodesList.innerHTML = '';
                 if (!recentCodes.length) {
                     recentTrackCodesWrap.classList.add('hidden');
-                    if (clearTrackMemoryBtn) {
-                        const hasRememberedCompany = !!(select && String(select.value || '').trim().length > 0);
-                        clearTrackMemoryBtn.classList.toggle('hidden', !hasRememberedCompany);
-                    }
+                    updateClearMemoryVisibility();
                     return;
                 }
                 recentTrackCodesWrap.classList.remove('hidden');
-                if (clearTrackMemoryBtn) {
-                    clearTrackMemoryBtn.classList.remove('hidden');
-                }
+                updateClearMemoryVisibility();
                 recentCodes.forEach(code => {
                     const chip = document.createElement('button');
                     chip.type = 'button';
@@ -569,6 +587,7 @@
                     render('');
                     updateCodeSmartHint();
                     updateCompanyActions();
+                    updateClearMemoryVisibility();
                 });
             }
             const trackingForm = trackingCode ? trackingCode.closest('form') : null;
@@ -585,8 +604,7 @@
                 });
             }
             try {
-                const storageKey = 'printflow.track.companyId';
-                const publicLastCompanyKey = 'printflow.public.lastCompany';
+                const storageKey = trackCompanyStorageKey;
                 const currentValue = select.value || '';
                 if (currentValue) {
                     const selectedOption = select.options[select.selectedIndex];
@@ -635,6 +653,7 @@
                         localStorage.removeItem(storageKey);
                     }
                     updateCompanyActions();
+                    updateClearMemoryVisibility();
                 });
             } catch (e) {
                 // localStorage may be disabled; continue without persistence
@@ -644,11 +663,12 @@
                     if (!select) return;
                     select.value = '';
                     try {
-                        localStorage.removeItem('printflow.track.companyId');
-                        localStorage.removeItem('printflow.public.lastCompany');
+                        localStorage.removeItem(trackCompanyStorageKey);
+                        localStorage.removeItem(publicLastCompanyKey);
                     } catch (e) {}
                     updateCompanyActions();
                     if (companyMemoryHint) companyMemoryHint.textContent = '';
+                    updateClearMemoryVisibility();
                     if (select.form && typeof select.form.requestSubmit === 'function') {
                         select.form.requestSubmit();
                     }
@@ -665,6 +685,7 @@
             renderRecentCodes();
             render('');
             updateCodeSmartHint();
+            updateClearMemoryVisibility();
         })();
     </script>
 </body>
