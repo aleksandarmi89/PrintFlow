@@ -65,47 +65,60 @@
             const companyEl = document.getElementById('publicFeedbackCompany');
             const btn = document.getElementById('designFeedbackTrackBtn');
             const clearBtn = document.getElementById('designFeedbackClearHelperBtn');
+            const lastCompanyStorageKey = 'printflow.public.lastCompany';
+            const recentCodesStorageKey = 'printflow.track.recentCodes';
+            const trackCompanyStorageKey = 'printflow.track.companyId';
+            const requesterStorageKey = 'printflow.public.requester';
+            const contactIntentStorageKey = 'printflow.public.contactIntent';
+
             const hasAnyHelperData = function () {
                 try {
                     return Boolean(
-                        localStorage.getItem('printflow.public.lastCompany') ||
-                        localStorage.getItem('printflow.track.recentCodes') ||
-                        localStorage.getItem('printflow.track.companyId') ||
-                        localStorage.getItem('printflow.public.requester') ||
-                        localStorage.getItem('printflow.public.contactIntent')
+                        localStorage.getItem(lastCompanyStorageKey) ||
+                        localStorage.getItem(recentCodesStorageKey) ||
+                        localStorage.getItem(trackCompanyStorageKey) ||
+                        localStorage.getItem(requesterStorageKey) ||
+                        localStorage.getItem(contactIntentStorageKey)
                     );
                 } catch (e) {
                     return false;
                 }
             };
+
+            function updateClearVisibility() {
+                if (!clearBtn) return;
+                clearBtn.classList.toggle('hidden', !hasAnyHelperData());
+            }
             try {
                 if (companyEl) {
                     const companyId = String(companyEl.getAttribute('data-company-id') || '').trim();
                     const companyName = String(companyEl.getAttribute('data-company-name') || '').trim();
                     if (companyId && companyName) {
-                        localStorage.setItem('printflow.public.lastCompany', JSON.stringify({ id: companyId, name: companyName }));
+                        localStorage.setItem(lastCompanyStorageKey, JSON.stringify({ id: companyId, name: companyName }));
                     }
                 }
-                if (clearBtn && hasAnyHelperData()) {
-                    clearBtn.classList.remove('hidden');
-                }
+                updateClearVisibility();
                 if (!btn) return;
-                const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
+                const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
                 if (!parsed || !parsed.id) return;
                 const currentHref = btn.getAttribute('href') || '/public/track';
+                const hasCompanyParam = /([?&])company=/.test(currentHref);
                 const separator = currentHref.includes('?') ? '&' : '?';
-                btn.setAttribute('href', `${currentHref}${separator}company=${encodeURIComponent(parsed.id)}`);
+                const resolvedHref = hasCompanyParam
+                    ? currentHref.replace(/([?&])company=[^&]*/g, `$1company=${encodeURIComponent(parsed.id)}`)
+                    : `${currentHref}${separator}company=${encodeURIComponent(parsed.id)}`;
+                btn.setAttribute('href', resolvedHref);
             } catch (e) {
                 // ignore localStorage/parse issues
             }
             if (clearBtn) {
                 clearBtn.addEventListener('click', function () {
                     try {
-                        localStorage.removeItem('printflow.public.lastCompany');
-                        localStorage.removeItem('printflow.track.recentCodes');
-                        localStorage.removeItem('printflow.track.companyId');
-                        localStorage.removeItem('printflow.public.requester');
-                        localStorage.removeItem('printflow.public.contactIntent');
+                        localStorage.removeItem(lastCompanyStorageKey);
+                        localStorage.removeItem(recentCodesStorageKey);
+                        localStorage.removeItem(trackCompanyStorageKey);
+                        localStorage.removeItem(requesterStorageKey);
+                        localStorage.removeItem(contactIntentStorageKey);
                     } catch (e) {
                         // ignore localStorage issues
                     }
@@ -113,7 +126,7 @@
                         const currentHref = btn.getAttribute('href') || '/public/track';
                         btn.setAttribute('href', currentHref.replace(/([?&])company=[^&]*/g, '').replace(/[?&]$/, ''));
                     }
-                    clearBtn.classList.add('hidden');
+                    updateClearVisibility();
                 });
             }
         })();
