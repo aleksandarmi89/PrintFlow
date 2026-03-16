@@ -80,6 +80,7 @@
               data-cta-contact=#{public.order.success.smart.intent.cta.contact},
               data-new-request-url=@{/p/{slug}/order(slug=${companySlug})},
               data-url-track=@{/public/track},
+              data-url-contact=@{/public/contact(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
               data-last-company-ready=#{contact.smart.last_company_ready}">
 </div>
 <div id="publicSuccessCompany"
@@ -118,7 +119,7 @@
                 hint: i18nEl.getAttribute('data-hint-new-request')
             },
             contact: {
-                href: '/public/contact',
+                href: i18nEl.getAttribute('data-url-contact') || '/public/contact',
                 cta: i18nEl.getAttribute('data-cta-contact'),
                 hint: i18nEl.getAttribute('data-hint-contact')
             }
