@@ -58,6 +58,20 @@
                                     Company
                                 </option>
                             </select>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <button id="resetCompanySelectionBtn"
+                                        type="button"
+                                        class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                        th:text="#{track.smart.reset_company}">
+                                    Reset company
+                                </button>
+                                <a id="openCompanyRequestBtn"
+                                   href="/public/companies"
+                                   class="inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                                   th:text="#{track.smart.open_request_disabled}">
+                                    Select company first
+                                </a>
+                            </div>
                         </div>
                         <button type="submit"
                                 class="w-full bg-gray-100 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-200">
@@ -235,7 +249,9 @@
                   data-paste-failed=#{track.smart.paste_failed},
                   data-paste-unsupported=#{track.smart.paste_unsupported},
                   data-company-remembered=#{track.smart.company_remembered},
-                  data-company-remembered-invalid=#{track.smart.company_remembered_invalid}">
+                  data-company-remembered-invalid=#{track.smart.company_remembered_invalid},
+                  data-open-request-active=#{track.smart.open_request_active},
+                  data-open-request-disabled=#{track.smart.open_request_disabled}">
     </div>
     <script>
         (function () {
@@ -243,6 +259,8 @@
             const select = document.getElementById('companySelect');
             const searchInfo = document.getElementById('companySearchInfo');
             const companyMemoryHint = document.getElementById('companyMemoryHint');
+            const resetCompanySelectionBtn = document.getElementById('resetCompanySelectionBtn');
+            const openCompanyRequestBtn = document.getElementById('openCompanyRequestBtn');
             const trackingCode = document.getElementById('trackingCode');
             const pasteTrackingCodeBtn = document.getElementById('pasteTrackingCodeBtn');
             const pasteTrackingCodeHint = document.getElementById('pasteTrackingCodeHint');
@@ -270,8 +288,24 @@
                 pasteFailed: i18nEl?.getAttribute('data-paste-failed') || 'Unable to paste automatically. Paste manually.',
                 pasteUnsupported: i18nEl?.getAttribute('data-paste-unsupported') || 'Clipboard paste is not available in this browser context.',
                 companyRemembered: i18nEl?.getAttribute('data-company-remembered') || 'Loaded your last selected company.',
-                companyRememberedInvalid: i18nEl?.getAttribute('data-company-remembered-invalid') || 'Previously selected company is no longer available.'
+                companyRememberedInvalid: i18nEl?.getAttribute('data-company-remembered-invalid') || 'Previously selected company is no longer available.',
+                openRequestActive: i18nEl?.getAttribute('data-open-request-active') || 'Open request form',
+                openRequestDisabled: i18nEl?.getAttribute('data-open-request-disabled') || 'Select company first'
             };
+
+            function updateCompanyActions() {
+                if (!openCompanyRequestBtn) return;
+                const selected = String(select?.value || '');
+                if (!selected) {
+                    openCompanyRequestBtn.setAttribute('href', '/public/companies');
+                    openCompanyRequestBtn.textContent = i18n.openRequestDisabled;
+                    openCompanyRequestBtn.className = 'inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50';
+                    return;
+                }
+                openCompanyRequestBtn.setAttribute('href', `/p/company/${selected}/order`);
+                openCompanyRequestBtn.textContent = i18n.openRequestActive;
+                openCompanyRequestBtn.className = 'inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100';
+            }
 
             function render(query) {
                 const q = (query || '').trim().toLowerCase();
@@ -292,6 +326,7 @@
                     const noMatch = searchInfo.getAttribute('data-no-match') || 'No matching companies.';
                     searchInfo.textContent = visible > 0 ? `${label} ${visible}/${total}` : noMatch;
                 }
+                updateCompanyActions();
             }
             function updateCodeSmartHint() {
                 if (!trackingCodeSmartHint || !trackingCode) return;
@@ -386,9 +421,19 @@
                     } else {
                         localStorage.removeItem(storageKey);
                     }
+                    updateCompanyActions();
                 });
             } catch (e) {
                 // localStorage may be disabled; continue without persistence
+            }
+            if (resetCompanySelectionBtn) {
+                resetCompanySelectionBtn.addEventListener('click', function () {
+                    if (!select) return;
+                    select.value = '';
+                    try { localStorage.removeItem('printflow.track.companyId'); } catch (e) {}
+                    updateCompanyActions();
+                    if (companyMemoryHint) companyMemoryHint.textContent = '';
+                });
             }
             render('');
             updateCodeSmartHint();
