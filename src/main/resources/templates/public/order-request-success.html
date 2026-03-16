@@ -122,7 +122,13 @@
             }
             const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
             if (parsed && parsed.id && parsed.name) {
-                const trackUrl = `${trackUrlBase}?company=${encodeURIComponent(parsed.id)}`;
+                const baseTrackUrl = String(trackUrlBase || '/public/track');
+                const encodedId = encodeURIComponent(String(parsed.id));
+                const hasCompanyParam = /([?&])company=/.test(baseTrackUrl);
+                const separator = baseTrackUrl.includes('?') ? '&' : '?';
+                const trackUrl = hasCompanyParam
+                    ? baseTrackUrl.replace(/([?&])company=[^&]*/g, `$1company=${encodedId}`)
+                    : `${baseTrackUrl}${separator}company=${encodedId}`;
                 map.track.href = trackUrl;
                 if (trackOrderBtn) {
                     trackOrderBtn.setAttribute('href', trackUrl);
