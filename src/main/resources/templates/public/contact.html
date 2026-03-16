@@ -43,6 +43,12 @@
                         </a>
                     </div>
                     <p id="contactIntentMemoryHint" class="mt-2 hidden text-xs text-emerald-700"></p>
+                    <button id="contactResetMemoryBtn"
+                            type="button"
+                            class="mt-2 hidden text-xs text-gray-600 underline hover:text-gray-800"
+                            th:text="#{contact.smart.reset_memory}">
+                        Reset saved helper choices
+                    </button>
                     <p id="contactSmartAdvice" class="mt-2 text-xs text-blue-900"></p>
                 </div>
             </div>
@@ -135,6 +141,7 @@
             const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
             const lastCompanyHint = document.getElementById('contactLastCompanyHint');
             const intentMemoryHint = document.getElementById('contactIntentMemoryHint');
+            const resetMemoryBtn = document.getElementById('contactResetMemoryBtn');
             const i18nEl = document.getElementById('contactSmartI18n');
             if (!select || !advice || !cta || !i18nEl) return;
             const lastCompanyStorageKey = 'printflow.public.lastCompany';
@@ -227,8 +234,33 @@
                         intentMemoryHint.classList.remove('hidden');
                     }
                 }
+                const rememberedCompany = getLastCompany();
+                if ((rememberedIntent && map[rememberedIntent]) || rememberedCompany) {
+                    if (resetMemoryBtn) resetMemoryBtn.classList.remove('hidden');
+                }
             } catch (e) {
                 // ignore localStorage issues
+            }
+            if (resetMemoryBtn) {
+                resetMemoryBtn.addEventListener('click', function () {
+                    try {
+                        localStorage.removeItem(contactIntentStorageKey);
+                        localStorage.removeItem(lastCompanyStorageKey);
+                    } catch (e) {
+                        // ignore localStorage issues
+                    }
+                    select.value = 'other';
+                    if (intentMemoryHint) {
+                        intentMemoryHint.classList.add('hidden');
+                        intentMemoryHint.textContent = '';
+                    }
+                    if (lastCompanyHint) {
+                        lastCompanyHint.classList.add('hidden');
+                        lastCompanyHint.textContent = '';
+                    }
+                    resetMemoryBtn.classList.add('hidden');
+                    updateIntentHint();
+                });
             }
             updateIntentHint();
         })();
