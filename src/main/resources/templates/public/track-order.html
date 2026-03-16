@@ -227,9 +227,10 @@
                         </div>
                     </div>
                     
-                    <button type="submit" 
-                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span th:text="#{track.submit}">Track Order</span>
+                    <button id="trackSubmitBtn"
+                            type="submit"
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-70">
+                        <span id="trackSubmitBtnText" th:text="#{track.submit}">Track Order</span>
                     </button>
                     <p id="trackNextStepHint" class="text-xs text-gray-600"></p>
                 </form>
@@ -275,7 +276,8 @@
                   data-company-remembered-invalid=#{track.smart.company_remembered_invalid},
                   data-recent-codes=#{track.smart.recent_codes},
                   data-open-request-active=#{track.smart.open_request_active},
-                  data-open-request-disabled=#{track.smart.open_request_disabled}">
+                  data-open-request-disabled=#{track.smart.open_request_disabled},
+                  data-submit-loading=#{track.smart.submit_loading}">
     </div>
     <script>
         (function () {
@@ -293,6 +295,8 @@
             const clearRecentTrackCodesBtn = document.getElementById('clearRecentTrackCodesBtn');
             const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
             const trackNextStepHint = document.getElementById('trackNextStepHint');
+            const trackSubmitBtn = document.getElementById('trackSubmitBtn');
+            const trackSubmitBtnText = document.getElementById('trackSubmitBtnText');
             const i18nEl = document.getElementById('trackSmartI18n');
             if (!search || !select) return;
 
@@ -318,7 +322,8 @@
                 companyRememberedInvalid: i18nEl?.getAttribute('data-company-remembered-invalid') || 'Previously selected company is no longer available.',
                 recentCodes: i18nEl?.getAttribute('data-recent-codes') || 'Recent codes',
                 openRequestActive: i18nEl?.getAttribute('data-open-request-active') || 'Open request form',
-                openRequestDisabled: i18nEl?.getAttribute('data-open-request-disabled') || 'Select company first'
+                openRequestDisabled: i18nEl?.getAttribute('data-open-request-disabled') || 'Select company first',
+                submitLoading: i18nEl?.getAttribute('data-submit-loading') || 'Searching...'
             };
             const recentCodesStorageKey = 'printflow.track.recentCodes';
             let recentCodes = [];
@@ -494,6 +499,12 @@
                 trackingForm.addEventListener('submit', function () {
                     const normalized = (trackingCode.value || '').trim().replace(/\s+/g, '').toUpperCase();
                     saveRecentCode(normalized);
+                    if (trackSubmitBtn) {
+                        trackSubmitBtn.disabled = true;
+                    }
+                    if (trackSubmitBtnText) {
+                        trackSubmitBtnText.textContent = i18n.submitLoading;
+                    }
                 });
             }
             try {
