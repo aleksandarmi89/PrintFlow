@@ -53,11 +53,16 @@
                                 <option value="" th:text="#{track.select_company_placeholder}">All companies (PrintFlow)</option>
                                 <option th:each="c : ${trackCompanies}"
                                         th:value="${c.id}"
-                                        th:selected="${companyParam != null && companyParam == c.id}"
+                                        th:selected="${(companyParam != null && companyParam == c.id) || (companyParam == null && trackCompany != null && trackCompany.id == c.id)}"
                                         th:text="${c.name}">
                                     Company
                                 </option>
                             </select>
+                            <p th:if="${companyParam == null && trackCompany != null && tokenParam != null && !#strings.isEmpty(tokenParam)}"
+                               class="mt-1 text-xs text-emerald-700"
+                               th:text="#{track.smart.company_prefilled}">
+                                Company is pre-selected from your tracking link.
+                            </p>
                             <div class="mt-2 flex flex-wrap gap-2">
                                 <button id="resetCompanySelectionBtn"
                                         type="button"
