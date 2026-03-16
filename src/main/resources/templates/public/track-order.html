@@ -218,6 +218,12 @@
                             <span th:text="#{track.code_example}">Example:</span> <span class="font-mono">ORD-123456-789</span>
                         </p>
                         <p id="pasteTrackingCodeHint" class="mt-1 text-xs text-gray-500"></p>
+                        <button id="clearTrackMemoryBtn"
+                                type="button"
+                                class="mt-1 hidden text-xs text-gray-600 underline hover:text-gray-800"
+                                th:text="#{track.smart.clear_memory}">
+                            Clear helper data
+                        </button>
                         <div id="recentTrackCodesWrap" class="mt-2 hidden">
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-xs font-medium text-gray-600" th:text="#{track.smart.recent_codes}">
@@ -314,6 +320,7 @@
             const recentTrackCodesWrap = document.getElementById('recentTrackCodesWrap');
             const recentTrackCodesList = document.getElementById('recentTrackCodesList');
             const clearRecentTrackCodesBtn = document.getElementById('clearRecentTrackCodesBtn');
+            const clearTrackMemoryBtn = document.getElementById('clearTrackMemoryBtn');
             const lastCodeHint = document.getElementById('lastCodeHint');
             const trackingCodeSmartHint = document.getElementById('trackingCodeSmartHint');
             const trackNextStepHint = document.getElementById('trackNextStepHint');
@@ -459,9 +466,16 @@
                 recentTrackCodesList.innerHTML = '';
                 if (!recentCodes.length) {
                     recentTrackCodesWrap.classList.add('hidden');
+                    if (clearTrackMemoryBtn) {
+                        const hasRememberedCompany = !!(select && String(select.value || '').trim().length > 0);
+                        clearTrackMemoryBtn.classList.toggle('hidden', !hasRememberedCompany);
+                    }
                     return;
                 }
                 recentTrackCodesWrap.classList.remove('hidden');
+                if (clearTrackMemoryBtn) {
+                    clearTrackMemoryBtn.classList.remove('hidden');
+                }
                 recentCodes.forEach(code => {
                     const chip = document.createElement('button');
                     chip.type = 'button';
@@ -530,6 +544,31 @@
                         // ignore storage failures
                     }
                     renderRecentCodes();
+                });
+            }
+            if (clearTrackMemoryBtn) {
+                clearTrackMemoryBtn.addEventListener('click', function () {
+                    recentCodes = [];
+                    try {
+                        localStorage.removeItem(recentCodesStorageKey);
+                        localStorage.removeItem('printflow.track.companyId');
+                        localStorage.removeItem('printflow.public.lastCompany');
+                    } catch (e) {
+                        // ignore storage failures
+                    }
+                    if (search) search.value = '';
+                    if (select) select.value = '';
+                    if (trackingCode) trackingCode.value = '';
+                    if (companyMemoryHint) companyMemoryHint.textContent = '';
+                    if (lastCodeHint) {
+                        lastCodeHint.textContent = '';
+                        lastCodeHint.classList.add('hidden');
+                    }
+                    if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = '';
+                    renderRecentCodes();
+                    render('');
+                    updateCodeSmartHint();
+                    updateCompanyActions();
                 });
             }
             const trackingForm = trackingCode ? trackingCode.closest('form') : null;
