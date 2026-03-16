@@ -218,6 +218,16 @@
             const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
             if (!btn) return;
             try {
+                const hasHelperData = !!(
+                    localStorage.getItem('printflow.public.lastCompany') ||
+                    localStorage.getItem('printflow.track.recentCodes') ||
+                    localStorage.getItem('printflow.track.companyId') ||
+                    localStorage.getItem('printflow.public.requester') ||
+                    localStorage.getItem('printflow.public.contactIntent')
+                );
+                if (clearBtn && hasHelperData) {
+                    clearBtn.classList.remove('hidden');
+                }
                 const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
                 if (!parsed || !parsed.id || !parsed.name) {
                     trackLinks.forEach(link => link.setAttribute('href', '/public/track'));
@@ -228,9 +238,6 @@
                 btn.setAttribute('href', `/p/company/${encodedId}/order`);
                 btn.textContent = `${btn.textContent}: ${parsed.name}`;
                 btn.classList.remove('hidden');
-                if (clearBtn) {
-                    clearBtn.classList.remove('hidden');
-                }
             } catch (e) {
                 // ignore localStorage/parse issues
             }
