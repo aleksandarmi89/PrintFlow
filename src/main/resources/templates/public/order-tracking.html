@@ -22,7 +22,7 @@
                 <span class="text-xl font-bold text-gray-800" th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</span>
             </div>
             <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-                <a th:href="@{/public/track}" class="text-blue-600 hover:text-blue-800 font-medium" th:text="#{auth.back_home}">
+                <a th:href="@{/public/track}" class="text-blue-600 hover:text-blue-800 font-medium track-link-with-last-company" th:text="#{auth.back_home}">
                     ← Back to home
                 </a>
                 <div class="flex items-center gap-2 text-xs text-gray-600">
@@ -130,7 +130,7 @@
             <h2 class="text-sm font-semibold text-blue-900" th:text="#{order_not_found.smart.intent_label}">What do you want to do next?</h2>
             <div class="mt-3 flex flex-wrap gap-2">
                 <a th:href="@{/public/track}"
-                   class="inline-flex rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                   class="inline-flex rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 track-link-with-last-company"
                    th:text="#{order_not_found.track_another}">
                     Track another order
                 </a>
@@ -620,6 +620,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('referenceFiles');
         const selectBtn = document.getElementById('selectFilesBtn');
@@ -658,6 +659,16 @@
         };
         let selectedFiles = [];
         let descriptions = [];
+
+        try {
+            const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
+            if (trackLinks.length > 0) {
+                const href = (parsed && parsed.id) ? `/public/track?company=${encodeURIComponent(parsed.id)}` : '/public/track';
+                trackLinks.forEach(link => link.setAttribute('href', href));
+            }
+        } catch (e) {
+            // ignore localStorage/parse issues
+        }
 
         if (!dropzone || !fileInput || !selectBtn || !fileList) {
             return;
