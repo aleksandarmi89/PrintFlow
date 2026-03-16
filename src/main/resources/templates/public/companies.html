@@ -69,13 +69,13 @@
                     th:text="#{public.companies.clear_last}">
                 Forget
             </button>
-            <button id="clearHelperDataBtn"
-                    type="button"
-                    class="ml-2 font-semibold underline hover:no-underline"
-                    th:text="#{public.companies.clear_helper_data}">
-                Clear helper data
-            </button>
         </div>
+        <button id="clearHelperDataBtn"
+                type="button"
+                class="mt-2 hidden text-xs font-semibold text-gray-600 underline hover:text-gray-800"
+                th:text="#{public.companies.clear_helper_data}">
+            Clear helper data
+        </button>
         <div id="companyNoMatch"
              class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             <span th:text="#{public.companies.no_match}">No companies match your search.</span>
@@ -153,6 +153,29 @@
         const requestLinks = Array.from(document.querySelectorAll('.company-request-link'));
         const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
+        const recentCodesStorageKey = 'printflow.track.recentCodes';
+        const trackCompanyStorageKey = 'printflow.track.companyId';
+        const requesterStorageKey = 'printflow.public.requester';
+        const contactIntentStorageKey = 'printflow.public.contactIntent';
+
+        function hasAnyHelperData() {
+            try {
+                return Boolean(
+                    localStorage.getItem(lastCompanyStorageKey) ||
+                    localStorage.getItem(recentCodesStorageKey) ||
+                    localStorage.getItem(trackCompanyStorageKey) ||
+                    localStorage.getItem(requesterStorageKey) ||
+                    localStorage.getItem(contactIntentStorageKey)
+                );
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function updateClearHelperDataVisibility() {
+            if (!clearHelperDataBtn) return;
+            clearHelperDataBtn.classList.toggle('hidden', !hasAnyHelperData());
+        }
 
         function applyFilter() {
             const term = (searchInput?.value || '').trim().toLowerCase();
@@ -223,19 +246,21 @@
             trackLinks.forEach(link => {
                 link.setAttribute('href', '/public/track');
             });
+            updateClearHelperDataVisibility();
         }
 
         function clearAllHelperData() {
             try {
                 localStorage.removeItem(lastCompanyStorageKey);
-                localStorage.removeItem('printflow.track.recentCodes');
-                localStorage.removeItem('printflow.track.companyId');
-                localStorage.removeItem('printflow.public.requester');
-                localStorage.removeItem('printflow.public.contactIntent');
+                localStorage.removeItem(recentCodesStorageKey);
+                localStorage.removeItem(trackCompanyStorageKey);
+                localStorage.removeItem(requesterStorageKey);
+                localStorage.removeItem(contactIntentStorageKey);
             } catch (e) {
                 // ignore storage failures
             }
             clearLastCompany();
+            updateClearHelperDataVisibility();
         }
 
         function applyRememberedCompanyToTrackLinks(entry) {
@@ -266,6 +291,7 @@
                 } catch (e) {
                     // ignore storage failures
                 }
+                updateClearHelperDataVisibility();
             });
         });
         if (lastCompanyClear) {
@@ -278,6 +304,7 @@
         showLastCompanyHint(rememberedCompany);
         highlightLastUsedCard(rememberedCompany);
         applyRememberedCompanyToTrackLinks(rememberedCompany);
+        updateClearHelperDataVisibility();
         if (cards.length > 0) applyFilter();
     });
 </script>
