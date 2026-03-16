@@ -89,6 +89,14 @@
                     <span th:text="#{landing.choose_company_cta}">Choose company</span>
                 </a>
             </div>
+            <div class="mt-3">
+                <a id="landingLastCompanyCta"
+                   href="/public/companies"
+                   class="hidden text-sm text-blue-700 hover:text-blue-800 hover:underline"
+                   th:text="#{landing.continue_last_company}">
+                    Continue with last selected company
+                </a>
+            </div>
         </div>
     </section>
 
@@ -197,5 +205,20 @@
     </section>
 
     <div th:replace="~{layout/footer :: footer}"></div>
+    <script>
+        (function () {
+            const btn = document.getElementById('landingLastCompanyCta');
+            if (!btn) return;
+            try {
+                const parsed = JSON.parse(localStorage.getItem('printflow.public.lastCompany') || '{}');
+                if (!parsed || !parsed.id || !parsed.name) return;
+                btn.setAttribute('href', `/p/company/${parsed.id}/order`);
+                btn.textContent = `${btn.textContent}: ${parsed.name}`;
+                btn.classList.remove('hidden');
+            } catch (e) {
+                // ignore localStorage/parse issues
+            }
+        })();
+    </script>
 </body>
 </html>
