@@ -51,6 +51,12 @@
                 </a>
             </div>
             <p id="successLastCompanyHint" class="mt-2 hidden text-xs text-emerald-700"></p>
+            <button id="successClearHelperDataBtn"
+                    type="button"
+                    class="mt-2 hidden text-xs text-gray-600 underline hover:text-gray-800"
+                    th:text="#{common.clear_helper_data}">
+                Clear helper data
+            </button>
             <p id="successNextStepHint" class="mt-2 text-xs text-blue-900"></p>
         </div>
         <p class="mt-4 text-xs text-gray-500" th:text="#{public.order.success.smart.tip}">
@@ -88,6 +94,7 @@
         const hint = document.getElementById('successNextStepHint');
         const trackOrderBtn = document.getElementById('successTrackOrderBtn');
         const lastCompanyHint = document.getElementById('successLastCompanyHint');
+        const clearHelperBtn = document.getElementById('successClearHelperDataBtn');
         const companyEl = document.getElementById('publicSuccessCompany');
         const i18nEl = document.getElementById('orderSuccessSmartI18n');
         if (!select || !cta || !hint || !i18nEl) return;
@@ -138,9 +145,35 @@
                     lastCompanyHint.textContent = `${label} ${parsed.name}`;
                     lastCompanyHint.classList.remove('hidden');
                 }
+                if (clearHelperBtn) {
+                    clearHelperBtn.classList.remove('hidden');
+                }
             }
         } catch (e) {
             // ignore localStorage/parse issues
+        }
+        if (clearHelperBtn) {
+            clearHelperBtn.addEventListener('click', function () {
+                try {
+                    localStorage.removeItem(lastCompanyStorageKey);
+                    localStorage.removeItem('printflow.track.recentCodes');
+                    localStorage.removeItem('printflow.track.companyId');
+                    localStorage.removeItem('printflow.public.requester');
+                    localStorage.removeItem('printflow.public.contactIntent');
+                } catch (e) {
+                    // ignore localStorage issues
+                }
+                map.track.href = trackUrlBase;
+                if (trackOrderBtn) {
+                    trackOrderBtn.setAttribute('href', trackUrlBase);
+                }
+                if (lastCompanyHint) {
+                    lastCompanyHint.classList.add('hidden');
+                    lastCompanyHint.textContent = '';
+                }
+                clearHelperBtn.classList.add('hidden');
+                update();
+            });
         }
 
         function update() {
