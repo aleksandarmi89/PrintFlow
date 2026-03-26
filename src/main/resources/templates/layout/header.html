@@ -71,7 +71,7 @@
                                   class="rounded-full bg-yellow-100 px-2 py-1 font-semibold text-yellow-800"
                                   th:text="#{email.header.smtp_missing}">SMTP NOT CONFIGURED</span>
                         </div>
-                        <a sec:authorize="!isAuthenticated()" th:href="@{/public/track}" class="flex items-center space-x-2">
+                        <a sec:authorize="!isAuthenticated()" th:href="@{/public/track(lang=${#locale.language})}" class="flex items-center space-x-2">
                             <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-11 w-auto object-contain">
                             <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 flex items-center justify-center">
                                 <img th:src="@{/images/app-logo-mark.svg}" alt="ProPrintFlow" class="h-12 w-auto object-contain"
@@ -86,7 +86,7 @@
                     
                     <!-- Desktop Navigation -->
                     <div class="hidden md:flex items-center gap-2 min-w-0">
-                        <a sec:authorize="!isAuthenticated()" th:href="@{/public/companies}"
+                        <a sec:authorize="!isAuthenticated()" th:href="@{/public/companies(lang=${#locale.language})}"
                            class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium shrink-0">
                             <span th:text="#{public.companies.nav}">Companies</span>
                         </a>
@@ -223,6 +223,10 @@
                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <span th:text="#{nav.settings}">Settings</span>
                                     </a>
+                                    <a th:href="@{/settings#password-settings}"
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <span th:text="#{auth.settings.change_password}">Change Password</span>
+                                    </a>
                                     <a sec:authorize="hasAnyAuthority('ADMIN','MANAGER','SUPER_ADMIN')" th:href="@{/admin/company}" 
                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <span th:text="#{nav.company_settings}">Company</span>
@@ -290,7 +294,7 @@
                 
                 <!-- Mobile menu -->
                 <div id="mobile-menu" class="hidden md:hidden py-2 border-t border-gray-200">
-                    <a sec:authorize="!isAuthenticated()" th:href="@{/public/companies}"
+                    <a sec:authorize="!isAuthenticated()" th:href="@{/public/companies(lang=${#locale.language})}"
                        class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                         <span th:text="#{public.companies.nav}">Companies</span>
                     </a>
@@ -407,6 +411,10 @@
                             <a th:href="@{/settings}"
                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <span th:text="#{nav.settings}">Settings</span>
+                            </a>
+                            <a th:href="@{/settings#password-settings}"
+                               class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <span th:text="#{auth.settings.change_password}">Change Password</span>
                             </a>
                             <form th:action="@{/logout}" method="post" class="mt-2">
                                 <button type="submit" 

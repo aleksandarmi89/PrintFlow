@@ -48,8 +48,12 @@ public class EmailOutboxService {
             return 0L;
         }
         int days = Math.max(0, olderThanDays);
+        if (days == 0) {
+            return emailOutboxRepository.deleteByCompany_IdAndStatus(
+                company.getId(), EmailOutboxStatus.FAILED);
+        }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(days);
-        return emailOutboxRepository.deleteByCompany_IdAndStatusAndCreatedAtBefore(
+        return emailOutboxRepository.deleteByCompany_IdAndStatusAndCreatedAtLessThanEqual(
             company.getId(), EmailOutboxStatus.FAILED, cutoff);
     }
 }

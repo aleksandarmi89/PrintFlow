@@ -56,6 +56,12 @@ public class CompanyBrandingService {
             company.getPhone(),
             company.getAddress(),
             company.getWebsite(),
+            company.getLegalName(),
+            company.getTaxId(),
+            company.getRegistrationNumber(),
+            company.getBillingEmail(),
+            company.getBankName(),
+            company.getBankAccount(),
             company.getPrimaryColor()
         );
     }

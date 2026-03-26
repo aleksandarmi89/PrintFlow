@@ -236,8 +236,8 @@ public class EmailSettingsController extends BaseController {
     }
 
     private int normalizeCleanupDays(int days) {
-        if (days < 1) {
-            return 1;
+        if (days < 0) {
+            return 0;
         }
         return Math.min(days, 3650);
     }

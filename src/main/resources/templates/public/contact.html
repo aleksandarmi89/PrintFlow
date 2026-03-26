@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
     <title th:text="#{contact.title} + ' - PrintFlow'">Contact - PrintFlow</title>
 </head>
@@ -36,7 +36,7 @@
                             </select>
                         </div>
                         <a id="contactSmartCta"
-                           th:href="@{/public/track}"
+                           th:href="@{/public/track(lang=${#locale.language})}"
                            class="inline-flex justify-center rounded-lg bg-white border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
                            th:text="#{contact.smart.intent.cta.tracking}">
                             Open tracking
@@ -101,10 +101,10 @@
 
                 <div class="mt-8 pt-6 border-t border-gray-200 text-center">
                     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <a th:href="@{/public/track}" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 track-link-with-last-company" th:text="#{contact.track_cta}">
+                        <a th:href="@{/public/track(lang=${#locale.language})}" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 track-link-with-last-company" th:text="#{contact.track_cta}">
                             Track an order instead
                         </a>
-                        <a th:href="@{/public/companies}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" th:text="#{contact.request_cta}">
+                        <a th:href="@{/public/companies(lang=${#locale.language})}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50" th:text="#{contact.request_cta}">
                             Submit request
                         </a>
                         <a th:href="${'mailto:' + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : (companyBrand != null && companyBrand.email != null ? companyBrand.email : #messages.msg('contact.email_value')))}"
@@ -150,22 +150,23 @@
             const recentCodesStorageKey = 'printflow.track.recentCodes';
             const trackCompanyStorageKey = 'printflow.track.companyId';
             const requesterStorageKey = 'printflow.public.requester';
+            const currentLang = document.documentElement.getAttribute('lang') || 'sr';
 
             const map = {
                 tracking: {
                     advice: i18nEl.getAttribute('data-advice-tracking'),
                     cta: i18nEl.getAttribute('data-cta-tracking'),
-                    href: '/public/track'
+                    href: `/public/track?lang=${encodeURIComponent(currentLang)}`
                 },
                 quote: {
                     advice: i18nEl.getAttribute('data-advice-quote'),
                     cta: i18nEl.getAttribute('data-cta-quote'),
-                    href: '/public/companies'
+                    href: `/public/companies?lang=${encodeURIComponent(currentLang)}`
                 },
                 account: {
                     advice: i18nEl.getAttribute('data-advice-account'),
                     cta: i18nEl.getAttribute('data-cta-account'),
-                    href: '/login'
+                    href: `/login?lang=${encodeURIComponent(currentLang)}`
                 },
                 other: {
                     advice: i18nEl.getAttribute('data-advice-other'),
@@ -208,11 +209,11 @@
                 cta.textContent = map[key].cta || '';
                 const remembered = getLastCompany();
                 const trackHref = remembered && remembered.id
-                    ? `/public/track?company=${encodeURIComponent(remembered.id)}`
-                    : '/public/track';
+                    ? `/public/track?company=${encodeURIComponent(remembered.id)}&lang=${encodeURIComponent(currentLang)}`
+                    : `/public/track?lang=${encodeURIComponent(currentLang)}`;
                 trackLinks.forEach(link => link.setAttribute('href', trackHref));
                 if (key === 'tracking' && remembered) {
-                    cta.setAttribute('href', `/public/track?company=${encodeURIComponent(remembered.id)}`);
+                    cta.setAttribute('href', `/public/track?company=${encodeURIComponent(remembered.id)}&lang=${encodeURIComponent(currentLang)}`);
                     if (lastCompanyHint) {
                         const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
                         lastCompanyHint.textContent = `${label} ${remembered.name}`;
@@ -221,7 +222,7 @@
                     return;
                 }
                 if (key === 'quote' && remembered) {
-                    cta.setAttribute('href', `/p/company/${encodeURIComponent(remembered.id)}/order`);
+                    cta.setAttribute('href', `/p/company/${encodeURIComponent(remembered.id)}/order?lang=${encodeURIComponent(currentLang)}`);
                     if (lastCompanyHint) {
                         const label = i18nEl.getAttribute('data-last-company-ready') || 'Ready for last company:';
                         lastCompanyHint.textContent = `${label} ${remembered.name}`;

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 @ControllerAdvice
 public class GlobalModelAttributes {
@@ -41,6 +43,7 @@ public class GlobalModelAttributes {
     public void addNotificationAttributes(Model model, HttpServletRequest request) {
         if (request != null) {
             model.addAttribute("requestUri", request.getRequestURI());
+            model.addAttribute("requestQuery", request.getQueryString());
         }
         addPlatformFooterDefaults(model);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -60,15 +63,15 @@ public class GlobalModelAttributes {
         }
         var company = tenantContextService.getCurrentCompany();
         if (company != null) {
-            model.addAttribute("companyPlan", company.getPlan());
-            model.addAttribute("footerCompanyName", company.getName());
-            model.addAttribute("footerCompanyEmail", company.getEmail());
-            model.addAttribute("footerCompanyPhone", company.getPhone());
-            model.addAttribute("footerCompanyAddress", company.getAddress());
-            model.addAttribute("footerCompanyWebsite", company.getWebsite());
+            model.addAttribute("companyPlan", safeValue(company::getPlan));
+            model.addAttribute("footerCompanyName", safeValue(company::getName));
+            model.addAttribute("footerCompanyEmail", safeValue(company::getEmail));
+            model.addAttribute("footerCompanyPhone", safeValue(company::getPhone));
+            model.addAttribute("footerCompanyAddress", safeValue(company::getAddress));
+            model.addAttribute("footerCompanyWebsite", safeValue(company::getWebsite));
         }
         var mailSettings = mailSettingsRepository.findByCompany_Id(companyId).orElse(null);
-        boolean smtpConfigured = mailSettingsService.isConfiguredWithLegacyFallback(company, mailSettings);
+        boolean smtpConfigured = safeBoolean(() -> mailSettingsService.isConfiguredWithLegacyFallback(company, mailSettings), false);
         model.addAttribute("smtpConfigured", smtpConfigured);
         if (tenantContextService.isSuperAdmin()) {
             model.addAttribute("billingActive", true);
@@ -110,6 +113,35 @@ public class GlobalModelAttributes {
             if (superAdmin.getPhone() != null && !superAdmin.getPhone().isBlank()) {
                 model.addAttribute("footerCompanyPhone", superAdmin.getPhone());
             }
+            var superAdminCompany = safeValue(superAdmin::getCompany);
+            if (superAdminCompany != null) {
+                String address = safeValue(superAdminCompany::getAddress);
+                if (address != null && !address.isBlank()) {
+                    model.addAttribute("footerCompanyAddress", address);
+                }
+                String website = safeValue(superAdminCompany::getWebsite);
+                if (website != null && !website.isBlank()) {
+                    model.addAttribute("footerCompanyWebsite", website);
+                }
+            }
         });
+    }
+
+    private <T> T safeValue(Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (RuntimeException ex) {
+            // Defensive guard for detached proxies in global model population.
+            return null;
+        }
+    }
+
+    private boolean safeBoolean(BooleanSupplier supplier, boolean fallback) {
+        try {
+            return supplier.getAsBoolean();
+        } catch (RuntimeException ex) {
+            // Defensive guard for detached proxies in global model population.
+            return fallback;
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.printflow.config;
 
 import com.printflow.entity.Company;
 import com.printflow.entity.MailSettings;
+import com.printflow.entity.User;
 import com.printflow.repository.MailSettingsRepository;
 import com.printflow.repository.UserRepository;
 import com.printflow.service.BillingAccessService;
@@ -19,6 +20,7 @@ import org.springframework.ui.Model;
 import java.util.Collections;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -157,5 +159,124 @@ class GlobalModelAttributesTest {
         attributes.addNotificationAttributes(model, new MockHttpServletRequest());
 
         assertEquals(false, model.getAttribute("smtpConfigured"));
+    }
+
+    @Test
+    void detachedCompanyProxyLikeFailureDoesNotBreakGlobalModelPopulation() {
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        MailSettingsRepository mailSettingsRepository = mock(MailSettingsRepository.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+
+        GlobalModelAttributes attributes = new GlobalModelAttributes(
+            tenantContextService,
+            notificationService,
+            billingAccessService,
+            mailSettingsRepository,
+            mailSettingsService,
+            userRepository
+        );
+
+        Company brokenCompany = mock(Company.class);
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken("user", "pass", Collections.emptyList())
+        );
+        when(tenantContextService.getCurrentUserId()).thenReturn(4L);
+        when(tenantContextService.getCurrentCompanyId()).thenReturn(13L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(brokenCompany);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        when(notificationService.getUnreadNotificationCount(4L)).thenReturn(0);
+        when(notificationService.getRecentNotifications(4L, 5)).thenReturn(Collections.emptyList());
+        when(userRepository.findFirstActiveSuperAdmin()).thenReturn(Optional.empty());
+        when(mailSettingsRepository.findByCompany_Id(13L)).thenReturn(Optional.empty());
+        when(mailSettingsService.isConfiguredWithLegacyFallback(brokenCompany, null)).thenReturn(false);
+        when(billingAccessService.isBillingActive(13L)).thenReturn(true);
+        when(brokenCompany.getName()).thenThrow(new RuntimeException("detached proxy"));
+        when(brokenCompany.getAddress()).thenThrow(new RuntimeException("detached proxy"));
+
+        Model model = new ExtendedModelMap();
+        assertDoesNotThrow(() -> attributes.addNotificationAttributes(model, new MockHttpServletRequest()));
+        assertEquals(false, model.getAttribute("smtpConfigured"));
+    }
+
+    @Test
+    void smtpConfiguredFallbacksToFalseWhenMailSettingsCheckThrows() {
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        MailSettingsRepository mailSettingsRepository = mock(MailSettingsRepository.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+
+        GlobalModelAttributes attributes = new GlobalModelAttributes(
+            tenantContextService,
+            notificationService,
+            billingAccessService,
+            mailSettingsRepository,
+            mailSettingsService,
+            userRepository
+        );
+
+        Company company = new Company();
+        company.setId(14L);
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken("user", "pass", Collections.emptyList())
+        );
+        when(tenantContextService.getCurrentUserId()).thenReturn(5L);
+        when(tenantContextService.getCurrentCompanyId()).thenReturn(14L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(tenantContextService.isSuperAdmin()).thenReturn(false);
+        when(notificationService.getUnreadNotificationCount(5L)).thenReturn(0);
+        when(notificationService.getRecentNotifications(5L, 5)).thenReturn(Collections.emptyList());
+        when(userRepository.findFirstActiveSuperAdmin()).thenReturn(Optional.empty());
+        when(mailSettingsRepository.findByCompany_Id(14L)).thenReturn(Optional.empty());
+        when(mailSettingsService.isConfiguredWithLegacyFallback(company, null)).thenThrow(new RuntimeException("lazy proxy"));
+        when(billingAccessService.isBillingActive(14L)).thenReturn(true);
+
+        Model model = new ExtendedModelMap();
+        assertDoesNotThrow(() -> attributes.addNotificationAttributes(model, new MockHttpServletRequest()));
+        assertEquals(false, model.getAttribute("smtpConfigured"));
+    }
+
+    @Test
+    void platformFooterDefaultsIncludeSuperAdminCompanyAddressAndWebsite() {
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        NotificationService notificationService = mock(NotificationService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        MailSettingsRepository mailSettingsRepository = mock(MailSettingsRepository.class);
+        MailSettingsService mailSettingsService = mock(MailSettingsService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+
+        GlobalModelAttributes attributes = new GlobalModelAttributes(
+            tenantContextService,
+            notificationService,
+            billingAccessService,
+            mailSettingsRepository,
+            mailSettingsService,
+            userRepository
+        );
+
+        User superAdmin = new User();
+        superAdmin.setFullName("Owner Admin");
+        superAdmin.setEmail("owner@printflow.test");
+        superAdmin.setPhone("+38160000000");
+        Company ownerCompany = new Company();
+        ownerCompany.setAddress("Knez Mihailova 1, Beograd");
+        ownerCompany.setWebsite("proprintflow.com");
+        superAdmin.setCompany(ownerCompany);
+        when(userRepository.findFirstActiveSuperAdmin()).thenReturn(Optional.of(superAdmin));
+
+        Model model = new ExtendedModelMap();
+        attributes.addNotificationAttributes(model, new MockHttpServletRequest());
+
+        assertEquals("Owner Admin", model.getAttribute("footerCompanyName"));
+        assertEquals("owner@printflow.test", model.getAttribute("footerCompanyEmail"));
+        assertEquals("+38160000000", model.getAttribute("footerCompanyPhone"));
+        assertEquals("Knez Mihailova 1, Beograd", model.getAttribute("footerCompanyAddress"));
+        assertEquals("proprintflow.com", model.getAttribute("footerCompanyWebsite"));
     }
 }

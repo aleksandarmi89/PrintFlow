@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.printflow.util.SlugUtil;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -321,7 +322,7 @@ public class CompanyService {
             .orElseThrow(() -> new RuntimeException("Company not found"));
 
         String original = logoFile.getOriginalFilename() != null ? logoFile.getOriginalFilename() : "";
-        String lower = original.toLowerCase();
+        String lower = original.toLowerCase(java.util.Locale.ROOT);
         if (!(lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".svg"))) {
             throw new RuntimeException("Logo must be PNG, JPG or SVG");
         }
@@ -412,7 +413,7 @@ public class CompanyService {
         if (currency == null || currency.isBlank()) {
             return "RSD";
         }
-        return currency.trim().toUpperCase();
+        return currency.trim().toUpperCase(Locale.ROOT);
     }
 
     private String normalizeNullable(String value) {
@@ -431,7 +432,7 @@ public class CompanyService {
                                               String invoiceDueDate) {
         String safeBody = escapeHtml(body).replace("\n", "<br/>");
         String invoiceHtml = buildInvoiceDetailsHtml(messageType, invoiceNumber, invoiceAmount, invoiceDueDate);
-        String typeLabel = messageType != null ? messageType.toUpperCase() : "GENERAL";
+        String typeLabel = messageType != null ? messageType.toUpperCase(Locale.ROOT) : "GENERAL";
         String companyName = company.getName() != null ? company.getName() : "Company";
         return """
             <div style="font-family:Arial,sans-serif;color:#111827;">
@@ -505,8 +506,9 @@ public class CompanyService {
         if (rawType == null) {
             return "general";
         }
-        return switch (rawType.toLowerCase()) {
-            case "invoice", "billing_notice", "general" -> rawType.toLowerCase();
+        String normalizedType = rawType.toLowerCase(java.util.Locale.ROOT);
+        return switch (normalizedType) {
+            case "invoice", "billing_notice", "general" -> normalizedType;
             default -> "general";
         };
     }

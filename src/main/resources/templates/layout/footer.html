@@ -13,11 +13,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <div class="flex items-center space-x-2 mb-4">
-                                <div class="h-12 flex items-center justify-center">
-                                    <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-20 w-auto object-contain"
-                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                                    <div style="display:none" class="w-20 h-20 bg-primary-600 rounded-lg items-center justify-center">
-                                        <span class="text-white font-bold">PF</span>
+                                <div class="rounded-lg border border-gray-200 bg-white p-2">
+                                    <div class="h-12 flex items-center justify-center">
+                                        <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-20 w-auto object-contain"
+                                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                        <div style="display:none" class="w-20 h-20 bg-primary-600 rounded-lg items-center justify-center">
+                                            <span class="text-white font-bold">PF</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -28,9 +30,9 @@
                         <div>
                             <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.quick_links}">Quick Links</h3>
                             <ul class="space-y-2">
-                                <li><a th:href="@{/public/}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.home}">Home</a></li>
-                                <li><a th:href="@{/public/track}" class="text-gray-600 hover:text-primary-600 track-link-with-last-company" th:text="#{footer.track_order}">Track Order</a></li>
-                                <li><a th:href="@{/public/contact}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.contact}">Contact</a></li>
+                                <li><a th:href="@{/public/(lang=${#locale.language})}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.home}">Home</a></li>
+                                <li><a th:href="@{/public/track(lang=${#locale.language})}" class="text-gray-600 hover:text-primary-600 track-link-with-last-company" th:text="#{footer.track_order}">Track Order</a></li>
+                                <li><a th:href="@{/public/contact(lang=${#locale.language})}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.contact}">Contact</a></li>
                                 <li><a th:href="@{/login}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.login}">Login</a></li>
                             </ul>
                         </div>
@@ -87,63 +89,149 @@
                                        th:text="${resolvedWebsite}">https://printflow.app</a>
                                 </li>
                             </ul>
+                            <div class="mt-4 grid grid-cols-1 gap-1 text-xs text-gray-600"
+                                 th:if="${companyBrand != null and (
+                                     (companyBrand.legalName != null and !#strings.isEmpty(companyBrand.legalName)) or
+                                     (companyBrand.taxId != null and !#strings.isEmpty(companyBrand.taxId)) or
+                                     (companyBrand.registrationNumber != null and !#strings.isEmpty(companyBrand.registrationNumber)) or
+                                     (companyBrand.billingEmail != null and !#strings.isEmpty(companyBrand.billingEmail))
+                                 )}">
+                                <div th:if="${companyBrand.legalName != null && !#strings.isEmpty(companyBrand.legalName)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.legal_name}">Legal name</span>:
+                                    <span th:text="${companyBrand.legalName}">Legal Name</span>
+                                </div>
+                                <div th:if="${companyBrand.taxId != null && !#strings.isEmpty(companyBrand.taxId)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.tax_id}">Tax ID / PIB</span>:
+                                    <span th:text="${companyBrand.taxId}">123456789</span>
+                                </div>
+                                <div th:if="${companyBrand.registrationNumber != null && !#strings.isEmpty(companyBrand.registrationNumber)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.registration_number}">Registration number</span>:
+                                    <span th:text="${companyBrand.registrationNumber}">12345678</span>
+                                </div>
+                                <div th:if="${companyBrand.billingEmail != null && !#strings.isEmpty(companyBrand.billingEmail)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.billing_email}">Billing email</span>:
+                                    <a class="hover:text-primary-600 underline-offset-2 hover:underline"
+                                       th:href="${'mailto:' + companyBrand.billingEmail}"
+                                       th:text="${companyBrand.billingEmail}">billing@company.com</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div th:unless="${companyBrand != null && companyBrand.logoUrl != null && !#strings.isEmpty(companyBrand.logoUrl)}"
-                 class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <div class="flex items-center space-x-2 mb-4">
-                        <div class="h-12 flex items-center justify-center">
-                            <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-20 w-auto object-contain"
-                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div style="display:none" class="w-20 h-20 bg-primary-600 rounded-lg items-center justify-center">
-                                <span class="text-white font-bold">PF</span>
+                 class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="rounded-xl border border-gray-200 p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="flex items-center space-x-2 mb-4">
+                                <div class="rounded-lg border border-gray-200 bg-white p-2">
+                                    <div class="h-12 flex items-center justify-center">
+                                        <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-20 w-auto object-contain"
+                                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                        <div style="display:none" class="w-20 h-20 bg-primary-600 rounded-lg items-center justify-center">
+                                            <span class="text-white font-bold">PF</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-gray-600" th:text="#{footer.description}">
+                                Professional workflow management for printing companies.
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.quick_links}">Quick Links</h3>
+                            <ul class="space-y-2">
+                                <li><a th:href="@{/public/(lang=${#locale.language})}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.home}">Home</a></li>
+                                <li><a th:href="@{/public/track(lang=${#locale.language})}" class="text-gray-600 hover:text-primary-600 track-link-with-last-company" th:text="#{footer.track_order}">Track Order</a></li>
+                                <li><a th:href="@{/public/contact(lang=${#locale.language})}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.contact}">Contact</a></li>
+                                <li><a th:href="@{/login}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.login}">Login</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center" th:text="#{track.company_label}">Company</h3>
+                            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <div class="mx-auto flex w-full max-w-[220px] min-h-[120px] items-center justify-center rounded-lg border border-gray-200 bg-white p-3">
+                                    <img th:src="@{/images/app-logo.svg}" alt="Company logo" class="max-h-24 w-auto object-contain"
+                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                    <div style="display:none" class="h-16 w-16 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center">PF</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.contact_info}">Contact Info</h3>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span th:text="${(footerCompanyAddress != null && !#strings.isEmpty(footerCompanyAddress)) ? footerCompanyAddress : #messages.msg('footer.location')}">Belgrade, Serbia</span>
+                                </li>
+                                <li class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                                    </svg>
+                                    <a class="hover:text-primary-600 underline-offset-2 hover:underline"
+                                       th:href="${'mailto:' + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : #messages.msg('footer.email'))}"
+                                       th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : #messages.msg('footer.email')}">info@printflow.com</a>
+                                </li>
+                                <li class="flex items-center space-x-2">
+                                    <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+                                    </svg>
+                                    <a class="hover:text-primary-600 underline-offset-2 hover:underline"
+                                       th:href="${'tel:' + ((footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : #messages.msg('footer.phone'))}"
+                                       th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : #messages.msg('footer.phone')}">+381 11 123 4567</a>
+                                </li>
+                                <li class="flex items-center space-x-2"
+                                    th:if="${footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite)}"
+                                    th:with="resolvedWebsite=${footerCompanyWebsite},
+                                             resolvedWebsiteHref=${#strings.startsWith(resolvedWebsite, 'http://') || #strings.startsWith(resolvedWebsite, 'https://') ? resolvedWebsite : 'https://' + resolvedWebsite}">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M13.828 10.172a4 4 0 010 5.656l-2 2a4 4 0 11-5.656-5.656l1.5-1.5m8.328 2.828a4 4 0 010-5.656l-2-2a4 4 0 10-5.656 5.656l1.5 1.5"/>
+                                    </svg>
+                                    <a class="hover:text-primary-600 underline-offset-2 hover:underline"
+                                       target="_blank" rel="noopener noreferrer"
+                                       th:href="${resolvedWebsiteHref}"
+                                       th:text="${resolvedWebsite}">https://printflow.app</a>
+                                </li>
+                            </ul>
+                            <div class="mt-4 grid grid-cols-1 gap-1 text-xs text-gray-600"
+                                 th:if="${companyBrand != null and (
+                                     (companyBrand.legalName != null and !#strings.isEmpty(companyBrand.legalName)) or
+                                     (companyBrand.taxId != null and !#strings.isEmpty(companyBrand.taxId)) or
+                                     (companyBrand.registrationNumber != null and !#strings.isEmpty(companyBrand.registrationNumber)) or
+                                     (companyBrand.billingEmail != null and !#strings.isEmpty(companyBrand.billingEmail))
+                                 )}">
+                                <div th:if="${companyBrand.legalName != null && !#strings.isEmpty(companyBrand.legalName)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.legal_name}">Legal name</span>:
+                                    <span th:text="${companyBrand.legalName}">Legal Name</span>
+                                </div>
+                                <div th:if="${companyBrand.taxId != null && !#strings.isEmpty(companyBrand.taxId)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.tax_id}">Tax ID / PIB</span>:
+                                    <span th:text="${companyBrand.taxId}">123456789</span>
+                                </div>
+                                <div th:if="${companyBrand.registrationNumber != null && !#strings.isEmpty(companyBrand.registrationNumber)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.registration_number}">Registration number</span>:
+                                    <span th:text="${companyBrand.registrationNumber}">12345678</span>
+                                </div>
+                                <div th:if="${companyBrand.billingEmail != null && !#strings.isEmpty(companyBrand.billingEmail)}">
+                                    <span class="font-medium text-gray-500" th:text="#{track.company_profile.billing_email}">Billing email</span>:
+                                    <a class="hover:text-primary-600 underline-offset-2 hover:underline"
+                                       th:href="${'mailto:' + companyBrand.billingEmail}"
+                                       th:text="${companyBrand.billingEmail}">billing@company.com</a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <p class="text-gray-600" th:text="#{footer.description}">
-                        Professional workflow management for printing companies.
-                    </p>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.quick_links}">Quick Links</h3>
-                    <ul class="space-y-2">
-                        <li><a th:href="@{/public/}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.home}">Home</a></li>
-                        <li><a th:href="@{/public/track}" class="text-gray-600 hover:text-primary-600 track-link-with-last-company" th:text="#{footer.track_order}">Track Order</a></li>
-                        <li><a th:href="@{/public/contact}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.contact}">Contact</a></li>
-                        <li><a th:href="@{/login}" class="text-gray-600 hover:text-primary-600" th:text="#{footer.login}">Login</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4" th:text="#{footer.contact_info}">Contact Info</h3>
-                    <ul class="space-y-2 text-gray-600">
-                        <li class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                            </svg>
-                            <span th:text="${(footerCompanyAddress != null && !#strings.isEmpty(footerCompanyAddress)) ? footerCompanyAddress : #messages.msg('footer.location')}">Belgrade, Serbia</span>
-                        </li>
-                        <li class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                            </svg>
-                            <a class="hover:text-primary-600 underline-offset-2 hover:underline"
-                               th:href="${'mailto:' + ((footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : #messages.msg('footer.email'))}"
-                               th:text="${(footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail)) ? footerCompanyEmail : #messages.msg('footer.email')}">info@printflow.com</a>
-                        </li>
-                        <li class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-                            </svg>
-                            <a class="hover:text-primary-600 underline-offset-2 hover:underline"
-                               th:href="${'tel:' + ((footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : #messages.msg('footer.phone'))}"
-                               th:text="${(footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone)) ? footerCompanyPhone : #messages.msg('footer.phone')}">+381 11 123 4567</a>
-                        </li>
-                    </ul>
                 </div>
             </div>
             
@@ -153,6 +241,41 @@
                 <p class="text-sm mt-2"><span th:text="#{footer.version}">Version</span> <span th:text="#{app.version}">1.0.0</span></p>
             </div>
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
+                if (!trackLinks.length) return;
+                const key = 'printflow.public.lastCompany';
+                let companyId = null;
+                try {
+                    const raw = localStorage.getItem(key);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (parsed && parsed.id != null && String(parsed.id).trim() !== '') {
+                            companyId = String(parsed.id).trim();
+                        }
+                    }
+                } catch (e) {
+                    companyId = null;
+                }
+                trackLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (!href) return;
+                    try {
+                        const url = new URL(href, window.location.origin);
+                        if (companyId) {
+                            url.searchParams.set('company', companyId);
+                        } else {
+                            url.searchParams.delete('company');
+                        }
+                        const nextHref = url.pathname + (url.search || '') + (url.hash || '');
+                        link.setAttribute('href', nextHref);
+                    } catch (e) {
+                        // Ignore malformed href values.
+                    }
+                });
+            });
+        </script>
     </footer>
 </body>
 </html>

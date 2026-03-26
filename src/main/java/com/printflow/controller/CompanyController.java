@@ -122,8 +122,8 @@ public class CompanyController extends BaseController {
             List<com.printflow.entity.AuditLog> overrideLogs = auditLogService.getByEntity("Company", id)
                 .stream()
                 .filter(log -> {
-                    String desc = log.getDescription() != null ? log.getDescription().toLowerCase() : "";
-                    String newValue = log.getNewValue() != null ? log.getNewValue().toLowerCase() : "";
+                    String desc = log.getDescription() != null ? log.getDescription().toLowerCase(java.util.Locale.ROOT) : "";
+                    String newValue = log.getNewValue() != null ? log.getNewValue().toLowerCase(java.util.Locale.ROOT) : "";
                     return desc.contains("override")
                         || desc.contains("trial")
                         || newValue.contains("override")

@@ -10,6 +10,7 @@ import com.printflow.events.OrderStatusChangedEvent;
 import com.printflow.repository.WorkOrderRepository;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaTypeFactory;
@@ -176,7 +177,7 @@ public class EmailEventListener {
         if (address == null) {
             return false;
         }
-        String lower = address.toLowerCase();
+        String lower = address.toLowerCase(Locale.ROOT);
         return lower.contains("srbija") || lower.contains("serbia");
     }
 }

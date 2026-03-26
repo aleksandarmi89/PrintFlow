@@ -334,7 +334,7 @@ class EmailSettingsControllerTest {
     }
 
     @Test
-    void cleanupFailedClampsDaysToMinimum() {
+    void cleanupFailedAllowsZeroDaysForImmediateCleanup() {
         CurrentContextService contextService = mock(CurrentContextService.class);
         MailSettingsService mailSettingsService = mock(MailSettingsService.class);
         CompanyService companyService = mock(CompanyService.class);
@@ -347,11 +347,11 @@ class EmailSettingsControllerTest {
         Company company = new Company();
         company.setId(38L);
         when(contextService.currentCompany()).thenReturn(company);
-        when(emailOutboxService.cleanupFailed(company, 1)).thenReturn(5L);
+        when(emailOutboxService.cleanupFailed(company, 0)).thenReturn(5L);
 
         String view = controller.cleanupFailed(0);
 
         assertEquals("redirect:/settings/email?successKey=email.outbox.cleanup_success&cleanupCount=5", view);
-        verify(emailOutboxService).cleanupFailed(company, 1);
+        verify(emailOutboxService).cleanupFailed(company, 0);
     }
 }

@@ -227,7 +227,7 @@ public class ProductionPlannerController extends BaseController {
         if (printType == null || printType.isBlank()) {
             return null;
         }
-        String normalized = printType.trim().toUpperCase();
+        String normalized = printType.trim().toUpperCase(java.util.Locale.ROOT);
         return switch (normalized) {
             case "DTF", "LASER", "OTHER" -> normalized;
             default -> null;

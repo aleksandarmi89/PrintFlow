@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
 </head>
 <body class="bg-gray-50">
 <nav class="bg-white shadow-sm border-b border-gray-200">
-    <div class="container mx-auto px-4 py-2 md:py-3 flex items-center justify-between">
+    <div class="container mx-auto px-4 py-2 md:py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <a th:href="@{/public}" class="flex items-center gap-2 text-gray-800 font-semibold">
             <span class="h-12 md:h-14 rounded-lg flex items-center justify-center">
                 <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-12 md:h-14 w-auto object-contain"
@@ -18,10 +18,10 @@
                 <span style="display:none" class="w-12 h-12 rounded-lg bg-blue-600 text-white items-center justify-center">PF</span>
             </span>
         </a>
-        <div class="flex items-center gap-3">
-            <a th:href="@{/public/track}" class="text-sm text-gray-700 hover:text-blue-600 track-link-with-last-company" th:text="#{footer.track_order}">Track order</a>
-            <a th:href="@{/public/contact}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.contact}">Contact</a>
-            <div class="flex items-center gap-2 text-xs text-gray-600">
+        <div class="w-full md:w-auto flex flex-wrap items-center justify-start md:justify-end gap-3">
+            <a th:href="@{/public/track(lang=${#locale.language})}" class="text-sm text-gray-700 hover:text-blue-600 track-link-with-last-company" th:text="#{footer.track_order}">Track order</a>
+            <a th:href="@{/public/contact(lang=${#locale.language})}" class="text-sm text-gray-700 hover:text-blue-600" th:text="#{footer.contact}">Contact</a>
+            <div class="ml-auto md:ml-0 flex items-center gap-2 text-xs text-gray-600">
                 <span th:text="#{nav.language}">Language</span>
                 <a th:href="@{${requestUri}(lang='sr')}"
                    th:class="${#locale.language == 'sr' ? 'px-2 py-1 rounded bg-gray-200 text-gray-900' : 'px-2 py-1 rounded hover:bg-gray-100'}">
@@ -60,6 +60,7 @@
             <a id="lastCompanyContinue"
                href="#"
                class="ml-2 font-semibold underline hover:no-underline"
+               th:attr="data-lang=${#locale.language}"
                th:text="#{public.companies.continue_last}">
                 Continue with this company
             </a>
@@ -89,10 +90,10 @@
                 <span class="text-amber-700" th:text="#{public.companies.no_match_advice}">
                     If you already have a tracking code, use Track Order directly.
                 </span>
-                <a th:href="@{/public/track}" class="font-semibold underline hover:no-underline track-link-with-last-company" th:text="#{public.companies.no_match_track}">
+                <a th:href="@{/public/track(lang=${#locale.language})}" class="font-semibold underline hover:no-underline track-link-with-last-company" th:text="#{public.companies.no_match_track}">
                     Open Track Order
                 </a>
-                <a th:href="@{/public/contact}" class="font-semibold underline hover:no-underline" th:text="#{public.companies.no_match_contact}">
+                <a th:href="@{/public/contact(lang=${#locale.language})}" class="font-semibold underline hover:no-underline" th:text="#{public.companies.no_match_contact}">
                     Contact support
                 </a>
             </div>
@@ -114,7 +115,7 @@
                      class="w-12 h-12 rounded-lg object-cover border border-gray-200">
                 <div th:if="${company.logoPath == null or #strings.isEmpty(company.logoPath)}"
                      class="w-12 h-12 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm"
-                     th:text="${#strings.toUpperCase(#strings.substring(company.name,0,1))}">
+                     th:text="${company.name != null && !#strings.isEmpty(company.name) ? #strings.toUpperCase(#strings.substring(company.name,0,1)) : 'C'}">
                     C
                 </div>
                 <div class="min-w-0">
@@ -128,11 +129,42 @@
                     <p class="text-xs text-gray-500 truncate" th:text="'/' + ${company.slug}">/company-slug</p>
                 </div>
             </div>
-            <a th:href="@{/p/company/{id}/order(id=${company.id})}"
+            <div th:if="${(company.email != null && !#strings.isEmpty(company.email)) || (company.phone != null && !#strings.isEmpty(company.phone)) || (company.address != null && !#strings.isEmpty(company.address)) || (company.website != null && !#strings.isEmpty(company.website))}"
+                 class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600 space-y-1">
+                <div th:if="${company.email != null && !#strings.isEmpty(company.email)}" class="break-all">
+                    <span class="font-medium text-gray-500" th:text="#{common.email}">Email</span>:
+                    <span th:text="${company.email}">company@example.com</span>
+                </div>
+                <div th:if="${company.phone != null && !#strings.isEmpty(company.phone)}" class="truncate">
+                    <span class="font-medium text-gray-500" th:text="#{common.phone}">Phone</span>:
+                    <span th:text="${company.phone}">+381...</span>
+                </div>
+                <div th:if="${company.address != null && !#strings.isEmpty(company.address)}" class="break-words">
+                    <span class="font-medium text-gray-500" th:text="#{common.address}">Address</span>:
+                    <span th:text="${company.address}">Address</span>
+                </div>
+                <div th:if="${company.website != null && !#strings.isEmpty(company.website)}"
+                     th:with="companyWebsiteHref=${#strings.startsWith(company.website, 'http://') || #strings.startsWith(company.website, 'https://') ? company.website : 'https://' + company.website}"
+                     class="break-all">
+                    <span class="font-medium text-gray-500" th:text="#{company.settings.website}">Website</span>:
+                    <a th:href="${companyWebsiteHref}"
+                       target="_blank" rel="noopener noreferrer"
+                       class="text-blue-700 hover:text-blue-800 hover:underline"
+                       th:text="${company.website}">company.com</a>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a th:href="@{/p/company/{id}/order(id=${company.id},lang=${#locale.language})}"
                class="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-medium py-2.5 hover:bg-blue-700 company-request-link"
                th:attr="data-company-id=${company.id},data-company-name=${company.name}">
                 <span th:text="#{public.companies.send_request}">Send request</span>
-            </a>
+                </a>
+                <a th:href="@{/public/track(company=${company.id},lang=${#locale.language})}"
+                   class="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-blue-50 text-blue-700 text-sm font-medium py-2.5 hover:bg-blue-100 company-track-link"
+                   th:attr="data-company-id=${company.id},data-company-name=${company.name}">
+                    <span th:text="#{footer.track_order}">Track order</span>
+                </a>
+            </div>
         </article>
     </div>
 </main>
@@ -151,6 +183,7 @@
         const lastCompanyClear = document.getElementById('lastCompanyClear');
         const clearHelperDataBtn = document.getElementById('clearHelperDataBtn');
         const requestLinks = Array.from(document.querySelectorAll('.company-request-link'));
+        const trackCompanyLinks = Array.from(document.querySelectorAll('.company-track-link'));
         const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
         const baseTrackHref = (trackLinks[0] && trackLinks[0].getAttribute('href')) || '/public/track';
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
@@ -214,8 +247,11 @@
                 lastCompanyHint.classList.add('hidden');
                 return;
             }
+            const currentLang = String(lastCompanyContinue.getAttribute('data-lang') || '').trim();
             lastCompanyName.textContent = entry.name;
-            lastCompanyContinue.setAttribute('href', `/p/company/${encodeURIComponent(String(entry.id))}/order`);
+            const baseHref = `/p/company/${encodeURIComponent(String(entry.id))}/order`;
+            const nextHref = currentLang ? `${baseHref}?lang=${encodeURIComponent(currentLang)}` : baseHref;
+            lastCompanyContinue.setAttribute('href', nextHref);
             lastCompanyHint.classList.remove('hidden');
         }
 
@@ -287,6 +323,19 @@
             });
         }
         requestLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const id = link.getAttribute('data-company-id');
+                const name = link.getAttribute('data-company-name');
+                if (!id || !name) return;
+                try {
+                    localStorage.setItem(lastCompanyStorageKey, JSON.stringify({ id, name }));
+                } catch (e) {
+                    // ignore storage failures
+                }
+                updateClearHelperDataVisibility();
+            });
+        });
+        trackCompanyLinks.forEach(link => {
             link.addEventListener('click', () => {
                 const id = link.getAttribute('data-company-id');
                 const name = link.getAttribute('data-company-name');
