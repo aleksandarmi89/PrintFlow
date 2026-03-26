@@ -1,0 +1,27 @@
+[Unit]
+Description=PrintFlow SaaS
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=printflow
+Group=printflow
+WorkingDirectory=/opt/printflow/app
+EnvironmentFile=/etc/printflow/printflow.env
+ExecStart=/usr/bin/java -Xms512m -Xmx1536m -jar /opt/printflow/app/printflow.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/printflow/uploads /opt/printflow/logs
+
+StandardOutput=append:/opt/printflow/logs/printflow.out.log
+StandardError=append:/opt/printflow/logs/printflow.err.log
+
+[Install]
+WantedBy=multi-user.target
