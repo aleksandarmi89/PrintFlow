@@ -1,8 +1,48 @@
-<div th:fragment="itemsTable">
+<div th:fragment="itemsTable"
+     th:attr="data-i18n-qty=#{orders.items.qty},
+              data-i18n-variant=#{orders.items.variant},
+              data-i18n-cost=#{orders.items.cost},
+              data-i18n-price=#{orders.items.price},
+              data-i18n-total-cost=#{pricing.calculate.cost},
+              data-i18n-total-price=#{pricing.calculate.price},
+              data-i18n-actions=#{orders.items.actions},
+              data-i18n-model=#{orders.items.model},
+              data-i18n-multiplier=#{orders.items.multiplier},
+              data-i18n-remove=#{orders.items.remove},
+              data-i18n-remove-confirm=#{orders.items.remove_confirm},
+              data-i18n-remove-failed=#{orders.items.remove_failed},
+              data-i18n-removed=#{orders.items.removed},
+              data-i18n-remove-not-found=#{api.error.not_found},
+              data-i18n-server-error=#{api.error.server_error},
+              data-i18n-billing-required=#{pricing.calculate.billing_required},
+              data-i18n-session-expired=#{pricing.calculate.session_expired},
+              data-i18n-no-snapshot=#{orders.items.no_snapshot},
+              data-i18n-snapshot-invalid=#{orders.items.snapshot_invalid},
+              data-i18n-snapshot-warnings=#{pricing.calculate.warnings},
+              data-i18n-warn-no-components=#{pricing.calculate.warning.no_components},
+              data-i18n-warn-colors-adjusted=#{pricing.calculate.warning.colors_adjusted},
+              data-i18n-warn-sides-adjusted=#{pricing.calculate.warning.sides_adjusted},
+              data-i18n-warn-dim=#{pricing.calculate.warning.dimensions_required},
+              data-i18n-warn-meters-missing=#{pricing.calculate.warning.meters_missing},
+              data-i18n-warn-minutes-missing=#{pricing.calculate.warning.minutes_missing},
+              data-i18n-warn-margin=#{pricing.calculate.margin_low},
+              data-i18n-warn-breakdown=#{pricing.calculate.warning.breakdown_mismatch},
+              data-i18n-warn-last-price-prefix=#{pricing.calculate.warning.last_price_prefix},
+              data-i18n-warn-price-drop=#{pricing.calculate.warning.price_drop_20},
+              data-profit-revenue=${profitSummary != null ? profitSummary.revenue : 0},
+              data-profit-cost=${profitSummary != null ? profitSummary.realCost : 0},
+              data-order-total-price=${displayOrderPrice != null ? displayOrderPrice : 0},
+              data-order-total-cost=${displayOrderCost != null ? displayOrderCost : 0},
+              data-profit-currency=${profitSummary != null && profitSummary.currency != null ? profitSummary.currency : companyCurrency},
+              data-refresh-url=@{/admin/orders/{id}/items-fragment(id=${orderId})}">
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900" th:text="#{orders.items.title}">Items</h2>
         </div>
+        <div id="orderItemsFeedback"
+             class="hidden mb-4 rounded-md border px-3 py-2 text-sm"
+             role="status"
+             aria-live="polite"></div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="text-gray-500">
@@ -14,6 +54,7 @@
                     <th class="py-2" th:text="#{orders.items.cost}">Cost</th>
                     <th class="py-2" th:text="#{orders.items.margin}">Margin</th>
                     <th class="py-2" th:text="#{orders.items.snapshot}">Snapshot</th>
+                    <th class="py-2 text-right" th:text="#{orders.items.actions}">Actions</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -30,13 +71,23 @@
                     <td class="py-2">
                         <details class="text-xs">
                             <summary class="cursor-pointer text-blue-600 hover:text-blue-800" th:text="#{common.view}">View</summary>
-                            <pre class="mt-2 whitespace-pre-wrap text-gray-600"
-                                 th:text="${item.pricingSnapshotJson != null ? item.pricingSnapshotJson : #messages.msg('orders.items.no_snapshot')}">No snapshot</pre>
+                            <div class="mt-2 snapshot-render text-gray-700"
+                                 th:attr="data-snapshot=${item.pricingSnapshotJson}">-</div>
                         </details>
+                    </td>
+                    <td class="py-2 text-right">
+                        <button type="button"
+                                class="js-remove-order-item inline-flex rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                                th:attr="data-workorder-id=${item.workOrder != null ? item.workOrder.id : orderId},
+                                         data-item-id=${item.id},
+                                         data-delete-url=@{/api/workorders/{workOrderId}/items/{itemId}(workOrderId=${item.workOrder != null ? item.workOrder.id : orderId},itemId=${item.id})}"
+                                th:text="#{orders.items.remove}">
+                            Remove
+                        </button>
                     </td>
                 </tr>
                 <tr th:if="${orderItems == null || orderItems.isEmpty()}">
-                    <td class="py-4 text-gray-500" colspan="7" th:text="#{orders.items.empty}">No items yet.</td>
+                    <td class="py-4 text-gray-500" colspan="8" th:text="#{orders.items.empty}">No items yet.</td>
                 </tr>
                 </tbody>
             </table>
@@ -63,4 +114,321 @@
             </div>
         </div>
     </div>
+    <script>
+        (function() {
+            const root = document.querySelector('[th\\:fragment="itemsTable"], div[data-i18n-qty]');
+            const i18n = {
+                qty: root?.getAttribute('data-i18n-qty') || 'Qty',
+                variant: root?.getAttribute('data-i18n-variant') || 'Variant',
+                cost: root?.getAttribute('data-i18n-cost') || 'Cost',
+                price: root?.getAttribute('data-i18n-price') || 'Price',
+                model: root?.getAttribute('data-i18n-model') || 'Model',
+                multiplier: root?.getAttribute('data-i18n-multiplier') || 'Multiplier',
+                actions: root?.getAttribute('data-i18n-actions') || 'Actions',
+                remove: root?.getAttribute('data-i18n-remove') || 'Remove',
+                removeConfirm: root?.getAttribute('data-i18n-remove-confirm') || 'Remove this item from order?',
+                removeFailed: root?.getAttribute('data-i18n-remove-failed') || 'Unable to remove item.',
+                removed: root?.getAttribute('data-i18n-removed') || 'Item removed from the order.',
+                removeNotFound: root?.getAttribute('data-i18n-remove-not-found') || 'Requested pricing resource was not found.',
+                serverError: root?.getAttribute('data-i18n-server-error') || 'Server error',
+                billingRequired: root?.getAttribute('data-i18n-billing-required') || 'This feature is available only with an active subscription.',
+                sessionExpired: root?.getAttribute('data-i18n-session-expired') || 'Session expired or access denied. Please refresh the page and try again.',
+                noSnapshot: root?.getAttribute('data-i18n-no-snapshot') || 'No snapshot',
+                snapshotInvalid: root?.getAttribute('data-i18n-snapshot-invalid') || 'Snapshot preview is unavailable.',
+                snapshotWarnings: root?.getAttribute('data-i18n-snapshot-warnings') || 'Warnings',
+                warnNoComponents: root?.getAttribute('data-i18n-warn-no-components') || 'No pricing components configured.',
+                warnColorsAdjusted: root?.getAttribute('data-i18n-warn-colors-adjusted') || 'Colors value was adjusted to 1.',
+                warnSidesAdjusted: root?.getAttribute('data-i18n-warn-sides-adjusted') || 'Sides value was adjusted to 1.',
+                warnDim: root?.getAttribute('data-i18n-warn-dim') || 'Dimensions are required for area-based pricing.',
+                warnMetersMissing: root?.getAttribute('data-i18n-warn-meters-missing') || 'Meters value is required for per-meter pricing.',
+                warnMinutesMissing: root?.getAttribute('data-i18n-warn-minutes-missing') || 'Minutes value is required for per-minute pricing.',
+                warnMargin: root?.getAttribute('data-i18n-warn-margin') || 'Margin below target.',
+                warnBreakdown: root?.getAttribute('data-i18n-warn-breakdown') || 'Breakdown does not match total cost.',
+                warnLastPricePrefix: root?.getAttribute('data-i18n-warn-last-price-prefix') || 'Last time you charged this client:',
+                totalCost: root?.getAttribute('data-i18n-total-cost') || 'Cost',
+                totalPrice: root?.getAttribute('data-i18n-total-price') || 'Price',
+                warnPriceDrop: root?.getAttribute('data-i18n-warn-price-drop') || 'Price is more than 20% lower than last time.'
+            };
+            const feedbackEl = document.getElementById('orderItemsFeedback');
+            let feedbackTimer = null;
+            const clearFeedbackTimer = () => {
+                if (feedbackTimer) {
+                    clearTimeout(feedbackTimer);
+                    feedbackTimer = null;
+                }
+            };
+            const showFeedback = (message) => {
+                if (!feedbackEl || !message) return;
+                clearFeedbackTimer();
+                feedbackEl.textContent = message;
+                feedbackEl.classList.remove('hidden', 'border-green-200', 'bg-green-50', 'text-green-700');
+                feedbackEl.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
+            };
+            const showSuccess = (message) => {
+                if (!feedbackEl || !message) return;
+                clearFeedbackTimer();
+                feedbackEl.textContent = message;
+                feedbackEl.classList.remove('hidden', 'border-red-200', 'bg-red-50', 'text-red-700');
+                feedbackEl.classList.add('border-green-200', 'bg-green-50', 'text-green-700');
+                feedbackTimer = setTimeout(() => {
+                    feedbackEl.classList.add('hidden');
+                }, 4000);
+            };
+            try {
+                const flash = window.sessionStorage ? window.sessionStorage.getItem('orderItemsFlashMessage') : null;
+                if (flash) {
+                    showSuccess(flash);
+                    window.sessionStorage.removeItem('orderItemsFlashMessage');
+                }
+            } catch (ignored) {
+                // Ignore sessionStorage access errors.
+            }
+            const warningTranslations = {
+                "No pricing components configured": i18n.warnNoComponents,
+                "pricing.calculate.warning.no_components": i18n.warnNoComponents,
+                "Colors adjusted to 1.": i18n.warnColorsAdjusted,
+                "pricing.calculate.warning.colors_adjusted": i18n.warnColorsAdjusted,
+                "Sides adjusted to 1.": i18n.warnSidesAdjusted,
+                "pricing.calculate.warning.sides_adjusted": i18n.warnSidesAdjusted,
+                "Dimensions required for area-based pricing.": i18n.warnDim,
+                "pricing.calculate.warning.dimensions_required": i18n.warnDim,
+                "Meters value missing for per-meter pricing.": i18n.warnMetersMissing,
+                "pricing.calculate.warning.meters_missing": i18n.warnMetersMissing,
+                "Minutes value missing for per-minute pricing.": i18n.warnMinutesMissing,
+                "pricing.calculate.warning.minutes_missing": i18n.warnMinutesMissing,
+                "Margin below target.": i18n.warnMargin,
+                "pricing.calculate.margin_low": i18n.warnMargin,
+                "COST_BREAKDOWN_MISMATCH": i18n.warnBreakdown,
+                "pricing.calculate.warning.breakdown_mismatch": i18n.warnBreakdown,
+                "Price is more than 20% lower than last time.": i18n.warnPriceDrop,
+                "pricing.calculate.warning.price_drop_20": i18n.warnPriceDrop
+            };
+            const hiddenWarnings = new Set([
+                "Margin below target.",
+                "pricing.calculate.margin_low",
+                "COST_BREAKDOWN_MISMATCH",
+                "pricing.calculate.warning.breakdown_mismatch",
+                "Price is more than 20% lower than last time.",
+                "pricing.calculate.warning.price_drop_20"
+            ]);
+            const translateWarning = (raw) => {
+                if (!raw) return '';
+                const key = String(raw).trim();
+                const direct = warningTranslations[key];
+                if (direct) {
+                    return direct;
+                }
+                const prefix = 'Last time you charged this client:';
+                if (key.startsWith(prefix)) {
+                    const value = key.substring(prefix.length).trim();
+                    return `${i18n.warnLastPricePrefix} ${value}`.trim();
+                }
+                const keyedPrefix = 'pricing.calculate.warning.last_price:';
+                if (key.startsWith(keyedPrefix)) {
+                    const value = key.substring(keyedPrefix.length).trim();
+                    return `${i18n.warnLastPricePrefix} ${value}`.trim();
+                }
+                return key;
+            };
+            const containers = document.querySelectorAll('.snapshot-render');
+            containers.forEach((container) => {
+                const raw = container.getAttribute('data-snapshot');
+                if (!raw || raw.trim() === '' || raw.trim() === '{}') {
+                    container.textContent = i18n.noSnapshot;
+                    return;
+                }
+                try {
+                    let snap = JSON.parse(raw);
+                    if (typeof snap === 'string') {
+                        snap = JSON.parse(snap);
+                    }
+                    if (!snap || typeof snap !== 'object') {
+                        throw new Error('invalid_snapshot_payload');
+                    }
+                    const req = snap.request || {};
+                    const res = snap.response || {};
+                    const warnings = Array.isArray(snap.warnings) ? snap.warnings : [];
+                    const uniqueWarnings = Array.from(new Set(
+                        warnings
+                            .map(w => String(w || '').trim())
+                            .filter(val => {
+                                if (!val) return false;
+                                if (hiddenWarnings.has(val)) return false;
+                                if (val.startsWith('Last time you charged this client:')) return false;
+                                return !val.startsWith('pricing.calculate.warning.last_price:');
+                            })
+                    ));
+                    const rows = Array.isArray(snap.breakdown) ? snap.breakdown : [];
+                    const currency = res.currency || root?.getAttribute('data-profit-currency') || 'RSD';
+
+                    const toMoney = (value) => {
+                        const num = Number(value);
+                        if (!Number.isFinite(num)) return '-';
+                        const locale = (document.documentElement.getAttribute('lang') || 'sr').toLowerCase() === 'en'
+                            ? 'en-US'
+                            : 'sr-RS';
+                        try {
+                            return num.toLocaleString(locale, {
+                                style: 'currency',
+                                currency,
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        } catch (e) {
+                            return `${currency} ${num.toFixed(2)}`;
+                        }
+                    };
+
+                    const header = document.createElement('div');
+                    header.className = 'grid grid-cols-2 gap-2 text-[11px]';
+                    header.innerHTML =
+                        `<div><span class="text-gray-500">${i18n.qty}:</span> <span class="font-medium">${req.quantity ?? '-'}</span></div>` +
+                        `<div><span class="text-gray-500">${i18n.variant}:</span> <span class="font-medium">${req.variantId ?? '-'}</span></div>` +
+                        `<div><span class="text-gray-500">${i18n.totalCost}:</span> <span class="font-medium">${toMoney(res.totalCost)}</span></div>` +
+                        `<div><span class="text-gray-500">${i18n.totalPrice}:</span> <span class="font-medium">${toMoney(res.totalPrice)}</span></div>`;
+                    container.appendChild(header);
+
+                    if (rows.length > 0) {
+                        const breakdown = document.createElement('div');
+                        breakdown.className = 'mt-2 border border-gray-200 rounded p-2';
+                        const first = rows[0];
+                        breakdown.innerHTML =
+                            `<div class="text-[11px]"><span class="text-gray-500">${i18n.model}:</span> ${first.pricingModel ?? '-'}</div>` +
+                            `<div class="text-[11px]"><span class="text-gray-500">${i18n.multiplier}:</span> ${first.multiplierDescription ?? '-'}</div>`;
+                        container.appendChild(breakdown);
+                    }
+
+                    if (uniqueWarnings.length > 0) {
+                        const warn = document.createElement('div');
+                        warn.className = 'mt-2 text-[11px] text-amber-700';
+                        warn.textContent = `${i18n.snapshotWarnings}: ${uniqueWarnings.map(translateWarning).join(' · ')}`;
+                        container.appendChild(warn);
+                    }
+                } catch (e) {
+                    const hint = document.createElement('div');
+                    hint.className = 'text-[11px] text-gray-500';
+                    hint.textContent = i18n.snapshotInvalid;
+                    container.appendChild(hint);
+                }
+            });
+
+            function csrfHeaders() {
+                const metaToken = document.querySelector('meta[name="_csrf"]');
+                const metaHeader = document.querySelector('meta[name="_csrf_header"]');
+                if (metaToken && metaHeader) {
+                    return { [metaHeader.getAttribute('content')]: metaToken.getAttribute('content') };
+                }
+                return {};
+            }
+
+            function formatMoney(value, currency) {
+                const num = Number(value);
+                if (Number.isNaN(num)) return '-';
+                const locale = (document.documentElement.getAttribute('lang') || 'sr').toLowerCase() === 'en'
+                    ? 'en-US'
+                    : 'sr-RS';
+                try {
+                    return num.toLocaleString(locale, {
+                        style: 'currency',
+                        currency: currency || 'RSD',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                } catch (e) {
+                    return `${(currency || 'RSD')} ${num.toFixed(2)}`;
+                }
+            }
+
+            function syncDetailsHeaderTotals() {
+                const priceNode = document.getElementById('orderPriceValue');
+                const costNode = document.getElementById('orderCostValue');
+                if (!root || (!priceNode && !costNode)) return;
+                const revenue = root.getAttribute('data-order-total-price') ?? root.getAttribute('data-profit-revenue');
+                const cost = root.getAttribute('data-order-total-cost') ?? root.getAttribute('data-profit-cost');
+                const currency = root.getAttribute('data-profit-currency') || 'RSD';
+                if (priceNode && revenue != null) {
+                    priceNode.textContent = formatMoney(revenue, currency);
+                }
+                if (costNode && cost != null) {
+                    costNode.textContent = formatMoney(cost, currency);
+                }
+            }
+
+            syncDetailsHeaderTotals();
+
+            document.querySelectorAll('.js-remove-order-item').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(i18n.removeConfirm)) return;
+                    const url = btn.getAttribute('data-delete-url');
+                    if (!url) return;
+                    btn.disabled = true;
+                    try {
+                        const res = await fetch(url, {
+                            method: 'DELETE',
+                            headers: {
+                                Accept: 'application/json',
+                                ...csrfHeaders()
+                            }
+                        });
+                        if (!res.ok) {
+                            const contentType = res.headers.get('content-type') || '';
+                            const text = await res.text();
+                            const looksLikeHtml = text && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || contentType.includes('text/html'));
+                            if (looksLikeHtml || res.status === 401 || res.status === 403) {
+                                throw new Error('session_expired');
+                            }
+                            let payload = null;
+                            try {
+                                payload = text ? JSON.parse(text) : null;
+                            } catch (jsonErr) {
+                                payload = null;
+                            }
+                            const errorCode = (payload && (payload.messageKey || payload.error))
+                                ? String(payload.messageKey || payload.error).trim()
+                                : '';
+                            if (errorCode === 'api.error.not_found') {
+                                throw new Error('not_found');
+                            }
+                            if (errorCode === 'api.error.server_error') {
+                                throw new Error('server_error');
+                            }
+                            if (errorCode === 'pricing.calculate.billing_required' || errorCode === 'billing.notice.expired') {
+                                throw new Error('billing_required');
+                            }
+                            if (res.status >= 500) {
+                                throw new Error('server_error');
+                            }
+                            throw new Error('delete_failed');
+                        }
+                        try {
+                            if (window.sessionStorage) {
+                                window.sessionStorage.setItem('orderItemsFlashMessage', i18n.removed);
+                            }
+                        } catch (ignored) {
+                            // Ignore sessionStorage access errors.
+                        }
+                        const refreshUrl = root?.getAttribute('data-refresh-url');
+                        if (refreshUrl && window.htmx) {
+                            window.htmx.ajax('GET', refreshUrl, '#order-items');
+                        } else {
+                            window.location.reload();
+                        }
+                    } catch (e) {
+                        if (e && e.message === 'session_expired') {
+                            showFeedback(i18n.sessionExpired);
+                        } else if (e && e.message === 'not_found') {
+                            showFeedback(i18n.removeNotFound);
+                        } else if (e && e.message === 'server_error') {
+                            showFeedback(i18n.serverError);
+                        } else if (e && e.message === 'billing_required') {
+                            showFeedback(i18n.billingRequired);
+                        } else {
+                            showFeedback(i18n.removeFailed);
+                        }
+                        btn.disabled = false;
+                    }
+                });
+            });
+        })();
+    </script>
 </div>

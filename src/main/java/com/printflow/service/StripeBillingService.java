@@ -1,6 +1,5 @@
 package com.printflow.service;
 
-import com.printflow.config.StripeProperties;
 import com.printflow.entity.BillingCustomer;
 import com.printflow.entity.BillingSubscription;
 import com.printflow.entity.Company;
@@ -34,13 +33,13 @@ public class StripeBillingService {
 
     private static final Logger log = LoggerFactory.getLogger(StripeBillingService.class);
 
-    private final StripeProperties stripeProperties;
+    private final StripeSettings stripeProperties;
     private final BillingCustomerRepository billingCustomerRepository;
     private final BillingSubscriptionRepository billingSubscriptionRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private BillingAccessService billingAccessService;
 
-    public StripeBillingService(StripeProperties stripeProperties,
+    public StripeBillingService(StripeSettings stripeProperties,
                                 BillingCustomerRepository billingCustomerRepository,
                                 BillingSubscriptionRepository billingSubscriptionRepository) {
         this.stripeProperties = stripeProperties;

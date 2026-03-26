@@ -26,7 +26,7 @@
                     <h2 class="text-sm font-semibold text-indigo-900" th:text="#{dashboard.focus.title}">Today Focus</h2>
                     <p class="text-xs text-indigo-700" th:text="#{dashboard.focus.subtitle}">Prioritize time-sensitive work first.</p>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 w-full md:w-auto">
                     <a th:href="@{/admin/orders(status=NEW)}" class="rounded-lg bg-white border border-indigo-100 px-3 py-2 text-sm hover:border-indigo-200">
                         <span class="text-gray-600" th:text="#{orders.status.NEW}">New</span>
                         <span class="ml-2 font-semibold text-gray-900" th:text="${stats.newOrders}">0</span>
@@ -38,6 +38,11 @@
                     <a th:href="@{/admin/orders(status=WAITING_CLIENT_APPROVAL)}" class="rounded-lg bg-white border border-indigo-100 px-3 py-2 text-sm hover:border-indigo-200">
                         <span class="text-gray-600" th:text="#{orders.status.WAITING_CLIENT_APPROVAL}">Waiting Approval</span>
                         <span class="ml-2 font-semibold text-gray-900" th:text="${stats.waitingApprovalOrders}">0</span>
+                    </a>
+                    <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY,deliveryType=COURIER)}"
+                       class="rounded-lg bg-white border border-amber-100 px-3 py-2 text-sm hover:border-amber-200">
+                        <span class="text-amber-700" th:text="#{dashboard.queue.blocked_ship}">Courier data missing</span>
+                        <span class="ml-2 font-semibold text-amber-900" th:text="${stats.blockedCourierReadyOrders}">0</span>
                     </a>
                 </div>
             </div>
@@ -68,16 +73,120 @@
                         You have orders waiting for approval. Follow up to avoid delays.
                     </a>
                 </li>
+                <li th:if="${stats.quoteReadyOrders > 0}" class="text-emerald-900">
+                    <a th:href="@{/admin/orders(quoteStatus=READY)}" class="underline hover:no-underline" th:text="#{dashboard.smart.quote_ready}">
+                        Some quotes are ready but not sent. Send them to convert faster.
+                    </a>
+                </li>
+                <li th:if="${stats.quoteSentOrders > 0}" class="text-emerald-900">
+                    <a th:href="@{/admin/orders(quoteStatus=SENT)}" class="underline hover:no-underline" th:text="#{dashboard.smart.quote_sent}">
+                        Follow up sent quotes to shorten sales cycle.
+                    </a>
+                </li>
+                <li th:if="${stats.blockedCourierReadyOrders > 0}" class="text-amber-800">
+                    <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY,deliveryType=COURIER)}" class="underline hover:no-underline" th:text="#{dashboard.smart.blocked_courier_ready(${stats.blockedCourierReadyOrders})}">
+                        Some courier-ready orders miss shipping details. Complete them before dispatch.
+                    </a>
+                </li>
                 <li th:if="${stats.overdueOrders > 0}" class="text-amber-800">
-                    <a th:href="@{/admin/orders(status=OVERDUE)}" class="underline hover:no-underline" th:text="#{dashboard.smart.overdue}">
+                    <a th:href="@{/admin/orders(overdueOnly=true)}" class="underline hover:no-underline" th:text="#{dashboard.smart.overdue}">
                         Some orders are overdue. Prioritize them to protect delivery targets.
                     </a>
                 </li>
-                <li th:if="${stats.totalClients > 0 && stats.activeOrders > 0 && stats.waitingApprovalOrders == 0 && stats.overdueOrders == 0}" class="text-emerald-900"
+                <li th:if="${stats.totalClients > 0 && stats.activeOrders > 0 && stats.waitingApprovalOrders == 0 && stats.quoteReadyOrders == 0 && stats.quoteSentOrders == 0 && stats.blockedCourierReadyOrders == 0 && stats.overdueOrders == 0}" class="text-emerald-900"
                     th:text="#{dashboard.smart.healthy}">
                     Workflow looks healthy. Keep momentum by reviewing new and in-design orders.
                 </li>
             </ul>
+        </div>
+
+        <div th:if="${stats.overdueOrders > 0}" class="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+                <span th:text="#{dashboard.overdue.alert(${stats.overdueOrders})}">
+                    There are overdue orders that need immediate attention.
+                </span>
+                <a th:href="@{/admin/orders(overdueOnly=true)}"
+                   class="font-semibold underline hover:no-underline"
+                   th:text="#{dashboard.overdue.alert.cta}">
+                    Review overdue queue
+                </a>
+                <span class="text-amber-600">•</span>
+                <a th:href="@{/admin/planner}"
+                   class="font-semibold underline hover:no-underline"
+                   th:text="#{dashboard.overdue.alert.cta_planner}">
+                    Open planner
+                </a>
+            </div>
+        </div>
+
+        <div class="mb-8 rounded-xl border border-gray-200 bg-white p-4">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-900" th:text="#{dashboard.queue.title}">Operational Queue</h2>
+                    <p class="text-xs text-gray-600" th:text="#{dashboard.queue.subtitle}">Track critical order buckets at a glance.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a th:href="@{/admin/orders/create}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                       th:text="#{dashboard.queue.cta.new_order}">New order</a>
+                    <a th:href="@{/admin/public-requests}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                       th:text="#{dashboard.queue.cta.requests}">Public requests</a>
+                </div>
+            </div>
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-6 gap-3">
+                <a th:href="@{/admin/orders}" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 hover:border-gray-300">
+                    <div class="text-xs text-gray-600" th:text="#{dashboard.queue.today}">Orders today</div>
+                    <div class="mt-1 text-xl font-semibold text-gray-900" th:text="${stats.ordersToday}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(status=WAITING_CLIENT_APPROVAL)}" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 hover:border-amber-300">
+                    <div class="text-xs text-amber-700" th:text="#{dashboard.queue.waiting_approval}">Waiting approval</div>
+                    <div class="mt-1 text-xl font-semibold text-amber-900" th:text="${stats.waitingApprovalOrders}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY,deliveryType=PICKUP)}" class="rounded-lg border border-violet-200 bg-violet-50 px-3 py-3 hover:border-violet-300">
+                    <div class="text-xs text-violet-700" th:text="#{dashboard.queue.ready_pickup}">Ready for pickup</div>
+                    <div class="mt-1 text-xl font-semibold text-violet-900" th:text="${stats.readyForPickupOrders}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY,deliveryType=COURIER)}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 hover:border-emerald-300">
+                    <div class="text-xs text-emerald-700" th:text="#{dashboard.queue.ready_ship}">Ready to ship</div>
+                    <div class="mt-1 text-xl font-semibold text-emerald-900" th:text="${stats.readyToShipOrders}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY)}" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 hover:border-emerald-300">
+                    <div class="text-xs text-emerald-700" th:text="#{dashboard.queue.ready_dispatch}">Ready for dispatch</div>
+                    <div class="mt-1 text-xl font-semibold text-emerald-900" th:text="${stats.readyForDeliveryOrders}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(status=READY_FOR_DELIVERY,deliveryType=COURIER)}" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 hover:border-amber-300">
+                    <div class="text-xs text-amber-700" th:text="#{dashboard.queue.blocked_ship}">Courier data missing</div>
+                    <div class="mt-1 text-xl font-semibold text-amber-900" th:text="${stats.blockedCourierReadyOrders}">0</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="mb-8 rounded-xl border border-fuchsia-100 bg-fuchsia-50/70 p-4">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-fuchsia-900" th:text="#{dashboard.quote_pipeline.title}">Quote Pipeline</h2>
+                    <p class="text-xs text-fuchsia-800" th:text="#{dashboard.quote_pipeline.subtitle}">
+                        Keep quotes moving from preparing to approved without delays.
+                    </p>
+                </div>
+                <a th:href="@{/admin/orders}" class="rounded-lg border border-fuchsia-200 bg-white px-3 py-1.5 text-xs font-semibold text-fuchsia-700 hover:bg-fuchsia-100"
+                   th:text="#{dashboard.quote_pipeline.cta}">
+                    Open orders
+                </a>
+            </div>
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <a th:href="@{/admin/orders(quoteStatus=PREPARING)}" class="rounded-lg border border-fuchsia-200 bg-white px-3 py-3 hover:border-fuchsia-300">
+                    <div class="text-xs text-fuchsia-700" th:text="#{orders.quote.status.PREPARING}">Preparing quote</div>
+                    <div class="mt-1 text-xl font-semibold text-fuchsia-900" th:text="${stats.quotePreparingOrders}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(quoteStatus=READY)}" class="rounded-lg border border-indigo-200 bg-white px-3 py-3 hover:border-indigo-300">
+                    <div class="text-xs text-indigo-700" th:text="#{orders.quote.status.READY}">Quote ready</div>
+                    <div class="mt-1 text-xl font-semibold text-indigo-900" th:text="${stats.quoteReadyOrders}">0</div>
+                </a>
+                <a th:href="@{/admin/orders(quoteStatus=SENT)}" class="rounded-lg border border-blue-200 bg-white px-3 py-3 hover:border-blue-300">
+                    <div class="text-xs text-blue-700" th:text="#{orders.quote.status.SENT}">Quote sent</div>
+                    <div class="mt-1 text-xl font-semibold text-blue-900" th:text="${stats.quoteSentOrders}">0</div>
+                </a>
+            </div>
         </div>
         
         <!-- Stats Cards -->
@@ -137,7 +246,7 @@
                     </div>
                 </div>
                 <div class="mt-4">
-                    <a th:href="@{/admin/orders?status=OVERDUE}" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                    <a th:href="@{/admin/orders(overdueOnly=true)}" class="text-sm text-red-600 hover:text-red-800 font-medium">
                         <span th:text="#{dashboard.view_overdue}">View overdue →</span>
                     </a>
                 </div>
@@ -185,6 +294,8 @@
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{orders.order_number}">Order #</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{clients.title}">Client</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{orders.quote.status}">Quote</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{orders.delivery_type}">Delivery</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{common.status}">Status</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" th:text="#{orders.deadline}">Deadline</th>
                                 </tr>
@@ -201,6 +312,49 @@
                                         <div class="text-sm text-gray-900" th:text="${order.clientName}">Client Name</div>
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="flex flex-col gap-1">
+                                            <span th:class="${'inline-flex w-fit rounded-full px-2 py-1 text-xs font-medium ' + order.quoteStatusBadgeClass}">
+                                                <span th:text="${order.quoteStatus != null ? #messages.msg(order.quoteStatus.messageKey) : #messages.msg('orders.quote.status.NONE')}">NONE</span>
+                                            </span>
+                                            <a th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'READY'}"
+                                               th:href="@{/admin/orders/{id}(id=${order.id})}"
+                                               class="text-[11px] font-medium text-indigo-700 underline hover:no-underline"
+                                               th:text="#{dashboard.recent_orders.quote_ready_cta}">
+                                                Send quote
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="flex flex-col gap-1">
+                                            <span class="inline-flex w-fit rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700"
+                                                  th:text="${order.deliveryType != null ? (#messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name()) : #messages.msg('common.na')}">
+                                                Pickup
+                                            </span>
+                                            <span th:if="${order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or #strings.isEmpty(order.trackingNumber))}"
+                                                  class="inline-flex w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
+                                                  th:text="#{orders.list.tracking_missing}">
+                                                Tracking missing
+                                            </span>
+                                            <a th:if="${order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or #strings.isEmpty(order.trackingNumber))}"
+                                               th:href="@{/admin/orders/{id}/edit(id=${order.id})}"
+                                               class="text-[11px] font-medium text-amber-900 underline hover:no-underline"
+                                               th:text="#{orders.list.tracking_missing_cta}">
+                                                Add tracking
+                                            </a>
+                                            <span th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or #strings.isEmpty(order.trackingNumber))}"
+                                                  class="inline-flex w-fit rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-800"
+                                                  th:text="#{orders.list.tracking_pending}">
+                                                Tracking pending
+                                            </span>
+                                            <a th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or #strings.isEmpty(order.trackingNumber))}"
+                                               th:href="@{/admin/orders/{id}/edit(id=${order.id})}"
+                                               class="text-[11px] font-medium text-sky-900 underline hover:no-underline"
+                                               th:text="#{orders.list.tracking_pending_cta}">
+                                                Prepare tracking
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
                                         <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + order.statusBadgeClass}">
                                             <span th:text="#{${order.status.messageKey}}">Status</span>
                                         </span>
@@ -213,7 +367,7 @@
                                     </td>
                                 </tr>
                                 <tr th:if="${recentOrders.empty}">
-                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
                                         <span th:text="#{dashboard.no_recent_orders}">No recent orders found.</span>
                                     </td>
                                 </tr>

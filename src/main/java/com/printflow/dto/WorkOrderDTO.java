@@ -1,8 +1,10 @@
 package com.printflow.dto;
 
 import com.printflow.entity.WorkOrder.DeliveryType;
+import com.printflow.entity.WorkOrder.ShipmentStatus;
 import com.printflow.entity.enums.OrderStatus;
 import com.printflow.entity.enums.PrintType;
+import com.printflow.entity.enums.QuoteStatus;
 
 import lombok.Data;
 
@@ -32,7 +34,19 @@ public class WorkOrderDTO {
     private String trackingNumber;
     private String deliveryAddress;
     private LocalDateTime deliveryDate;
+    private String deliveryRecipientName;
+    private String deliveryRecipientPhone;
+    private String deliveryCity;
+    private String deliveryPostalCode;
+    private ShipmentStatus shipmentStatus;
+    private Double shipmentPrice;
+    private LocalDateTime shippedAt;
+    private LocalDateTime deliveredAt;
+    private String shippingNote;
     private PrintType printType;
+    private QuoteStatus quoteStatus;
+    private LocalDateTime quoteSentAt;
+    private LocalDateTime quoteValidUntil;
     
     // Relacije
     private Long clientId;
@@ -349,6 +363,30 @@ public class WorkOrderDTO {
             case OVERDUE, CANCELLED -> "bg-red-100 text-red-800";
             case COMPLETED -> "bg-gray-100 text-gray-800";
             case IN_PROGRESS -> "bg-indigo-100 text-indigo-800";
+        };
+    }
+
+    public String getQuoteStatusBadgeClass() {
+        if (quoteStatus == null) {
+            return "bg-gray-100 text-gray-700";
+        }
+        return switch (quoteStatus) {
+            case NONE -> "bg-gray-100 text-gray-700";
+            case PREPARING -> "bg-amber-100 text-amber-800";
+            case READY -> "bg-blue-100 text-blue-800";
+            case SENT -> "bg-indigo-100 text-indigo-800";
+            case APPROVED -> "bg-emerald-100 text-emerald-800";
+        };
+    }
+
+    public String getShipmentStatusBadgeClass() {
+        if (shipmentStatus == null) {
+            return "bg-gray-100 text-gray-700";
+        }
+        return switch (shipmentStatus) {
+            case PREPARING -> "bg-amber-100 text-amber-800";
+            case SHIPPED -> "bg-blue-100 text-blue-800";
+            case DELIVERED -> "bg-emerald-100 text-emerald-800";
         };
     }
 	public LocalDateTime getCreatedAt() {

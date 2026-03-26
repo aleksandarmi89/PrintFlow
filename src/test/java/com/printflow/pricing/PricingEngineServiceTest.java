@@ -188,7 +188,7 @@ public class PricingEngineServiceTest {
 
         PricingCalculateResponse response = pricingEngineService.calculate(company, request);
 
-        assertThat(response.getWarnings()).anyMatch(msg -> msg.toLowerCase().contains("dimensions"));
+        assertThat(response.getWarnings()).contains("pricing.calculate.warning.dimensions_required");
     }
 
     @Test

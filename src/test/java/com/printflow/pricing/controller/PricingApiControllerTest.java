@@ -1,0 +1,97 @@
+package com.printflow.pricing.controller;
+
+import com.printflow.service.BillingRequiredException;
+import com.printflow.service.CurrentContextService;
+import com.printflow.pricing.service.PricingEngineService;
+import com.printflow.service.BillingAccessService;
+import com.printflow.service.ResourceNotFoundException;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
+class PricingApiControllerTest {
+
+    @Test
+    void handleBillingRequiredReturnsPaymentRequiredWithStablePayload() {
+        PricingApiController controller = new PricingApiController(
+            mock(CurrentContextService.class),
+            mock(PricingEngineService.class),
+            mock(BillingAccessService.class)
+        );
+
+        ResponseEntity<Map<String, String>> response =
+            controller.handleBillingRequired(new BillingRequiredException("billing.notice.expired"));
+
+        assertEquals(HttpStatus.PAYMENT_REQUIRED, response.getStatusCode());
+        assertEquals("pricing.calculate.billing_required", response.getBody().get("error"));
+        assertEquals("billing.notice.expired", response.getBody().get("messageKey"));
+    }
+
+    @Test
+    void handleBadRequestReturnsMessageKeyForKeyedError() {
+        PricingApiController controller = new PricingApiController(
+            mock(CurrentContextService.class),
+            mock(PricingEngineService.class),
+            mock(BillingAccessService.class)
+        );
+
+        ResponseEntity<Map<String, String>> response =
+            controller.handleBadRequest(new IllegalArgumentException("pricing.calculate.validation.dimensions_required"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("pricing.calculate.validation.dimensions_required", response.getBody().get("error"));
+        assertEquals("pricing.calculate.validation.dimensions_required", response.getBody().get("messageKey"));
+    }
+
+    @Test
+    void handleBadRequestReturnsPlainMessageForNonKeyError() {
+        PricingApiController controller = new PricingApiController(
+            mock(CurrentContextService.class),
+            mock(PricingEngineService.class),
+            mock(BillingAccessService.class)
+        );
+
+        ResponseEntity<Map<String, String>> response =
+            controller.handleBadRequest(new IllegalArgumentException("Invalid payload"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Invalid payload", response.getBody().get("error"));
+    }
+
+    @Test
+    void handleNotFoundReturnsStableMessageKey() {
+        PricingApiController controller = new PricingApiController(
+            mock(CurrentContextService.class),
+            mock(PricingEngineService.class),
+            mock(BillingAccessService.class)
+        );
+
+        ResponseEntity<Map<String, String>> response =
+            controller.handleNotFound(new ResourceNotFoundException("Variant not found"));
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals("Variant not found", response.getBody().get("error"));
+        assertEquals("api.error.not_found", response.getBody().get("messageKey"));
+    }
+
+    @Test
+    void handleBillingRequiredFallsBackToStableMessageKeyWhenExceptionMessageBlank() {
+        PricingApiController controller = new PricingApiController(
+            mock(CurrentContextService.class),
+            mock(PricingEngineService.class),
+            mock(BillingAccessService.class)
+        );
+
+        ResponseEntity<Map<String, String>> response =
+            controller.handleBillingRequired(new BillingRequiredException(" "));
+
+        assertEquals(HttpStatus.PAYMENT_REQUIRED, response.getStatusCode());
+        assertEquals("pricing.calculate.billing_required", response.getBody().get("error"));
+        assertEquals("pricing.calculate.billing_required", response.getBody().get("messageKey"));
+    }
+}

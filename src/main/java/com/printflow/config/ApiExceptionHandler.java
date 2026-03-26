@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import org.hibernate.LazyInitializationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Map;
 
 @RestControllerAdvice(annotations = org.springframework.web.bind.annotation.RestController.class)
 public class ApiExceptionHandler {
@@ -42,57 +41,67 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
         logClientError("NOT_FOUND", ex, request);
-        return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), "api.error.not_found", request);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
         logClientError("NO_RESOURCE", ex, request);
-        return error(HttpStatus.NOT_FOUND, "Not found", request);
+        return error(HttpStatus.NOT_FOUND, "Not Found", "api.error.not_found", request);
     }
 
     @ExceptionHandler({IllegalArgumentException.class, BindException.class, MethodArgumentNotValidException.class})
     public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex, HttpServletRequest request) {
         logClientError("BAD_REQUEST", ex, request);
-        return error(HttpStatus.BAD_REQUEST, "Invalid request", request);
+        String messageKey = extractMessageKey(ex);
+        String message = messageKey != null ? messageKey : "Invalid request";
+        return error(HttpStatus.BAD_REQUEST, message, messageKey != null ? messageKey : "api.error.invalid_request", request);
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex, HttpServletRequest request) {
         logClientError("ILLEGAL_STATE", ex, request);
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        String messageKey = extractMessageKey(ex);
+        String message = messageKey != null
+            ? messageKey
+            : (ex.getMessage() == null || ex.getMessage().isBlank() ? "Invalid state" : ex.getMessage());
+        return error(HttpStatus.BAD_REQUEST, message, messageKey != null ? messageKey : "api.error.invalid_state", request);
     }
 
     @ExceptionHandler(LazyInitializationException.class)
     public ResponseEntity<Map<String, Object>> handleLazyInit(LazyInitializationException ex, HttpServletRequest request) {
         logServerError("LAZY_INIT", ex, request);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Server error", request);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Server error", "api.error.server_error", request);
     }
 
     @ExceptionHandler(BillingRequiredException.class)
     public ResponseEntity<Map<String, Object>> handleBillingRequired(BillingRequiredException ex, HttpServletRequest request) {
         logClientError("BILLING_REQUIRED", ex, request);
         String message = resolveBillingErrorMessage();
-        return error(HttpStatus.FORBIDDEN, message, request);
+        return error(HttpStatus.FORBIDDEN, message, message, request);
     }
 
     @ExceptionHandler(PlanLimitExceededException.class)
     public ResponseEntity<Map<String, Object>> handlePlanLimit(PlanLimitExceededException ex, HttpServletRequest request) {
         logClientError("PLAN_LIMIT", ex, request);
-        return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+        String messageKey = extractMessageKey(ex);
+        String message = messageKey != null
+            ? messageKey
+            : (ex.getMessage() == null || ex.getMessage().isBlank() ? "Plan limit reached" : ex.getMessage());
+        return error(HttpStatus.FORBIDDEN, message, messageKey != null ? messageKey : "api.error.plan_limit", request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         logClientError("ACCESS_DENIED", ex, request);
         // Keep 404 to avoid leaking resource existence across tenants.
-        return error(HttpStatus.NOT_FOUND, "Not found", request);
+        return error(HttpStatus.NOT_FOUND, "Not found", "api.error.not_found", request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
         logClientError("DATA_INTEGRITY", ex, request);
-        return error(HttpStatus.CONFLICT, "Conflict: duplicate or invalid data", request);
+        return error(HttpStatus.CONFLICT, "Conflict: duplicate or invalid data", "api.error.conflict", request);
     }
 
     @ExceptionHandler(ResponseStatusException.class)
@@ -110,18 +119,25 @@ public class ApiExceptionHandler {
         if (message == null || message.isBlank()) {
             message = status.getReasonPhrase();
         }
-        return error(status, message, request);
+        return error(status, message, "api.error.response_status", request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnhandled(Exception ex, HttpServletRequest request) {
         logServerError("UNHANDLED", ex, request);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Server error", request);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Server error", "api.error.server_error", request);
     }
 
     private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message, HttpServletRequest request) {
+        return error(status, message, null, request);
+    }
+
+    private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message, String messageKey, HttpServletRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("error", message);
+        if (messageKey != null && !messageKey.isBlank()) {
+            body.put("messageKey", messageKey);
+        }
         body.put("status", status.value());
         body.put("timestamp", OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         if (request != null) {
@@ -158,5 +174,19 @@ public class ApiExceptionHandler {
             log.warn("[API:{}] {} {} userId={} companyId={} message={}",
                 tag, method, path, userId, companyId, ex.toString());
         }
+    }
+
+    private String extractMessageKey(Exception ex) {
+        if (ex == null || ex.getMessage() == null) {
+            return null;
+        }
+        String message = ex.getMessage().trim();
+        if (message.isBlank()) {
+            return null;
+        }
+        if (message.startsWith("api.") || message.startsWith("billing.") || message.startsWith("pricing.")) {
+            return message;
+        }
+        return null;
     }
 }

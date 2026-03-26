@@ -9,12 +9,15 @@ import com.printflow.entity.enums.AuditAction;
 import com.printflow.entity.enums.OrderStatus;
 import com.printflow.repository.AttachmentRepository;
 import com.printflow.repository.ClientPortalAccessRepository;
+import com.printflow.repository.WorkOrderItemRepository;
 import com.printflow.repository.WorkOrderRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,24 +27,28 @@ public class ClientPortalService {
 
     private final ClientPortalAccessRepository accessRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final WorkOrderItemRepository workOrderItemRepository;
     private final AttachmentRepository attachmentRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
 
     public ClientPortalService(ClientPortalAccessRepository accessRepository,
                                WorkOrderRepository workOrderRepository,
+                               WorkOrderItemRepository workOrderItemRepository,
                                AttachmentRepository attachmentRepository,
                                AuditLogService auditLogService,
                                NotificationService notificationService) {
         this.accessRepository = accessRepository;
         this.workOrderRepository = workOrderRepository;
+        this.workOrderItemRepository = workOrderItemRepository;
         this.attachmentRepository = attachmentRepository;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
     }
 
     public ClientPortalAccess getAccessOrThrow(String token) {
-        ClientPortalAccess access = accessRepository.findByAccessToken(token)
+        String normalizedToken = normalizeToken(token);
+        ClientPortalAccess access = accessRepository.findByAccessTokenWithClientAndCompany(normalizedToken)
             .orElseThrow(() -> new AccessDeniedException("Invalid portal token"));
         if (access.getExpiresAt() != null && access.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new AccessDeniedException("Portal token expired");
@@ -66,9 +73,23 @@ public class ClientPortalService {
 
     public List<WorkOrder> getActiveOrdersForClient(Client client, Company company) {
         List<WorkOrder> orders = workOrderRepository.findByClient_IdAndCompany_Id(client.getId(), company.getId());
-        return orders.stream()
+        List<WorkOrder> filtered = orders.stream()
             .filter(order -> order.getStatus() != OrderStatus.COMPLETED && order.getStatus() != OrderStatus.CANCELLED)
+            .sorted(Comparator.comparing(WorkOrder::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
             .toList();
+        applyItemTotals(filtered, company);
+        return filtered;
+    }
+
+    public List<WorkOrder> getRecentOrdersForClient(Client client, Company company, int maxCount) {
+        int limit = Math.max(1, maxCount);
+        List<WorkOrder> orders = workOrderRepository.findByClient_IdAndCompany_Id(client.getId(), company.getId());
+        List<WorkOrder> recent = orders.stream()
+            .sorted(Comparator.comparing(WorkOrder::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+            .limit(limit)
+            .toList();
+        applyItemTotals(recent, company);
+        return recent;
     }
 
     public List<Attachment> getAttachmentsForClient(Client client, Company company) {
@@ -107,8 +128,129 @@ public class ClientPortalService {
         notificationService.notifyClientDesignApproved(attachment.getWorkOrder());
     }
 
+    public void rejectAttachmentForRevision(Attachment attachment, String clientName, String ip, String reason) {
+        String normalizedReason = reason == null ? "" : reason.trim();
+        if (normalizedReason.length() > 500) {
+            normalizedReason = normalizedReason.substring(0, 500);
+        }
+        attachment.setApproved(false);
+        attachment.setApprovedAt(null);
+        attachment.setApprovedBy(null);
+        attachment.setApprovalIp(ip);
+        attachmentRepository.save(attachment);
+
+        String actor = (clientName == null || clientName.isBlank()) ? "portal client" : clientName;
+        String details = normalizedReason.isBlank()
+            ? "Design rejected via portal by " + actor
+            : "Design rejected via portal by " + actor + ": " + normalizedReason;
+        auditLogService.log(AuditAction.REJECT, "Attachment", attachment.getId(), null, "rejected",
+            details, attachment.getWorkOrder().getCompany());
+    }
+
     public Attachment getAttachmentForApproval(String approvalToken, Long clientId) {
         return attachmentRepository.findByApprovalTokenAndWorkOrder_Client_IdAndActiveTrue(approvalToken, clientId)
             .orElseThrow(() -> new ResourceNotFoundException("Attachment not found"));
+    }
+
+    private void applyItemTotals(List<WorkOrder> orders, Company company) {
+        if (orders == null || orders.isEmpty()) {
+            return;
+        }
+        Long companyId = company != null ? company.getId() : null;
+        if (companyId == null) {
+            return;
+        }
+        List<Long> orderIds = orders.stream()
+            .map(WorkOrder::getId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+        if (orderIds.isEmpty()) {
+            return;
+        }
+        java.util.Map<Long, Double> priceMap = toDoubleMap(
+            workOrderItemRepository.sumPriceByWorkOrderIdsAndCompanyId(orderIds, companyId)
+        );
+        java.util.Map<Long, Double> costMap = toDoubleMap(
+            workOrderItemRepository.sumCostByWorkOrderIdsAndCompanyId(orderIds, companyId)
+        );
+        java.util.Map<Long, Long> itemCountMap = toLongMap(
+            workOrderItemRepository.countItemsByWorkOrderIdsAndCompanyId(orderIds, companyId)
+        );
+        List<WorkOrder> changedOrders = new ArrayList<>();
+        for (WorkOrder order : orders) {
+            if (order == null || order.getId() == null) {
+                continue;
+            }
+            Long orderId = order.getId();
+            long itemCount = itemCountMap.getOrDefault(orderId, 0L);
+            if (itemCount <= 0L) {
+                // Keep manually managed order totals when there are no pricing items.
+                continue;
+            }
+            boolean changed = false;
+            Double nextPrice = priceMap.getOrDefault(orderId, 0.0d);
+            if (order.getPrice() == null || Math.abs(order.getPrice() - nextPrice) > 0.0001d) {
+                order.setPrice(nextPrice);
+                changed = true;
+            }
+            Double nextCost = costMap.getOrDefault(orderId, 0.0d);
+            if (order.getCost() == null || Math.abs(order.getCost() - nextCost) > 0.0001d) {
+                order.setCost(nextCost);
+                changed = true;
+            }
+            if (changed) {
+                changedOrders.add(order);
+            }
+        }
+        if (!changedOrders.isEmpty()) {
+            workOrderRepository.saveAll(changedOrders);
+        }
+    }
+
+    private java.util.Map<Long, Double> toDoubleMap(List<Object[]> rows) {
+        java.util.Map<Long, Double> result = new java.util.HashMap<>();
+        if (rows == null) {
+            return result;
+        }
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) {
+                continue;
+            }
+            try {
+                result.put(((Number) row[0]).longValue(), ((Number) row[1]).doubleValue());
+            } catch (Exception ignored) {
+                // Ignore malformed aggregate rows and keep existing WorkOrder totals.
+            }
+        }
+        return result;
+    }
+
+    private java.util.Map<Long, Long> toLongMap(List<Object[]> rows) {
+        java.util.Map<Long, Long> result = new java.util.HashMap<>();
+        if (rows == null) {
+            return result;
+        }
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) {
+                continue;
+            }
+            try {
+                result.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+            } catch (Exception ignored) {
+                // Ignore malformed aggregate rows and keep existing WorkOrder totals.
+            }
+        }
+        return result;
+    }
+
+    private String normalizeToken(String token) {
+        if (token == null) {
+            throw new AccessDeniedException("Invalid portal token");
+        }
+        String normalized = token.trim().replaceAll("\\s+", "");
+        if (normalized.isEmpty()) {
+            throw new AccessDeniedException("Invalid portal token");
+        }
+        return normalized;
     }
 }

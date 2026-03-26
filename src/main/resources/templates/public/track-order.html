@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
     <title th:text="#{track.title} + ' - PrintFlow'">Track Your Order - PrintFlow</title>
 </head>
 <body>
     <div th:replace="~{layout/header :: header}"></div>
     
-    <main class="container mx-auto px-4 py-12">
-        <div class="max-w-md mx-auto">
+    <main class="container mx-auto px-4 py-10 md:py-12">
+        <div class="max-w-4xl mx-auto">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2" th:text="#{track.title}">Track Your Order</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2" th:text="#{track.title}">Track Your Order</h1>
                 <p class="text-gray-600" th:text="#{track.subtitle}">Enter your order tracking code to check the status</p>
                 <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left">
                     <h2 class="text-sm font-semibold text-blue-900" th:text="#{track.smart.title}">Tracking helper</h2>
@@ -32,7 +32,7 @@
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-8">
                 <form method="get" th:action="@{/public/track}" class="mb-6">
                     <input type="hidden" name="lang" th:value="${#locale.language == 'en' ? 'en' : 'sr'}" />
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
@@ -71,7 +71,7 @@
                                     Reset company
                                 </button>
                                 <a id="openCompanyRequestBtn"
-                                   href="/public/companies"
+                                   th:href="@{/public/companies(lang=${#locale.language})}"
                                    class="inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
                                    th:text="#{track.smart.open_request_disabled}">
                                     Select company first
@@ -84,73 +84,90 @@
                         </button>
                     </div>
                 </form>
-                <div class="border border-gray-100 rounded-lg p-4 mb-6 bg-gray-50">
-                    <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <img th:if="${companyBrand != null and companyBrand.logoUrl != null}"
-                             th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-auto object-contain">
-                        <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-10 w-10 flex items-center justify-center overflow-hidden">
-                            <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-10 w-auto object-contain"
-                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                            <div style="display:none" class="h-10 w-10 bg-blue-600 rounded-lg items-center justify-center text-white font-bold">PF</div>
+                <div class="border border-gray-200 rounded-xl p-4 mb-6 bg-gradient-to-br from-slate-50 to-white">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="rounded-xl border border-gray-200 bg-white p-2 shadow-sm">
+                                <img th:if="${companyBrand != null and companyBrand.logoUrl != null}"
+                                     th:src="${companyBrand.logoUrl}" alt="Logo" class="h-14 w-auto object-contain">
+                                <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-14 w-14 flex items-center justify-center overflow-hidden">
+                                    <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-14 w-auto object-contain"
+                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                    <div style="display:none" class="h-14 w-14 bg-blue-600 rounded-lg items-center justify-center text-white font-bold">PF</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-wide text-gray-500" th:text="#{track.company_label}">Company</div>
+                                <div class="text-lg font-semibold text-gray-900"
+                                     th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="text-sm text-gray-500" th:text="#{track.company_label}">Company</div>
-                            <div class="text-base font-semibold text-gray-900"
-                                 th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</div>
+                        <div class="text-xs text-gray-600 space-y-1 sm:text-right">
+                            <div th:if="${(companyBrand != null && companyBrand.email != null) || (footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail))}"
+                                 th:text="${companyBrand != null && companyBrand.email != null ? companyBrand.email : footerCompanyEmail}">email</div>
+                            <div th:if="${(companyBrand != null && companyBrand.phone != null) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
+                                 th:text="${companyBrand != null && companyBrand.phone != null ? companyBrand.phone : footerCompanyPhone}">phone</div>
+                            <a th:if="${(companyBrand != null && companyBrand.website != null) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
+                               class="text-blue-700 hover:text-blue-800 hover:underline"
+                               target="_blank" rel="noopener noreferrer"
+                               th:with="trackWebsite=${companyBrand != null && companyBrand.website != null ? companyBrand.website : footerCompanyWebsite},
+                                        trackWebsiteHref=${#strings.startsWith(trackWebsite, 'http://') || #strings.startsWith(trackWebsite, 'https://') ? trackWebsite : 'https://' + trackWebsite}"
+                               th:href="${trackWebsiteHref}"
+                               th:text="${trackWebsite}">website</a>
                         </div>
-                    </div>
-                    <div class="text-right text-xs text-gray-500 space-y-1">
-                        <div th:if="${(companyBrand != null && companyBrand.email != null) || (footerCompanyEmail != null && !#strings.isEmpty(footerCompanyEmail))}"
-                             th:text="${companyBrand != null && companyBrand.email != null ? companyBrand.email : footerCompanyEmail}">email</div>
-                        <div th:if="${(companyBrand != null && companyBrand.phone != null) || (footerCompanyPhone != null && !#strings.isEmpty(footerCompanyPhone))}"
-                             th:text="${companyBrand != null && companyBrand.phone != null ? companyBrand.phone : footerCompanyPhone}">phone</div>
-                        <a th:if="${(companyBrand != null && companyBrand.website != null) || (footerCompanyWebsite != null && !#strings.isEmpty(footerCompanyWebsite))}"
-                           class="text-blue-700 hover:text-blue-800 hover:underline"
-                           target="_blank" rel="noopener noreferrer"
-                           th:with="trackWebsite=${companyBrand != null && companyBrand.website != null ? companyBrand.website : footerCompanyWebsite},
-                                    trackWebsiteHref=${#strings.startsWith(trackWebsite, 'http://') || #strings.startsWith(trackWebsite, 'https://') ? trackWebsite : 'https://' + trackWebsite}"
-                           th:href="${trackWebsiteHref}"
-                           th:text="${trackWebsite}">website</a>
-                    </div>
                     </div>
                     <div class="mt-4 border-t border-gray-200 pt-3">
                         <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide"
                             th:text="#{track.company_profile.title}">
                             Company profile
                         </h3>
-                        <div th:if="${trackCompany != null}" class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-700">
-                            <div th:if="${trackCompany.address != null && !#strings.isEmpty(trackCompany.address)}">
-                                <span class="font-medium text-gray-500" th:text="#{common.address}">Address</span>:
-                                <span th:text="${trackCompany.address}">Address</span>
-                            </div>
-                            <div th:if="${trackCompany.website != null && !#strings.isEmpty(trackCompany.website)}"
-                                 th:with="companyWebsiteHref=${#strings.startsWith(trackCompany.website, 'http://') || #strings.startsWith(trackCompany.website, 'https://') ? trackCompany.website : 'https://' + trackCompany.website}">
-                                <span class="font-medium text-gray-500" th:text="#{company.settings.website}">Website</span>:
-                                <a class="text-blue-700 hover:text-blue-800 hover:underline"
-                                   target="_blank" rel="noopener noreferrer"
-                                   th:href="${companyWebsiteHref}"
-                                   th:text="${trackCompany.website}">Website</a>
-                            </div>
-                            <div th:if="${trackCompany.legalName != null && !#strings.isEmpty(trackCompany.legalName)}">
-                                <span class="font-medium text-gray-500" th:text="#{track.company_profile.legal_name}">Legal name</span>:
-                                <span th:text="${trackCompany.legalName}">Legal Name</span>
-                            </div>
-                            <div th:if="${trackCompany.taxId != null && !#strings.isEmpty(trackCompany.taxId)}">
-                                <span class="font-medium text-gray-500" th:text="#{track.company_profile.tax_id}">Tax ID / PIB</span>:
-                                <span th:text="${trackCompany.taxId}">123456789</span>
-                            </div>
-                            <div th:if="${trackCompany.registrationNumber != null && !#strings.isEmpty(trackCompany.registrationNumber)}">
-                                <span class="font-medium text-gray-500" th:text="#{track.company_profile.registration_number}">Registration number</span>:
-                                <span th:text="${trackCompany.registrationNumber}">12345678</span>
-                            </div>
-                            <div th:if="${trackCompany.billingEmail != null && !#strings.isEmpty(trackCompany.billingEmail)}">
-                                <span class="font-medium text-gray-500" th:text="#{track.company_profile.billing_email}">Billing email</span>:
-                                <span th:text="${trackCompany.billingEmail}">billing@example.com</span>
+                        <div th:if="${trackCompany != null}" class="mt-2">
+                            <div class="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)] gap-3">
+                                <div class="rounded-xl border border-gray-200 bg-white p-3">
+                                    <div class="mx-auto flex h-32 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                        <img th:if="${companyBrand != null and companyBrand.logoUrl != null}"
+                                             th:src="${companyBrand.logoUrl}" alt="Company logo" class="max-h-24 w-auto object-contain">
+                                        <img th:if="${companyBrand == null || companyBrand.logoUrl == null}"
+                                             th:src="@{/images/app-logo.svg}" alt="Company logo fallback" class="max-h-24 w-auto object-contain">
+                                    </div>
+                                </div>
+                                <div class="rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div th:if="${trackCompany.legalName != null && !#strings.isEmpty(trackCompany.legalName)}">
+                                            <span class="font-medium text-gray-500" th:text="#{track.company_profile.legal_name}">Legal name</span>:
+                                            <span th:text="${trackCompany.legalName}">Legal Name</span>
+                                        </div>
+                                        <div th:if="${trackCompany.taxId != null && !#strings.isEmpty(trackCompany.taxId)}">
+                                            <span class="font-medium text-gray-500" th:text="#{track.company_profile.tax_id}">Tax ID / PIB</span>:
+                                            <span th:text="${trackCompany.taxId}">123456789</span>
+                                        </div>
+                                        <div th:if="${trackCompany.registrationNumber != null && !#strings.isEmpty(trackCompany.registrationNumber)}">
+                                            <span class="font-medium text-gray-500" th:text="#{track.company_profile.registration_number}">Registration number</span>:
+                                            <span th:text="${trackCompany.registrationNumber}">12345678</span>
+                                        </div>
+                                        <div th:if="${trackCompany.billingEmail != null && !#strings.isEmpty(trackCompany.billingEmail)}">
+                                            <span class="font-medium text-gray-500" th:text="#{track.company_profile.billing_email}">Billing email</span>:
+                                            <span th:text="${trackCompany.billingEmail}">billing@example.com</span>
+                                        </div>
+                                        <div th:if="${trackCompany.address != null && !#strings.isEmpty(trackCompany.address)}" class="sm:col-span-2">
+                                            <span class="font-medium text-gray-500" th:text="#{common.address}">Address</span>:
+                                            <span th:text="${trackCompany.address}">Address</span>
+                                        </div>
+                                        <div th:if="${trackCompany.website != null && !#strings.isEmpty(trackCompany.website)}"
+                                             class="sm:col-span-2"
+                                             th:with="companyWebsiteHref=${#strings.startsWith(trackCompany.website, 'http://') || #strings.startsWith(trackCompany.website, 'https://') ? trackCompany.website : 'https://' + trackCompany.website}">
+                                            <span class="font-medium text-gray-500" th:text="#{company.settings.website}">Website</span>:
+                                            <a class="text-blue-700 hover:text-blue-800 hover:underline"
+                                               target="_blank" rel="noopener noreferrer"
+                                               th:href="${companyWebsiteHref}"
+                                               th:text="${trackCompany.website}">Website</a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div th:if="${trackCompany != null}" class="mt-3 flex flex-wrap gap-2">
-                            <a th:href="@{/p/company/{id}/order(id=${trackCompany.id})}"
+                            <a th:href="@{/p/company/{id}/order(id=${trackCompany.id},lang=${#locale.language})}"
                                class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
                                th:text="#{track.company_profile.open_request}">
                                 Send request
@@ -202,6 +219,10 @@
                                id="trackingCode" 
                                name="trackingCode" 
                                required
+                               autocapitalize="off"
+                               autocomplete="off"
+                               autocorrect="off"
+                               spellcheck="false"
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                th:value="${submittedTrackingCode != null ? submittedTrackingCode : tokenParam}"
                                th:placeholder="#{track.code_placeholder}">
@@ -248,6 +269,27 @@
                             </svg>
                             <div class="ml-3">
                                 <p class="text-sm text-red-700" th:text="${errorKey != null ? #messages.msg(errorKey) : error}"></p>
+                                <p class="mt-1 text-xs text-red-700"
+                                   th:if="${errorKey == 'track.error.company_mismatch'}"
+                                   th:text="#{track.error.help.company_mismatch}">
+                                    Please reset selected company or open tracking without company filter.
+                                </p>
+                                <a class="mt-2 inline-flex text-xs font-semibold text-red-800 underline hover:no-underline"
+                                   th:if="${errorKey == 'track.error.company_mismatch' and mismatchSuggestedCompanyId != null}"
+                                   th:href="@{/public/track(company=${mismatchSuggestedCompanyId},lang=${#locale.language == 'en' ? 'en' : 'sr'})}"
+                                   th:text="${mismatchSuggestedCompanyName != null ? #messages.msg('track.error.help.open_suggested_company') + ': ' + mismatchSuggestedCompanyName : #messages.msg('track.error.help.open_suggested_company')}">
+                                    Open suggested company
+                                </a>
+                                <p class="mt-1 text-xs text-red-700"
+                                   th:if="${errorKey == 'track.error.invalid_code'}"
+                                   th:text="#{track.error.help.invalid_code}">
+                                    Use only letters, numbers, dashes and underscores (example: ORD-123456-789).
+                                </p>
+                                <p class="mt-1 text-xs text-red-700"
+                                   th:if="${errorKey == 'track.error.too_many_requests'}"
+                                   th:text="#{track.error.help.too_many_requests}">
+                                    Please wait a bit and try again.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -268,14 +310,14 @@
                         </p>
                         <p class="text-gray-600">
                             <span th:text="#{track.no_code_business}">If you're a printing company and want to use PrintFlow for your business,</span>
-                            <a th:href="@{/register}" class="text-blue-600 hover:text-blue-800 font-medium" th:text="#{track.no_code_cta}">sign up for a free trial</a>.
+                            <a th:href="@{/register(lang=${#locale.language})}" class="text-blue-600 hover:text-blue-800 font-medium" th:text="#{track.no_code_cta}">sign up for a free trial</a>.
                         </p>
                     </div>
                 </div>
             </div>
             
             <div class="text-center mt-8">
-                <a th:href="@{/}" class="text-blue-600 hover:text-blue-800 font-medium" th:text="#{auth.back_home}">
+                <a th:href="@{/public/(lang=${#locale.language})}" class="text-blue-600 hover:text-blue-800 font-medium" th:text="#{auth.back_home}">
                     ← Back to home page
                 </a>
             </div>
@@ -337,12 +379,12 @@
             const i18n = {
                 empty: i18nEl?.getAttribute('data-empty') || 'Paste the full code from your email.',
                 short: i18nEl?.getAttribute('data-short') || 'Code looks short. Check if you copied all characters.',
-                format: i18nEl?.getAttribute('data-format') || 'Use letters, numbers, and dashes (example: ORD-123456-789).',
+                format: i18nEl?.getAttribute('data-format') || 'Use letters, numbers, dashes, and underscores (example: ORD-123456-789).',
                 ready: i18nEl?.getAttribute('data-ready') || 'Code format looks good. You can submit now.',
                 company: i18nEl?.getAttribute('data-company') || 'Tip: choose company for faster lookup and fewer mismatch errors.',
                 nextSelectCompany: i18nEl?.getAttribute('data-next-select-company') || 'Next step: select company for precise tracking lookup.',
                 nextEnterCode: i18nEl?.getAttribute('data-next-enter-code') || 'Next step: enter full tracking code from email.',
-                nextReviewCode: i18nEl?.getAttribute('data-next-review-code') || 'Next step: review code format (letters, numbers, dashes).',
+                nextReviewCode: i18nEl?.getAttribute('data-next-review-code') || 'Next step: review code format (letters, numbers, dashes, underscores).',
                 nextSubmit: i18nEl?.getAttribute('data-next-submit') || 'Ready: click Track Order to see live status.',
                 pasteSuccess: i18nEl?.getAttribute('data-paste-success') || 'Tracking code pasted from clipboard.',
                 pasteFailed: i18nEl?.getAttribute('data-paste-failed') || 'Unable to paste automatically. Paste manually.',
@@ -360,6 +402,7 @@
             const publicLastCompanyKey = 'printflow.public.lastCompany';
             const requesterStorageKey = 'printflow.public.requester';
             const contactIntentStorageKey = 'printflow.public.contactIntent';
+            const currentLang = document.documentElement.getAttribute('lang') || 'sr';
             let recentCodes = [];
 
             function hasAnyHelperData() {
@@ -385,12 +428,12 @@
                 if (!openCompanyRequestBtn) return;
                 const selected = String(select?.value || '');
                 if (!selected) {
-                    openCompanyRequestBtn.setAttribute('href', '/public/companies');
+                    openCompanyRequestBtn.setAttribute('href', `/public/companies?lang=${encodeURIComponent(currentLang)}`);
                     openCompanyRequestBtn.textContent = i18n.openRequestDisabled;
                     openCompanyRequestBtn.className = 'inline-flex items-center rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50';
                     return;
                 }
-                openCompanyRequestBtn.setAttribute('href', `/p/company/${selected}/order`);
+                openCompanyRequestBtn.setAttribute('href', `/p/company/${selected}/order?lang=${encodeURIComponent(currentLang)}`);
                 openCompanyRequestBtn.textContent = i18n.openRequestActive;
                 openCompanyRequestBtn.className = 'inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100';
             }
@@ -419,8 +462,8 @@
             function updateCodeSmartHint() {
                 if (!trackingCodeSmartHint || !trackingCode) return;
                 const raw = (trackingCode.value || '').trim();
-                const normalized = raw.replace(/\s+/g, '').toUpperCase();
-                const codeRegex = /^[A-Z0-9-]+$/;
+                const normalized = raw.replace(/\s+/g, '');
+                const codeRegex = /^[A-Za-z0-9_-]+$/;
                 const hints = [];
                 if (!normalized) {
                     hints.push(i18n.empty);
@@ -428,7 +471,7 @@
                     if (normalized.length < 8) {
                         hints.push(i18n.short);
                     }
-                    if (!codeRegex.test(normalized) || !normalized.includes('-')) {
+                    if (!codeRegex.test(normalized)) {
                         hints.push(i18n.format);
                     } else if (normalized.length >= 8) {
                         hints.push(i18n.ready);
@@ -438,7 +481,7 @@
                     hints.push(i18n.company);
                 }
                 trackingCodeSmartHint.textContent = hints.join(' ');
-                updateNextStepHint(normalized, codeRegex.test(normalized) && normalized.includes('-'));
+                updateNextStepHint(normalized, codeRegex.test(normalized));
             }
 
             function updateNextStepHint(normalizedCode, validCodeFormat) {
@@ -463,7 +506,7 @@
                     const parsed = JSON.parse(localStorage.getItem(recentCodesStorageKey) || '[]');
                     if (!Array.isArray(parsed)) return [];
                     return parsed
-                        .map(code => String(code || '').trim().toUpperCase())
+                        .map(code => String(code || '').trim())
                         .filter(code => code.length > 0)
                         .slice(0, 5);
                 } catch (e) {
@@ -473,7 +516,7 @@
 
             function saveRecentCode(code) {
                 if (!code) return;
-                const normalized = String(code).trim().replace(/\s+/g, '').toUpperCase();
+                const normalized = String(code).trim().replace(/\s+/g, '');
                 if (!normalized) return;
                 const deduped = [normalized, ...recentCodes.filter(item => item !== normalized)].slice(0, 5);
                 recentCodes = deduped;
@@ -516,7 +559,7 @@
 
             if (trackingCode) {
                 trackingCode.addEventListener('blur', function () {
-                    trackingCode.value = (trackingCode.value || '').trim().replace(/\s+/g, '').toUpperCase();
+                    trackingCode.value = (trackingCode.value || '').trim().replace(/\s+/g, '');
                     updateCodeSmartHint();
                 });
                 trackingCode.addEventListener('input', updateCodeSmartHint);
@@ -530,7 +573,7 @@
                     }
                     try {
                         const text = await navigator.clipboard.readText();
-                        trackingCode.value = (text || '').trim().replace(/\s+/g, '').toUpperCase();
+                        trackingCode.value = (text || '').trim().replace(/\s+/g, '');
                         if (pasteTrackingCodeHint) pasteTrackingCodeHint.textContent = i18n.pasteSuccess;
                         updateCodeSmartHint();
                     } catch (e) {
@@ -595,7 +638,7 @@
             const trackingForm = trackingCode ? trackingCode.closest('form') : null;
             if (trackingForm) {
                 trackingForm.addEventListener('submit', function () {
-                    const normalized = (trackingCode.value || '').trim().replace(/\s+/g, '').toUpperCase();
+                    const normalized = (trackingCode.value || '').trim().replace(/\s+/g, '');
                     saveRecentCode(normalized);
                     if (trackSubmitBtn) {
                         trackSubmitBtn.disabled = true;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
     <title th:text="#{order_tracking.title(${order.orderNumber})}">Order Tracking</title>
 </head>
@@ -22,7 +22,7 @@
                 <span class="text-xl font-bold text-gray-800" th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</span>
             </div>
             <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-                <a th:href="@{/public/track}" class="text-blue-600 hover:text-blue-800 font-medium track-link-with-last-company" th:text="#{auth.back_home}">
+                <a th:href="@{/public/track(lang=${#locale.language})}" class="text-blue-600 hover:text-blue-800 font-medium track-link-with-last-company" th:text="#{auth.back_home}">
                     ← Back to home
                 </a>
                 <div class="flex items-center gap-2 text-xs text-gray-600">
@@ -49,7 +49,10 @@
             <div class="flex flex-col gap-4 md:flex-row md:justify-between md:items-start mb-4">
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="text-2xl font-bold text-gray-900" th:text="${order.title}">Order Title</h1>
+                        <h1 class="text-2xl font-bold text-gray-900"
+                            th:text="${order.title != null and !#strings.isEmpty(order.title) ? order.title : #messages.msg('order_tracking.title_fallback')}">
+                            Order Title
+                        </h1>
                         <button type="button"
                                 id="copyTrackingLinkBtn"
                                 class="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
@@ -57,17 +60,29 @@
                             Copy link
                         </button>
                     </div>
-                    <p class="text-gray-600 mt-1" th:text="${order.description}">Order description</p>
+                    <p class="text-gray-600 mt-1"
+                       th:if="${order.description != null and !#strings.isEmpty(order.description)}"
+                       th:text="${order.description}">
+                        Order description
+                    </p>
+                    <p class="text-gray-500 mt-1 text-sm"
+                       th:if="${order.description == null or #strings.isEmpty(order.description)}"
+                       th:text="#{order_tracking.description_missing}">
+                        No additional description provided.
+                    </p>
                     <p id="copyTrackingLinkHint" class="mt-1 text-xs text-gray-500"></p>
                 </div>
                 <div class="md:text-right">
                     <div class="text-sm text-gray-500" th:text="#{orders.order_number}">Order Number</div>
                     <div class="flex items-center gap-2 md:justify-end">
-                        <div class="text-lg font-bold text-gray-900" th:text="${order.orderNumber}">ORD-001</div>
+                        <div class="text-lg font-bold text-gray-900"
+                             th:text="${order.orderNumber != null and !#strings.isEmpty(order.orderNumber) ? order.orderNumber : #messages.msg('order_tracking.order_number_fallback')}">
+                            ORD-001
+                        </div>
                         <button type="button"
                                 id="copyOrderNumberBtn"
                                 class="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
-                                th:attr="data-value=${order.orderNumber}"
+                                th:attr="data-value=${order.orderNumber != null and !#strings.isEmpty(order.orderNumber) ? order.orderNumber : #messages.msg('order_tracking.order_number_fallback')}"
                                 th:text="#{common.copy}">
                             Copy
                         </button>
@@ -77,71 +92,233 @@
                                 th:text="#{order_tracking.print}">
                             Print
                         </button>
+                        <a th:if="${order.quoteStatus != null and (order.quoteStatus.name() == 'READY' or order.quoteStatus.name() == 'SENT' or order.quoteStatus.name() == 'APPROVED')}"
+                           th:href="@{/public/order/{token}/pdf/quote(token=${token},lang=${#locale.language})}"
+                           class="rounded border border-blue-300 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100"
+                           th:text="#{order_tracking.download_quote_pdf}">
+                            Quote PDF
+                        </a>
+                        <span th:if="${order.quoteStatus == null or !(order.quoteStatus.name() == 'READY' or order.quoteStatus.name() == 'SENT' or order.quoteStatus.name() == 'APPROVED')}"
+                              class="rounded border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs text-gray-600"
+                              th:text="#{order_tracking.quote_pdf_unavailable}">
+                            Quote PDF will be available once the quote is ready.
+                        </span>
                     </div>
                     <p id="copyOrderNumberHint" class="mt-1 text-xs text-gray-500"></p>
                 </div>
             </div>
 
             <!-- Client Info -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"
-                 th:with="profit=${order.price != null && order.cost != null ? (order.price - order.cost) : null},
-                          margin=${order.price != null && order.cost != null && order.price > 0 ? ((order.price - order.cost) / order.price) * 100 : null}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
 
                 <div>
                     <h3 class="text-sm font-medium text-gray-500" th:text="#{clients.title}">Client</h3>
-                    <p class="text-gray-900 font-medium" th:text="${order.clientName}">Client Name</p>
+                    <p class="text-gray-900 font-medium"
+                       th:text="${order.clientName != null and !#strings.isEmpty(order.clientName) ? order.clientName : #messages.msg('order_tracking.client_fallback')}">
+                        Client Name
+                    </p>
                 </div>
 
                 <div>
                     <h3 class="text-sm font-medium text-gray-500" th:text="#{order_tracking.order_date}">Order Date</h3>
-                    <p class="text-gray-900" th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy')}">01.01.2024</p>
+                    <p class="text-gray-900"
+                       th:text="${order.createdAt != null ? #temporals.format(order.createdAt, 'dd.MM.yyyy') : #messages.msg('order_tracking.date_unknown')}">
+                        01.01.2024
+                    </p>
                 </div>
 
                 <div>
                     <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.price}">Price</h3>
                     <p class="text-gray-900">
-                        <span th:if="${order.price != null}"
-                              th:text="${(companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(order.price,1,2)}">0.00</span>
-                        <span th:unless="${order.price != null}"
+                        <span th:if="${displayOrderPrice != null}"
+                              th:text="${(companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(displayOrderPrice,1,2)}">0.00</span>
+                        <span th:unless="${displayOrderPrice != null}"
                               th:text="#{order_tracking.not_set}">Not set</span>
                     </p>
                 </div>
 
-                <div th:if="${profit != null}">
-                    <h3 class="text-sm font-medium text-gray-500" th:text="#{order_tracking.profit}">Profit</h3>
-                    <p class="text-gray-900"
-                       th:text="${(companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(profit,1,2)}">0.00</p>
-                </div>
-
-                <div th:if="${margin != null}">
-                    <h3 class="text-sm font-medium text-gray-500" th:text="#{order_tracking.margin}">Margin</h3>
-                    <p class="text-gray-900" th:text="${#numbers.formatDecimal(margin,1,2) + '%'}">0.00%</p>
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{common.status}">Status</h3>
+                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                          th:classappend="${order.status != null and (order.status.name() == 'COMPLETED') ? ' bg-emerald-100 text-emerald-800' :
+                                          (order.status != null and (order.status.name() == 'CANCELLED') ? ' bg-red-100 text-red-800' :
+                                          (order.status != null and (order.status.name() == 'OVERDUE') ? ' bg-amber-100 text-amber-800' :
+                                          (order.status != null and (order.status.name() == 'WAITING_CLIENT_APPROVAL') ? ' bg-amber-100 text-amber-900' :
+                                          ' bg-gray-100 text-gray-700')))}"
+                          th:text="${order.status != null ? #messages.msg(order.status.messageKey) : #messages.msg('common.na')}">
+                        NEW
+                    </span>
                 </div>
 
                 <div>
-                    <h3 class="text-sm font-medium text-gray-500" th:text="#{common.status}">Status</h3>
-                    <p class="text-gray-900" th:text="#{${order.status.messageKey}}">NEW</p>
+                    <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery_type}">Delivery Type</h3>
+                    <p class="text-gray-900"
+                       th:text="${order.deliveryType != null ? (#messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name()) : #messages.msg('common.na')}">
+                        Pickup
+                    </p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Quick Facts -->
+        <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500" th:text="#{orders.order_number}">Order number</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900"
+                     th:text="${order.orderNumber != null and !#strings.isEmpty(order.orderNumber) ? order.orderNumber : #messages.msg('order_tracking.order_number_fallback')}">
+                    ORD-001
+                </div>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500" th:text="#{common.status}">Status</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900"
+                     th:text="${order.status != null ? #messages.msg(order.status.messageKey) : #messages.msg('common.na')}">
+                    NEW
+                </div>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500" th:text="#{orders.delivery_type}">Delivery type</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900"
+                     th:text="${order.deliveryType != null ? (#messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name()) : #messages.msg('common.na')}">
+                    Pickup
+                </div>
+            </div>
+            <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-500" th:text="#{order_tracking.tracking_number}">Tracking</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900"
+                     th:text="${order.trackingNumber != null and !#strings.isEmpty(order.trackingNumber) ? order.trackingNumber : #messages.msg('common.na')}">
+                    N/A
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6"
+             th:if="${order.status != null and (order.status.name() == 'WAITING_CLIENT_APPROVAL' or order.status.name() == 'COMPLETED' or order.status.name() == 'CANCELLED' or order.status.name() == 'OVERDUE')}">
+            <div class="rounded-xl border px-4 py-3 text-sm"
+                 th:classappend="${order.status.name() == 'CANCELLED'} ? ' border-red-200 bg-red-50 text-red-800' :
+                                 (${order.status.name() == 'COMPLETED'} ? ' border-emerald-200 bg-emerald-50 text-emerald-800' :
+                                 (${order.status.name() == 'WAITING_CLIENT_APPROVAL'} ? ' border-amber-200 bg-amber-50 text-amber-900' :
+                                 ' border-amber-200 bg-amber-50 text-amber-900'))">
+                <p th:if="${order.status.name() == 'WAITING_CLIENT_APPROVAL'}"
+                   th:text="#{order_tracking.status.waiting_client_approval_notice}">
+                    Action needed: please review and approve/reject the design to continue production.
+                </p>
+                <a th:if="${order.status.name() == 'WAITING_CLIENT_APPROVAL'}"
+                   href="#design-approval-section"
+                   class="mt-2 inline-flex text-xs font-semibold underline hover:no-underline"
+                   th:text="#{order_tracking.status.waiting_client_approval_cta}">
+                    Open design approval
+                </a>
+                <p th:if="${order.status.name() == 'COMPLETED'}"
+                   th:text="#{order_tracking.status.completed_notice}">
+                    This order is completed. Thank you for using tracking.
+                </p>
+                <p th:if="${order.status.name() == 'CANCELLED'}"
+                   th:text="#{order_tracking.status.cancelled_notice}">
+                    This order has been cancelled. Contact the printing company for clarification.
+                </p>
+                <a th:if="${order.status.name() == 'CANCELLED'}"
+                   href="#company-contact-section"
+                   class="mt-2 inline-flex text-xs font-semibold underline hover:no-underline"
+                   th:text="#{order_tracking.status.cancelled_notice_cta}">
+                    Contact print shop
+                </a>
+                <p th:if="${order.status.name() == 'OVERDUE'}"
+                   th:text="#{order_tracking.status.overdue_notice}">
+                    This order is delayed. The printing company is prioritizing completion.
+                </p>
+                <a th:if="${order.status.name() == 'OVERDUE'}"
+                   href="#company-contact-section"
+                   class="mt-2 inline-flex text-xs font-semibold underline hover:no-underline"
+                   th:text="#{order_tracking.status.overdue_notice_cta}">
+                    Contact print shop
+                </a>
             </div>
         </div>
 
         <!-- Smart next actions -->
         <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 mb-6">
-            <h2 class="text-sm font-semibold text-blue-900" th:text="#{order_not_found.smart.intent_label}">What do you want to do next?</h2>
+            <h2 class="text-sm font-semibold text-blue-900" th:text="#{order_tracking.next_action.title}">Recommended next action</h2>
+            <p class="mt-1 text-xs text-blue-800"
+               th:if="${order.status != null and order.status.name() == 'WAITING_CLIENT_APPROVAL'}"
+               th:text="#{order_tracking.next_action.approval}">
+                Review the design and submit approval feedback to avoid production delays.
+            </p>
+            <p class="mt-1 text-xs text-blue-800"
+               th:if="${order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')
+                       and order.status != null and (order.status.name() == 'SENT' or order.status.name() == 'READY_FOR_DELIVERY')
+                       and (order.trackingNumber == null or order.trackingNumber.isBlank())}"
+               th:text="#{order_tracking.next_action.tracking_pending}">
+                Shipment is active without tracking code. Request tracking update from the print shop.
+            </p>
+            <p class="mt-1 text-xs text-blue-800"
+               th:if="${order.status != null and (order.status.name() == 'CANCELLED' or order.status.name() == 'OVERDUE')}"
+               th:text="#{order_tracking.next_action.contact}">
+                This order needs direct coordination. Contact the print shop for the fastest resolution.
+            </p>
+            <p class="mt-1 text-xs text-blue-800"
+               th:if="${order.status == null
+                       or (order.status.name() != 'WAITING_CLIENT_APPROVAL'
+                       and order.status.name() != 'CANCELLED'
+                       and order.status.name() != 'OVERDUE'
+                       and ((order.trackingNumber != null and !order.trackingNumber.isBlank())
+                           or order.deliveryType == null
+                           or (order.deliveryType.name() != 'COURIER' and order.deliveryType.name() != 'EXPRESS_POST')
+                           or (order.status.name() != 'SENT' and order.status.name() != 'READY_FOR_DELIVERY')))}"
+               th:text="#{order_tracking.next_action.general}">
+                Track updates and keep contact details available for quick coordination.
+            </p>
             <div class="mt-3 flex flex-wrap gap-2">
-                <a th:href="@{/public/track}"
+                <a th:if="${order.status != null and (order.status.name() == 'CANCELLED' or order.status.name() == 'OVERDUE')}"
+                   href="#company-contact-section"
+                   class="inline-flex rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                   th:text="#{order_tracking.next_action.cta.contact}">
+                    Contact
+                </a>
+                <a th:with="trackingMailTo=${(companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : footerCompanyEmail}"
+                   th:if="${order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')
+                           and order.status != null and (order.status.name() == 'SENT' or order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED')
+                           and (order.trackingNumber == null or order.trackingNumber.isBlank())
+                           and trackingMailTo != null and !#strings.isEmpty(trackingMailTo)}"
+                   th:href="${'mailto:' + trackingMailTo
+                             + '?subject=' + #urls.urlEncode(#messages.msg('order_tracking.ask_tracking_subject', order.orderNumber))
+                             + '&body=' + #urls.urlEncode(#messages.msg('order_tracking.ask_tracking_body', order.orderNumber))}"
+                   class="inline-flex rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                   th:text="#{order_tracking.cta.ask_tracking}">
+                    Ask for tracking
+                </a>
+                <a th:if="${order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')
+                           and order.status != null and (order.status.name() == 'SENT' or order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED')
+                           and (order.trackingNumber == null or order.trackingNumber.isBlank())
+                           and ((companyBrand == null || companyBrand.email == null || #strings.isEmpty(companyBrand.email))
+                                and (footerCompanyEmail == null || #strings.isEmpty(footerCompanyEmail)))}"
+                   href="#company-contact-section"
+                   class="inline-flex rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                   th:text="#{order_tracking.cta.ask_tracking}">
+                    Ask for tracking
+                </a>
+                <a th:if="${order.status != null and order.status.name() == 'WAITING_CLIENT_APPROVAL'}"
+                   href="#design-approval-section"
+                   class="inline-flex rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white hover:bg-amber-600"
+                   th:text="#{order_tracking.status.waiting_client_approval_cta}">
+                    Open design approval
+                </a>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2">
+                <a th:href="@{/public/track(lang=${#locale.language})}"
                    class="inline-flex rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 track-link-with-last-company"
-                   th:text="#{order_not_found.track_another}">
+                   th:text="#{order_tracking.next_action.cta.track}">
                     Track another order
                 </a>
-                <a th:href="@{/public/}"
+                <a th:href="@{/public/(lang=${#locale.language})}"
                    class="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100"
-                   th:text="#{order_not_found.public_home}">
+                   th:text="#{order_tracking.next_action.cta.home}">
                     Public home
                 </a>
-                <a th:href="@{/public/contact}"
+                <a th:href="@{/public/contact(lang=${#locale.language})}"
+                   th:if="${order.status == null or (order.status.name() != 'CANCELLED' and order.status.name() != 'OVERDUE')}"
                    class="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-100"
-                   th:text="#{order_not_found.contact}">
+                   th:text="#{order_tracking.next_action.cta.contact}">
                     Contact
                 </a>
             </div>
@@ -178,13 +355,38 @@
                         <td class="py-2 text-right">
                             <details class="text-xs">
                                 <summary class="cursor-pointer text-blue-600 hover:text-blue-800" th:text="#{common.view}">View</summary>
-                                <pre class="mt-2 whitespace-pre-wrap text-gray-600"
-                                     th:text="${item.pricingSnapshotJson != null ? item.pricingSnapshotJson : #messages.msg('orders.items.no_snapshot')}">No snapshot</pre>
+                                <div class="mt-2 snapshot-json text-left text-gray-600"
+                                     th:attr="data-snapshot=${item.pricingSnapshotJson},
+                                              data-no-snapshot=#{orders.items.no_snapshot},
+                                              data-lbl-qty=#{orders.items.qty},
+                                              data-lbl-price=#{orders.items.price},
+                                              data-lbl-model=#{orders.items.model},
+                                              data-lbl-mult=#{orders.items.multiplier},
+                                              data-lbl-warnings=#{pricing.calculate.warnings},
+                                              data-currency=${item.currency != null ? item.currency : companyCurrency},
+                                              data-warn-no-components=#{pricing.calculate.warning.no_components},
+                                              data-warn-colors-adjusted=#{pricing.calculate.warning.colors_adjusted},
+                                              data-warn-sides-adjusted=#{pricing.calculate.warning.sides_adjusted},
+                                              data-warn-dim=#{pricing.calculate.warning.dimensions_required},
+                                              data-warn-meters-missing=#{pricing.calculate.warning.meters_missing},
+                                              data-warn-minutes-missing=#{pricing.calculate.warning.minutes_missing},
+                                              data-warn-margin=#{pricing.calculate.margin_low},
+                                              data-warn-breakdown=#{pricing.calculate.warning.breakdown_mismatch},
+                                              data-warn-last-price-prefix=#{pricing.calculate.warning.last_price_prefix},
+                                              data-warn-price-drop=#{pricing.calculate.warning.price_drop_20}">
+                                </div>
                             </details>
                         </td>
                     </tr>
                     <tr th:if="${orderItems == null || orderItems.isEmpty()}">
-                        <td class="py-3 text-gray-500" colspan="5" th:text="#{orders.items.empty}">No items yet.</td>
+                        <td class="py-3 text-gray-500" colspan="5">
+                            <div th:text="#{orders.items.empty}">No items yet.</div>
+                            <a href="#company-contact-section"
+                               class="mt-1 inline-flex text-xs font-semibold text-blue-700 underline hover:no-underline"
+                               th:text="#{order_tracking.items_empty_cta}">
+                                Contact print shop for item breakdown
+                            </a>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -192,32 +394,80 @@
         </div>
 
         <!-- Company Contact -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div id="company-contact-section" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-3" th:text="#{contact.details}">Contact details</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div th:if="${companyBrand != null && companyBrand.email != null}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700"
+                 th:with="hasContactInfo=${companyBrand != null and (
+                                (companyBrand.email != null and !#strings.isEmpty(companyBrand.email)) or
+                                (companyBrand.phone != null and !#strings.isEmpty(companyBrand.phone)) or
+                                (companyBrand.address != null and !#strings.isEmpty(companyBrand.address)) or
+                                (companyBrand.website != null and !#strings.isEmpty(companyBrand.website)) or
+                                (orderCompany != null and orderCompany.legalName != null and !#strings.isEmpty(orderCompany.legalName)) or
+                                (orderCompany != null and orderCompany.taxId != null and !#strings.isEmpty(orderCompany.taxId)) or
+                                (orderCompany != null and orderCompany.registrationNumber != null and !#strings.isEmpty(orderCompany.registrationNumber)) or
+                                (orderCompany != null and orderCompany.billingEmail != null and !#strings.isEmpty(orderCompany.billingEmail)) or
+                                (orderCompany != null and orderCompany.bankName != null and !#strings.isEmpty(orderCompany.bankName)) or
+                                (orderCompany != null and orderCompany.bankAccount != null and !#strings.isEmpty(orderCompany.bankAccount))
+                              )}">
+                <div th:if="${companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)}">
                     <div class="text-gray-500" th:text="#{contact.email_label}">Email</div>
                     <a class="text-blue-700 hover:text-blue-800 hover:underline"
                        th:href="${'mailto:' + companyBrand.email}"
                        th:text="${companyBrand.email}">email</a>
                 </div>
-                <div th:if="${companyBrand != null && companyBrand.phone != null}">
+                <div th:if="${companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)}">
                     <div class="text-gray-500" th:text="#{contact.phone_label}">Phone</div>
                     <a class="text-blue-700 hover:text-blue-800 hover:underline"
                        th:href="${'tel:' + companyBrand.phone}"
                        th:text="${companyBrand.phone}">phone</a>
                 </div>
-                <div th:if="${companyBrand != null && companyBrand.address != null}">
+                <div th:if="${companyBrand != null && companyBrand.address != null && !#strings.isEmpty(companyBrand.address)}">
                     <div class="text-gray-500" th:text="#{contact.address_label}">Address</div>
                     <div th:text="${companyBrand.address}">address</div>
                 </div>
-                <div th:if="${companyBrand != null && companyBrand.website != null}"
+                <div th:if="${companyBrand != null && companyBrand.website != null && !#strings.isEmpty(companyBrand.website)}"
                      th:with="trackingWebsiteHref=${#strings.startsWith(companyBrand.website, 'http://') || #strings.startsWith(companyBrand.website, 'https://') ? companyBrand.website : 'https://' + companyBrand.website}">
                     <div class="text-gray-500" th:text="#{contact.website_label}">Website</div>
                     <a class="text-blue-700 hover:text-blue-800 hover:underline"
                        target="_blank" rel="noopener noreferrer"
                        th:href="${trackingWebsiteHref}"
                        th:text="${companyBrand.website}">website</a>
+                </div>
+                <div th:if="${orderCompany != null && orderCompany.legalName != null && !#strings.isEmpty(orderCompany.legalName)}">
+                    <div class="text-gray-500" th:text="#{track.company_profile.legal_name}">Legal name</div>
+                    <div th:text="${orderCompany.legalName}">Legal name</div>
+                </div>
+                <div th:if="${orderCompany != null && orderCompany.taxId != null && !#strings.isEmpty(orderCompany.taxId)}">
+                    <div class="text-gray-500" th:text="#{track.company_profile.tax_id}">Tax ID / PIB</div>
+                    <div th:text="${orderCompany.taxId}">123456789</div>
+                </div>
+                <div th:if="${orderCompany != null && orderCompany.registrationNumber != null && !#strings.isEmpty(orderCompany.registrationNumber)}">
+                    <div class="text-gray-500" th:text="#{track.company_profile.registration_number}">Registration number</div>
+                    <div th:text="${orderCompany.registrationNumber}">12345678</div>
+                </div>
+                <div th:if="${orderCompany != null && orderCompany.billingEmail != null && !#strings.isEmpty(orderCompany.billingEmail)}">
+                    <div class="text-gray-500" th:text="#{track.company_profile.billing_email}">Billing email</div>
+                    <a class="text-blue-700 hover:text-blue-800 hover:underline"
+                       th:href="${'mailto:' + orderCompany.billingEmail}"
+                       th:text="${orderCompany.billingEmail}">billing@company.com</a>
+                </div>
+                <div th:if="${orderCompany != null && orderCompany.bankName != null && !#strings.isEmpty(orderCompany.bankName)}">
+                    <div class="text-gray-500" th:text="#{company.settings.bank_name}">Bank name</div>
+                    <div th:text="${orderCompany.bankName}">Bank</div>
+                </div>
+                <div th:if="${orderCompany != null && orderCompany.bankAccount != null && !#strings.isEmpty(orderCompany.bankAccount)}">
+                    <div class="text-gray-500" th:text="#{company.settings.bank_account}">Bank account</div>
+                    <div th:text="${orderCompany.bankAccount}">IBAN</div>
+                </div>
+                <div th:if="${!hasContactInfo}" class="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                    <p class="text-sm" th:text="#{order_tracking.contact_info_unavailable}">
+                        Contact information is currently unavailable. Please use the public contact page.
+                    </p>
+                    <a th:href="@{/public/contact(lang=${#locale.language})}"
+                       class="mt-2 inline-flex text-xs font-semibold underline hover:no-underline"
+                       th:text="#{order_tracking.contact_info_unavailable_cta}">
+                        Open contact page
+                    </a>
                 </div>
             </div>
         </div>
@@ -231,13 +481,13 @@
                 <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
                 <!-- Timeline Steps -->
-                <div class="space-y-8">
+                <div class="space-y-6 md:space-y-8">
 
                     <!-- Step 1: Order Created -->
                     <div class="relative flex items-start">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).NEW.ordinal() ?
+                                 th:class="${order.status != null and order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).NEW.ordinal() ?
                                            'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
@@ -247,7 +497,7 @@
                             </div>
                         </div>
                         <div class="ml-6">
-                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step1_title}">Order Created</h3>
+                            <h3 class="text-base md:text-lg font-medium text-gray-900" th:text="#{order_tracking.step1_title}">Order Created</h3>
                             <p class="text-gray-600" th:text="#{order_tracking.step1_desc}">Your order has been received and is being processed.</p>
                         </div>
                     </div>
@@ -256,7 +506,7 @@
                     <div class="relative flex items-start">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_DESIGN.ordinal() ?
+                                 th:class="${order.status != null and order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_DESIGN.ordinal() ?
                                            'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
@@ -266,7 +516,7 @@
                             </div>
                         </div>
                         <div class="ml-6">
-                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step2_title}">Design Phase</h3>
+                            <h3 class="text-base md:text-lg font-medium text-gray-900" th:text="#{order_tracking.step2_title}">Design Phase</h3>
 
                             <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_DESIGN}">
                                 <span th:text="#{order_tracking.design_in_progress}">Currently being designed. You'll receive a preview for approval soon.</span>
@@ -276,7 +526,7 @@
                                 <span th:text="#{order_tracking.design_waiting_approval}">Design is ready for your approval. Please review the preview below.</span>
                             </p>
 
-                            <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL.ordinal()}">
+                            <p class="text-gray-600" th:if="${order.status != null and order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL.ordinal()}">
                                 <span th:text="#{order_tracking.design_approved}">Design has been approved and is ready for production.</span>
                             </p>
                         </div>
@@ -286,7 +536,7 @@
                     <div class="relative flex items-start">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal() ?
+                                 th:class="${order.status != null and order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal() ?
                                            'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
@@ -296,13 +546,13 @@
                             </div>
                         </div>
                         <div class="ml-6">
-                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step3_title}">Production</h3>
+                            <h3 class="text-base md:text-lg font-medium text-gray-900" th:text="#{order_tracking.step3_title}">Production</h3>
 
                             <p class="text-gray-600" th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).IN_PRINT}">
                                 <span th:text="#{order_tracking.production_in_progress}">Currently in production. Your items are being printed/manufactured.</span>
                             </p>
 
-                            <p class="text-gray-600" th:if="${order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal()}">
+                            <p class="text-gray-600" th:if="${order.status != null and order.status.ordinal() > T(com.printflow.entity.enums.OrderStatus).IN_PRINT.ordinal()}">
                                 <span th:text="#{order_tracking.production_done}">Production has been completed.</span>
                             </p>
                         </div>
@@ -312,7 +562,7 @@
                     <div class="relative flex items-start">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                                 th:class="${order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).READY_FOR_DELIVERY.ordinal() ?
+                                 th:class="${order.status != null and order.status.ordinal() >= T(com.printflow.entity.enums.OrderStatus).READY_FOR_DELIVERY.ordinal() ?
                                            'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
@@ -323,16 +573,49 @@
                         </div>
 
                         <div class="ml-6">
-                            <h3 class="text-lg font-medium text-gray-900" th:text="#{order_tracking.step4_title}">Ready for Delivery</h3>
+                            <h3 class="text-base md:text-lg font-medium text-gray-900" th:text="#{order_tracking.step4_title}">Ready for Delivery</h3>
 
                             <!-- FIX: No T(com.printflow.entity.enums.DeliveryType) to avoid SpEL type errors -->
                             <div th:if="${order.deliveryType != null and order.deliveryType.name() == 'PICKUP'}">
-                                <p class="text-gray-600" th:text="#{order_tracking.pickup_ready}">Your order is ready for pickup.</p>
-                                <p class="text-sm text-gray-500 mt-1" th:text="#{order_tracking.pickup_help}">Please contact the printing company for pickup details.</p>
+                                <p class="text-gray-600"
+                                   th:if="${order.status != null and order.status.name() == 'COMPLETED'}"
+                                   th:text="#{order_tracking.pickup_completed}">
+                                    Your order has been successfully picked up.
+                                </p>
+                                <p class="text-gray-600"
+                                   th:if="${order.status == null or order.status.name() != 'COMPLETED'}"
+                                   th:text="#{order_tracking.pickup_ready}">
+                                    Your order is ready for pickup.
+                                </p>
+                                <p class="text-sm text-gray-500 mt-1"
+                                   th:if="${order.status == null or order.status.name() != 'COMPLETED'}"
+                                   th:text="#{order_tracking.pickup_help}">
+                                    Please contact the printing company for pickup details.
+                                </p>
+                                <a th:if="${order.status == null or order.status.name() != 'COMPLETED'}"
+                                   href="#company-contact-section"
+                                   class="mt-1 inline-flex text-xs font-semibold text-blue-700 underline hover:no-underline"
+                                   th:text="#{order_tracking.pickup_help_cta}">
+                                    Open contact details
+                                </a>
                             </div>
 
-                            <div th:if="${order.deliveryType != null and order.deliveryType.name() == 'EXPRESS_POST'}">
-                                <p class="text-gray-600" th:text="#{order_tracking.shipped}">Your order has been shipped.</p>
+                            <div th:if="${order.deliveryType != null and (order.deliveryType.name() == 'EXPRESS_POST' or order.deliveryType.name() == 'COURIER')}">
+                                <p class="text-gray-600"
+                                   th:if="${order.status != null and order.status.name() == 'COMPLETED'}"
+                                   th:text="#{order_tracking.shipment_completed}">
+                                    Your shipment is completed.
+                                </p>
+                                <p class="text-gray-600"
+                                   th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY'}"
+                                   th:text="#{order_tracking.ready_to_ship}">
+                                    Your order is packed and ready to be handed over to courier.
+                                </p>
+                                <p class="text-gray-600"
+                                   th:if="${order.status != null and (order.status.name() == 'SENT' or order.status.name() == 'DELIVERED')}"
+                                   th:text="#{order_tracking.shipped}">
+                                    Your order has been shipped.
+                                </p>
 
                                 <div class="mt-2 space-y-1">
                                     <p class="text-sm" th:if="${order.courierName}">
@@ -358,6 +641,28 @@
                                         </button>
                                     </p>
                                     <p id="copyTrackingNumberHint" class="text-xs text-gray-500"></p>
+                                    <p class="text-sm text-gray-500"
+                                       th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and (order.trackingNumber == null or order.trackingNumber.isBlank())}"
+                                       th:text="#{order_tracking.tracking_pending_dispatch}">
+                                        Tracking number will be visible once shipment is dispatched.
+                                    </p>
+                                    <a th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and (order.trackingNumber == null or order.trackingNumber.isBlank())}"
+                                       href="#company-contact-section"
+                                       class="inline-flex text-xs font-semibold text-blue-700 underline hover:no-underline"
+                                       th:text="#{order_tracking.tracking_pending_dispatch_cta}">
+                                        Contact print shop
+                                    </a>
+                                    <p class="text-sm text-amber-700"
+                                       th:if="${order.status != null and (order.status.name() == 'SENT' or order.status.name() == 'DELIVERED' or order.status.name() == 'COMPLETED') and (order.trackingNumber == null or order.trackingNumber.isBlank())}"
+                                       th:text="#{order_tracking.tracking_pending_update}">
+                                        Shipment is marked as sent, but tracking code is not yet published.
+                                    </p>
+                                    <a th:if="${order.status != null and (order.status.name() == 'SENT' or order.status.name() == 'DELIVERED' or order.status.name() == 'COMPLETED') and (order.trackingNumber == null or order.trackingNumber.isBlank())}"
+                                       href="#company-contact-section"
+                                       class="inline-flex text-xs font-semibold text-blue-700 underline hover:no-underline"
+                                       th:text="#{order_tracking.tracking_pending_update_cta}">
+                                        Ask for tracking
+                                    </a>
                                 </div>
                             </div>
 
@@ -382,14 +687,25 @@
                 <div th:if="${activityFeed == null || activityFeed.isEmpty()}" class="text-sm text-gray-500" th:text="#{order_tracking.no_recent_activity}">
                     No recent activity.
                 </div>
+                <div th:if="${activityFeed == null || activityFeed.isEmpty()}" class="mt-2">
+                    <a href="#company-contact-section"
+                       class="inline-flex text-xs font-semibold text-blue-700 underline hover:no-underline"
+                       th:text="#{order_tracking.no_recent_activity_cta}">
+                        Contact print shop for latest update
+                    </a>
+                </div>
             </div>
         </div>
 
         <!-- Design Approval Section -->
-        <div th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}"
+        <div id="design-approval-section"
+             th:if="${order.status == T(com.printflow.entity.enums.OrderStatus).WAITING_CLIENT_APPROVAL}"
              class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4" th:text="#{order_tracking.design_required}">Design Approval Required</h2>
             <p class="text-gray-600 mb-6" th:text="#{order_tracking.design_review}">Please review the design preview and approve or request changes.</p>
+            <div th:if="${approveErrorKey != null}" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <span th:text="#{${approveErrorKey}}">Please provide comment before requesting changes.</span>
+            </div>
 
             <!-- Design Previews -->
             <div class="space-y-4 mb-8">
@@ -438,7 +754,9 @@
 
                 <div>
                     <label class="flex items-center space-x-3 cursor-pointer">
-                        <input type="radio" name="approved" value="true" class="h-4 w-4 text-blue-600" th:disabled="${billingExpired}">
+                        <input id="approvedYes" type="radio" name="approved" value="true" class="h-4 w-4 text-blue-600"
+                               th:disabled="${billingExpired}"
+                               th:checked="${approveDraftDecision != null and #strings.equalsIgnoreCase(approveDraftDecision, 'true')}">
                         <span class="text-gray-900 font-medium" th:text="#{order_tracking.approve_design}">✅ Approve Design</span>
                     </label>
                     <p class="text-gray-600 text-sm ml-7" th:text="#{order_tracking.approve_help}">The design looks good, proceed with production.</p>
@@ -446,17 +764,21 @@
 
                 <div>
                     <label class="flex items-start space-x-3 cursor-pointer">
-                        <input type="radio" name="approved" value="false" class="h-4 w-4 text-blue-600 mt-1" th:disabled="${billingExpired}">
+                        <input id="approvedNo" type="radio" name="approved" value="false" class="h-4 w-4 text-blue-600 mt-1"
+                               th:disabled="${billingExpired}"
+                               th:checked="${approveDraftDecision != null and #strings.equalsIgnoreCase(approveDraftDecision, 'false')}">
                         <div class="w-full">
                             <span class="text-gray-900 font-medium" th:text="#{order_tracking.request_changes}">❌ Request Changes</span>
-                            <textarea name="comment"
+                            <textarea id="approvalComment" name="comment"
                                       rows="3"
                                       th:disabled="${billingExpired}"
                                       class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                      th:text="${approveDraftComment != null ? approveDraftComment : ''}"
                                       th:placeholder="#{order_tracking.request_placeholder}"></textarea>
                         </div>
                     </label>
                 </div>
+                <div id="approveClientError" class="text-xs text-red-600 hidden" th:text="#{order_tracking.design_comment_required}"></div>
 
                 <div class="pt-4">
                         <button id="approveSubmitBtn"
@@ -626,7 +948,9 @@
               data-upload-loading=#{order_tracking.upload_loading},
               data-copy-success=#{order_tracking.copy_success},
               data-copy-failed=#{order_tracking.copy_failed},
-              data-copy-unsupported=#{order_tracking.copy_unsupported}"
+              data-copy-unsupported=#{order_tracking.copy_unsupported},
+              data-approve-comment-required=#{order_tracking.design_comment_required},
+              data-approve-decision-required=#{order_tracking.design_decision_required}"
      class="hidden"></div>
 
 <script>
@@ -651,12 +975,17 @@
         const copyTrackingLinkHint = document.getElementById('copyTrackingLinkHint');
         const clearSelectedFilesBtn = document.getElementById('clearSelectedFilesBtn');
         const orderTrackingClearHelperBtn = document.getElementById('orderTrackingClearHelperBtn');
+        const approveYes = document.getElementById('approvedYes');
+        const approveNo = document.getElementById('approvedNo');
+        const approvalComment = document.getElementById('approvalComment');
+        const approveClientError = document.getElementById('approveClientError');
         const publicLastCompanyKey = 'printflow.public.lastCompany';
         const recentCodesStorageKey = 'printflow.track.recentCodes';
         const trackCompanyStorageKey = 'printflow.track.companyId';
         const requesterStorageKey = 'printflow.public.requester';
         const contactIntentStorageKey = 'printflow.public.contactIntent';
         const i18nEl = document.getElementById('i18n');
+        const currentLang = document.documentElement.getAttribute('lang') || 'sr';
         const i18n = {
             fileTooLarge: i18nEl ? i18nEl.getAttribute('data-file-too-large') : 'File "{name}" is too large.',
             maxFiles: i18nEl ? i18nEl.getAttribute('data-max-files') : 'Maximum {max} files per order.',
@@ -673,7 +1002,9 @@
             uploadLoading: i18nEl ? i18nEl.getAttribute('data-upload-loading') : 'Uploading...',
             copySuccess: i18nEl ? i18nEl.getAttribute('data-copy-success') : 'Tracking number copied.',
             copyFailed: i18nEl ? i18nEl.getAttribute('data-copy-failed') : 'Copy failed. Please copy manually.',
-            copyUnsupported: i18nEl ? i18nEl.getAttribute('data-copy-unsupported') : 'Clipboard copy is not available in this browser context.'
+            copyUnsupported: i18nEl ? i18nEl.getAttribute('data-copy-unsupported') : 'Clipboard copy is not available in this browser context.',
+            approveCommentRequired: i18nEl ? i18nEl.getAttribute('data-approve-comment-required') : 'Please provide comment before requesting changes.',
+            approveDecisionRequired: i18nEl ? i18nEl.getAttribute('data-approve-decision-required') : 'Please choose approve or request changes before submitting.'
         };
         let selectedFiles = [];
         let descriptions = [];
@@ -709,7 +1040,9 @@
             updateClearHelperVisibility();
             const parsed = JSON.parse(localStorage.getItem(publicLastCompanyKey) || '{}');
             if (trackLinks.length > 0) {
-                const href = (parsed && parsed.id) ? `/public/track?company=${encodeURIComponent(parsed.id)}` : '/public/track';
+                const href = (parsed && parsed.id)
+                    ? `/public/track?company=${encodeURIComponent(parsed.id)}&lang=${encodeURIComponent(currentLang)}`
+                    : `/public/track?lang=${encodeURIComponent(currentLang)}`;
                 trackLinks.forEach(link => link.setAttribute('href', href));
             }
         } catch (e) {
@@ -726,7 +1059,7 @@
                 } catch (e) {
                     // ignore localStorage issues
                 }
-                trackLinks.forEach(link => link.setAttribute('href', '/public/track'));
+                trackLinks.forEach(link => link.setAttribute('href', `/public/track?lang=${encodeURIComponent(currentLang)}`));
                 updateClearHelperVisibility();
             });
         }
@@ -789,11 +1122,45 @@
         }
         const approveForm = approveSubmitBtn ? approveSubmitBtn.closest('form') : null;
         if (approveForm && approveSubmitBtn) {
-            approveForm.addEventListener('submit', function () {
+            approveForm.addEventListener('submit', function (event) {
+                if ((!approveYes || !approveYes.checked) && (!approveNo || !approveNo.checked)) {
+                    event.preventDefault();
+                    if (approveClientError) {
+                        approveClientError.textContent = i18n.approveDecisionRequired;
+                        approveClientError.classList.remove('hidden');
+                    }
+                    return;
+                }
+                if (approveNo && approveNo.checked && approvalComment && approvalComment.value.trim().length === 0) {
+                    event.preventDefault();
+                    if (approveClientError) {
+                        approveClientError.textContent = i18n.approveCommentRequired;
+                        approveClientError.classList.remove('hidden');
+                    }
+                    approvalComment.focus();
+                    return;
+                }
+                if (approveClientError) {
+                    approveClientError.classList.add('hidden');
+                }
                 if (approveSubmitBtn.disabled) return;
                 approveSubmitBtn.disabled = true;
                 if (approveSubmitBtnText) approveSubmitBtnText.textContent = i18n.approveLoading;
             });
+        }
+        if (approveYes || approveNo) {
+            const clearApproveError = function () {
+                if (approveClientError) {
+                    approveClientError.classList.add('hidden');
+                }
+                if (approveNo && approvalComment) {
+                    approvalComment.required = approveNo.checked;
+                }
+            };
+            if (approveYes) approveYes.addEventListener('change', clearApproveError);
+            if (approveNo) approveNo.addEventListener('change', clearApproveError);
+            if (approvalComment) approvalComment.addEventListener('input', clearApproveError);
+            clearApproveError();
         }
 
         function syncInputFiles() {
@@ -1076,6 +1443,150 @@
 
         updateTotals();
     });
+</script>
+<script>
+    (function renderSnapshotCards() {
+        function moneyLike(val, currency) {
+            if (val === null || val === undefined || val === '') return '-';
+            const n = Number(val);
+            if (Number.isNaN(n)) return String(val);
+            const htmlLang = (document.documentElement.getAttribute('lang') || 'sr').toLowerCase();
+            const locale = htmlLang === 'en' ? 'en-US' : 'sr-RS';
+            const resolvedCurrency = (currency || 'RSD').toUpperCase();
+            try {
+                return n.toLocaleString(locale, {
+                    style: 'currency',
+                    currency: resolvedCurrency,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            } catch (e) {
+                return `${resolvedCurrency} ${n.toFixed(2)}`;
+            }
+        }
+
+        function translateWarning(raw, translations) {
+            if (!raw) return '';
+            const key = String(raw).trim();
+            const direct = translations[key];
+            if (direct) {
+                return direct;
+            }
+            const prefix = 'Last time you charged this client:';
+            if (key.startsWith(prefix)) {
+                const value = key.substring(prefix.length).trim();
+                const translatedPrefix = translations.__lastPricePrefix || prefix;
+                return `${translatedPrefix} ${value}`.trim();
+            }
+            const keyedPrefix = 'pricing.calculate.warning.last_price:';
+            if (key.startsWith(keyedPrefix)) {
+                const value = key.substring(keyedPrefix.length).trim();
+                const translatedPrefix = translations.__lastPricePrefix || 'Last time you charged this client:';
+                return `${translatedPrefix} ${value}`.trim();
+            }
+            return key;
+        }
+        function parseSnapshotPayload(raw) {
+            if (!raw) return null;
+            try {
+                let parsed = JSON.parse(raw);
+                if (typeof parsed === 'string') {
+                    parsed = JSON.parse(parsed);
+                }
+                if (!parsed || typeof parsed !== 'object') {
+                    return null;
+                }
+                return parsed;
+            } catch (e) {
+                return null;
+            }
+        }
+        document.querySelectorAll('.snapshot-json').forEach(function (container) {
+            const raw = (container.getAttribute('data-snapshot') || '').trim();
+            const noSnapshot = container.getAttribute('data-no-snapshot') || 'No snapshot';
+            const lblQty = container.getAttribute('data-lbl-qty') || 'Qty';
+            const lblPrice = container.getAttribute('data-lbl-price') || 'Price';
+            const lblModel = container.getAttribute('data-lbl-model') || 'Model';
+            const lblMult = container.getAttribute('data-lbl-mult') || 'Multiplier';
+            const lblWarnings = container.getAttribute('data-lbl-warnings') || 'Warnings';
+            const defaultCurrency = container.getAttribute('data-currency') || 'RSD';
+            const warningTranslations = {
+                "No pricing components configured": container.getAttribute('data-warn-no-components') || 'No pricing components configured.',
+                "pricing.calculate.warning.no_components": container.getAttribute('data-warn-no-components') || 'No pricing components configured.',
+                "Colors adjusted to 1.": container.getAttribute('data-warn-colors-adjusted') || 'Colors value was adjusted to 1.',
+                "pricing.calculate.warning.colors_adjusted": container.getAttribute('data-warn-colors-adjusted') || 'Colors value was adjusted to 1.',
+                "Sides adjusted to 1.": container.getAttribute('data-warn-sides-adjusted') || 'Sides value was adjusted to 1.',
+                "pricing.calculate.warning.sides_adjusted": container.getAttribute('data-warn-sides-adjusted') || 'Sides value was adjusted to 1.',
+                "Dimensions required for area-based pricing.": container.getAttribute('data-warn-dim') || 'Dimensions are required for area-based pricing.',
+                "pricing.calculate.warning.dimensions_required": container.getAttribute('data-warn-dim') || 'Dimensions are required for area-based pricing.',
+                "Meters value missing for per-meter pricing.": container.getAttribute('data-warn-meters-missing') || 'Meters value is required for per-meter pricing.',
+                "pricing.calculate.warning.meters_missing": container.getAttribute('data-warn-meters-missing') || 'Meters value is required for per-meter pricing.',
+                "Minutes value missing for per-minute pricing.": container.getAttribute('data-warn-minutes-missing') || 'Minutes value is required for per-minute pricing.',
+                "pricing.calculate.warning.minutes_missing": container.getAttribute('data-warn-minutes-missing') || 'Minutes value is required for per-minute pricing.',
+                "Margin below target.": container.getAttribute('data-warn-margin') || 'Margin below target.',
+                "pricing.calculate.margin_low": container.getAttribute('data-warn-margin') || 'Margin below target.',
+                "COST_BREAKDOWN_MISMATCH": container.getAttribute('data-warn-breakdown') || 'Breakdown does not match total cost.',
+                "pricing.calculate.warning.breakdown_mismatch": container.getAttribute('data-warn-breakdown') || 'Breakdown does not match total cost.',
+                "Price is more than 20% lower than last time.": container.getAttribute('data-warn-price-drop') || 'Price is more than 20% lower than last time.',
+                "pricing.calculate.warning.price_drop_20": container.getAttribute('data-warn-price-drop') || 'Price is more than 20% lower than last time.',
+                "__lastPricePrefix": container.getAttribute('data-warn-last-price-prefix') || 'Last time you charged this client:'
+            };
+            const hiddenWarnings = new Set([
+                "Margin below target.",
+                "pricing.calculate.margin_low",
+                "COST_BREAKDOWN_MISMATCH",
+                "pricing.calculate.warning.breakdown_mismatch",
+                "Price is more than 20% lower than last time.",
+                "pricing.calculate.warning.price_drop_20",
+                "Last time you charged this client:",
+                "pricing.calculate.warning.last_price:"
+            ]);
+            if (!raw || raw === '{}' || raw === 'null') {
+                container.textContent = noSnapshot;
+                return;
+            }
+            try {
+                const snap = parseSnapshotPayload(raw);
+                if (!snap) {
+                    throw new Error('invalid_snapshot_payload');
+                }
+                const req = snap.request || {};
+                const res = snap.response || {};
+                const row = Array.isArray(snap.breakdown) && snap.breakdown.length > 0 ? snap.breakdown[0] : null;
+                const warnings = Array.isArray(snap.warnings)
+                    ? Array.from(new Set(snap.warnings
+                        .map(w => String(w || '').trim())
+                        .filter(val => {
+                            if (!val) {
+                                return false;
+                            }
+                            if (hiddenWarnings.has(val)) {
+                                return false;
+                            }
+                            if (val.startsWith('Last time you charged this client:')) {
+                                return false;
+                            }
+                            return !val.startsWith('pricing.calculate.warning.last_price:');
+                        })))
+                    : [];
+                const currency = (res.currency || defaultCurrency || 'RSD').toUpperCase();
+                const wrap = document.createElement('div');
+                wrap.className = 'rounded border border-gray-200 bg-gray-50 p-2 text-[11px]';
+                wrap.innerHTML =
+                    `<div class="grid grid-cols-2 gap-2">` +
+                    `<div><span class="text-gray-500">${lblQty}:</span> <span class="font-medium">${req.quantity ?? '-'}</span></div>` +
+                    `<div class="col-span-1"><span class="text-gray-500">${lblPrice}:</span> <span class="font-medium">${moneyLike(res.totalPrice, currency)}</span></div>` +
+                    `</div>` +
+                    (warnings.length > 0
+                        ? `<div class="mt-1 text-amber-700"><span class="text-gray-500">${lblWarnings}:</span> ${warnings.map(w => translateWarning(w, warningTranslations)).join(' · ')}</div>`
+                        : '');
+                container.innerHTML = '';
+                container.appendChild(wrap);
+            } catch (e) {
+                container.textContent = noSnapshot;
+            }
+        });
+    })();
 </script>
 
 </body>

@@ -4,17 +4,26 @@ import com.printflow.dto.*;
 import com.printflow.entity.Client;
 import com.printflow.entity.Company;
 import com.printflow.entity.User;
+import com.printflow.entity.WorkOrder.DeliveryType;
+import com.printflow.entity.WorkOrder.ShipmentStatus;
 import com.printflow.entity.enums.OrderStatus;
+import com.printflow.entity.enums.QuoteStatus;
 import com.printflow.config.PaginationConfig;
 import com.printflow.repository.WorkOrderItemRepository;
 import com.printflow.service.*;
 import com.printflow.pricing.repository.ProductVariantRepository;
 import com.printflow.repository.PublicOrderRequestRepository;
+import com.printflow.shipping.ShipmentFacade;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaTypeFactory;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
@@ -54,6 +64,8 @@ public class AdminController extends BaseController {
     private final EmailService emailService;
     private final CompanyBrandingService companyBrandingService;
     private final PublicOrderRequestRepository publicOrderRequestRepository;
+    private final OrderPdfService orderPdfService;
+    private final ShipmentFacade shipmentFacade;
     private final String baseUrl;
 
     public AdminController(DashboardService dashboardService,
@@ -78,6 +90,8 @@ public class AdminController extends BaseController {
                            EmailService emailService,
                            CompanyBrandingService companyBrandingService,
                            PublicOrderRequestRepository publicOrderRequestRepository,
+                           OrderPdfService orderPdfService,
+                           ShipmentFacade shipmentFacade,
                            @org.springframework.beans.factory.annotation.Value("${app.base-url:http://localhost:8088}") String baseUrl) {
         this.dashboardService = dashboardService;
         this.clientService = clientService;
@@ -101,6 +115,8 @@ public class AdminController extends BaseController {
         this.emailService = emailService;
         this.companyBrandingService = companyBrandingService;
         this.publicOrderRequestRepository = publicOrderRequestRepository;
+        this.orderPdfService = orderPdfService;
+        this.shipmentFacade = shipmentFacade;
         this.baseUrl = baseUrl;
     }
 
@@ -276,21 +292,50 @@ public class AdminController extends BaseController {
     public String orders(Model model,
                          @RequestParam(required = false) String search,
                          @RequestParam(required = false) OrderStatus status,
+                         @RequestParam(required = false) QuoteStatus quoteStatus,
+                         @RequestParam(required = false) ShipmentStatus shipmentStatus,
+                         @RequestParam(required = false) Long clientId,
+                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate createdFromDate,
+                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate createdToDate,
+                         @RequestParam(defaultValue = "false") boolean overdueOnly,
+                         @RequestParam(required = false) DeliveryType deliveryType,
                          @RequestParam(defaultValue = "0") int page,
                          @RequestParam(required = false) Integer size) {
         int safePage = paginationConfig.normalizePage(page);
         int pageSize = paginationConfig.normalizeSize(size);
 
+        if (createdFromDate != null && createdToDate != null && createdFromDate.isAfter(createdToDate)) {
+            java.time.LocalDate tmp = createdFromDate;
+            createdFromDate = createdToDate;
+            createdToDate = tmp;
+            model.addAttribute("errorMessage", "orders.list.invalid_date_range");
+        }
+
         org.springframework.data.domain.Pageable pageable =
             org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
         org.springframework.data.domain.Page<WorkOrderDTO> ordersPage;
 
-        if (search != null && !search.trim().isEmpty()) {
-            ordersPage = workOrderService.searchWorkOrders(search.trim(), pageable);
-            model.addAttribute("search", search.trim());
-        } else if (status != null) {
-            ordersPage = workOrderService.getWorkOrdersByStatus(status, pageable);
+        String normalizedSearch = search == null ? null : search.trim();
+        if (normalizedSearch != null && normalizedSearch.isEmpty()) {
+            normalizedSearch = null;
+        }
+        boolean hasSearch = normalizedSearch != null;
+        java.time.LocalDateTime createdFrom = createdFromDate != null ? createdFromDate.atStartOfDay() : null;
+        java.time.LocalDateTime createdTo = createdToDate != null ? createdToDate.atTime(java.time.LocalTime.MAX) : null;
+        boolean hasFilters = hasSearch || status != null || quoteStatus != null || shipmentStatus != null
+            || clientId != null || deliveryType != null || createdFrom != null || createdTo != null || overdueOnly;
+        if (hasFilters) {
+            ordersPage = workOrderService.getWorkOrdersByFilters(
+                normalizedSearch, status, quoteStatus, shipmentStatus, clientId, createdFrom, createdTo, overdueOnly, deliveryType, pageable);
+            model.addAttribute("search", normalizedSearch);
             model.addAttribute("status", status);
+            model.addAttribute("quoteStatus", quoteStatus);
+            model.addAttribute("shipmentStatus", shipmentStatus);
+            model.addAttribute("clientId", clientId);
+            model.addAttribute("createdFromDate", createdFromDate);
+            model.addAttribute("createdToDate", createdToDate);
+            model.addAttribute("overdueOnly", overdueOnly);
+            model.addAttribute("deliveryType", deliveryType);
         } else {
             ordersPage = workOrderService.getWorkOrders(pageable);
         }
@@ -298,14 +343,14 @@ public class AdminController extends BaseController {
         if (safePage >= ordersPage.getTotalPages() && ordersPage.getTotalPages() > 0) {
             safePage = ordersPage.getTotalPages() - 1;
             pageable = org.springframework.data.domain.PageRequest.of(safePage, pageSize, org.springframework.data.domain.Sort.by("createdAt").descending());
-            if (search != null && !search.trim().isEmpty()) {
-                ordersPage = workOrderService.searchWorkOrders(search.trim(), pageable);
-            } else if (status != null) {
-                ordersPage = workOrderService.getWorkOrdersByStatus(status, pageable);
+            if (hasFilters) {
+                ordersPage = workOrderService.getWorkOrdersByFilters(
+                    normalizedSearch, status, quoteStatus, shipmentStatus, clientId, createdFrom, createdTo, overdueOnly, deliveryType, pageable);
             } else {
                 ordersPage = workOrderService.getWorkOrders(pageable);
             }
         }
+        applyItemTotalsForOrderList(ordersPage.getContent());
 
         model.addAttribute("ordersPage", ordersPage);
         model.addAttribute("orders", ordersPage.getContent());
@@ -325,6 +370,12 @@ public class AdminController extends BaseController {
         model.addAttribute("totalItems", ordersPage.getTotalElements());
         model.addAttribute("lastPage", Math.max(0, ordersPage.getTotalPages() - 1));
         model.addAttribute("size", pageSize);
+        model.addAttribute("quoteStatus", quoteStatus);
+        model.addAttribute("shipmentStatus", shipmentStatus);
+        model.addAttribute("clientId", clientId);
+        model.addAttribute("createdFromDate", createdFromDate);
+        model.addAttribute("createdToDate", createdToDate);
+        model.addAttribute("overdueOnly", overdueOnly);
         model.addAttribute("allowedSizes", paginationConfig.getAllowedSizes());
         java.util.List<OrderStatus> filterStatuses = java.util.List.of(
             OrderStatus.NEW,
@@ -338,14 +389,109 @@ public class AdminController extends BaseController {
             OrderStatus.CANCELLED
         );
         model.addAttribute("orderStatuses", filterStatuses);
+        model.addAttribute("quoteStatuses", QuoteStatus.values());
+        model.addAttribute("shipmentStatuses", ShipmentStatus.values());
+        model.addAttribute("deliveryTypes", DeliveryType.values());
+        java.util.List<com.printflow.dto.ClientDTO> activeClients = clientService.getActiveClients();
+        model.addAttribute("activeClients", activeClients);
+        if (clientId != null) {
+            String selectedClientName = activeClients.stream()
+                .filter(c -> java.util.Objects.equals(c.getId(), clientId))
+                .map(com.printflow.dto.ClientDTO::getCompanyName)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse("#" + clientId);
+            model.addAttribute("selectedClientName", selectedClientName);
+        }
         model.addAttribute("newCount", workOrderService.countByStatus(OrderStatus.NEW));
         model.addAttribute("designCount", workOrderService.countByStatus(OrderStatus.IN_DESIGN));
         model.addAttribute("printCount", workOrderService.countByStatus(OrderStatus.IN_PRINT));
         model.addAttribute("readyCount", workOrderService.countByStatus(OrderStatus.READY_FOR_DELIVERY));
+        model.addAttribute("quotePreparingCount", workOrderService.countByQuoteStatus(QuoteStatus.PREPARING));
+        model.addAttribute("quoteReadyCount", workOrderService.countByQuoteStatus(QuoteStatus.READY));
+        model.addAttribute("quoteSentCount", workOrderService.countByQuoteStatus(QuoteStatus.SENT));
         model.addAttribute("overdueCount", workOrderService.countOverdueOrders());
         model.addAttribute("companyCurrency", tenantContextService.getCurrentCompany() != null
             ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
         return "admin/orders/list";
+    }
+
+    private void applyItemTotalsForOrderList(java.util.List<WorkOrderDTO> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return;
+        }
+        java.util.List<Long> orderIds = orders.stream()
+            .map(WorkOrderDTO::getId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+        if (orderIds.isEmpty()) {
+            return;
+        }
+
+        java.util.Map<Long, Double> priceMap;
+        java.util.Map<Long, Double> costMap;
+        java.util.Map<Long, Long> countMap;
+        if (tenantContextService.isSuperAdmin()) {
+            priceMap = toDoubleMap(workOrderItemRepository.sumPriceByWorkOrderIds(orderIds));
+            costMap = toDoubleMap(workOrderItemRepository.sumCostByWorkOrderIds(orderIds));
+            countMap = toLongMap(workOrderItemRepository.countItemsByWorkOrderIds(orderIds));
+        } else {
+            Long companyId = tenantContextService.getCurrentCompanyId();
+            if (companyId == null) {
+                return;
+            }
+            priceMap = toDoubleMap(workOrderItemRepository.sumPriceByWorkOrderIdsAndCompanyId(orderIds, companyId));
+            costMap = toDoubleMap(workOrderItemRepository.sumCostByWorkOrderIdsAndCompanyId(orderIds, companyId));
+            countMap = toLongMap(workOrderItemRepository.countItemsByWorkOrderIdsAndCompanyId(orderIds, companyId));
+        }
+
+        for (WorkOrderDTO order : orders) {
+            if (order == null || order.getId() == null) {
+                continue;
+            }
+            Long orderId = order.getId();
+            if (countMap.getOrDefault(orderId, 0L) <= 0L) {
+                continue;
+            }
+            order.setPrice(priceMap.getOrDefault(orderId, 0.0d));
+            order.setCost(costMap.getOrDefault(orderId, 0.0d));
+        }
+    }
+
+    private java.util.Map<Long, Double> toDoubleMap(java.util.List<Object[]> rows) {
+        java.util.Map<Long, Double> result = new java.util.HashMap<>();
+        if (rows == null) {
+            return result;
+        }
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) {
+                continue;
+            }
+            try {
+                result.put(((Number) row[0]).longValue(), ((Number) row[1]).doubleValue());
+            } catch (Exception ignored) {
+                // Ignore malformed aggregate rows and keep DTO values.
+            }
+        }
+        return result;
+    }
+
+    private java.util.Map<Long, Long> toLongMap(java.util.List<Object[]> rows) {
+        java.util.Map<Long, Long> result = new java.util.HashMap<>();
+        if (rows == null) {
+            return result;
+        }
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) {
+                continue;
+            }
+            try {
+                result.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+            } catch (Exception ignored) {
+                // Ignore malformed aggregate rows and keep DTO values.
+            }
+        }
+        return result;
     }
 
     @GetMapping("/orders/create")
@@ -402,6 +548,7 @@ public class AdminController extends BaseController {
             orderDTO.setClientId(clientId);
             orderDTO.setAssignedToId(assignedToId);
             orderDTO.setCreatedById(getCurrentUserId());
+            normalizeDeliveryFields(orderDTO);
 
             workOrderService.createWorkOrder(orderDTO);
             return redirectWithSuccess("/admin/orders", "Order created successfully", model);
@@ -413,10 +560,15 @@ public class AdminController extends BaseController {
     @GetMapping("/orders/{id}")
     public String orderDetails(@PathVariable Long id,
                                @RequestParam(defaultValue = "false") boolean autocopyPublicLink,
+                               @RequestParam(required = false) String back,
                                Model model) {
         try {
+            workOrderService.ensureTotalsSynced(id);
             WorkOrderDTO order = workOrderService.getWorkOrderById(id);
             com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+            String activePublicToken = workOrderService.ensureActivePublicToken(id);
+            order.setPublicToken(activePublicToken);
+            orderEntity = workOrderService.getWorkOrderEntityById(id);
             com.printflow.entity.Company orderCompany = orderEntity.getCompany();
             if (orderCompany == null) {
                 throw new ResourceNotFoundException("Order company not found");
@@ -437,23 +589,28 @@ public class AdminController extends BaseController {
             model.addAttribute("order", order);
             model.addAttribute("attachments", attachments);
             model.addAttribute("orderStatuses", OrderStatus.values());
+            model.addAttribute("quoteStatuses", QuoteStatus.values());
             model.addAttribute("workers", workers);
             model.addAttribute("assignedWorker", assignedWorker);
             model.addAttribute("orderActivities", taskService.getActivitiesByWorkOrder(id));
-            if (tenantContextService.isSuperAdmin()) {
-                model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_Id(id));
-            } else {
-                model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
-                    id, orderCompanyId));
-            }
-            model.addAttribute("profitSummary", workOrderProfitService.calculateRealProfit(
-                id, orderCompany));
+            List<com.printflow.entity.WorkOrderItem> orderItems = tenantContextService.isSuperAdmin()
+                ? workOrderItemRepository.findAllByWorkOrder_Id(id)
+                : workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(id, orderCompanyId);
+            model.addAttribute("orderItems", orderItems);
+            WorkOrderProfitService.ProfitResult profitSummary = workOrderProfitService.calculateRealProfit(
+                id, orderCompany);
+            model.addAttribute("profitSummary", profitSummary);
+            model.addAttribute("displayOrderPrice", resolveDisplayTotalPrice(orderItems, order.getPrice()));
+            model.addAttribute("displayOrderCost", resolveDisplayTotalCost(orderItems, order.getCost()));
             model.addAttribute("activityFeed", activityLogService.getForWorkOrder(id));
             model.addAttribute("companyCurrency", orderCompany != null
                 ? orderCompany.getCurrency() : "RSD");
             model.addAttribute("variants", productVariantRepository.findAllByCompany_Id(orderCompanyId));
-            model.addAttribute("publicTrackingUrl", baseUrl + "/public/order/" + order.getPublicToken());
+            String trackingLang = resolvePublicTrackingLang(orderCompany);
+            model.addAttribute("publicTrackingUrl", baseUrl + "/public/order/" + activePublicToken + "?lang=" + trackingLang);
+            model.addAttribute("publicOrderToken", activePublicToken);
             model.addAttribute("autocopyPublicLink", autocopyPublicLink);
+            model.addAttribute("backToOrders", resolveOrdersListRedirect(back));
             model.addAttribute("publicTokenExpiresAt", orderEntity.getPublicTokenExpiresAt());
             java.util.List<com.printflow.entity.PublicOrderRequest> sourceRequests =
                 publicOrderRequestRepository.findByConvertedOrder_IdIn(java.util.List.of(order.getId()));
@@ -471,7 +628,7 @@ public class AdminController extends BaseController {
             String assignedByIp = null;
             String assignedByUserAgent = null;
             for (com.printflow.entity.AuditLog log : auditLogs) {
-                if (log.getDescription() != null && log.getDescription().toLowerCase().contains("assignment")) {
+                if (log.getDescription() != null && log.getDescription().toLowerCase(java.util.Locale.ROOT).contains("assignment")) {
                     if (log.getUser() != null) {
                         assignedByName = log.getUser().getFullName();
                     }
@@ -513,20 +670,23 @@ public class AdminController extends BaseController {
 
     @GetMapping("/orders/{id}/items-fragment")
     public String orderItemsFragment(@PathVariable Long id, Model model) {
+        workOrderService.ensureTotalsSynced(id);
         com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+        WorkOrderDTO order = workOrderService.getWorkOrderById(id);
         com.printflow.entity.Company orderCompany = orderEntity.getCompany();
         if (orderCompany == null) {
             throw new ResourceNotFoundException("Order company not found");
         }
         Long orderCompanyId = orderCompany.getId();
-        if (tenantContextService.isSuperAdmin()) {
-            model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_Id(id));
-        } else {
-            model.addAttribute("orderItems", workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(
-                id, orderCompanyId));
-        }
+        List<com.printflow.entity.WorkOrderItem> orderItems = tenantContextService.isSuperAdmin()
+            ? workOrderItemRepository.findAllByWorkOrder_Id(id)
+            : workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(id, orderCompanyId);
+        model.addAttribute("orderItems", orderItems);
         model.addAttribute("profitSummary", workOrderProfitService.calculateRealProfit(id, orderCompany));
         model.addAttribute("companyCurrency", orderCompany != null ? orderCompany.getCurrency() : "RSD");
+        model.addAttribute("displayOrderPrice", resolveDisplayTotalPrice(orderItems, order.getPrice()));
+        model.addAttribute("displayOrderCost", resolveDisplayTotalCost(orderItems, order.getCost()));
+        model.addAttribute("orderId", id);
         return "admin/orders/items-fragment :: itemsTable";
     }
 
@@ -534,27 +694,45 @@ public class AdminController extends BaseController {
     public String updateOrderStatus(@PathVariable Long id,
                                     @RequestParam OrderStatus status,
                                     @RequestParam(required = false) String notes,
+                                    @RequestParam(required = false) String returnTo,
+                                    @RequestHeader(value = "Referer", required = false) String referer,
                                     Model model) {
+        boolean backToList = "list".equalsIgnoreCase(returnTo);
+        String detailsPath = "/admin/orders/" + id;
+        String listPath = resolveOrdersListRedirect(referer);
+        String successPath = backToList ? listPath : detailsPath;
+        String errorPath = backToList ? listPath : detailsPath;
         try {
             workOrderService.updateWorkOrderStatus(id, status, notes);
-            return redirectWithSuccess("/admin/orders/" + id, "Order status updated", model);
+            return redirectWithSuccess(successPath, "Order status updated", model);
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            return redirectWithError("/admin/orders/" + id, "Error updating status: " + e.getMessage(), model);
+            return redirectWithError(errorPath, "Error updating status: " + e.getMessage(), model);
         }
     }
 
     @GetMapping("/orders/{id}/edit")
-    public String editOrderForm(@PathVariable Long id, Model model) {
+    public String editOrderForm(@PathVariable Long id,
+                                @RequestParam(required = false) String back,
+                                Model model) {
         try {
             WorkOrderDTO order = workOrderService.getWorkOrderById(id);
+            com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+            String backToOrders = resolveOrdersListRedirect(back);
             model.addAttribute("order", order);
             model.addAttribute("clients", clientService.getActiveClients());
             model.addAttribute("workers", userService.getAssignableUsers());
             model.addAttribute("orderStatuses", OrderStatus.values());
+            model.addAttribute("quoteStatuses", QuoteStatus.values());
+            model.addAttribute("backToOrders", backToOrders);
+            model.addAttribute("editBackProvided", back != null && !back.isBlank());
             model.addAttribute("companyCurrency", tenantContextService.getCurrentCompany() != null
                 ? tenantContextService.getCurrentCompany().getCurrency() : "RSD");
+            Long companyId = orderEntity.getCompany() != null ? orderEntity.getCompany().getId() : null;
+            boolean priceManagedByItems = companyId != null
+                && !workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(id, companyId).isEmpty();
+            model.addAttribute("priceManagedByItems", priceManagedByItems);
             return "admin/orders/edit";
         } catch (ResourceNotFoundException e) {
             return redirectWithError("/admin/orders", "admin.orders.flash.not_found", model);
@@ -568,22 +746,136 @@ public class AdminController extends BaseController {
                               @ModelAttribute WorkOrderDTO orderDTO,
                               @RequestParam Long clientId,
                               @RequestParam(required = false) Long assignedToId,
+                              @RequestParam(required = false) String back,
                               Model model) {
+        String backToOrders = resolveOrdersListRedirect(back);
+        boolean backToList = back != null && !back.isBlank();
+        String successPath = backToList ? backToOrders : "/admin/orders/" + id;
+        String editPath = "/admin/orders/" + id + "/edit";
+        String editWithBackPath = backToList ? (editPath + "?back=" + java.net.URLEncoder.encode(backToOrders, java.nio.charset.StandardCharsets.UTF_8)) : editPath;
         try {
             if (orderDTO.getPrice() != null && orderDTO.getPrice() < 0) {
-                return redirectWithError("/admin/orders/" + id + "/edit", "Price cannot be negative", model);
+                return redirectWithError(editWithBackPath, "Price cannot be negative", model);
             }
             if (orderDTO.getCost() != null && orderDTO.getCost() < 0) {
-                return redirectWithError("/admin/orders/" + id + "/edit", "Cost cannot be negative", model);
+                return redirectWithError(editWithBackPath, "Cost cannot be negative", model);
             }
             orderDTO.setClientId(clientId);
             orderDTO.setAssignedToId(assignedToId);
+            normalizeDeliveryFields(orderDTO);
             workOrderService.updateWorkOrder(id, orderDTO);
-            return redirectWithSuccess("/admin/orders/" + id, "Order updated", model);
+            return redirectWithSuccess(successPath, "Order updated", model);
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            return redirectWithError("/admin/orders/" + id + "/edit", "Error updating order: " + e.getMessage(), model);
+            return redirectWithError(editWithBackPath, "Error updating order: " + e.getMessage(), model);
+        }
+    }
+
+    @PostMapping("/orders/{id}/quote-status")
+    public String updateQuoteStatus(@PathVariable Long id,
+                                    @RequestParam QuoteStatus quoteStatus,
+                                    @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime quoteValidUntil,
+                                    @RequestParam(required = false) String returnTo,
+                                    @RequestHeader(value = "Referer", required = false) String referer,
+                                    Model model) {
+        boolean backToList = "list".equalsIgnoreCase(returnTo);
+        String detailsPath = "/admin/orders/" + id;
+        String listPath = resolveOrdersListRedirect(referer);
+        String successPath = backToList ? listPath : detailsPath;
+        String errorPath = backToList ? listPath : detailsPath;
+        try {
+            workOrderService.updateQuoteStatus(id, quoteStatus, quoteValidUntil);
+            return redirectWithSuccess(successPath, "Quote status updated", model);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            return redirectWithError(errorPath, "Error updating quote status: " + e.getMessage(), model);
+        }
+    }
+
+    private void normalizeDeliveryFields(WorkOrderDTO orderDTO) {
+        if (orderDTO == null) {
+            return;
+        }
+        if (orderDTO.getDeliveryType() == null) {
+            orderDTO.setDeliveryType(DeliveryType.PICKUP);
+        }
+        orderDTO.setCourierName(trimToNull(orderDTO.getCourierName()));
+        orderDTO.setTrackingNumber(trimToNull(orderDTO.getTrackingNumber()));
+        orderDTO.setDeliveryAddress(trimToNull(orderDTO.getDeliveryAddress()));
+        orderDTO.setDeliveryRecipientName(trimToNull(orderDTO.getDeliveryRecipientName()));
+        orderDTO.setDeliveryRecipientPhone(trimToNull(orderDTO.getDeliveryRecipientPhone()));
+        orderDTO.setDeliveryCity(trimToNull(orderDTO.getDeliveryCity()));
+        orderDTO.setDeliveryPostalCode(trimToNull(orderDTO.getDeliveryPostalCode()));
+        orderDTO.setShippingNote(trimToNull(orderDTO.getShippingNote()));
+        shipmentFacade.normalize(orderDTO);
+        if (orderDTO.getDeliveryType() == DeliveryType.PICKUP) {
+            return;
+        }
+        if (orderDTO.getDeliveryAddress() == null) {
+            throw new IllegalArgumentException("Delivery address is required for courier delivery.");
+        }
+        if (orderDTO.getDeliveryRecipientName() == null) {
+            throw new IllegalArgumentException("Recipient name is required for courier delivery.");
+        }
+        if (orderDTO.getDeliveryRecipientPhone() == null) {
+            throw new IllegalArgumentException("Recipient phone is required for courier delivery.");
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Double resolveDisplayTotalPrice(List<com.printflow.entity.WorkOrderItem> items, Double fallback) {
+        if (items == null || items.isEmpty()) {
+            return fallback != null ? fallback : 0.0d;
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (com.printflow.entity.WorkOrderItem item : items) {
+            if (item == null || item.getCalculatedPrice() == null) {
+                continue;
+            }
+            total = total.add(item.getCalculatedPrice());
+        }
+        return total.doubleValue();
+    }
+
+    private Double resolveDisplayTotalCost(List<com.printflow.entity.WorkOrderItem> items, Double fallback) {
+        if (items == null || items.isEmpty()) {
+            return fallback != null ? fallback : 0.0d;
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (com.printflow.entity.WorkOrderItem item : items) {
+            if (item == null || item.getCalculatedCost() == null) {
+                continue;
+            }
+            total = total.add(item.getCalculatedCost());
+        }
+        return total.doubleValue();
+    }
+
+    private String resolveOrdersListRedirect(String referer) {
+        if (referer == null || referer.isBlank()) {
+            return "/admin/orders";
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(referer);
+            if (!"/admin/orders".equals(uri.getPath())) {
+                return "/admin/orders";
+            }
+            String query = uri.getRawQuery();
+            if (query == null || query.isBlank()) {
+                return "/admin/orders";
+            }
+            return "/admin/orders?" + query;
+        } catch (IllegalArgumentException ex) {
+            return "/admin/orders";
         }
     }
 
@@ -644,10 +936,64 @@ public class AdminController extends BaseController {
         }
     }
 
+    @GetMapping("/orders/{id}/pdf/quote")
+    public ResponseEntity<ByteArrayResource> downloadQuotePdf(@PathVariable Long id,
+                                                              @RequestParam(required = false) String lang,
+                                                              java.util.Locale locale) {
+        workOrderService.ensureTotalsSynced(id);
+        com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+        WorkOrderDTO order = workOrderService.getWorkOrderById(id);
+        Company company = orderEntity.getCompany();
+        List<com.printflow.entity.WorkOrderItem> items = resolveOrderItemsForPdf(id, company);
+        byte[] pdf = orderPdfService.generateQuotePdf(order, company, items, resolveRequestedLocale(lang, locale));
+        auditLogService.log(com.printflow.entity.enums.AuditAction.DOWNLOAD, "WorkOrder", id,
+            null, null, "Quote PDF downloaded", company);
+        ByteArrayResource resource = new ByteArrayResource(pdf);
+        String fileName = "quote-" + (order.getOrderNumber() != null ? order.getOrderNumber() : id) + ".pdf";
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+            .contentType(MediaType.APPLICATION_PDF)
+            .contentLength(pdf.length)
+            .body(resource);
+    }
+
+    @GetMapping("/orders/{id}/pdf/summary")
+    public ResponseEntity<ByteArrayResource> downloadSummaryPdf(@PathVariable Long id,
+                                                                @RequestParam(required = false) String lang,
+                                                                java.util.Locale locale) {
+        workOrderService.ensureTotalsSynced(id);
+        com.printflow.entity.WorkOrder orderEntity = workOrderService.getWorkOrderEntityById(id);
+        WorkOrderDTO order = workOrderService.getWorkOrderById(id);
+        Company company = orderEntity.getCompany();
+        List<com.printflow.entity.WorkOrderItem> items = resolveOrderItemsForPdf(id, company);
+        byte[] pdf = orderPdfService.generateOrderSummaryPdf(order, company, items, resolveRequestedLocale(lang, locale));
+        auditLogService.log(com.printflow.entity.enums.AuditAction.DOWNLOAD, "WorkOrder", id,
+            null, null, "Order summary PDF downloaded", company);
+        ByteArrayResource resource = new ByteArrayResource(pdf);
+        String fileName = "order-summary-" + (order.getOrderNumber() != null ? order.getOrderNumber() : id) + ".pdf";
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+            .contentType(MediaType.APPLICATION_PDF)
+            .contentLength(pdf.length)
+            .body(resource);
+    }
+
+    private List<com.printflow.entity.WorkOrderItem> resolveOrderItemsForPdf(Long workOrderId, Company company) {
+        if (tenantContextService.isSuperAdmin()) {
+            return workOrderItemRepository.findAllByWorkOrder_Id(workOrderId);
+        }
+        Long companyId = company != null ? company.getId() : null;
+        if (companyId == null) {
+            return workOrderItemRepository.findAllByWorkOrder_Id(workOrderId);
+        }
+        return workOrderItemRepository.findAllByWorkOrder_IdAndCompany_Id(workOrderId, companyId);
+    }
+
     private boolean sendTrackingEmailForOrder(com.printflow.entity.WorkOrder order) {
         if (order == null || order.getClient() == null || order.getClient().getEmail() == null || order.getClient().getEmail().isBlank()) {
             return false;
         }
+        String publicToken = workOrderService.ensureActivePublicToken(order.getId());
         java.util.Map<String, Object> vars = new java.util.HashMap<>();
         vars.put("orderNumber", order.getOrderNumber());
         vars.put("orderTitle", order.getTitle());
@@ -660,7 +1006,8 @@ public class AdminController extends BaseController {
         vars.put("companyAddress", order.getCompany() != null ? order.getCompany().getAddress() : null);
         boolean serbian = isSerbianCompany(order.getCompany());
         vars.put("lang", serbian ? "sr" : "en");
-        vars.put("trackingUrl", baseUrl + "/public/order/" + order.getPublicToken());
+        String trackingLang = resolvePublicTrackingLang(order.getCompany());
+        vars.put("trackingUrl", baseUrl + "/public/order/" + publicToken + "?lang=" + trackingLang);
         String logoUrl = null;
         String logoInline = null;
         if (order.getCompany() != null
@@ -684,9 +1031,26 @@ public class AdminController extends BaseController {
         msg.setTo(order.getClient().getEmail());
         msg.setSubject((serbian ? "Link za praćenje naloga: " : "Order tracking link: ") + order.getOrderNumber());
         msg.setHtmlBody(html);
-        msg.setTextBody("Track your order: " + baseUrl + "/public/order/" + order.getPublicToken());
+        msg.setTextBody("Track your order: " + baseUrl + "/public/order/" + publicToken + "?lang=" + trackingLang);
         emailService.send(msg, order.getCompany(), "public-tracking-link");
         return true;
+    }
+
+    private String resolvePublicTrackingLang(com.printflow.entity.Company company) {
+        return isSerbianCompany(company) ? "sr" : "en";
+    }
+
+    private java.util.Locale resolveRequestedLocale(String lang, java.util.Locale fallback) {
+        if (lang != null && !lang.isBlank()) {
+            String normalized = lang.trim().toLowerCase(java.util.Locale.ROOT);
+            if (normalized.startsWith("sr")) {
+                return new java.util.Locale("sr");
+            }
+            if (normalized.startsWith("en")) {
+                return java.util.Locale.ENGLISH;
+            }
+        }
+        return fallback != null ? fallback : java.util.Locale.ENGLISH;
     }
 
     private boolean isSerbianCompany(com.printflow.entity.Company company) {
@@ -700,7 +1064,7 @@ public class AdminController extends BaseController {
         if (address == null) {
             return false;
         }
-        String lower = address.toLowerCase();
+        String lower = address.toLowerCase(java.util.Locale.ROOT);
         return lower.contains("srbija") || lower.contains("serbia");
     }
 
@@ -999,7 +1363,7 @@ public class AdminController extends BaseController {
                                      @RequestParam(required = false) Integer size,
                                      Model model) {
         notificationService.markAllAsRead(getCurrentUserId());
-        String statusParam = status != null ? status.trim().toUpperCase() : "";
+        String statusParam = status != null ? status.trim().toUpperCase(java.util.Locale.ROOT) : "";
         com.printflow.entity.enums.TaskStatus parsedStatus = parseTaskStatus(statusParam);
 
         int safePage = paginationConfig.normalizePage(page);

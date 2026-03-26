@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.UUID;
 
 @Component
@@ -40,13 +41,13 @@ public class FileUtils {
     }
     
     public boolean isVectorFile(String fileName) {
-        String extension = getFileExtension(fileName).toLowerCase();
+        String extension = getFileExtension(fileName).toLowerCase(Locale.ROOT);
         return extension.equals(".ai") || extension.equals(".eps") || 
                extension.equals(".svg") || extension.equals(".cdr");
     }
     
     public boolean isDesignFile(String fileName) {
-        String extension = getFileExtension(fileName).toLowerCase();
+        String extension = getFileExtension(fileName).toLowerCase(Locale.ROOT);
         return extension.equals(".psd") || extension.equals(".ai") || 
                extension.equals(".indd") || extension.equals(".cdr");
     }

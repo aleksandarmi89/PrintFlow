@@ -27,6 +27,7 @@ import com.printflow.storage.StoredFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -426,7 +427,7 @@ public class FileStorageService {
         if (file.isEmpty()) {
             throw new RuntimeException("File is empty");
         }
-        String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        String extension = getFileExtension(file.getOriginalFilename()).toLowerCase(Locale.ROOT);
         if (!isExtensionAllowed(extension, allowedFileTypes)) {
             throw new RuntimeException("Type not allowed: " + extension);
         }
@@ -454,13 +455,13 @@ public class FileStorageService {
         if (file.getSize() > publicMaxFileSize) {
             throw new RuntimeException("File too large. Max size is " + publicMaxFileSize + " bytes");
         }
-        String extension = getFileExtension(originalFileName).toLowerCase();
+        String extension = getFileExtension(originalFileName).toLowerCase(Locale.ROOT);
         if (!isExtensionAllowed(extension, publicAllowedFileTypes)) {
             throw new RuntimeException("Type not allowed: " + extension);
         }
         String contentType = file.getContentType();
         if (contentType != null && !contentType.isBlank()) {
-            String normalized = contentType.toLowerCase();
+            String normalized = contentType.toLowerCase(Locale.ROOT);
             if (!"application/octet-stream".equals(normalized)) {
                 if (List.of(".jpg", ".jpeg", ".png", ".svg").contains(extension) && !normalized.startsWith("image/")) {
                     throw new RuntimeException("File MIME type does not match image extension");
@@ -489,13 +490,13 @@ public class FileStorageService {
         if (file.getSize() > commentMaxFileSize) {
             throw new RuntimeException("File too large. Max size is " + commentMaxFileSize + " bytes");
         }
-        String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        String extension = getFileExtension(file.getOriginalFilename()).toLowerCase(Locale.ROOT);
         if (!isExtensionAllowed(extension, allowedFileTypes)) {
             throw new RuntimeException("Type not allowed: " + extension);
         }
         String contentType = file.getContentType();
         if (contentType != null && !contentType.isBlank()) {
-            String normalized = contentType.toLowerCase();
+            String normalized = contentType.toLowerCase(Locale.ROOT);
             if (!isMimeAllowed(normalized, commentAllowedMimeTypes) && !normalized.startsWith("image/")) {
                 throw new RuntimeException("MIME type not allowed: " + contentType);
             }
@@ -507,7 +508,7 @@ public class FileStorageService {
     }
 
     private boolean isImageFile(String fileName) {
-        String ext = getFileExtension(fileName).toLowerCase();
+        String ext = getFileExtension(fileName).toLowerCase(Locale.ROOT);
         return List.of(".jpg", ".jpeg", ".png", ".gif", ".svg").contains(ext);
     }
 
@@ -515,9 +516,9 @@ public class FileStorageService {
         if (extension == null || extension.isBlank()) {
             return false;
         }
-        String ext = extension.toLowerCase();
+        String ext = extension.toLowerCase(Locale.ROOT);
         for (String token : allowedList.split(",")) {
-            String allowed = token.trim().toLowerCase();
+            String allowed = token.trim().toLowerCase(Locale.ROOT);
             if (!allowed.isEmpty() && allowed.equals(ext)) {
                 return true;
             }
@@ -529,9 +530,9 @@ public class FileStorageService {
         if (mime == null || mime.isBlank()) {
             return false;
         }
-        String normalized = mime.toLowerCase();
+        String normalized = mime.toLowerCase(Locale.ROOT);
         for (String token : allowedList.split(",")) {
-            String allowed = token.trim().toLowerCase();
+            String allowed = token.trim().toLowerCase(Locale.ROOT);
             if (!allowed.isEmpty() && allowed.equals(normalized)) {
                 return true;
             }

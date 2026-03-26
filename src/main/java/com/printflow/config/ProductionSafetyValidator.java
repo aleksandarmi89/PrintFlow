@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Component
 public class ProductionSafetyValidator implements ApplicationRunner {
@@ -70,7 +71,7 @@ public class ProductionSafetyValidator implements ApplicationRunner {
         if (value == null) {
             return false;
         }
-        String normalized = value.trim().toLowerCase();
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
         return "create".equals(normalized) || "create-drop".equals(normalized) || "update".equals(normalized);
     }
 }

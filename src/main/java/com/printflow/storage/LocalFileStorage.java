@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Component
@@ -106,7 +107,7 @@ public class LocalFileStorage implements FileStorage {
     }
 
     private boolean isImageFile(String fileName) {
-        String ext = getFileExtension(fileName).toLowerCase();
+        String ext = getFileExtension(fileName).toLowerCase(Locale.ROOT);
         return List.of(".jpg", ".jpeg", ".png", ".gif", ".svg").contains(ext);
     }
 

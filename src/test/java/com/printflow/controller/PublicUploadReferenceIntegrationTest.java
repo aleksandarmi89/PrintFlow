@@ -205,6 +205,71 @@ class PublicUploadReferenceIntegrationTest {
     }
 
     @Test
+    void uploadReferenceAcceptsLocaleAliasForErrorRedirectLang() throws Exception {
+        String token = assignPublicToken("upload-metadata-locale-alias");
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "proof.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("locale", "en_US")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?uploadErrorKey=public.upload.error.metadata_mismatch&lang=en"));
+
+        assertClientFileCount(0L);
+    }
+
+    @Test
+    void uploadReferenceFallsBackToLocaleAliasWhenLangIsUnsupported() throws Exception {
+        String token = assignPublicToken("upload-metadata-locale-fallback");
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "proof.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("lang", "de")
+                .param("locale", "en_US")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?uploadErrorKey=public.upload.error.metadata_mismatch&lang=en"));
+
+        assertClientFileCount(0L);
+    }
+
+    @Test
+    void uploadReferencePrefersValidPrimaryLangOverLocaleAlias() throws Exception {
+        String token = assignPublicToken("upload-metadata-primary-lang-priority");
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "proof.pdf",
+            "application/pdf",
+            "hello".getBytes()
+        );
+
+        mockMvc.perform(multipart("/public/order/{token}/upload-reference", token)
+                .file(file)
+                .param("lang", "EN")
+                .param("locale", "sr_RS")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?uploadErrorKey=public.upload.error.metadata_mismatch&lang=en"));
+
+        assertClientFileCount(0L);
+    }
+
+    @Test
     void uploadReferenceStoresClientFileWhenMetadataMatches() throws Exception {
         String token = assignPublicToken("upload-metadata-3");
         MockMultipartFile file = new MockMultipartFile(

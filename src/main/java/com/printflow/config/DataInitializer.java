@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -202,7 +203,8 @@ public class DataInitializer {
                 BillingPlanConfig config = new BillingPlanConfig();
                 config.setPlan(plan);
                 config.setInterval(interval);
-                String priceId = "price_test_" + plan.name().toLowerCase() + "_" + interval.name().toLowerCase();
+                String priceId = "price_test_" + plan.name().toLowerCase(Locale.ROOT) + "_"
+                    + interval.name().toLowerCase(Locale.ROOT);
                 config.setStripePriceId(priceId);
                 config.setActive(true);
                 repository.save(config);
@@ -269,7 +271,7 @@ public class DataInitializer {
             ensureUser(userRepository, primaryCompany, "aleksandar", "Aleksandar", "Admin", Role.ADMIN, random);
 
             for (Company company : companies) {
-                String slug = company.getName().toLowerCase().replaceAll("[^a-z0-9]+", "");
+                String slug = company.getName().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "");
                 ensureUser(userRepository, company, slug + "_admin", "Admin", "Owner", Role.ADMIN, random);
                 ensureUser(userRepository, company, slug + "_manager", "Manager", "Lead", Role.MANAGER, random);
 
@@ -291,7 +293,8 @@ public class DataInitializer {
                     client.setCompanyName(company.getName() + " Client " + (i + 1));
                     client.setContactPerson("Contact " + (i + 1));
                     client.setPhone("+381 11 100 " + String.format("%04d", i));
-                    client.setEmail("client" + (i + 1) + "@" + company.getName().replaceAll("\\s+", "").toLowerCase() + ".com");
+                    client.setEmail("client" + (i + 1) + "@"
+                        + company.getName().replaceAll("\\s+", "").toLowerCase(Locale.ROOT) + ".com");
                     client.setCity("Belgrade");
                     client.setCountry("Serbia");
                     client.setCompanyId("C-" + company.getId() + "-" + (i + 1));

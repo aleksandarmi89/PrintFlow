@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -29,8 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -78,6 +81,56 @@ class PublicOrderRequestFlowIntegrationTest {
         assertThat(created).isNotNull();
         assertThat(created.getCompany().getId()).isEqualTo(company.getId());
         assertThat(created.getStatus()).isEqualTo(PublicOrderRequestStatus.NEW);
+    }
+
+    @Test
+    void publicSubmitPreservesLangOnSuccessRedirect() throws Exception {
+        Company company = createCompany("Lang Redirect", "lang-redirect");
+
+        mockMvc.perform(post("/p/" + company.getSlug() + "/order")
+                .with(csrf())
+                .param("lang", "en")
+                .param("customerName", "John Doe")
+                .param("customerEmail", "john@example.com")
+                .param("productType", "Flyers")
+                .param("quantity", "100"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/p/" + company.getSlug() + "/order/success?lang=en"));
+    }
+
+    @Test
+    void companyIdEntryPointPreservesLangOnRedirectToSlug() throws Exception {
+        Company company = createCompany("Lang Company", "lang-company");
+
+        mockMvc.perform(get("/p/company/" + company.getId() + "/order")
+                .param("lang", "en"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/p/" + company.getSlug() + "/order?lang=en"));
+    }
+
+    @Test
+    void publicSubmitNormalizesUnsupportedLangToSr() throws Exception {
+        Company company = createCompany("Lang Normalize", "lang-normalize");
+
+        mockMvc.perform(post("/p/" + company.getSlug() + "/order")
+                .with(csrf())
+                .param("lang", "de")
+                .param("customerName", "Lang Test")
+                .param("customerEmail", "lang@example.com")
+                .param("productType", "Flyers")
+                .param("quantity", "100"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/p/" + company.getSlug() + "/order/success?lang=sr"));
+    }
+
+    @Test
+    void companyIdEntryPointNormalizesUnsupportedLangToSr() throws Exception {
+        Company company = createCompany("Lang Company Normalize", "lang-company-normalize");
+
+        mockMvc.perform(get("/p/company/" + company.getId() + "/order")
+                .param("lang", "de"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/p/" + company.getSlug() + "/order?lang=sr"));
     }
 
     @Test
@@ -171,6 +224,36 @@ class PublicOrderRequestFlowIntegrationTest {
     }
 
     @Test
+    void deadlineInPastFailsValidation() throws Exception {
+        Company company = createCompany("Validation Deadline", "validation-deadline");
+        MvcResult result = mockMvc.perform(post("/p/" + company.getSlug() + "/order")
+                .with(csrf())
+                .param("customerName", "Past Deadline")
+                .param("customerEmail", "deadline@example.com")
+                .param("productType", "Flyers")
+                .param("quantity", "100")
+                .param("deadline", LocalDateTime.now().minusHours(2).withNano(0).toString()))
+            .andExpect(status().isOk())
+            .andReturn();
+        assertThat(result.getResponse().getContentAsString()).contains("Rok mora biti u budu");
+    }
+
+    @Test
+    void productTypeTooLongFailsValidation() throws Exception {
+        Company company = createCompany("Validation ProductType", "validation-product-type");
+        String tooLongProductType = "x".repeat(151);
+        MvcResult result = mockMvc.perform(post("/p/" + company.getSlug() + "/order")
+                .with(csrf())
+                .param("customerName", "Long Product Type")
+                .param("customerEmail", "length@example.com")
+                .param("productType", tooLongProductType)
+                .param("quantity", "100"))
+            .andExpect(status().isOk())
+            .andReturn();
+        assertThat(result.getResponse().getContentAsString()).contains("Tip proizvoda može imati najviše 150 karaktera");
+    }
+
+    @Test
     void convertReusesExistingCustomerInSameTenant() throws Exception {
         Company company = createCompany("Reuse Client", "reuse-client");
         createAdmin(company, "reuseAdmin");
@@ -228,6 +311,30 @@ class PublicOrderRequestFlowIntegrationTest {
         Long orderId = converted.getConvertedOrder().getId();
         Long orderCompanyId = workOrderRepository.findById(orderId).orElseThrow().getCompany().getId();
         assertThat(orderCompanyId).isEqualTo(companyA.getId());
+    }
+
+    @Test
+    void invalidFileExtensionShowsFileSectionError() throws Exception {
+        Company company = createCompany("Validation File", "validation-file");
+        MockMultipartFile invalidFile = new MockMultipartFile(
+            "files",
+            "payload.exe",
+            "application/octet-stream",
+            "dummy".getBytes()
+        );
+
+        MvcResult result = mockMvc.perform(multipart("/p/" + company.getSlug() + "/order")
+                .file(invalidFile)
+                .with(csrf())
+                .param("customerName", "Bad File")
+                .param("customerEmail", "badfile@example.com")
+                .param("productType", "Flyers")
+                .param("quantity", "100"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String response = result.getResponse().getContentAsString();
+        assertThat(response).contains("Nedozvoljen tip fajla");
     }
 
     private void submitPublic(String slug, String email) throws Exception {

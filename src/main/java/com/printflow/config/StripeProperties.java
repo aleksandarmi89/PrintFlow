@@ -1,11 +1,12 @@
 package com.printflow.config;
 
+import com.printflow.service.StripeSettings;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "stripe")
-public class StripeProperties {
+public class StripeProperties implements StripeSettings {
     private String mode = "test";
     private String apiKey;
     private String liveApiKey;

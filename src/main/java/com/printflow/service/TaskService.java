@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -628,7 +629,7 @@ public class TaskService {
         // Query for unassigned tasks
         if (priority != null && !priority.isEmpty()) {
             try {
-                TaskPriority taskPriority = TaskPriority.valueOf(priority.toUpperCase());
+                TaskPriority taskPriority = TaskPriority.valueOf(priority.toUpperCase(Locale.ROOT));
                 if (tenantGuard.isSuperAdmin()) {
                     return taskRepository.findAvailableTasksByPriorityAll(taskPriority, pageable)
                         .map(this::convertToTaskDTO);
@@ -712,7 +713,7 @@ public class TaskService {
 
         if (dto.getPriority() != null && !dto.getPriority().isBlank()) {
             try {
-                task.setPriority(TaskPriority.valueOf(dto.getPriority().toUpperCase()));
+                task.setPriority(TaskPriority.valueOf(dto.getPriority().toUpperCase(Locale.ROOT)));
             } catch (IllegalArgumentException ex) {
                 throw new IllegalArgumentException("Invalid task priority");
             }
@@ -779,7 +780,7 @@ public class TaskService {
         TaskPriority priority = TaskPriority.MEDIUM;
         if (dto.getPriority() != null && !dto.getPriority().isBlank()) {
             try {
-                priority = TaskPriority.valueOf(dto.getPriority().toUpperCase());
+                priority = TaskPriority.valueOf(dto.getPriority().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ex) {
                 throw new IllegalArgumentException("Invalid task priority");
             }
@@ -1273,7 +1274,8 @@ public class TaskService {
             }
 
             if (search != null && !search.isBlank()) {
-                String q = "%" + search.toLowerCase() + "%";
+                String normalizedSearch = search.trim().toLowerCase(Locale.ROOT);
+                String q = "%" + normalizedSearch + "%";
                 Predicate textMatch = cb.or(
                     cb.like(cb.lower(root.get("title")), q),
                     cb.like(cb.lower(root.get("description")), q),
@@ -1500,13 +1502,13 @@ public class TaskService {
             dto.setUserFullName(fullName != null && !fullName.isBlank() ? fullName : "User");
             String initials = "";
             if (comment.getUser().getFirstName() != null && !comment.getUser().getFirstName().isBlank()) {
-                initials += comment.getUser().getFirstName().substring(0, 1).toUpperCase();
+                initials += comment.getUser().getFirstName().substring(0, 1).toUpperCase(Locale.ROOT);
             }
             if (comment.getUser().getLastName() != null && !comment.getUser().getLastName().isBlank()) {
-                initials += comment.getUser().getLastName().substring(0, 1).toUpperCase();
+                initials += comment.getUser().getLastName().substring(0, 1).toUpperCase(Locale.ROOT);
             }
             if (initials.isBlank() && dto.getUserFullName() != null && !dto.getUserFullName().isBlank()) {
-                initials = dto.getUserFullName().substring(0, 1).toUpperCase();
+                initials = dto.getUserFullName().substring(0, 1).toUpperCase(Locale.ROOT);
             }
             dto.setUserInitials(initials);
         }

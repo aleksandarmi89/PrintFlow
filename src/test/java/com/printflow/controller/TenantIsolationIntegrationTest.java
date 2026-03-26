@@ -32,9 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -63,10 +65,16 @@ class TenantIsolationIntegrationTest {
     void setUp() throws Exception {
         Company tenantA = new Company();
         tenantA.setName("Tenant A");
+        tenantA.setTrialStart(LocalDateTime.now().minusDays(1));
+        tenantA.setTrialEnd(LocalDateTime.now().plusDays(30));
+        tenantA.setActive(true);
         tenantA = companyRepository.save(tenantA);
 
         Company tenantB = new Company();
         tenantB.setName("Tenant B");
+        tenantB.setTrialStart(LocalDateTime.now().minusDays(1));
+        tenantB.setTrialEnd(LocalDateTime.now().plusDays(30));
+        tenantB.setActive(true);
         tenantB = companyRepository.save(tenantB);
 
         User adminA = new User();
@@ -140,7 +148,8 @@ class TenantIsolationIntegrationTest {
     void orderFromTenantACannotBeAccessedByTenantB() throws Exception {
         MockHttpSession session = login("tenantB_admin", "password");
         mockMvc.perform(get("/admin/orders/{id}", workOrderId).session(session))
-            .andExpect(tenantIsolationStatus());
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/admin/orders"));
     }
 
     @Test

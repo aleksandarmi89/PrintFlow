@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -394,24 +395,26 @@ public class UserService {
     }
 
     public List<UserDTO> searchUsers(String keyword) {
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
         try {
             if (tenantContextService.isSuperAdmin()) {
-                return userRepository.searchUsers(keyword).stream()
+                return userRepository.searchUsers(normalizedKeyword).stream()
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
             }
             Long companyId = tenantContextService.requireCompanyId();
-            return userRepository.searchUsersByCompany(companyId, keyword).stream()
+            return userRepository.searchUsersByCompany(companyId, normalizedKeyword).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         } catch (Exception e) {
             // Alternativna implementacija
+            String keywordLower = normalizedKeyword.toLowerCase(Locale.ROOT);
             if (tenantContextService.isSuperAdmin()) {
                 return userRepository.findAll().stream()
                     .filter(user -> 
-                        (user.getUsername() != null && user.getUsername().toLowerCase().contains(keyword.toLowerCase())) ||
-                        (user.getFullName() != null && user.getFullName().toLowerCase().contains(keyword.toLowerCase())) ||
-                        (user.getEmail() != null && user.getEmail().toLowerCase().contains(keyword.toLowerCase()))
+                        (user.getUsername() != null && user.getUsername().toLowerCase(Locale.ROOT).contains(keywordLower)) ||
+                        (user.getFullName() != null && user.getFullName().toLowerCase(Locale.ROOT).contains(keywordLower)) ||
+                        (user.getEmail() != null && user.getEmail().toLowerCase(Locale.ROOT).contains(keywordLower))
                     )
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
@@ -419,9 +422,9 @@ public class UserService {
             Long companyId = tenantContextService.requireCompanyId();
             return userRepository.findByCompany_Id(companyId, Pageable.unpaged()).stream()
                 .filter(user -> 
-                    (user.getUsername() != null && user.getUsername().toLowerCase().contains(keyword.toLowerCase())) ||
-                    (user.getFullName() != null && user.getFullName().toLowerCase().contains(keyword.toLowerCase())) ||
-                    (user.getEmail() != null && user.getEmail().toLowerCase().contains(keyword.toLowerCase()))
+                    (user.getUsername() != null && user.getUsername().toLowerCase(Locale.ROOT).contains(keywordLower)) ||
+                    (user.getFullName() != null && user.getFullName().toLowerCase(Locale.ROOT).contains(keywordLower)) ||
+                    (user.getEmail() != null && user.getEmail().toLowerCase(Locale.ROOT).contains(keywordLower))
                 )
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

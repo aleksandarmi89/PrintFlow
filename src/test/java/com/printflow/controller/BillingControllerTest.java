@@ -25,6 +25,7 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -994,5 +995,118 @@ class BillingControllerTest {
         assertEquals("billing.config.saved!", model.getAttribute("success"));
         assertEquals(null, model.getAttribute("errorKey"));
         assertEquals(null, model.getAttribute("successKey"));
+    }
+
+    @Test
+    void billingHomeSetsNextActionForMissingStripeConfig() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(120L);
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(120L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(120L)).thenReturn(false);
+        when(billingSubscriptionRepository.findByCompany_Id(120L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(120L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_Id(120L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(120L), any())).thenReturn(1L);
+        when(attachmentRepository.sumFileSizeByCompanyId(120L)).thenReturn(1024L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(new com.printflow.config.PlanLimitsProperties.PlanLimits());
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of(
+            PlanTier.FREE, Map.of(BillingInterval.MONTHLY, "free_m", BillingInterval.YEARLY, "free_y"),
+            PlanTier.PRO, Map.of(BillingInterval.MONTHLY, "pro_m", BillingInterval.YEARLY, "pro_y"),
+            PlanTier.TEAM, Map.of(BillingInterval.MONTHLY, "team_m", BillingInterval.YEARLY, "team_y")
+        ));
+        when(stripeProperties.isConfigured()).thenReturn(false);
+        when(stripeProperties.getMode()).thenReturn("test");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.billingHome(model, null, null);
+
+        assertEquals("admin/billing/index", view);
+        assertEquals("billing.next_action.stripe_missing", model.getAttribute("billingNextActionMessageKey"));
+        assertEquals("billing.next_action.cta.open_company", model.getAttribute("billingNextActionCtaKey"));
+        assertEquals("/admin/company", model.getAttribute("billingNextActionHref"));
+    }
+
+    @Test
+    void billingHomeSetsNextActionForTrialEndingSoon() {
+        StripeBillingService stripeBillingService = mock(StripeBillingService.class);
+        TenantContextService tenantContextService = mock(TenantContextService.class);
+        BillingAccessService billingAccessService = mock(BillingAccessService.class);
+        BillingSubscriptionRepository billingSubscriptionRepository = mock(BillingSubscriptionRepository.class);
+        PlanLimitService planLimitService = mock(PlanLimitService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        WorkOrderRepository workOrderRepository = mock(WorkOrderRepository.class);
+        AttachmentRepository attachmentRepository = mock(AttachmentRepository.class);
+        BillingPlanConfigService billingPlanConfigService = mock(BillingPlanConfigService.class);
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        StripeProperties stripeProperties = mock(StripeProperties.class);
+
+        BillingController controller = new BillingController(
+            stripeBillingService,
+            tenantContextService,
+            billingAccessService,
+            billingSubscriptionRepository,
+            planLimitService,
+            userRepository,
+            workOrderRepository,
+            attachmentRepository,
+            billingPlanConfigService,
+            auditLogService,
+            stripeProperties
+        );
+
+        Company company = new Company();
+        company.setId(121L);
+        company.setTrialEnd(LocalDateTime.now().plusDays(3));
+        when(tenantContextService.getCurrentCompany()).thenReturn(company);
+        when(billingAccessService.isBillingActive(121L)).thenReturn(true);
+        when(billingAccessService.isTrialActive(121L)).thenReturn(true);
+        when(billingSubscriptionRepository.findByCompany_Id(121L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.countByCompany_IdAndActiveTrue(121L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_Id(121L)).thenReturn(1L);
+        when(workOrderRepository.countByCompany_IdAndCreatedAtAfter(eq(121L), any())).thenReturn(1L);
+        when(attachmentRepository.sumFileSizeByCompanyId(121L)).thenReturn(1024L);
+        when(planLimitService.getLimitsForCompany(company)).thenReturn(new com.printflow.config.PlanLimitsProperties.PlanLimits());
+        when(billingPlanConfigService.getPriceIdsByInterval()).thenReturn(Map.of(
+            PlanTier.FREE, Map.of(BillingInterval.MONTHLY, "free_m", BillingInterval.YEARLY, "free_y"),
+            PlanTier.PRO, Map.of(BillingInterval.MONTHLY, "pro_m", BillingInterval.YEARLY, "pro_y"),
+            PlanTier.TEAM, Map.of(BillingInterval.MONTHLY, "team_m", BillingInterval.YEARLY, "team_y")
+        ));
+        when(stripeProperties.isConfigured()).thenReturn(true);
+        when(stripeProperties.getMode()).thenReturn("live");
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.billingHome(model, null, null);
+
+        assertEquals("admin/billing/index", view);
+        assertEquals("billing.next_action.trial_ending", model.getAttribute("billingNextActionMessageKey"));
+        assertEquals("billing.next_action.cta.open_checkout", model.getAttribute("billingNextActionCtaKey"));
+        assertEquals("/admin/billing#checkout", model.getAttribute("billingNextActionHref"));
     }
 }

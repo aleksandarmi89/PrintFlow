@@ -236,8 +236,26 @@
                                 <td class="py-2">
                                     <details class="text-xs">
                                         <summary class="cursor-pointer text-blue-600 hover:text-blue-800" th:text="#{common.view}">View</summary>
-                                        <pre class="mt-2 whitespace-pre-wrap text-gray-600"
-                                             th:text="${item.pricingSnapshotJson != null ? item.pricingSnapshotJson : #messages.msg('orders.items.no_snapshot')}">No snapshot</pre>
+                                        <div class="mt-2 snapshot-json text-gray-600"
+                                             th:attr="data-snapshot=${item.pricingSnapshotJson},
+                                                      data-no-snapshot=#{orders.items.no_snapshot},
+                                                      data-lbl-qty=#{orders.items.qty},
+                                                      data-lbl-cost=#{orders.items.cost},
+                                                      data-lbl-price=#{orders.items.price},
+                                                      data-lbl-model=#{orders.items.model},
+                                                      data-lbl-mult=#{orders.items.multiplier},
+                                                      data-lbl-warnings=#{pricing.calculate.warnings},
+                                                      data-warn-no-components=#{pricing.calculate.warning.no_components},
+                                                      data-warn-colors-adjusted=#{pricing.calculate.warning.colors_adjusted},
+                                                      data-warn-sides-adjusted=#{pricing.calculate.warning.sides_adjusted},
+                                                      data-warn-dim=#{pricing.calculate.warning.dimensions_required},
+                                                      data-warn-meters-missing=#{pricing.calculate.warning.meters_missing},
+                                                      data-warn-minutes-missing=#{pricing.calculate.warning.minutes_missing},
+                                                      data-warn-margin=#{pricing.calculate.margin_low},
+                                                      data-warn-breakdown=#{pricing.calculate.warning.breakdown_mismatch},
+                                                      data-warn-last-price-prefix=#{pricing.calculate.warning.last_price_prefix},
+                                                      data-warn-price-drop=#{pricing.calculate.warning.price_drop_20}">
+                                        </div>
                                     </details>
                                 </td>
                             </tr>
@@ -1217,6 +1235,142 @@
                     });
                 }
                 syncBulkState();
+            });
+        })();
+
+        (function renderSnapshotCards() {
+            function moneyLike(val, currency) {
+                if (val === null || val === undefined || val === '') return '-';
+                var n = Number(val);
+                if (Number.isNaN(n)) return String(val);
+                var htmlLang = (document.documentElement.getAttribute('lang') || 'sr').toLowerCase();
+                var locale = htmlLang === 'en' ? 'en-US' : 'sr-RS';
+                try {
+                    return n.toLocaleString(locale, {
+                        style: 'currency',
+                        currency: currency || 'RSD',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                } catch (e) {
+                    return n.toFixed(2) + ' ' + (currency || 'RSD');
+                }
+            }
+            function parseSnapshotPayload(raw) {
+                if (!raw) return null;
+                try {
+                    var parsed = JSON.parse(raw);
+                    if (typeof parsed === 'string') {
+                        parsed = JSON.parse(parsed);
+                    }
+                    if (!parsed || typeof parsed !== 'object') {
+                        return null;
+                    }
+                    return parsed;
+                } catch (e) {
+                    return null;
+                }
+            }
+            document.querySelectorAll('.snapshot-json').forEach(function (container) {
+                var raw = (container.getAttribute('data-snapshot') || '').trim();
+                var noSnapshot = container.getAttribute('data-no-snapshot') || 'No snapshot';
+                var lblQty = container.getAttribute('data-lbl-qty') || 'Qty';
+                var lblCost = container.getAttribute('data-lbl-cost') || 'Cost';
+                var lblPrice = container.getAttribute('data-lbl-price') || 'Price';
+                var lblModel = container.getAttribute('data-lbl-model') || 'Model';
+                var lblMult = container.getAttribute('data-lbl-mult') || 'Multiplier';
+                var lblWarnings = container.getAttribute('data-lbl-warnings') || 'Warnings';
+                var warningTranslations = {
+                    "No pricing components configured": container.getAttribute('data-warn-no-components') || 'No pricing components configured.',
+                    "pricing.calculate.warning.no_components": container.getAttribute('data-warn-no-components') || 'No pricing components configured.',
+                    "Colors adjusted to 1.": container.getAttribute('data-warn-colors-adjusted') || 'Colors value was adjusted to 1.',
+                    "pricing.calculate.warning.colors_adjusted": container.getAttribute('data-warn-colors-adjusted') || 'Colors value was adjusted to 1.',
+                    "Sides adjusted to 1.": container.getAttribute('data-warn-sides-adjusted') || 'Sides value was adjusted to 1.',
+                    "pricing.calculate.warning.sides_adjusted": container.getAttribute('data-warn-sides-adjusted') || 'Sides value was adjusted to 1.',
+                    "Dimensions required for area-based pricing.": container.getAttribute('data-warn-dim') || 'Dimensions are required for area-based pricing.',
+                    "pricing.calculate.warning.dimensions_required": container.getAttribute('data-warn-dim') || 'Dimensions are required for area-based pricing.',
+                    "Meters value missing for per-meter pricing.": container.getAttribute('data-warn-meters-missing') || 'Meters value is required for per-meter pricing.',
+                    "pricing.calculate.warning.meters_missing": container.getAttribute('data-warn-meters-missing') || 'Meters value is required for per-meter pricing.',
+                    "Minutes value missing for per-minute pricing.": container.getAttribute('data-warn-minutes-missing') || 'Minutes value is required for per-minute pricing.',
+                    "pricing.calculate.warning.minutes_missing": container.getAttribute('data-warn-minutes-missing') || 'Minutes value is required for per-minute pricing.',
+                    "Margin below target.": container.getAttribute('data-warn-margin') || 'Margin below target.',
+                    "pricing.calculate.margin_low": container.getAttribute('data-warn-margin') || 'Margin below target.',
+                    "COST_BREAKDOWN_MISMATCH": container.getAttribute('data-warn-breakdown') || 'Breakdown does not match total cost.',
+                    "pricing.calculate.warning.breakdown_mismatch": container.getAttribute('data-warn-breakdown') || 'Breakdown does not match total cost.',
+                    "Price is more than 20% lower than last time.": container.getAttribute('data-warn-price-drop') || 'Price is more than 20% lower than last time.',
+                    "pricing.calculate.warning.price_drop_20": container.getAttribute('data-warn-price-drop') || 'Price is more than 20% lower than last time.'
+                };
+                var hiddenWarnings = new Set([
+                    "Margin below target.",
+                    "pricing.calculate.margin_low",
+                    "COST_BREAKDOWN_MISMATCH",
+                    "pricing.calculate.warning.breakdown_mismatch",
+                    "Price is more than 20% lower than last time.",
+                    "pricing.calculate.warning.price_drop_20"
+                ]);
+                var translateWarning = function (rawWarning) {
+                    if (!rawWarning) return '';
+                    var key = String(rawWarning).trim();
+                    if (!key) return '';
+                    var direct = warningTranslations[key];
+                    if (direct) {
+                        return direct;
+                    }
+                    var prefix = 'Last time you charged this client:';
+                    if (key.startsWith(prefix)) {
+                        var value = key.substring(prefix.length).trim();
+                        var translatedPrefix = container.getAttribute('data-warn-last-price-prefix') || 'Last time you charged this client:';
+                        return (translatedPrefix + ' ' + value).trim();
+                    }
+                    var keyedPrefix = 'pricing.calculate.warning.last_price:';
+                    if (key.startsWith(keyedPrefix)) {
+                        var value2 = key.substring(keyedPrefix.length).trim();
+                        var translatedPrefix2 = container.getAttribute('data-warn-last-price-prefix') || 'Last time you charged this client:';
+                        return (translatedPrefix2 + ' ' + value2).trim();
+                    }
+                    return key;
+                };
+                if (!raw || raw === '{}' || raw === 'null') {
+                    container.textContent = noSnapshot;
+                    return;
+                }
+                try {
+                    var snap = parseSnapshotPayload(raw);
+                    if (!snap) {
+                        throw new Error('invalid_snapshot_payload');
+                    }
+                    var req = snap.request || {};
+                    var res = snap.response || {};
+                    var currency = (res.currency || 'RSD').toUpperCase();
+                    var row = Array.isArray(snap.breakdown) && snap.breakdown.length > 0 ? snap.breakdown[0] : null;
+                    var warnings = Array.isArray(snap.warnings)
+                        ? Array.from(new Set(snap.warnings
+                            .map(function (w) { return String(w || '').trim(); })
+                            .filter(function (val) {
+                                if (!val) return false;
+                                if (hiddenWarnings.has(val)) return false;
+                                if (val.startsWith('Last time you charged this client:')) return false;
+                                return !val.startsWith('pricing.calculate.warning.last_price:');
+                            })))
+                        : [];
+                    var wrap = document.createElement('div');
+                    wrap.className = 'rounded border border-gray-200 bg-gray-50 p-2 text-[11px]';
+                    wrap.innerHTML =
+                        '<div class="grid grid-cols-2 gap-2">' +
+                        '<div><span class="text-gray-500">' + lblQty + ':</span> <span class="font-medium">' + (req.quantity ?? '-') + '</span></div>' +
+                        '<div><span class="text-gray-500">' + lblCost + ':</span> <span class="font-medium">' + moneyLike(res.totalCost, currency) + '</span></div>' +
+                        '<div class="col-span-2"><span class="text-gray-500">' + lblPrice + ':</span> <span class="font-medium">' + moneyLike(res.totalPrice, currency) + '</span></div>' +
+                        '</div>' +
+                        (row ? '<div class="mt-1 text-gray-600"><span class="text-gray-500">' + lblModel + ':</span> ' + (row.pricingModel ?? '-') + ' · <span class="text-gray-500">' + lblMult + ':</span> ' + (row.multiplierDescription ?? '-') + '</div>' : '') +
+                        (warnings.length > 0
+                            ? '<div class="mt-1 text-amber-700"><span class="text-gray-500">' + lblWarnings + ':</span> '
+                                + warnings.map(translateWarning).join(' · ') + '</div>'
+                            : '');
+                    container.innerHTML = '';
+                    container.appendChild(wrap);
+                } catch (e) {
+                    container.textContent = noSnapshot;
+                }
             });
         })();
     </script>

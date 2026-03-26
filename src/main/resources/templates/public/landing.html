@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,15 +31,15 @@
                     </a>
                 </div>
                 <div class="w-full md:w-auto flex flex-wrap items-center justify-start md:justify-end gap-2 md:gap-3">
-                    <a th:href="@{/public/track}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium track-link-with-last-company"
+                    <a th:href="@{/public/track(lang=${#locale.language})}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium track-link-with-last-company"
                        th:text="#{footer.track_order}">
                         Track Order
                     </a>
-                    <a th:href="@{/public/contact}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                    <a th:href="@{/public/contact(lang=${#locale.language})}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                        th:text="#{footer.contact}">
                         Contact
                     </a>
-                    <a th:href="@{/public/companies}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    <a th:href="@{/public/companies(lang=${#locale.language})}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                         <span th:text="#{public.companies.nav}">Companies</span>
                     </a>
                     <a th:href="@{/login}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
@@ -49,6 +49,7 @@
                     <a th:href="@{/register}" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
                         <span th:text="#{landing.get_started}">Get Started</span>
                     </a>
+                    <div class="h-4 w-px bg-gray-200 hidden md:block"></div>
                     <div class="flex items-center gap-2 text-xs text-gray-600 ml-auto md:ml-0">
                         <span th:text="#{nav.language}">Language</span>
                         <a th:href="@{${requestUri}(lang='sr')}"
@@ -80,18 +81,18 @@
                    class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors">
                     <span th:text="#{landing.start_free_trial}">Start Free Trial</span>
                 </a>
-                <a th:href="@{/public/track}" 
+                <a th:href="@{/public/track(lang=${#locale.language})}" 
                    class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-medium border border-blue-600 hover:bg-blue-50 transition-colors track-link-with-last-company">
                     <span th:text="#{landing.track_order_cta}">Track Your Order</span>
                 </a>
-                <a th:href="@{/public/companies}"
+                <a th:href="@{/public/companies(lang=${#locale.language})}"
                    class="bg-white text-gray-800 px-8 py-3 rounded-lg text-lg font-medium border border-gray-300 hover:bg-gray-100 transition-colors">
                     <span th:text="#{landing.choose_company_cta}">Choose company</span>
                 </a>
             </div>
             <div class="mt-3">
                 <a id="landingLastCompanyCta"
-                   href="/public/companies"
+                   th:href="@{/public/companies(lang=${#locale.language})}"
                    class="hidden text-sm text-blue-700 hover:text-blue-800 hover:underline"
                    th:text="#{landing.continue_last_company}">
                     Continue with last selected company
@@ -218,6 +219,7 @@
             const trackLinks = Array.from(document.querySelectorAll('.track-link-with-last-company'));
             const baseTrackHref = (trackLinks[0] && trackLinks[0].getAttribute('href')) || '/public/track';
             const baseCtaText = btn ? btn.textContent : '';
+            const currentLang = document.documentElement.getAttribute('lang') || 'sr';
             const lastCompanyStorageKey = 'printflow.public.lastCompany';
             const recentCodesStorageKey = 'printflow.track.recentCodes';
             const trackCompanyStorageKey = 'printflow.track.companyId';
@@ -267,7 +269,7 @@
                 }
                 const encodedId = encodeURIComponent(String(parsed.id));
                 updateTrackLinksForCompany(parsed.id);
-                btn.setAttribute('href', `/p/company/${encodedId}/order`);
+                btn.setAttribute('href', `/p/company/${encodedId}/order?lang=${encodeURIComponent(currentLang)}`);
                 btn.textContent = `${baseCtaText}: ${parsed.name}`;
                 btn.classList.remove('hidden');
             } catch (e) {

@@ -327,7 +327,7 @@ public class AdminPublicOrderRequestController extends BaseController {
             return null;
         }
         try {
-            return PublicOrderRequestStatus.valueOf(value.trim().toUpperCase());
+            return PublicOrderRequestStatus.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }

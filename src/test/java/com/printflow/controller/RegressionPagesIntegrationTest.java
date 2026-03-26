@@ -5,12 +5,14 @@ import com.printflow.entity.Task;
 import com.printflow.entity.User;
 import com.printflow.entity.User.Role;
 import com.printflow.entity.MailSettings;
+import com.printflow.entity.ClientPortalAccess;
 import com.printflow.entity.enums.ProductCategory;
 import com.printflow.entity.enums.UnitType;
 import com.printflow.pricing.entity.Product;
 import com.printflow.pricing.entity.ProductVariant;
 import com.printflow.pricing.repository.ProductRepository;
 import com.printflow.pricing.repository.ProductVariantRepository;
+import com.printflow.repository.ClientPortalAccessRepository;
 import com.printflow.repository.CompanyRepository;
 import com.printflow.repository.ClientRepository;
 import com.printflow.repository.TaskRepository;
@@ -56,6 +58,7 @@ class RegressionPagesIntegrationTest {
     @Autowired private MailSettingsRepository mailSettingsRepository;
     @Autowired private ProductRepository productRepository;
     @Autowired private ProductVariantRepository productVariantRepository;
+    @Autowired private ClientPortalAccessRepository clientPortalAccessRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private TenantTestFixture fixture;
@@ -184,6 +187,16 @@ class RegressionPagesIntegrationTest {
                 containsString("Širina/visina se koriste za m")
             )));
         mockMvc.perform(get("/admin/orders").session(adminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(anyOf(
+                containsString("Samo nalozi koji kasne"),
+                containsString("Overdue only")
+            )))
+            .andExpect(content().string(anyOf(
+                containsString("Svi rokovi"),
+                containsString("All deadlines")
+            )));
+        mockMvc.perform(get("/admin/orders").param("overdueOnly", "true").session(adminSession))
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders/" + tenantIds.workOrderId()).session(adminSession))
             .andExpect(status().isOk());
@@ -193,6 +206,7 @@ class RegressionPagesIntegrationTest {
             .andExpect(status().isOk());
         mockMvc.perform(get("/admin/planner").session(adminSession))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("status=OVERDUE"))))
             .andExpect(content().string(not(containsString("??"))))
             .andExpect(content().string(not(containsString(">LASER</option>"))))
             .andExpect(content().string(not(containsString(">OTHER</option>"))))
@@ -256,6 +270,7 @@ class RegressionPagesIntegrationTest {
             )));
         mockMvc.perform(get("/admin/dashboard").session(adminSession))
             .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("status=OVERDUE"))))
             .andExpect(content().string(not(containsString("/public/companies"))))
             .andExpect(content().string(containsString("ProPrintFlow")))
             .andExpect(content().string(containsString("/admin/pricing/products")))
@@ -291,10 +306,20 @@ class RegressionPagesIntegrationTest {
         String token = workOrderRepository.findById(tenantIds.workOrderId())
             .orElseThrow()
             .getPublicToken();
+        ClientPortalAccess portalAccess = new ClientPortalAccess();
+        portalAccess.setClient(clientRepository.findById(tenantIds.clientId()).orElseThrow());
+        portalAccess.setCompany(companyRepository.findById(tenantIds.company1Id()).orElseThrow());
+        portalAccess.setAccessToken("portal-regression-" + tenantIds.clientId());
+        portalAccess.setExpiresAt(java.time.LocalDateTime.now().plusDays(3));
+        clientPortalAccessRepository.save(portalAccess);
         mockMvc.perform(get("/public/track"))
             .andExpect(status().isOk());
         mockMvc.perform(get("/public/order/" + token))
             .andExpect(status().isOk());
+        mockMvc.perform(get("/portal/" + portalAccess.getAccessToken()))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("/p/company/" + tenantIds.company1Id() + "/order?lang=")))
+            .andExpect(content().string(containsString("/public/track?company=" + tenantIds.company1Id() + "&amp;lang=")));
     }
 
     private UnitType pickAnyPieceUnit() {

@@ -219,6 +219,87 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.delivery_type}">Delivery Type</label>
+                            <select th:field="*{deliveryType}" id="deliveryType"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="PICKUP" th:text="#{orders.delivery_type.pickup}">Pickup</option>
+                                <option value="COURIER" th:text="#{orders.delivery_type.courier}">Courier</option>
+                                <option value="EXPRESS_POST" th:text="#{orders.delivery_type.express_post}">Express Post</option>
+                            </select>
+                        </div>
+
+                        <div id="courierNameWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.courier_name}">Courier Service</label>
+                            <input type="text" th:field="*{courierName}" id="courierName"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                   th:placeholder="#{orders.courier_name.placeholder}">
+                        </div>
+
+                        <div id="trackingNumberWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.tracking_number}">Tracking Number</label>
+                            <input type="text" th:field="*{trackingNumber}" id="trackingNumber"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                   th:placeholder="#{orders.tracking_number.placeholder}">
+                        </div>
+
+                        <div id="deliveryAddressWrap" class="md:col-span-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.delivery_address}">Delivery Address</label>
+                            <textarea th:field="*{deliveryAddress}" id="deliveryAddress" rows="2"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                      th:placeholder="#{orders.delivery_address.placeholder}"></textarea>
+                        </div>
+
+                        <div id="deliveryRecipientNameWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.delivery.recipient_name}">Recipient Name</label>
+                            <input type="text" th:field="*{deliveryRecipientName}" id="deliveryRecipientName"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                   th:placeholder="#{orders.delivery.recipient_name.placeholder}">
+                        </div>
+
+                        <div id="deliveryRecipientPhoneWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.delivery.recipient_phone}">Recipient Phone</label>
+                            <input type="text" th:field="*{deliveryRecipientPhone}" id="deliveryRecipientPhone"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                   th:placeholder="#{orders.delivery.recipient_phone.placeholder}">
+                        </div>
+
+                        <div id="deliveryCityWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.delivery.city}">City</label>
+                            <input type="text" th:field="*{deliveryCity}" id="deliveryCity"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                   th:placeholder="#{orders.delivery.city.placeholder}">
+                        </div>
+
+                        <div id="deliveryPostalCodeWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.delivery.postal_code}">Postal Code</label>
+                            <input type="text" th:field="*{deliveryPostalCode}" id="deliveryPostalCode"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                   th:placeholder="#{orders.delivery.postal_code.placeholder}">
+                        </div>
+
+                        <div id="shipmentPriceWrap" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.shipment.price}">Shipment Price</label>
+                            <input type="number" step="0.01" th:field="*{shipmentPrice}" id="shipmentPrice"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        </div>
+
+                        <div id="shippingNoteWrap" class="md:col-span-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
+                                   th:text="#{orders.shipment.note}">Shipping Note</label>
+                            <textarea th:field="*{shippingNote}" id="shippingNote" rows="2"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"
                                    th:text="#{orders.create.field.assign_to}">Assign To Team Member</label>
                             <select th:field="*{assignedToId}"
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -386,6 +467,22 @@
         const warningsBox = document.getElementById('orderSmartWarnings');
         const orderBriefHint = document.getElementById('orderBriefHint');
         const insertOrderBriefTemplate = document.getElementById('insertOrderBriefTemplate');
+        const deliveryTypeSelect = document.getElementById('deliveryType');
+        const courierNameWrap = document.getElementById('courierNameWrap');
+        const courierNameInput = document.getElementById('courierName');
+        const trackingNumberWrap = document.getElementById('trackingNumberWrap');
+        const trackingNumberInput = document.getElementById('trackingNumber');
+        const deliveryAddressWrap = document.getElementById('deliveryAddressWrap');
+        const deliveryAddressInput = document.getElementById('deliveryAddress');
+        const deliveryRecipientNameWrap = document.getElementById('deliveryRecipientNameWrap');
+        const deliveryRecipientPhoneWrap = document.getElementById('deliveryRecipientPhoneWrap');
+        const deliveryCityWrap = document.getElementById('deliveryCityWrap');
+        const deliveryPostalCodeWrap = document.getElementById('deliveryPostalCodeWrap');
+        const shipmentPriceWrap = document.getElementById('shipmentPriceWrap');
+        const shippingNoteWrap = document.getElementById('shippingNoteWrap');
+        const deliveryRecipientNameInput = document.getElementById('deliveryRecipientName');
+        const deliveryRecipientPhoneInput = document.getElementById('deliveryRecipientPhone');
+        const deliveryCityInput = document.getElementById('deliveryCity');
         const checks = {
             client: document.getElementById('checkClient'),
             title: document.getElementById('checkTitle'),
@@ -407,6 +504,11 @@
             warnNoFiles: /*[[#{orders.create.smart.warn.no_files}]]*/ 'No files attached yet. Add at least one reference to reduce back-and-forth.',
             warnTightDeadline: /*[[#{orders.create.smart.warn.tight_deadline}]]*/ 'High quantity with a near deadline may be risky. Confirm capacity before saving.',
             warnShortBrief: /*[[#{orders.create.smart.warn.short_brief}]]*/ 'Description is very short. Add dimensions/material/finishing for fewer clarification calls.',
+            warnCourierAddress: /*[[#{orders.create.smart.warn.courier_address}]]*/ 'Courier delivery selected without delivery address.',
+            warnCourierRecipient: /*[[#{orders.create.smart.warn.courier_recipient}]]*/ 'Courier delivery requires recipient name and phone.',
+            warnCourierCity: /*[[#{orders.create.smart.warn.courier_city}]]*/ 'Courier delivery requires city.',
+            warnCourierService: /*[[#{orders.create.smart.warn.courier_service}]]*/ 'Courier delivery requires courier service name.',
+            warnPickupCourierFields: /*[[#{orders.create.smart.warn.pickup_courier_fields}]]*/ 'Pickup is selected. Courier fields will be ignored.',
             progressTemplate: /*[[#{orders.create.smart.progress_label}]]*/ '__DONE__/__TOTAL__ complete',
             briefTemplateCta: /*[[#{orders.create.smart.brief_template_cta}]]*/ 'Insert brief template',
             briefTemplate: /*[[#{orders.create.smart.brief_template}]]*/ 'Product:\nDimensions:\nMaterial:\nFinishing:\nQuantity:\nDeadline:\nDelivery notes:',
@@ -464,6 +566,36 @@
                     warnings.push(i18n.warnTightDeadline);
                 }
             }
+            if (deliveryTypeSelect && deliveryTypeSelect.value !== 'PICKUP') {
+                const hasAddress = deliveryAddressInput && deliveryAddressInput.value.trim().length > 0;
+                const hasRecipient = deliveryRecipientNameInput && deliveryRecipientNameInput.value.trim().length > 1;
+                const hasRecipientPhone = deliveryRecipientPhoneInput && deliveryRecipientPhoneInput.value.trim().length > 4;
+                const hasCity = deliveryCityInput && deliveryCityInput.value.trim().length > 1;
+                const hasCourierService = courierNameInput && courierNameInput.value.trim().length > 1;
+                if (!hasAddress) {
+                    warnings.push(i18n.warnCourierAddress);
+                }
+                if (!hasRecipient || !hasRecipientPhone) {
+                    warnings.push(i18n.warnCourierRecipient);
+                }
+                if (!hasCity) {
+                    warnings.push(i18n.warnCourierCity);
+                }
+                if (!hasCourierService) {
+                    warnings.push(i18n.warnCourierService);
+                }
+            } else {
+                const hasCourierNoise =
+                    (courierNameInput && courierNameInput.value.trim().length > 0) ||
+                    (trackingNumberInput && trackingNumberInput.value.trim().length > 0) ||
+                    (deliveryAddressInput && deliveryAddressInput.value.trim().length > 0) ||
+                    (deliveryRecipientNameInput && deliveryRecipientNameInput.value.trim().length > 0) ||
+                    (deliveryRecipientPhoneInput && deliveryRecipientPhoneInput.value.trim().length > 0) ||
+                    (deliveryCityInput && deliveryCityInput.value.trim().length > 0);
+                if (hasCourierNoise) {
+                    warnings.push(i18n.warnPickupCourierFields);
+                }
+            }
             if (warningsBox) {
                 if (warnings.length === 0) {
                     warningsBox.classList.add('hidden');
@@ -486,6 +618,16 @@
                     orderBriefHint.textContent = completedParts >= 3 ? i18n.briefHintReady : i18n.briefHintPartial;
                 }
             }
+        }
+
+        function toggleDeliveryFields() {
+            if (!deliveryTypeSelect) return;
+            const isPickup = deliveryTypeSelect.value === 'PICKUP';
+            [courierNameWrap, trackingNumberWrap, deliveryAddressWrap, deliveryRecipientNameWrap, deliveryRecipientPhoneWrap, deliveryCityWrap, deliveryPostalCodeWrap, shipmentPriceWrap, shippingNoteWrap].forEach(el => {
+                if (!el) return;
+                el.classList.toggle('hidden', isPickup);
+            });
+            updateSmartAssistant();
         }
 
         if (clientSelect && clientInfo) {
@@ -521,6 +663,22 @@
             element.addEventListener('input', updateSmartAssistant);
             element.addEventListener('change', updateSmartAssistant);
         });
+        if (deliveryTypeSelect) {
+            deliveryTypeSelect.addEventListener('change', toggleDeliveryFields);
+        }
+        if (deliveryAddressInput) {
+            deliveryAddressInput.addEventListener('input', updateSmartAssistant);
+            deliveryAddressInput.addEventListener('change', updateSmartAssistant);
+        }
+        if (courierNameInput) {
+            courierNameInput.addEventListener('input', updateSmartAssistant);
+            courierNameInput.addEventListener('change', updateSmartAssistant);
+        }
+        [deliveryRecipientNameInput, deliveryRecipientPhoneInput, deliveryCityInput, trackingNumberInput].forEach(element => {
+            if (!element) return;
+            element.addEventListener('input', updateSmartAssistant);
+            element.addEventListener('change', updateSmartAssistant);
+        });
         if (insertOrderBriefTemplate && descriptionInput) {
             insertOrderBriefTemplate.addEventListener('click', function () {
                 if (descriptionInput.value && descriptionInput.value.trim().length > 0) {
@@ -532,6 +690,7 @@
                 updateSmartAssistant();
             });
         }
+        toggleDeliveryFields();
         updateSmartAssistant();
     });
 
@@ -541,13 +700,17 @@
                 title: /*[[#{orders.create.js.template.business.title}]]*/ 'Business Cards',
                 desc:  /*[[#{orders.create.js.template.business.desc}]]*/  '85x55mm, double sided',
                 paper: 'CARDSTOCK',
-                qty: 500
+                qty: 500,
+                color: 'FULL_COLOR',
+                priority: '5'
             },
             'flyer': {
                 title: /*[[#{orders.create.js.template.flyer.title}]]*/ 'A5 Flyers',
                 desc:  /*[[#{orders.create.js.template.flyer.desc}]]*/  'Single sided, full color',
                 paper: 'MATTE',
-                qty: 1000
+                qty: 1000,
+                color: 'FULL_COLOR',
+                priority: '5'
             }
         };
         const template = templates[type];
@@ -559,6 +722,8 @@
         const descInput = document.getElementById('orderDescription');
         const paperSelect = document.getElementById('paperType');
         const qtyInput = document.getElementById('quantity');
+        const colorSelect = document.getElementById('colorType');
+        const prioritySelect = document.querySelector('select[name="priority"]');
 
         if (titleInput) {
             titleInput.value = template.title;
@@ -571,6 +736,22 @@
         }
         if (qtyInput) {
             qtyInput.value = template.qty;
+        }
+        if (colorSelect && template.color) {
+            colorSelect.value = template.color;
+        }
+        if (prioritySelect && template.priority) {
+            prioritySelect.value = template.priority;
+        }
+
+        [titleInput, descInput, paperSelect, qtyInput, colorSelect, prioritySelect].forEach((el) => {
+            if (!el) return;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        if (titleInput) {
+            titleInput.focus();
+            titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
         }
     }
 </script>

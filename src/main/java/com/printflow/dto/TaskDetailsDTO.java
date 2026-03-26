@@ -1,6 +1,7 @@
 package com.printflow.dto;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 public class TaskDetailsDTO {
     private Long id;
@@ -187,7 +188,7 @@ public class TaskDetailsDTO {
     
     public String getPriorityClass() {
         if (priority == null) return "";
-        switch (priority.toUpperCase()) {
+        switch (priority.toUpperCase(Locale.ROOT)) {
             case "HIGH": return "priority-high";
             case "URGENT": return "priority-urgent";
             case "MEDIUM": return "priority-medium";
@@ -198,7 +199,7 @@ public class TaskDetailsDTO {
     
     public String getStatusClass() {
         if (status == null) return "";
-        switch (status.toUpperCase()) {
+        switch (status.toUpperCase(Locale.ROOT)) {
             case "NEW": return "status-new";
             case "IN_PROGRESS": return "status-in-progress";
             case "COMPLETED": return "status-completed";

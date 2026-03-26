@@ -26,13 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @Transactional
 public class PublicOrderRequestService {
     private static final Logger log = LoggerFactory.getLogger(PublicOrderRequestService.class);
+    private static final List<String> ALLOWED_PUBLIC_EXTENSIONS = List.of(".pdf", ".jpg", ".jpeg", ".png", ".svg", ".ai", ".psd");
 
     private final PublicOrderRequestRepository requestRepository;
     private final PublicOrderRequestAttachmentRepository attachmentRepository;
@@ -116,6 +119,9 @@ public class PublicOrderRequestService {
                                                   String remoteIp) {
         Company company = requireActiveCompanyBySlug(companySlug);
         enforceRateLimit(companySlug, remoteIp);
+        if (form.getDeadline() != null && form.getDeadline().isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new PublicOrderRequestException("public.order.validation.deadline.future");
+        }
 
         PublicOrderRequest request = new PublicOrderRequest();
         request.setCompany(company);
@@ -139,6 +145,21 @@ public class PublicOrderRequestService {
         storeAttachments(saved, company, files);
         sendSubmitEmails(saved);
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public int getPublicMaxFiles() {
+        return publicMaxFiles;
+    }
+
+    @Transactional(readOnly = true)
+    public long getPublicMaxFileBytes() {
+        return publicMaxFileBytes;
+    }
+
+    @Transactional(readOnly = true)
+    public String getAllowedPublicExtensionsCsv() {
+        return String.join(", ", ALLOWED_PUBLIC_EXTENSIONS);
     }
 
     @Transactional(readOnly = true)
@@ -232,8 +253,8 @@ public class PublicOrderRequestService {
             if (file.getSize() > publicMaxFileBytes) {
                 throw new PublicOrderRequestException("public.order.error.file_too_large", file.getOriginalFilename());
             }
-            String ext = extension(file.getOriginalFilename()).toLowerCase();
-            if (!List.of(".pdf", ".jpg", ".jpeg", ".png", ".svg", ".ai", ".psd").contains(ext)) {
+            String ext = extension(file.getOriginalFilename()).toLowerCase(Locale.ROOT);
+            if (!ALLOWED_PUBLIC_EXTENSIONS.contains(ext)) {
                 throw new PublicOrderRequestException("public.order.error.file_type_not_allowed", file.getOriginalFilename());
             }
             try {
@@ -316,7 +337,7 @@ public class PublicOrderRequestService {
         if (address == null) {
             return false;
         }
-        String lower = address.toLowerCase();
+        String lower = address.toLowerCase(Locale.ROOT);
         return lower.contains("srbija") || lower.contains("serbia");
     }
 

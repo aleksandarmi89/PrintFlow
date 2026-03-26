@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
     <title th:text="#{public.order.success.title}">Request submitted</title>
 </head>
-<body class="bg-gray-50">
-<main class="max-w-xl mx-auto px-4 py-16">
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<main class="max-w-xl mx-auto px-4 py-16 flex-1">
     <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center">
         <div class="flex justify-end mb-3">
             <div class="flex items-center gap-2 text-xs text-gray-600">
@@ -62,7 +62,7 @@
         <p class="mt-4 text-xs text-gray-500" th:text="#{public.order.success.smart.tip}">
             Tip: for faster processing, keep your phone and email available.
         </p>
-        <a th:href="@{/p/{slug}/order(slug=${companySlug})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
+        <a th:href="@{/p/{slug}/order(slug=${companySlug},lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="inline-flex mt-6 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
             <span th:text="#{public.order.success.new_request}">Send new request</span>
         </a>
         <a id="successTrackOrderBtn" th:href="@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})}" class="inline-flex mt-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
@@ -70,6 +70,7 @@
         </a>
     </div>
 </main>
+<div th:replace="~{layout/footer :: footer}"></div>
 <div id="orderSuccessSmartI18n"
      class="hidden"
      th:attr="data-hint-track=#{public.order.success.smart.intent.hint.track},
@@ -78,7 +79,7 @@
               data-cta-track=#{public.order.success.smart.intent.cta.track},
               data-cta-new-request=#{public.order.success.smart.intent.cta.new_request},
               data-cta-contact=#{public.order.success.smart.intent.cta.contact},
-              data-new-request-url=@{/p/{slug}/order(slug=${companySlug})},
+              data-new-request-url=@{/p/{slug}/order(slug=${companySlug},lang=${#locale.language == 'en' ? 'en' : 'sr'})},
               data-url-track=@{/public/track(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
               data-url-contact=@{/public/contact(lang=${#locale.language == 'en' ? 'en' : 'sr'})},
               data-last-company-ready=#{contact.smart.last_company_ready}">
@@ -99,9 +100,10 @@
         const companyEl = document.getElementById('publicSuccessCompany');
         const i18nEl = document.getElementById('orderSuccessSmartI18n');
         if (!select || !cta || !hint || !i18nEl) return;
+        const currentLang = document.documentElement.getAttribute('lang') || 'sr';
 
-        const hrefNewRequest = i18nEl.getAttribute('data-new-request-url') || '/public/track';
-        const trackUrlBase = i18nEl.getAttribute('data-url-track') || '/public/track';
+        const hrefNewRequest = i18nEl.getAttribute('data-new-request-url') || `/public/track?lang=${encodeURIComponent(currentLang)}`;
+        const trackUrlBase = i18nEl.getAttribute('data-url-track') || `/public/track?lang=${encodeURIComponent(currentLang)}`;
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
         const recentCodesStorageKey = 'printflow.track.recentCodes';
         const trackCompanyStorageKey = 'printflow.track.companyId';

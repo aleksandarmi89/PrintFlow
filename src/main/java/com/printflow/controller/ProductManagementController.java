@@ -33,6 +33,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 
 @Controller
 @RequestMapping("/products")
@@ -328,7 +329,7 @@ public class ProductManagementController extends BaseController {
             return null;
         }
         try {
-            return ProductSource.valueOf(source.trim().toUpperCase());
+            return ProductSource.valueOf(source.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }
@@ -347,7 +348,7 @@ public class ProductManagementController extends BaseController {
             return ProductImportMode.ADD_NEW_ONLY;
         }
         try {
-            return ProductImportMode.valueOf(mode.trim().toUpperCase());
+            return ProductImportMode.valueOf(mode.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }

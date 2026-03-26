@@ -17,4 +17,10 @@ public interface EmailOutboxRepository extends JpaRepository<EmailOutbox, Long> 
 
     @Transactional
     long deleteByCompany_IdAndStatusAndCreatedAtBefore(Long companyId, EmailOutboxStatus status, LocalDateTime cutoff);
+
+    @Transactional
+    long deleteByCompany_IdAndStatusAndCreatedAtLessThanEqual(Long companyId, EmailOutboxStatus status, LocalDateTime cutoff);
+
+    @Transactional
+    long deleteByCompany_IdAndStatus(Long companyId, EmailOutboxStatus status);
 }

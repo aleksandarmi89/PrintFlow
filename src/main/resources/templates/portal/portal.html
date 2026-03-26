@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,25 +16,261 @@
                 <p class="text-gray-600" th:text="${client.companyName}">Client</p>
             </div>
             <div class="flex items-center gap-3">
-                <img th:if="${companyBrand != null and companyBrand.logoUrl != null}" th:src="${companyBrand.logoUrl}" alt="Logo" class="h-10 w-10 rounded">
+                <div th:if="${companyBrand != null and companyBrand.logoUrl != null}"
+                     class="flex h-10 min-w-[64px] items-center justify-center rounded border border-gray-200 bg-white px-2">
+                    <img th:src="${companyBrand.logoUrl}" alt="Logo" class="h-8 w-auto max-w-[112px] object-contain">
+                </div>
                 <div th:if="${companyBrand == null || companyBrand.logoUrl == null}" class="h-12 w-auto rounded flex items-center justify-center">
                     <img th:src="@{/images/app-logo.svg}" alt="ProPrintFlow" class="h-20 w-auto object-contain"
                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <div style="display:none" class="h-20 w-20 rounded bg-blue-600 items-center justify-center text-white font-bold">PF</div>
                 </div>
-                <div class="text-sm text-gray-700" th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</div>
+                <div class="flex flex-col items-end gap-1">
+                    <div class="text-sm text-gray-700" th:text="${companyBrand != null ? companyBrand.name : 'PrintFlow'}">PrintFlow</div>
+                    <div class="flex flex-wrap justify-end gap-1 text-[11px]">
+                        <a th:if="${companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)}"
+                           th:href="${'mailto:' + companyBrand.email}"
+                           class="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-700 hover:bg-blue-100"
+                           th:text="#{track.company_profile.email_company}">
+                            Email company
+                        </a>
+                        <a th:if="${companyBrand != null && companyBrand.phone != null && !#strings.isEmpty(companyBrand.phone)}"
+                           th:href="${'tel:' + companyBrand.phone}"
+                           class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-emerald-700 hover:bg-emerald-100"
+                           th:text="#{track.company_profile.call_company}">
+                            Call company
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="space-y-6">
-        <div th:each="order : ${orders}" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div th:if="${portalFlashSuccessKey != null}" class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <span th:text="#{${portalFlashSuccessKey}}">Action completed.</span>
+    </div>
+    <div th:if="${portalFlashErrorKey != null}" class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <span th:text="#{${portalFlashErrorKey}}">Action failed.</span>
+    </div>
+
+    <div class="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+        <h2 class="text-sm font-semibold text-blue-900" th:text="#{portal.smart.title}">Portal helper</h2>
+        <p class="mt-1 text-xs text-blue-800" th:text="#{portal.smart.subtitle}">
+            Track active work, approve files, and reorder finished jobs from one place.
+        </p>
+        <div class="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <a href="#portal-active-orders" class="rounded-lg border border-blue-200 bg-white px-3 py-2 hover:bg-blue-100">
+                <div class="text-[11px] text-blue-700" th:text="#{portal.kpi.active}">Active</div>
+                <div class="text-base font-semibold text-blue-900" th:text="${orders != null ? orders.size() : 0}">0</div>
+            </a>
+            <a href="#portal-active-orders" class="rounded-lg border border-amber-200 bg-white px-3 py-2 hover:bg-amber-100">
+                <div class="text-[11px] text-amber-700" th:text="#{portal.kpi.pending_approval}">Pending approval</div>
+                <div class="text-base font-semibold text-amber-900" th:text="${pendingApprovalCount}">0</div>
+            </a>
+            <a href="#portal-active-orders" class="rounded-lg border border-violet-200 bg-white px-3 py-2 hover:bg-violet-100">
+                <div class="text-[11px] text-violet-700" th:text="#{portal.kpi.pickup_ready}">Pickup ready</div>
+                <div class="text-base font-semibold text-violet-900" th:text="${readyForPickupCount}">0</div>
+            </a>
+            <a href="#portal-active-orders" class="rounded-lg border border-emerald-200 bg-white px-3 py-2 hover:bg-emerald-100">
+                <div class="text-[11px] text-emerald-700" th:text="#{portal.kpi.in_shipment}">In shipment</div>
+                <div class="text-base font-semibold text-emerald-900" th:text="${inShipmentCount}">0</div>
+            </a>
+        </div>
+        <p class="mt-2 text-xs text-amber-800"
+           th:if="${courierTrackingPendingCount > 0}"
+           th:text="#{portal.kpi.tracking_pending(${courierTrackingPendingCount})}">
+            Some courier orders are waiting for tracking updates.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <a th:if="${companyBrand != null and companyBrand.companyId != null}"
+               th:href="@{/p/company/{id}/order(id=${companyBrand.companyId},lang=${#locale.language})}"
+               class="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+               th:text="#{portal.cta.new_request}">
+                New request
+            </a>
+            <a th:unless="${companyBrand != null and companyBrand.companyId != null}"
+               th:href="@{/public/companies(lang=${#locale.language})}"
+               class="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+               th:text="#{portal.cta.new_request}">
+                New request
+            </a>
+            <a th:href="${companyBrand != null && companyBrand.companyId != null} ? @{/public/track(company=${companyBrand.companyId},lang=${#locale.language})} : @{/public/track(lang=${#locale.language})}"
+               class="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+               th:text="#{portal.cta.track_other}">
+                Track another order
+            </a>
+        </div>
+    </div>
+
+    <div class="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+        <h2 class="text-sm font-semibold text-indigo-900" th:text="#{portal.next_action.title}">Recommended next action</h2>
+        <p class="mt-1 text-xs text-indigo-800"
+           th:if="${pendingApprovalCount > 0}"
+           th:text="#{portal.next_action.approval}">
+            Review and approve pending design previews first to keep production moving.
+        </p>
+        <p class="mt-1 text-xs text-indigo-800"
+           th:if="${pendingApprovalCount == 0 and readyForPickupCount > 0}"
+           th:text="#{portal.next_action.pickup}">
+            Some orders are ready for pickup. Contact print shop before arrival.
+        </p>
+        <p class="mt-1 text-xs text-indigo-800"
+           th:if="${pendingApprovalCount == 0 and readyForPickupCount == 0 and courierTrackingPendingCount > 0}"
+           th:text="#{portal.next_action.tracking}">
+            Courier orders exist without tracking updates. Ask for tracking before delivery follow-up.
+        </p>
+        <p class="mt-1 text-xs text-indigo-800"
+           th:if="${pendingApprovalCount == 0 and readyForPickupCount == 0 and courierTrackingPendingCount == 0 and inShipmentCount > 0}"
+           th:text="#{portal.next_action.shipment}">
+            Orders are currently in shipment. Monitor tracking for delivery confirmation.
+        </p>
+        <p class="mt-1 text-xs text-indigo-800"
+           th:if="${pendingApprovalCount == 0 and readyForPickupCount == 0 and courierTrackingPendingCount == 0 and inShipmentCount == 0}"
+           th:text="#{portal.next_action.healthy}">
+            No urgent actions right now. You can start a new request or track another order.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <a href="#portal-active-orders"
+               class="inline-flex items-center rounded-lg border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+               th:text="#{portal.next_action.cta.review}">
+                Review active orders
+            </a>
+            <a th:href="${companyBrand != null && companyBrand.companyId != null} ? @{/public/track(company=${companyBrand.companyId},lang=${#locale.language})} : @{/public/track(lang=${#locale.language})}"
+               class="inline-flex items-center rounded-lg border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+               th:text="#{portal.next_action.cta.track}">
+                Open tracking
+            </a>
+        </div>
+    </div>
+
+    <div class="mb-3 flex flex-wrap items-center gap-2" th:if="${!#lists.isEmpty(orders)}">
+        <span class="text-xs font-medium text-gray-500" th:text="#{common.filter}">Filter</span>
+        <button type="button"
+                class="portal-order-filter-btn rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700"
+                data-filter="all"
+                th:attr="aria-label=#{portal.filter.all}">
+            <span th:text="#{portal.filter.all}">All</span>
+            <span class="ml-1 font-semibold text-gray-900" th:text="${orders != null ? orders.size() : 0}">0</span>
+        </button>
+        <button type="button"
+                class="portal-order-filter-btn rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs text-amber-800"
+                data-filter="pending"
+                th:attr="aria-label=#{portal.kpi.pending_approval}">
+            <span th:text="#{portal.kpi.pending_approval}">Pending approval</span>
+            <span class="ml-1 font-semibold text-amber-900" th:text="${pendingApprovalCount}">0</span>
+        </button>
+        <button type="button"
+                class="portal-order-filter-btn rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs text-violet-800"
+                data-filter="pickup"
+                th:attr="aria-label=#{portal.kpi.pickup_ready}">
+            <span th:text="#{portal.kpi.pickup_ready}">Pickup ready</span>
+            <span class="ml-1 font-semibold text-violet-900" th:text="${readyForPickupCount}">0</span>
+        </button>
+        <button type="button"
+                class="portal-order-filter-btn rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs text-emerald-800"
+                data-filter="shipment"
+                th:attr="aria-label=#{portal.kpi.in_shipment}">
+            <span th:text="#{portal.kpi.in_shipment}">In shipment</span>
+            <span class="ml-1 font-semibold text-emerald-900" th:text="${inShipmentCount}">0</span>
+        </button>
+    </div>
+
+    <div id="portalOrderFilterNoMatch"
+         class="mb-4 hidden rounded-lg border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600"
+         th:text="#{portal.filter.no_match}">
+        No active orders for the selected filter.
+    </div>
+
+    <div id="portal-active-orders" class="space-y-6">
+        <div th:each="order : ${orders}"
+             class="portal-order-card bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+             th:attr="data-filter-pending=${order.status != null && order.status.name() == 'WAITING_CLIENT_APPROVAL'},
+                      data-filter-pickup=${order.status != null && order.status.name() == 'READY_FOR_DELIVERY' && order.deliveryType != null && order.deliveryType.name() == 'PICKUP'},
+                      data-filter-shipment=${order.deliveryType != null && (order.deliveryType.name() == 'COURIER' || order.deliveryType.name() == 'EXPRESS_POST') && order.status != null && (order.status.name() == 'READY_FOR_DELIVERY' || order.status.name() == 'SENT')}">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-lg font-semibold" th:text="${order.title}">Order</h2>
                     <p class="text-sm text-gray-500"><span th:text="#{portal.order_number}">Order #</span><span th:text="${order.orderNumber}"></span></p>
                 </div>
-                <span class="px-3 py-1 rounded-full text-sm bg-blue-50 text-blue-700" th:text="${order.status}">STATUS</span>
+                <span class="px-3 py-1 rounded-full text-sm"
+                      th:classappend="${(order.status != null && (order.status.name() == 'COMPLETED' || order.status.name() == 'DELIVERED' || order.status.name() == 'PICKED_UP')) ? ' bg-emerald-50 text-emerald-700' :
+                                      ((order.status != null && order.status.name() == 'CANCELLED') ? ' bg-rose-50 text-rose-700' :
+                                      ((order.status != null && order.status.name() == 'WAITING_CLIENT_APPROVAL') ? ' bg-amber-50 text-amber-700' :
+                                      ((order.status != null && (order.status.name() == 'READY_FOR_DELIVERY' || order.status.name() == 'SENT')) ? ' bg-violet-50 text-violet-700' : ' bg-blue-50 text-blue-700')))}"
+                      th:text="${order.status != null ? #messages.msg('orders.status.' + order.status.name()) : '-'}">STATUS</span>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-600">
+                <div>
+                    <div class="font-semibold text-gray-800" th:text="#{portal.delivery_method}">Delivery method</div>
+                    <div th:text="${order.deliveryType != null ? (#messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name()) : '-'}">PICKUP</div>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-800" th:text="#{portal.total_price}">Total price</div>
+                    <div th:text="${order.price != null ? #numbers.formatDecimal(order.price,1,2) + ' ' + (portalCurrency != null ? portalCurrency : 'RSD') : #messages.msg('common.na')}">0.00 RSD</div>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-800" th:text="#{portal.deadline}">Deadline</div>
+                    <div th:text="${order.deadline != null ? #temporals.format(order.deadline, 'dd.MM.yyyy HH:mm') : #messages.msg('common.na')}">-</div>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-800" th:text="#{portal.tracking}">Tracking</div>
+                    <div th:text="${order.trackingNumber != null && !order.trackingNumber.isBlank() ? order.trackingNumber : #messages.msg('common.na')}">-</div>
+                    <div th:if="${(order.deliveryType != null && (order.deliveryType.name() == 'COURIER' || order.deliveryType.name() == 'EXPRESS_POST')) && (order.trackingNumber == null || order.trackingNumber.isBlank()) && (order.status != null && (order.status.name() == 'READY_FOR_DELIVERY' || order.status.name() == 'SENT'))}"
+                         class="mt-1 text-[11px] text-amber-700"
+                         th:text="#{portal.tracking.pending}">
+                        Tracking update is pending from the print shop.
+                    </div>
+                    <a th:with="trackingMailTo=${(companyBrand != null && companyBrand.email != null && !#strings.isEmpty(companyBrand.email)) ? companyBrand.email : footerCompanyEmail}"
+                       th:if="${(order.deliveryType != null && (order.deliveryType.name() == 'COURIER' || order.deliveryType.name() == 'EXPRESS_POST'))
+                                && (order.trackingNumber == null || order.trackingNumber.isBlank())
+                                && trackingMailTo != null && !#strings.isEmpty(trackingMailTo)}"
+                       th:href="${'mailto:' + trackingMailTo
+                                 + '?subject=' + #urls.urlEncode(#messages.msg('portal.tracking.ask_subject', order.orderNumber))
+                                 + '&body=' + #urls.urlEncode(#messages.msg('portal.tracking.ask_body', order.orderNumber))}"
+                       class="mt-2 inline-flex items-center rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+                       th:text="#{portal.tracking.ask_cta}">
+                        Ask for tracking
+                    </a>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600"
+                 th:if="${order.quoteStatus != null && order.quoteStatus.name() != 'NONE'}">
+                <span class="font-semibold text-gray-800" th:text="#{orders.quote.status}">Quote Status</span>:
+                <span th:text="${#messages.msgOrNull('orders.quote.status.' + order.quoteStatus.name()) != null ? #messages.msg('orders.quote.status.' + order.quoteStatus.name()) : order.quoteStatus.name()}">SENT</span>
+                <div class="mt-1 text-[11px] text-gray-500"
+                     th:if="${order.quoteStatus.name() == 'PREPARING'}"
+                     th:text="#{portal.quote.hint.preparing}">
+                    Quote is being prepared by the print shop.
+                </div>
+                <div class="mt-1 text-[11px] text-blue-700"
+                     th:if="${order.quoteStatus.name() == 'READY' || order.quoteStatus.name() == 'SENT' || order.quoteStatus.name() == 'APPROVED'}"
+                     th:text="#{portal.quote.hint.ready}">
+                    Quote PDF is available. Download it for your records.
+                </div>
+            </div>
+            <div class="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                <span class="font-semibold" th:text="#{portal.smart.next_step_label}">Next step:</span>
+                <span th:if="${order.status != null && order.status.name() == 'WAITING_CLIENT_APPROVAL'}"
+                      th:text="#{portal.smart.next_step.approval}">
+                    Review and approve the latest design preview to keep production moving.
+                </span>
+                <span th:if="${order.status != null && order.status.name() == 'READY_FOR_DELIVERY' && order.deliveryType != null && order.deliveryType.name() == 'PICKUP'}"
+                      th:text="#{portal.smart.next_step.pickup}">
+                    Contact the print shop to confirm pickup time.
+                </span>
+                <span th:if="${order.status != null && order.status.name() == 'READY_FOR_DELIVERY' && order.deliveryType != null && (order.deliveryType.name() == 'COURIER' || order.deliveryType.name() == 'EXPRESS_POST')}"
+                      th:text="#{portal.smart.next_step.shipping_pending}">
+                    Shipment is being prepared. Tracking info will appear here once dispatched.
+                </span>
+                <span th:if="${order.status != null && order.status.name() == 'SENT'}"
+                      th:text="#{portal.smart.next_step.sent}">
+                    Track delivery progress and notify your team when it arrives.
+                </span>
+                <span th:if="${order.status == null || (order.status.name() != 'WAITING_CLIENT_APPROVAL' && order.status.name() != 'READY_FOR_DELIVERY' && order.status.name() != 'SENT')}"
+                      th:text="#{portal.smart.next_step.default}">
+                    Track updates here and use reorder when you need the same job again.
+                </span>
             </div>
 
             <div class="mt-4">
@@ -43,7 +279,8 @@
                     <div th:each="att : ${attachmentsByOrder[order.id]}" class="flex items-center justify-between border rounded p-3">
                         <div>
                             <p class="text-sm font-medium" th:text="${att.originalFileName}">file</p>
-                            <p class="text-xs text-gray-500" th:text="${att.attachmentType}">type</p>
+                            <p class="text-xs text-gray-500"
+                               th:text="${att.attachmentType != null ? (#messages.msgOrNull('attachments.type.' + att.attachmentType.name()) != null ? #messages.msg('attachments.type.' + att.attachmentType.name()) : att.attachmentType.name()) : #messages.msg('common.na')}">type</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <a class="text-blue-600 text-sm" th:href="@{/portal/{token}/attachments/{approvalToken}/download(token=${accessToken},approvalToken=${att.approvalToken})}" th:text="#{common.download}">Download</a>
@@ -51,7 +288,24 @@
                                   th:action="@{/portal/{token}/attachments/{approvalToken}/approve(token=${accessToken},approvalToken=${att.approvalToken})}"
                                   method="post">
                                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="lang" th:value="${#locale.language}"/>
                                 <button class="bg-green-600 text-white text-xs px-3 py-1 rounded" th:text="#{portal.approve_design}">Approve design</button>
+                            </form>
+                            <form th:if="${att.attachmentType.name() == 'DESIGN_PREVIEW' and !att.approved}"
+                                  th:action="@{/portal/{token}/attachments/{approvalToken}/reject(token=${accessToken},approvalToken=${att.approvalToken})}"
+                                  method="post"
+                                  class="flex items-center gap-1">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="lang" th:value="${#locale.language}"/>
+                                <input type="text"
+                                       name="reason"
+                                       maxlength="500"
+                                       class="w-40 rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
+                                       th:placeholder="#{portal.reject_design.reason_placeholder}" />
+                                <button class="border border-rose-300 bg-rose-50 text-rose-700 text-xs px-3 py-1 rounded hover:bg-rose-100"
+                                        th:text="#{portal.reject_design}">
+                                    Request changes
+                                </button>
                             </form>
                             <span th:if="${att.approved}" class="text-green-700 text-xs" th:text="#{portal.approved}">Approved</span>
                         </div>
@@ -63,15 +317,145 @@
             </div>
 
             <div class="mt-4 flex justify-end">
-                <form th:action="@{/portal/{token}/reorder/{orderToken}(token=${accessToken},orderToken=${order.publicToken})}" method="post">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded" th:text="#{portal.reorder}">Reorder</button>
-                </form>
+                <div class="flex flex-wrap gap-2 justify-end">
+                    <a th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)}"
+                       th:href="@{/public/order/{token}(token=${order.publicToken},lang=${#locale.language})}"
+                       class="inline-flex items-center rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                       th:text="#{portal.view_tracking}">
+                        View tracking
+                    </a>
+                    <a th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)
+                                && order.quoteStatus != null
+                                && (order.quoteStatus.name() == 'READY' || order.quoteStatus.name() == 'SENT' || order.quoteStatus.name() == 'APPROVED')}"
+                       th:href="@{/public/order/{token}/pdf/quote(token=${order.publicToken},lang=${#locale.language})}"
+                       class="inline-flex items-center rounded border border-blue-300 bg-blue-50 px-4 py-2 text-sm text-blue-700 hover:bg-blue-100"
+                       th:text="#{portal.download_quote_pdf}">
+                        Quote PDF
+                    </a>
+                    <span th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)
+                                   && (order.quoteStatus == null || !(order.quoteStatus.name() == 'READY' || order.quoteStatus.name() == 'SENT' || order.quoteStatus.name() == 'APPROVED'))}"
+                          class="inline-flex items-center rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                          th:text="#{order_tracking.quote_pdf_unavailable}">
+                        Quote PDF will be available once the quote is ready.
+                    </span>
+                    <a th:if="${order.status != null && order.status.name() == 'WAITING_CLIENT_APPROVAL' && order.publicToken != null && !#strings.isEmpty(order.publicToken)}"
+                       th:href="@{/public/order/{token}(token=${order.publicToken},lang=${#locale.language}) + '#design-approval-section'}"
+                       class="inline-flex items-center rounded border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800 hover:bg-amber-100"
+                       th:text="#{portal.review_design}">
+                        Review design
+                    </a>
+                    <form th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)}"
+                          th:action="@{/portal/{token}/reorder/{orderToken}(token=${accessToken},orderToken=${order.publicToken})}"
+                          method="post">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <input type="hidden" name="lang" th:value="${#locale.language}"/>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded" th:text="#{portal.reorder}">Reorder</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-4 border-t border-gray-100 pt-3">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2" th:text="#{portal.activity}">Recent activity</h3>
+                <div class="space-y-2">
+                    <div th:each="entry : ${activityByOrder[order.id]}" class="text-xs text-gray-600">
+                        <div th:text="${entry.message}">Status changed</div>
+                        <div class="text-gray-400" th:text="${#temporals.format(entry.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
+                    </div>
+                    <div th:if="${activityByOrder[order.id] == null || activityByOrder[order.id].isEmpty()}" class="text-xs text-gray-400"
+                         th:text="#{portal.no_activity}">No recent activity.</div>
+                </div>
             </div>
         </div>
 
-        <div th:if="${orders.empty}" class="text-center text-gray-500">
-            <span th:text="#{portal.no_orders}">No active orders.</span>
+        <div th:if="${#lists.isEmpty(orders)}" class="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-gray-600">
+            <p class="font-medium text-gray-800" th:text="#{portal.no_orders}">No active orders.</p>
+            <p class="mt-1 text-sm" th:text="#{portal.no_orders.help}">Create a new request to start your next print job.</p>
+            <a th:if="${companyBrand != null and companyBrand.companyId != null}"
+               th:href="@{/p/company/{id}/order(id=${companyBrand.companyId},lang=${#locale.language})}"
+               class="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+               th:text="#{portal.no_orders.cta}">
+                Create request
+            </a>
+            <a th:unless="${companyBrand != null and companyBrand.companyId != null}"
+               th:href="@{/public/companies(lang=${#locale.language})}"
+               class="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+               th:text="#{portal.no_orders.cta}">
+                Create request
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3" th:text="#{portal.recent_orders}">Recent orders</h2>
+        <div class="space-y-3">
+            <div th:each="order : ${archivedOrders}" class="rounded-lg border border-gray-100 p-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-sm font-medium text-gray-900" th:text="${order.orderNumber + ' - ' + order.title}">ORD-100 - Job</div>
+                        <div class="text-xs text-gray-500" th:text="${order.createdAt != null ? #temporals.format(order.createdAt, 'dd.MM.yyyy') : ''}">date</div>
+                        <div class="text-xs text-gray-500"
+                             th:text="${#messages.msg('portal.total_price') + ': ' + (order.price != null ? #numbers.formatDecimal(order.price,1,2) + ' ' + (portalCurrency != null ? portalCurrency : 'RSD') : #messages.msg('common.na'))}">Total price: 0.00 RSD</div>
+                        <div class="text-xs text-gray-500"
+                             th:text="${order.deliveryType != null ? (#messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name()) : '-'}">Pickup</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs px-2 py-1 rounded"
+                              th:classappend="${(order.status != null && (order.status.name() == 'COMPLETED' || order.status.name() == 'DELIVERED' || order.status.name() == 'PICKED_UP')) ? ' bg-emerald-50 text-emerald-700' :
+                                              ((order.status != null && order.status.name() == 'CANCELLED') ? ' bg-rose-50 text-rose-700' : ' bg-gray-100 text-gray-700')}"
+                              th:text="${order.status != null ? #messages.msg('orders.status.' + order.status.name()) : '-'}">Completed</span>
+                        <a th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)}"
+                           th:href="@{/public/order/{token}(token=${order.publicToken},lang=${#locale.language})}"
+                           class="text-xs text-blue-700 hover:text-blue-800 hover:underline"
+                           th:text="#{portal.view_tracking}">
+                            View tracking
+                        </a>
+                        <a th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)
+                                    && order.quoteStatus != null
+                                    && (order.quoteStatus.name() == 'READY' || order.quoteStatus.name() == 'SENT' || order.quoteStatus.name() == 'APPROVED')}"
+                           th:href="@{/public/order/{token}/pdf/quote(token=${order.publicToken},lang=${#locale.language})}"
+                           class="text-xs text-blue-700 hover:text-blue-800 hover:underline"
+                           th:text="#{portal.download_quote_pdf}">
+                            Quote PDF
+                        </a>
+                        <span th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)
+                                       && (order.quoteStatus == null || !(order.quoteStatus.name() == 'READY' || order.quoteStatus.name() == 'SENT' || order.quoteStatus.name() == 'APPROVED'))}"
+                              class="text-xs text-gray-500"
+                              th:text="#{order_tracking.quote_pdf_unavailable}">
+                            Quote PDF will be available once the quote is ready.
+                        </span>
+                        <form th:if="${order.publicToken != null && !#strings.isEmpty(order.publicToken)}"
+                              th:action="@{/portal/{token}/reorder/{orderToken}(token=${accessToken},orderToken=${order.publicToken})}"
+                              method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="lang" th:value="${#locale.language}"/>
+                            <button class="inline-flex items-center rounded border border-blue-300 bg-white px-2 py-1 text-xs text-blue-700 hover:bg-blue-50"
+                                    th:text="#{portal.reorder}">Reorder</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${archivedOrders == null || archivedOrders.isEmpty()}" class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                <p class="font-medium text-gray-800" th:text="#{portal.no_recent_orders}">No completed or cancelled orders yet.</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a th:if="${companyBrand != null and companyBrand.companyId != null}"
+                       th:href="@{/p/company/{id}/order(id=${companyBrand.companyId},lang=${#locale.language})}"
+                       class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                       th:text="#{portal.no_recent_orders.cta_request}">
+                        Create new request
+                    </a>
+                    <a th:unless="${companyBrand != null and companyBrand.companyId != null}"
+                       th:href="@{/public/companies(lang=${#locale.language})}"
+                       class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                       th:text="#{portal.no_recent_orders.cta_request}">
+                        Create new request
+                    </a>
+                    <a th:href="${companyBrand != null && companyBrand.companyId != null} ? @{/public/track(company=${companyBrand.companyId},lang=${#locale.language})} : @{/public/track(lang=${#locale.language})}"
+                       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                       th:text="#{portal.no_recent_orders.cta_track}">
+                        Track an order
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -80,11 +464,15 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
             <div th:if="${companyBrand != null && companyBrand.email != null}">
                 <div class="text-gray-500" th:text="#{contact.email_label}">Email</div>
-                <div th:text="${companyBrand.email}">email</div>
+                <a class="hover:text-blue-700 hover:underline"
+                   th:href="${'mailto:' + companyBrand.email}"
+                   th:text="${companyBrand.email}">email</a>
             </div>
             <div th:if="${companyBrand != null && companyBrand.phone != null}">
                 <div class="text-gray-500" th:text="#{contact.phone_label}">Phone</div>
-                <div th:text="${companyBrand.phone}">phone</div>
+                <a class="hover:text-blue-700 hover:underline"
+                   th:href="${'tel:' + companyBrand.phone}"
+                   th:text="${companyBrand.phone}">phone</a>
             </div>
             <div th:if="${companyBrand != null && companyBrand.address != null}">
                 <div class="text-gray-500" th:text="#{contact.address_label}">Address</div>
@@ -92,10 +480,69 @@
             </div>
             <div th:if="${companyBrand != null && companyBrand.website != null}">
                 <div class="text-gray-500" th:text="#{contact.website_label}">Website</div>
-                <div th:text="${companyBrand.website}">website</div>
+                <a class="hover:text-blue-700 hover:underline"
+                   target="_blank" rel="noopener noreferrer"
+                   th:with="websiteHref=${#strings.startsWith(companyBrand.website, 'http://') || #strings.startsWith(companyBrand.website, 'https://') ? companyBrand.website : 'https://' + companyBrand.website}"
+                   th:href="${websiteHref}"
+                   th:text="${companyBrand.website}">website</a>
             </div>
         </div>
+        <p th:if="${companyBrand == null || ((companyBrand.email == null || #strings.isEmpty(companyBrand.email)) && (companyBrand.phone == null || #strings.isEmpty(companyBrand.phone)) && (companyBrand.address == null || #strings.isEmpty(companyBrand.address)) && (companyBrand.website == null || #strings.isEmpty(companyBrand.website)))}"
+           class="text-sm text-gray-500 mt-2"
+           th:text="#{portal.contact.unavailable}">
+            Contact details are currently unavailable.
+        </p>
     </div>
 </div>
+<script>
+    (function () {
+        const buttons = Array.from(document.querySelectorAll('.portal-order-filter-btn'));
+        const cards = Array.from(document.querySelectorAll('.portal-order-card'));
+        const noMatch = document.getElementById('portalOrderFilterNoMatch');
+        if (buttons.length === 0 || cards.length === 0) {
+            return;
+        }
+
+        function setActiveButton(activeFilter) {
+            buttons.forEach(btn => {
+                const isActive = btn.getAttribute('data-filter') === activeFilter;
+                btn.classList.toggle('ring-2', isActive);
+                btn.classList.toggle('ring-blue-200', isActive);
+                btn.classList.toggle('font-semibold', isActive);
+                btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        }
+
+        function applyFilter(filter) {
+            let visibleCount = 0;
+            cards.forEach(card => {
+                let visible = true;
+                if (filter === 'pending') {
+                    visible = card.getAttribute('data-filter-pending') === 'true';
+                } else if (filter === 'pickup') {
+                    visible = card.getAttribute('data-filter-pickup') === 'true';
+                } else if (filter === 'shipment') {
+                    visible = card.getAttribute('data-filter-shipment') === 'true';
+                }
+                card.classList.toggle('hidden', !visible);
+                if (visible) {
+                    visibleCount += 1;
+                }
+            });
+            if (noMatch) {
+                noMatch.classList.toggle('hidden', visibleCount > 0 || filter === 'all');
+            }
+            setActiveButton(filter);
+        }
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                applyFilter(btn.getAttribute('data-filter') || 'all');
+            });
+        });
+
+        applyFilter('all');
+    })();
+</script>
 </body>
 </html>

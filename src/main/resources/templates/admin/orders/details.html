@@ -34,7 +34,7 @@
                     </a>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <a th:href="@{/admin/orders}" 
+                    <a th:href="${backToOrders != null ? backToOrders : '/admin/orders'}" 
                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                         <span th:text="#{orders.details.back_to_orders}">← Back to Orders</span>
                     </a>
@@ -42,9 +42,17 @@
                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         <span th:text="#{orders.details.create_task}">+ Create Task</span>
                     </a>
-                    <a th:href="@{/admin/orders/{id}/edit(id=${order.id})}"
+                    <a th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                         <span th:text="#{orders.details.edit_order}">Edit Order</span>
+                    </a>
+                    <a th:href="@{/admin/orders/{id}/pdf/quote(id=${order.id},lang=${#locale.language})}"
+                       class="px-4 py-2 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100">
+                        <span th:text="#{orders.details.download_quote_pdf}">Quote PDF</span>
+                    </a>
+                    <a th:href="@{/admin/orders/{id}/pdf/summary(id=${order.id},lang=${#locale.language})}"
+                       class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        <span th:text="#{orders.details.download_summary_pdf}">Summary PDF</span>
                     </a>
                 </div>
             </div>
@@ -81,6 +89,375 @@
                             </button>
                         </form>
                     </div>
+                    <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                         th:if="${order.deadline != null
+                            and order.deadline.isBefore(T(java.time.LocalDateTime).now())
+                            and order.status != null
+                            and order.status.name() != 'COMPLETED'
+                            and order.status.name() != 'CANCELLED'}">
+                        <span th:text="#{orders.details.overdue.alert}">
+                            This order is overdue. Prioritize completion and client update.
+                        </span>
+                        <a th:href="@{/admin/planner}" class="ml-2 font-semibold underline hover:no-underline"
+                           th:text="#{orders.details.overdue.alert.cta}">
+                            Open planner
+                        </a>
+                    </div>
+                    <div class="mt-4 flex flex-wrap items-end gap-3">
+                        <div>
+                            <span class="text-xs text-gray-500" th:text="#{orders.quote.status}">Quote Status</span>
+                            <div class="mt-1">
+                                <span th:class="${'px-2 py-1 text-xs font-medium rounded-full ' + order.quoteStatusBadgeClass}">
+                                    <span th:text="${order.quoteStatus != null ? #messages.msg(order.quoteStatus.messageKey) : #messages.msg('orders.quote.status.NONE')}">NONE</span>
+                                </span>
+                            </div>
+                        </div>
+                        <form id="quoteStatusUpdateForm" th:action="@{/admin/orders/{id}/quote-status(id=${order.id})}" method="post" class="flex items-center gap-2">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <select name="quoteStatus"
+                                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option th:each="qs : ${quoteStatuses}" th:value="${qs}"
+                                        th:selected="${order.quoteStatus == qs}"
+                                        th:text="#{${qs.messageKey}}">NONE</option>
+                            </select>
+                            <input type="datetime-local"
+                                   name="quoteValidUntil"
+                                   th:value="${order.quoteValidUntil != null ? #temporals.format(order.quoteValidUntil, 'yyyy-MM-dd''T''HH:mm') : ''}"
+                                   class="px-3 py-2 border border-gray-300 rounded-lg"/>
+                            <button type="submit"
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                <span th:text="#{orders.quote.update}">Update Quote</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2"
+                         th:if="${quoteStatuses != null and order.quoteStatus != null}">
+                        <form th:if="${order.quoteStatus.name() == 'NONE'}"
+                              th:action="@{/admin/orders/{id}/quote-status(id=${order.id})}" method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="quoteStatus" value="PREPARING"/>
+                            <button type="submit" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                                    th:text="#{orders.quote.quick.start}">
+                                Start quote
+                            </button>
+                        </form>
+                        <form th:if="${order.quoteStatus.name() == 'PREPARING'}"
+                              th:action="@{/admin/orders/{id}/quote-status(id=${order.id})}" method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="quoteStatus" value="READY"/>
+                            <button type="submit" class="rounded bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700"
+                                    th:text="#{orders.quote.quick.mark_ready}">
+                                Mark quote ready
+                            </button>
+                        </form>
+                        <form th:if="${order.quoteStatus.name() == 'READY'}"
+                              th:action="@{/admin/orders/{id}/quote-status(id=${order.id})}" method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="quoteStatus" value="SENT"/>
+                            <button type="submit" class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                                    th:text="#{orders.quote.quick.mark_sent}">
+                                Mark quote sent
+                            </button>
+                        </form>
+                        <form th:if="${order.quoteStatus.name() == 'SENT'}"
+                              th:action="@{/admin/orders/{id}/quote-status(id=${order.id})}" method="post">
+                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" name="quoteStatus" value="APPROVED"/>
+                            <button type="submit" class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                                    th:text="#{orders.quote.quick.mark_approved}">
+                                Mark approved
+                            </button>
+                        </form>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-600"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'NONE'}"
+                       th:text="#{orders.quote.next.none}">
+                        Start quote preparation when technical details are clear.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-600"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'PREPARING'}"
+                       th:text="#{orders.quote.next.preparing}">
+                        Build cost breakdown and mark quote ready for sending.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-600"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'READY'}"
+                       th:text="#{orders.quote.next.ready}">
+                        Send quote to client and switch status to sent.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-600"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT'}"
+                       th:text="#{orders.quote.next.sent}">
+                        Follow up with client and mark approved after confirmation.
+                    </p>
+                    <p class="mt-1 text-xs text-gray-600"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null}"
+                       th:text="#{orders.details.quote.valid_until_set(${#temporals.format(order.quoteValidUntil, 'dd.MM.yyyy HH:mm')})}">
+                        Valid until: 01.01.2026 10:00
+                    </p>
+                    <p class="mt-1 text-xs text-red-700"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null and order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())}"
+                       th:text="#{orders.details.quote.valid_until_expired}">
+                        Quote validity has expired.
+                    </p>
+                    <a th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null and order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())}"
+                       th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                       class="mt-1 inline-flex text-xs font-semibold text-red-700 underline hover:no-underline"
+                       th:text="#{orders.details.quote.valid_until_expired_cta}">
+                        Renew quote validity
+                    </a>
+                    <p class="mt-1 text-xs text-amber-700"
+                       th:if="${order.quoteStatus != null
+                            and order.quoteStatus.name() == 'SENT'
+                            and order.quoteValidUntil != null
+                            and !order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())
+                            and T(java.time.Duration).between(T(java.time.LocalDateTime).now(), order.quoteValidUntil).toHours() <= 24}"
+                       th:text="#{orders.details.quote.valid_until_soon}">
+                        Quote validity expires within 24 hours.
+                    </p>
+                    <a th:if="${order.quoteStatus != null
+                            and order.quoteStatus.name() == 'SENT'
+                            and order.quoteValidUntil != null
+                            and !order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())
+                            and T(java.time.Duration).between(T(java.time.LocalDateTime).now(), order.quoteValidUntil).toHours() <= 24}"
+                       th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                       class="mt-1 inline-flex text-xs font-semibold text-amber-800 underline hover:no-underline"
+                       th:text="#{orders.details.quote.valid_until_soon_cta}">
+                        Extend quote validity
+                    </a>
+                    <p class="mt-1 text-xs text-amber-700"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil == null}"
+                       th:text="#{orders.details.quote.valid_until_missing}">
+                        Quote validity is missing.
+                    </p>
+                    <a th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil == null}"
+                       th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                       class="mt-1 inline-flex text-xs font-semibold text-amber-800 underline hover:no-underline"
+                       th:text="#{orders.details.quote.valid_until_missing_cta}">
+                        Add quote validity
+                    </a>
+                    <p class="mt-2 text-xs text-emerald-700"
+                       th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'APPROVED'}"
+                       th:text="#{orders.quote.next.approved}">
+                        Quote is approved. Continue with production planning and delivery.
+                    </p>
+
+                    <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900"
+                         th:with="missingDeadline=${order.deadline == null},
+                                  missingClientContact=${(order.clientEmail == null or #strings.isEmpty(order.clientEmail)) and (order.clientPhone == null or #strings.isEmpty(order.clientPhone))},
+                                  courierDelivery=${order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')},
+                                  missingTracking=${courierDelivery and order.status != null and order.status.name() == 'SENT' and (order.trackingNumber == null or #strings.isEmpty(order.trackingNumber))},
+                                  missingCourierData=${courierDelivery and ((order.courierName == null or #strings.isEmpty(order.courierName)) or (order.deliveryAddress == null or #strings.isEmpty(order.deliveryAddress)) or (order.deliveryCity == null or #strings.isEmpty(order.deliveryCity)) or (order.deliveryRecipientName == null or #strings.isEmpty(order.deliveryRecipientName)) or (order.deliveryRecipientPhone == null or #strings.isEmpty(order.deliveryRecipientPhone)))},
+                                  quoteSent=${order.quoteStatus != null and order.quoteStatus.name() == 'SENT'},
+                                  missingQuoteValidity=${quoteSent and order.quoteValidUntil == null},
+                                  expiredQuoteValidity=${quoteSent and order.quoteValidUntil != null and order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())},
+                                  soonQuoteValidity=${quoteSent and order.quoteValidUntil != null and !order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now()) and T(java.time.Duration).between(T(java.time.LocalDateTime).now(), order.quoteValidUntil).toHours() <= 24}">
+                        <div class="font-semibold" th:text="#{orders.details.readiness.title}">Order readiness check</div>
+                        <p class="mt-1 text-xs text-blue-800"
+                           th:if="${!missingDeadline and !missingClientContact and !missingCourierData and !missingTracking and !missingQuoteValidity and !expiredQuoteValidity}"
+                           th:text="#{orders.details.readiness.ready}">
+                            Key order details are complete for smooth delivery and communication.
+                        </p>
+                        <ul class="mt-2 list-disc pl-5 text-xs text-blue-800"
+                            th:if="${missingDeadline or missingClientContact or missingCourierData or missingTracking or missingQuoteValidity or expiredQuoteValidity}">
+                            <li th:if="${missingDeadline}" th:text="#{orders.details.readiness.missing.deadline}">
+                                Deadline is not set.
+                            </li>
+                            <li th:if="${missingClientContact}" th:text="#{orders.details.readiness.missing.client_contact}">
+                                Client email or phone is missing.
+                            </li>
+                            <li th:if="${missingCourierData}" th:text="#{orders.details.readiness.missing.courier}">
+                                Courier delivery requires recipient name, city, and address.
+                            </li>
+                            <li th:if="${missingTracking}" th:text="#{orders.details.readiness.missing.tracking}">
+                                Shipment is marked as sent, but tracking number is missing.
+                            </li>
+                            <li th:if="${missingQuoteValidity}" th:text="#{orders.details.readiness.missing.quote_valid_until}">
+                                Quote is sent without valid-until date.
+                            </li>
+                            <li th:if="${expiredQuoteValidity}" th:text="#{orders.details.readiness.expired.quote_valid_until}">
+                                Quote validity date is in the past.
+                            </li>
+                        </ul>
+                        <p class="mt-2 text-xs text-blue-800"
+                           th:if="${!missingQuoteValidity and !expiredQuoteValidity and soonQuoteValidity}"
+                           th:text="#{orders.details.readiness.quote_valid_until_soon}">
+                            Quote validity expires within 24 hours.
+                        </p>
+                        <a th:if="${missingDeadline or missingClientContact or missingCourierData or missingTracking or missingQuoteValidity or expiredQuoteValidity}"
+                           th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                           class="mt-2 inline-flex text-xs font-semibold underline hover:no-underline"
+                           th:text="#{orders.details.readiness.cta}">
+                            Complete order details
+                        </a>
+                    </div>
+
+                    <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="text-sm text-gray-600" th:text="#{orders.delivery_type}">Delivery Type</span>
+                            <span class="inline-flex rounded-full bg-white border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700"
+                                  th:text="${order.deliveryType != null ? #messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name() : #messages.msg('common.na')}">
+                                PICKUP
+                            </span>
+                            <span th:if="${order.shipmentStatus != null and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')}"
+                                  th:class="${'inline-flex rounded-full px-2 py-1 text-xs font-semibold ' + order.shipmentStatusBadgeClass}"
+                                  th:text="${#messages.msgOrNull('orders.shipment.status.' + #strings.toLowerCase(order.shipmentStatus.name())) != null ? #messages.msg('orders.shipment.status.' + #strings.toLowerCase(order.shipmentStatus.name())) : order.shipmentStatus.name()}">
+                                Shipment status
+                            </span>
+                            <span th:if="${order.trackingNumber != null && !order.trackingNumber.isBlank()}"
+                                  class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700"
+                                  th:text="${#messages.msg('orders.tracking_number') + ': ' + order.trackingNumber}">
+                                Tracking: CODE
+                            </span>
+                            <span th:if="${order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.courierName == null or order.courierName.isBlank())}"
+                                  class="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800"
+                                  th:text="#{orders.details.delivery.courier_service_missing}">
+                                Courier service missing
+                            </span>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2"
+                             th:if="${order.deliveryType != null and order.status != null}">
+                            <form th:if="${order.status.name() == 'IN_PRINT'}"
+                                  th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="status" value="WAITING_QUALITY_CHECK"/>
+                                <button type="submit" class="rounded bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700"
+                                        th:text="#{orders.delivery.quick.quality_checked}">
+                                    Mark quality checked
+                                </button>
+                            </form>
+                            <form th:if="${order.deliveryType.name() == 'PICKUP' and order.status.name() == 'WAITING_QUALITY_CHECK'}"
+                                  th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="status" value="READY_FOR_DELIVERY"/>
+                                <button type="submit" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                                        th:text="#{orders.delivery.quick.ready_pickup}">
+                                    Mark ready for pickup
+                                </button>
+                            </form>
+                            <form th:if="${(order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and order.status.name() == 'WAITING_QUALITY_CHECK'}"
+                                  th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="status" value="READY_FOR_DELIVERY"/>
+                                <button type="submit" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                                        th:text="#{orders.delivery.quick.ready_dispatch}">
+                                    Mark ready to dispatch
+                                </button>
+                            </form>
+                            <form th:if="${order.deliveryType.name() == 'PICKUP' and order.status.name() == 'READY_FOR_DELIVERY'}"
+                                  th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="status" value="COMPLETED"/>
+                                <button type="submit" class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                                        th:text="#{orders.delivery.quick.picked_up}">
+                                    Mark picked up
+                                </button>
+                            </form>
+                            <form th:if="${(order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')
+                                           and order.status.name() == 'READY_FOR_DELIVERY'
+                                           and order.courierName != null and !order.courierName.isBlank()
+                                           and order.trackingNumber != null and !order.trackingNumber.isBlank()
+                                           and order.deliveryAddress != null and !order.deliveryAddress.isBlank()
+                                           and order.deliveryRecipientName != null and !order.deliveryRecipientName.isBlank()
+                                           and order.deliveryRecipientPhone != null and !order.deliveryRecipientPhone.isBlank()}"
+                                  th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="status" value="SENT"/>
+                                <button type="submit" class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                                        th:text="#{orders.delivery.quick.shipped}">
+                                    Mark shipped
+                                </button>
+                            </form>
+                            <form th:if="${(order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and order.status.name() == 'SENT'}"
+                                  th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post">
+                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <input type="hidden" name="status" value="COMPLETED"/>
+                                <button type="submit" class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                                        th:text="#{orders.delivery.quick.delivered}">
+                                    Mark delivered
+                                </button>
+                            </form>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-600"
+                           th:if="${order.status != null and order.status.name() == 'IN_PRINT'}"
+                           th:text="#{orders.delivery.next.in_print}">
+                            Complete print, then mark quality checked.
+                        </p>
+                        <p class="mt-2 text-xs text-gray-600"
+                           th:if="${order.status != null and order.status.name() == 'WAITING_QUALITY_CHECK' and order.deliveryType != null and order.deliveryType.name() == 'PICKUP'}"
+                           th:text="#{orders.delivery.next.pickup_ready}">
+                            After quality check, mark ready for pickup so the client can be notified.
+                        </p>
+                        <p class="mt-2 text-xs text-gray-600"
+                           th:if="${order.status != null and order.status.name() == 'WAITING_QUALITY_CHECK' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')}"
+                           th:text="#{orders.delivery.next.dispatch_ready}">
+                            After quality check, mark ready to dispatch before shipment.
+                        </p>
+                        <p class="mt-2 text-xs text-amber-700"
+                           th:if="${order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.courierName == null or order.courierName.isBlank())}">
+                            <span th:text="#{orders.details.delivery.courier_service_missing_help}">
+                                Courier service is not set. Add it in edit screen to keep shipping communication clear.
+                            </span>
+                            <a th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                               class="ml-1 underline hover:no-underline"
+                               th:text="#{orders.details.delivery.courier_service_missing_cta}">
+                                Add courier service
+                            </a>
+                        </p>
+                        <p class="mt-2 text-xs text-gray-600"
+                           th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and order.deliveryType != null and order.deliveryType.name() == 'PICKUP'}"
+                           th:text="#{orders.delivery.next.pickup_complete}">
+                            Once the client collects the order, mark it as picked up.
+                        </p>
+                        <p class="mt-2 text-xs text-gray-600"
+                           th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')}"
+                           th:text="#{orders.delivery.next.shipped}">
+                            Dispatch with tracking, then mark as shipped.
+                        </p>
+                        <p class="mt-2 text-xs text-sky-800"
+                           th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or order.trackingNumber.isBlank())}">
+                            <span th:text="#{orders.delivery.next.tracking_pending}">
+                                Tracking number is not set yet. Add it before dispatch.
+                            </span>
+                            <a th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                               class="ml-1 underline hover:no-underline"
+                               th:text="#{orders.delivery.next.tracking_pending_cta}">
+                                Prepare tracking
+                            </a>
+                        </p>
+                        <p class="mt-2 text-xs text-amber-700"
+                           th:if="${order.status != null and order.status.name() == 'READY_FOR_DELIVERY'
+                                    and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')
+                                    and ((order.courierName == null or order.courierName.isBlank())
+                                         or (order.trackingNumber == null or order.trackingNumber.isBlank())
+                                         or (order.deliveryAddress == null or order.deliveryAddress.isBlank())
+                                         or (order.deliveryRecipientName == null or order.deliveryRecipientName.isBlank())
+                                         or (order.deliveryRecipientPhone == null or order.deliveryRecipientPhone.isBlank()))}">
+                            <span th:text="#{orders.delivery.next.courier_requirements_missing}">
+                                Complete courier, tracking and recipient details before marking as shipped.
+                            </span>
+                            <a th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                               class="ml-1 underline hover:no-underline"
+                               th:text="#{orders.delivery.next.courier_requirements_missing_cta}">
+                                Complete shipment details
+                            </a>
+                        </p>
+                        <p class="mt-2 text-xs text-gray-600"
+                           th:if="${order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST')}"
+                           th:text="#{orders.delivery.next.delivered}">
+                            Confirm final handoff and mark as delivered.
+                        </p>
+                        <p class="mt-2 text-xs text-amber-700"
+                           th:if="${order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or order.trackingNumber.isBlank())}">
+                            <span th:text="#{orders.delivery.next.tracking_missing}">
+                                Tracking number is missing. Add it in edit screen so clients can track delivery.
+                            </span>
+                            <a th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
+                               class="ml-1 underline hover:no-underline"
+                               th:text="#{orders.delivery.next.tracking_missing_cta}">
+                                Add tracking
+                            </a>
+                        </p>
+                    </div>
                     
                     <!-- Design Approval Status -->
                     <div th:if="${order.status == 'WAITING_CLIENT_APPROVAL'}" class="mt-4">
@@ -104,7 +481,7 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-semibold text-gray-900" th:text="#{orders.details.info}">Order Information</h2>
-                        <a th:href="@{/admin/orders/{id}/edit(id=${order.id})}"
+                        <a th:href="@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})}"
                            class="text-sm text-blue-600 hover:text-blue-800" th:text="#{common.edit}">Edit</a>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -178,8 +555,8 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.price}">Price</h3>
-                            <p class="mt-1 text-sm text-gray-900"
-                               th:text="${order.price != null ? (companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(order.price, 1, 2) : #messages.msg('orders.details.not_set')}">
+                            <p id="orderPriceValue" class="mt-1 text-sm text-gray-900"
+                               th:text="${displayOrderPrice != null ? (companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(displayOrderPrice, 1, 2) : #messages.msg('orders.details.not_set')}">
                             </p>
                             <p class="text-sm" th:class="${order.paidClass}">
                                 <span th:text="${order.paidLabel}"></span>
@@ -187,9 +564,73 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.details.cost}">Cost</h3>
-                            <p class="mt-1 text-sm text-gray-900"
-                               th:text="${order.cost != null ? (companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(order.cost, 1, 2) : #messages.msg('orders.details.not_set')}">
+                            <p id="orderCostValue" class="mt-1 text-sm text-gray-900"
+                               th:text="${displayOrderCost != null ? (companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(displayOrderCost, 1, 2) : #messages.msg('orders.details.not_set')}">
                             </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery_type}">Delivery Type</h3>
+                            <p class="mt-1 text-sm text-gray-900"
+                               th:text="${order.deliveryType != null ? #messages.msgOrNull('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) != null ? #messages.msg('orders.delivery_type.' + #strings.toLowerCase(order.deliveryType.name())) : order.deliveryType.name() : #messages.msg('common.na')}">
+                                Pickup
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.courier_name}">Courier Service</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${order.courierName != null && !order.courierName.isBlank() ? order.courierName : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div id="orderTrackingBlock">
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.tracking_number}">Tracking Number</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${order.trackingNumber != null && !order.trackingNumber.isBlank() ? order.trackingNumber : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery_address}">Delivery Address</h3>
+                            <p class="mt-1 text-sm text-gray-900 whitespace-pre-line" th:text="${order.deliveryAddress != null && !order.deliveryAddress.isBlank() ? order.deliveryAddress : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery.recipient_name}">Recipient Name</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${order.deliveryRecipientName != null && !order.deliveryRecipientName.isBlank() ? order.deliveryRecipientName : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery.recipient_phone}">Recipient Phone</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${order.deliveryRecipientPhone != null && !order.deliveryRecipientPhone.isBlank() ? order.deliveryRecipientPhone : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery.city}">City</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${order.deliveryCity != null && !order.deliveryCity.isBlank() ? order.deliveryCity : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.delivery.postal_code}">Postal Code</h3>
+                            <p class="mt-1 text-sm text-gray-900" th:text="${order.deliveryPostalCode != null && !order.deliveryPostalCode.isBlank() ? order.deliveryPostalCode : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.shipment.status}">Shipment Status</h3>
+                            <p class="mt-1 text-sm text-gray-900"
+                               th:text="${order.shipmentStatus != null ? #messages.msgOrNull('orders.shipment.status.' + #strings.toLowerCase(order.shipmentStatus.name())) != null ? #messages.msg('orders.shipment.status.' + #strings.toLowerCase(order.shipmentStatus.name())) : order.shipmentStatus.name() : #messages.msg('common.na')}">
+                                PREPARING
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.shipment.price}">Shipment Price</h3>
+                            <p class="mt-1 text-sm text-gray-900"
+                               th:text="${order.shipmentPrice != null ? (companyCurrency != null ? companyCurrency + ' ' : '') + #numbers.formatDecimal(order.shipmentPrice, 1, 2) : #messages.msg('common.na')}">
+                                -
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.shipment.shipped_at}">Shipped At</h3>
+                            <p class="mt-1 text-sm text-gray-900"
+                               th:text="${order.shippedAt != null ? #temporals.format(order.shippedAt, 'dd.MM.yyyy HH:mm') : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.shipment.delivered_at}">Delivered At</h3>
+                            <p class="mt-1 text-sm text-gray-900"
+                               th:text="${order.deliveredAt != null ? #temporals.format(order.deliveredAt, 'dd.MM.yyyy HH:mm') : #messages.msg('common.na')}">-</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <h3 class="text-sm font-medium text-gray-500" th:text="#{orders.shipment.note}">Shipping Note</h3>
+                            <p class="mt-1 text-sm text-gray-900 whitespace-pre-line"
+                               th:text="${order.shippingNote != null && !order.shippingNote.isBlank() ? order.shippingNote : #messages.msg('common.na')}">-</p>
                         </div>
                     </div>
                     
@@ -213,16 +654,68 @@
                     </div>
                 </div>
 
-                <!-- Order Activity -->
+                <!-- Order Timeline -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{orders.details.activity}">Order Activity</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{orders.details.timeline}">Order Timeline</h2>
                     <div class="space-y-4">
-                        <div th:each="activity : ${orderActivities}">
-                            <p class="text-sm text-gray-900" th:text="${activity.description}"></p>
-                            <p class="text-xs text-gray-500" th:text="${#temporals.format(activity.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
+                        <div class="flex items-start">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.details.created}">Order Created</p>
+                                <p class="text-xs text-gray-500" th:text="${order.createdAt != null ? #temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm') : #messages.msg('common.na')}"></p>
+                            </div>
                         </div>
-                        <div th:if="${orderActivities.empty}" class="text-center py-4">
-                            <p class="text-sm text-gray-500" th:text="#{orders.details.no_activity}">No activity yet.</p>
+                        <div class="flex items-start" th:if="${order.updatedAt != null}">
+                            <div class="w-2 h-2 rounded-full bg-gray-400 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.details.last_updated}">Last Updated</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(order.updatedAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start" th:if="${order.quoteSentAt != null}">
+                            <div class="w-2 h-2 rounded-full bg-fuchsia-500 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.details.event.quote_sent}">Quote Sent</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(order.quoteSentAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start" th:if="${order.shippedAt != null}">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.shipment.shipped_at}">Shipped At</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(order.shippedAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start" th:if="${order.deliveredAt != null}">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.shipment.delivered_at}">Delivered At</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(order.deliveredAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-start" th:if="${order.completedAt != null}">
+                            <div class="w-2 h-2 rounded-full bg-emerald-600 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.details.event.completed}">Completed</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(order.completedAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div th:each="activity : ${activityFeed}" class="flex items-start">
+                            <div class="w-2 h-2 rounded-full bg-indigo-500 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="${activity.message}">Activity</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(activity.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div th:each="activity : ${orderActivities}" class="flex items-start">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2"></div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900" th:text="${activity.description}">Task Activity</p>
+                                <p class="text-xs text-gray-500" th:text="${#temporals.format(activity.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                        <div th:if="${(activityFeed == null || activityFeed.isEmpty()) and (orderActivities == null || orderActivities.isEmpty())}" class="text-center py-4">
+                            <p class="text-sm text-gray-500" th:text="#{orders.details.no_recent_activity}">No recent activity.</p>
                         </div>
                     </div>
                 </div>
@@ -231,10 +724,22 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{orders.items.title}">Items</h2>
                     <form class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4"
-                          th:attr="hx-post=@{/api/workorders/{id}/items(id=${order.id})}, data-refresh-url=@{/admin/orders/{id}/items-fragment(id=${order.id})}"
-                          hx-encoding="json"
-                          hx-swap="none"
-                          hx-on:htmx:afterRequest="htmx.ajax('GET', this.getAttribute('data-refresh-url'), '#order-items'); this.reset();">
+                          id="orderAddItemForm"
+                          th:attr="data-post-url=@{/api/workorders/{id}/items(id=${order.id})}, data-refresh-url=@{/admin/orders/{id}/items-fragment(id=${order.id})}"
+                          th:attrappend=" data-msg-added=#{pricing.calculate.added},
+                                          data-msg-add-failed=#{pricing.calculate.add_failed},
+                                          data-msg-billing-required=#{pricing.calculate.billing_required},
+                                          data-msg-session-expired=#{pricing.calculate.session_expired},
+                                          data-msg-not-found=#{api.error.not_found},
+                                          data-msg-server-error=#{api.error.server_error},
+                                          data-msg-select-variant=#{pricing.calculate.select_variant_qty},
+                                          data-msg-invalid-quantity=#{pricing.calculate.invalid_quantity},
+                                          data-msg-adding=#{pricing.calculate.adding},
+                                          data-field-hint-default=#{pricing.calculate.field_hint},
+                                          data-field-hint-dynamic=#{pricing.calculate.field_hint_dynamic},
+                                          data-msg-validation-dim=#{pricing.calculate.validation.dimensions_required},
+                                          data-msg-validation-meters=#{pricing.calculate.validation.meters_required},
+                                          data-msg-validation-minutes=#{pricing.calculate.validation.minutes_required}">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <div class="md:col-span-2">
                             <label class="text-xs text-gray-500" th:text="#{orders.items.variant}">Variant</label>
@@ -246,38 +751,45 @@
                             <label class="text-xs text-gray-500" th:text="#{orders.items.qty}">Qty</label>
                             <input type="number" step="0.01" name="quantity" value="1" class="w-full px-3 py-2 border rounded"/>
                         </div>
-                        <div>
+                        <div id="orderAddWidthWrap">
                             <label class="text-xs text-gray-500" th:text="#{orders.items.width}">Width (mm)</label>
                             <input type="number" name="widthMm" class="w-full px-3 py-2 border rounded"/>
                         </div>
-                        <div>
+                        <div id="orderAddHeightWrap">
                             <label class="text-xs text-gray-500" th:text="#{orders.items.height}">Height (mm)</label>
                             <input type="number" name="heightMm" class="w-full px-3 py-2 border rounded"/>
+                        </div>
+                        <div id="orderAddColorsWrap">
+                            <label class="text-xs text-gray-500" th:text="#{pricing.calculate.colors}">Colors</label>
+                            <input type="number" step="1" min="1" name="colors" value="1" class="w-full px-3 py-2 border rounded"/>
+                        </div>
+                        <div id="orderAddSidesWrap">
+                            <label class="text-xs text-gray-500" th:text="#{pricing.calculate.sides}">Sides</label>
+                            <input type="number" step="1" min="1" name="sides" value="1" class="w-full px-3 py-2 border rounded"/>
+                        </div>
+                        <div id="orderAddMetersWrap" class="hidden">
+                            <label class="text-xs text-gray-500" th:text="#{pricing.calculate.meters}">Meters</label>
+                            <input type="number" step="0.01" min="0" name="meters" value="0" class="w-full px-3 py-2 border rounded"/>
+                        </div>
+                        <div id="orderAddMinutesWrap" class="hidden">
+                            <label class="text-xs text-gray-500" th:text="#{pricing.calculate.minutes}">Minutes</label>
+                            <input type="number" step="0.01" min="0" name="minutes" value="0" class="w-full px-3 py-2 border rounded"/>
+                        </div>
+                        <div class="md:col-span-4">
+                            <div id="orderAddFieldHint" class="text-xs text-gray-500"
+                                 th:text="#{pricing.calculate.field_hint}">Width/Height are used for m² pricing, Colors for per-color, Sides for per-side.</div>
                         </div>
                         <div class="md:col-span-4">
                             <button class="px-4 py-2 bg-blue-600 text-white rounded" th:text="#{orders.items.add}">Add Item</button>
                         </div>
                     </form>
+                    <div id="orderAddItemFeedback"
+                         class="hidden mb-4 rounded-md border px-3 py-2 text-sm"
+                         role="status"
+                         aria-live="polite"></div>
                     <div id="order-items" th:replace="~{admin/orders/items-fragment :: itemsTable}"></div>
                 </div>
 
-                <!-- Activity Timeline -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{common.activity}">Activity</h2>
-                    <div class="space-y-4">
-                        <div th:each="activity : ${activityFeed}" class="flex items-start">
-                            <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
-                            <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900" th:text="${activity.message}">Activity</div>
-                                <div class="text-xs text-gray-500" th:text="${#temporals.format(activity.createdAt, 'dd.MM.yyyy HH:mm')}">date</div>
-                            </div>
-                        </div>
-                        <div th:if="${activityFeed == null || activityFeed.isEmpty()}" class="text-sm text-gray-500">
-                            <span th:text="#{orders.details.no_recent_activity}">No recent activity.</span>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Attachments -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -431,7 +943,33 @@
                             <span>•</span>
                             <span th:text="#{orders.details.smart.awaiting_client}">Follow up with the client and send a reminder if needed.</span>
                         </li>
-                        <li th:if="${order.assignedToId != null && order.deadline != null && attachments != null && !attachments.isEmpty() && orderItems != null && !orderItems.isEmpty()}"
+                        <li th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil == null}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.missing_quote_validity}">Set quote validity date before final client follow-up.</span>
+                        </li>
+                        <li th:if="${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null and order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())}" class="flex items-start gap-2 text-red-700">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.quote_expired}">Quote validity expired. Renew quote terms before client follow-up.</span>
+                        </li>
+                        <li th:if="${order.quoteStatus != null
+                                and order.quoteStatus.name() == 'SENT'
+                                and order.quoteValidUntil != null
+                                and !order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now())
+                                and T(java.time.Duration).between(T(java.time.LocalDateTime).now(), order.quoteValidUntil).toHours() <= 24}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.quote_expires_soon}">Quote validity expires soon. Follow up with client today.</span>
+                        </li>
+                        <li th:if="${order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or order.trackingNumber.isBlank())}" class="flex items-start gap-2 text-amber-800">
+                            <span>•</span>
+                            <span th:text="#{orders.details.smart.missing_tracking}">Add tracking number so client can monitor shipment.</span>
+                        </li>
+                        <li th:if="${order.assignedToId != null
+                                && order.deadline != null
+                                && attachments != null && !attachments.isEmpty()
+                                && orderItems != null && !orderItems.isEmpty()
+                                && !(order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil == null)
+                                && !(order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null and order.quoteValidUntil.isBefore(T(java.time.LocalDateTime).now()))
+                                && !(order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or order.trackingNumber.isBlank()))}"
                             class="flex items-start gap-2 text-green-700">
                             <span>•</span>
                             <span th:text="#{orders.details.smart.ready}">Core fields are complete. This order is ready for smooth execution.</span>
@@ -449,6 +987,8 @@
                                 <option value="assign" th:text="#{orders.details.smart.action.assign}">Assign owner</option>
                                 <option value="items" th:text="#{orders.details.smart.action.items}">Add order item</option>
                                 <option value="attachments" th:text="#{orders.details.smart.action.attachments}">Upload attachment</option>
+                                <option value="quote" th:text="#{orders.details.smart.action.quote}">Update quote status</option>
+                                <option value="tracking" th:text="#{orders.details.smart.action.tracking}">Update tracking</option>
                                 <option value="task" th:text="#{orders.details.smart.action.task}">Create task</option>
                             </select>
                         </div>
@@ -529,7 +1069,7 @@
                             </div>
                         </form>
                         
-                        <a th:href="@{/public/order/{token}(token=${order.publicToken})}" 
+                        <a th:href="@{/public/order/{token}(token=${publicOrderToken},lang=${#locale.language})}" 
                            target="_blank"
                            class="block w-full text-left px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
                             <div class="font-medium text-gray-900" th:text="#{orders.details.view_client_page}">View Client Page</div>
@@ -564,7 +1104,7 @@
                             <div class="text-xs text-gray-500 mt-1">
                                 <span th:text="#{orders.details.public_code_help}">Client can use this code at /public/track</span>
                                 <span class="mx-1">·</span>
-                                <a th:href="@{/public/track(token=${order.publicToken})}"
+                                <a th:href="@{/public/track(token=${publicOrderToken},lang=${#locale.language})}"
                                    class="text-blue-600 hover:text-blue-800"
                                    th:text="#{orders.details.public_code_prefill}">Prefill brand</a>
                             </div>
@@ -616,40 +1156,6 @@
                                 <div class="text-sm" th:text="#{orders.details.delete_order_help}">Permanently delete this order.</div>
                             </button>
                         </form>
-                    </div>
-                </div>
-                
-                <!-- Order History -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4" th:text="#{orders.details.history}">Order History</h2>
-                    <div class="space-y-4">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.details.created}">Order Created</p>
-                                <p class="text-sm text-gray-500" th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-900" th:text="#{orders.details.last_updated}">Last Updated</p>
-                                <p class="text-sm text-gray-500" th:text="${#temporals.format(order.updatedAt, 'dd.MM.yyyy HH:mm')}"></p>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 
@@ -767,13 +1273,25 @@
                   data-smart-hint-assign=#{orders.details.smart.action.hint.assign},
                   data-smart-hint-items=#{orders.details.smart.action.hint.items},
                   data-smart-hint-attachments=#{orders.details.smart.action.hint.attachments},
+                  data-smart-hint-quote=#{orders.details.smart.action.hint.quote},
+                  data-smart-hint-tracking=#{orders.details.smart.action.hint.tracking},
                   data-smart-hint-task=#{orders.details.smart.action.hint.task},
                   data-smart-cta-edit=#{orders.details.smart.action.cta.edit},
                   data-smart-cta-assign=#{orders.details.smart.action.cta.assign},
                   data-smart-cta-items=#{orders.details.smart.action.cta.items},
                   data-smart-cta-attachments=#{orders.details.smart.action.cta.attachments},
+                  data-smart-cta-quote=#{orders.details.smart.action.cta.quote},
+                  data-smart-cta-tracking=#{orders.details.smart.action.cta.tracking},
                   data-smart-cta-task=#{orders.details.smart.action.cta.task},
-                  data-smart-url-edit=@{/admin/orders/{id}/edit(id=${order.id})},
+                  data-smart-need-assignee=${order.assignedToId == null},
+                  data-smart-need-deadline=${order.deadline == null},
+                  data-smart-need-items=${orderItems == null || orderItems.isEmpty()},
+                  data-smart-need-attachments=${attachments == null || attachments.isEmpty()},
+                  data-smart-need-quote-valid=${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil == null},
+                  data-smart-need-quote-expired=${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null and order.quoteValidUntil.isBefore(#temporals.createNow())},
+                  data-smart-need-quote-soon=${order.quoteStatus != null and order.quoteStatus.name() == 'SENT' and order.quoteValidUntil != null and !order.quoteValidUntil.isBefore(#temporals.createNow()) and order.quoteValidUntil.isBefore(#temporals.createNow().plusHours(24))},
+                  data-smart-need-tracking=${order.status != null and order.status.name() == 'SENT' and order.deliveryType != null and (order.deliveryType.name() == 'COURIER' or order.deliveryType.name() == 'EXPRESS_POST') and (order.trackingNumber == null or #strings.isEmpty(order.trackingNumber))},
+                  data-smart-url-edit=@{/admin/orders/{id}/edit(id=${order.id},back=${backToOrders})},
                   data-smart-url-task=@{/admin/tasks/create(workOrderId=${order.id})}"
          class="hidden"></div>
 
@@ -966,6 +1484,22 @@
                         if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 },
+                quote: {
+                    cta: i18nEl.getAttribute('data-smart-cta-quote'),
+                    hint: i18nEl.getAttribute('data-smart-hint-quote'),
+                    run: () => {
+                        const el = document.getElementById('quoteStatusUpdateForm');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                tracking: {
+                    cta: i18nEl.getAttribute('data-smart-cta-tracking'),
+                    hint: i18nEl.getAttribute('data-smart-hint-tracking'),
+                    run: () => {
+                        const el = document.getElementById('orderTrackingBlock');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
                 task: {
                     cta: i18nEl.getAttribute('data-smart-cta-task'),
                     hint: i18nEl.getAttribute('data-smart-hint-task'),
@@ -987,7 +1521,233 @@
                 const key = select.value in map ? select.value : 'edit';
                 map[key].run();
             });
+            const parseBool = (value) => String(value).toLowerCase() === 'true';
+            const recommended = [
+                [parseBool(i18nEl.getAttribute('data-smart-need-quote-expired')), 'quote'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-quote-valid')), 'quote'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-quote-soon')), 'quote'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-tracking')), 'tracking'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-assignee')), 'assign'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-deadline')), 'edit'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-items')), 'items'],
+                [parseBool(i18nEl.getAttribute('data-smart-need-attachments')), 'attachments']
+            ].find(([isNeeded]) => isNeeded);
+            if (recommended && recommended[1] && map[recommended[1]]) {
+                select.value = recommended[1];
+            }
             updateUi();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('orderAddItemForm');
+            const feedback = document.getElementById('orderAddItemFeedback');
+            if (!form || !feedback) {
+                return;
+            }
+            let feedbackTimer = null;
+            const clearFeedbackTimer = () => {
+                if (feedbackTimer) {
+                    clearTimeout(feedbackTimer);
+                    feedbackTimer = null;
+                }
+            };
+            const showFeedback = (message, type) => {
+                if (!message) {
+                    return;
+                }
+                clearFeedbackTimer();
+                feedback.textContent = message;
+                feedback.classList.remove('hidden', 'border-red-200', 'bg-red-50', 'text-red-700', 'border-green-200', 'bg-green-50', 'text-green-700');
+                if (type === 'success') {
+                    feedback.classList.add('border-green-200', 'bg-green-50', 'text-green-700');
+                    feedbackTimer = setTimeout(() => {
+                        feedback.classList.add('hidden');
+                    }, 4000);
+                } else {
+                    feedback.classList.add('border-red-200', 'bg-red-50', 'text-red-700');
+                }
+            };
+            const parseNumberOrNull = (value) => {
+                if (value == null || String(value).trim() === '') {
+                    return null;
+                }
+                const num = Number(value);
+                return Number.isFinite(num) ? num : null;
+            };
+            const csrfHeaders = () => {
+                const metaToken = document.querySelector('meta[name="_csrf"]');
+                const metaHeader = document.querySelector('meta[name="_csrf_header"]');
+                if (metaToken && metaHeader) {
+                    return { [metaHeader.getAttribute('content')]: metaToken.getAttribute('content') };
+                }
+                const csrfInput = form.querySelector('input[name="_csrf"]');
+                if (csrfInput && csrfInput.value) {
+                    return { 'X-CSRF-TOKEN': csrfInput.value };
+                }
+                return {};
+            };
+            const setLoadingState = (loading) => {
+                const submitBtn = form.querySelector('button[type="submit"], button:not([type])');
+                if (submitBtn) {
+                    if (!submitBtn.getAttribute('data-default-label')) {
+                        submitBtn.setAttribute('data-default-label', submitBtn.textContent || '');
+                    }
+                    if (loading) {
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                        submitBtn.textContent = form.getAttribute('data-msg-adding') || 'Adding...';
+                    } else {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                        const defaultLabel = submitBtn.getAttribute('data-default-label');
+                        if (defaultLabel) {
+                            submitBtn.textContent = defaultLabel;
+                        }
+                    }
+                }
+            };
+            const variantSelect = form.querySelector('select[name="variantId"]');
+            const widthWrap = document.getElementById('orderAddWidthWrap');
+            const heightWrap = document.getElementById('orderAddHeightWrap');
+            const colorsWrap = document.getElementById('orderAddColorsWrap');
+            const sidesWrap = document.getElementById('orderAddSidesWrap');
+            const metersWrap = document.getElementById('orderAddMetersWrap');
+            const minutesWrap = document.getElementById('orderAddMinutesWrap');
+            const fieldHint = document.getElementById('orderAddFieldHint');
+            const toggleWrap = (el, visible) => {
+                if (!el) return;
+                if (visible) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            };
+            const refreshVariantRequirements = async () => {
+                const selectedVariantId = variantSelect ? Number(variantSelect.value) : 0;
+                if (!selectedVariantId || selectedVariantId <= 0) {
+                    toggleWrap(widthWrap, true);
+                    toggleWrap(heightWrap, true);
+                    toggleWrap(colorsWrap, true);
+                    toggleWrap(sidesWrap, true);
+                    toggleWrap(metersWrap, false);
+                    toggleWrap(minutesWrap, false);
+                    if (fieldHint) {
+                        fieldHint.textContent = form.getAttribute('data-field-hint-default') || fieldHint.textContent;
+                    }
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/pricing/variants/${selectedVariantId}/requirements`, {
+                        headers: { 'Accept': 'application/json', ...csrfHeaders() }
+                    });
+                    if (!response.ok) {
+                        return;
+                    }
+                    const req = await response.json();
+                    toggleWrap(widthWrap, !!req.requiresDimensions);
+                    toggleWrap(heightWrap, !!req.requiresDimensions);
+                    toggleWrap(colorsWrap, !!req.requiresColors);
+                    toggleWrap(sidesWrap, !!req.requiresSides);
+                    toggleWrap(metersWrap, !!req.requiresMeters);
+                    toggleWrap(minutesWrap, !!req.requiresMinutes);
+                    if (fieldHint) {
+                        fieldHint.textContent = form.getAttribute('data-field-hint-dynamic') || fieldHint.textContent;
+                    }
+                } catch (ignored) {
+                    // Keep current field visibility on request failure.
+                }
+            };
+            if (variantSelect) {
+                variantSelect.addEventListener('change', refreshVariantRequirements);
+                refreshVariantRequirements();
+            }
+            form.addEventListener('submit', async function (evt) {
+                evt.preventDefault();
+                const variantEl = form.querySelector('select[name="variantId"]');
+                const qtyEl = form.querySelector('input[name="quantity"]');
+                const variantId = variantEl ? Number(variantEl.value) : 0;
+                const qty = qtyEl ? Number(qtyEl.value) : 0;
+                if (!variantId || variantId <= 0) {
+                    showFeedback(form.getAttribute('data-msg-select-variant') || 'Please select a variant and enter quantity.', 'error');
+                    return;
+                }
+                if (!Number.isFinite(qty) || qty <= 0) {
+                    showFeedback(form.getAttribute('data-msg-invalid-quantity') || 'Quantity must be greater than 0.', 'error');
+                    return;
+                }
+                const payload = {
+                    variantId: variantId,
+                    quantity: qty,
+                    widthMm: parseNumberOrNull(form.querySelector('input[name="widthMm"]')?.value),
+                    heightMm: parseNumberOrNull(form.querySelector('input[name="heightMm"]')?.value),
+                    attributes: {
+                        colors: parseNumberOrNull(form.querySelector('input[name="colors"]')?.value) ?? 1,
+                        sides: parseNumberOrNull(form.querySelector('input[name="sides"]')?.value) ?? 1,
+                        meters: parseNumberOrNull(form.querySelector('input[name="meters"]')?.value) ?? 0,
+                        minutes: parseNumberOrNull(form.querySelector('input[name="minutes"]')?.value) ?? 0
+                    }
+                }
+                setLoadingState(true);
+                try {
+                    const response = await fetch(form.getAttribute('data-post-url'), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            ...csrfHeaders()
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    let data = {};
+                    const contentType = response.headers.get('content-type') || '';
+                    const rawText = await response.text();
+                    const looksLikeHtml = rawText && (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html') || contentType.includes('text/html'));
+                    if (looksLikeHtml) {
+                        showFeedback(form.getAttribute('data-msg-session-expired') || 'Session expired or access denied. Please refresh the page and try again.', 'error');
+                        return;
+                    }
+                    try {
+                        data = rawText ? JSON.parse(rawText) : {};
+                    } catch (ignored) {
+                        data = {};
+                    }
+                    if (response.ok) {
+                        const refreshUrl = form.getAttribute('data-refresh-url');
+                        if (refreshUrl && window.htmx) {
+                            window.htmx.ajax('GET', refreshUrl, '#order-items');
+                        } else {
+                            window.location.reload();
+                        }
+                        form.reset();
+                        showFeedback(form.getAttribute('data-msg-added') || 'Item added to work order.', 'success');
+                        return;
+                    }
+                    const code = ((data.messageKey || data.error) || '').toString().trim();
+                    let message = form.getAttribute('data-msg-add-failed') || 'Unable to add item to work order right now. Please try again.';
+                    if (code === 'pricing.calculate.billing_required' || code === 'billing.notice.expired') {
+                        message = form.getAttribute('data-msg-billing-required') || message;
+                    } else if (response.status === 401 || response.status === 403) {
+                        message = form.getAttribute('data-msg-session-expired') || message;
+                    } else if (response.status >= 500) {
+                        message = form.getAttribute('data-msg-server-error') || message;
+                    } else if (code === 'api.error.not_found') {
+                        message = form.getAttribute('data-msg-not-found') || message;
+                    } else if (code === 'api.error.server_error') {
+                        message = form.getAttribute('data-msg-server-error') || message;
+                    } else if (code === 'pricing.calculate.validation.dimensions_required') {
+                        message = form.getAttribute('data-msg-validation-dim') || message;
+                    } else if (code === 'pricing.calculate.validation.meters_required') {
+                        message = form.getAttribute('data-msg-validation-meters') || message;
+                    } else if (code === 'pricing.calculate.validation.minutes_required') {
+                        message = form.getAttribute('data-msg-validation-minutes') || message;
+                    }
+                    showFeedback(message, 'error');
+                } catch (e) {
+                    showFeedback(form.getAttribute('data-msg-add-failed') || 'Unable to add item to work order right now. Please try again.', 'error');
+                } finally {
+                    setLoadingState(false);
+                }
+            });
         });
     </script>
 </body>

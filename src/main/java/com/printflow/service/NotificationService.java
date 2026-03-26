@@ -83,7 +83,7 @@ public class NotificationService {
         }
         String subject = "Order created: " + order.getOrderNumber();
         String trackingCode = order.getPublicToken();
-        String link = buildUrl("/public/order/" + trackingCode);
+        String link = buildPublicOrderUrl(order);
         if (!emailEnabled) {
             log.info("Email sending is disabled. Would send to: {} - Subject: {}", order.getClient().getEmail(), subject);
             return;
@@ -367,7 +367,7 @@ public class NotificationService {
             return;
         }
         String subject = "Task Completed";
-        String link = buildUrl("/public/order/" + order.getPublicToken());
+        String link = buildPublicOrderUrl(order);
         String companyName = order.getCompany() != null ? order.getCompany().getName() : "PrintFlow";
         String html = buildClientUpdateEmailHtml(
             order.getClient().getContactPerson(),
@@ -419,7 +419,7 @@ public class NotificationService {
         String subject = "Design Approval Required";
         String link = approvalUrl != null && !approvalUrl.isBlank()
             ? approvalUrl
-            : buildUrl("/public/order/" + order.getPublicToken());
+            : buildPublicOrderUrl(order);
         String companyName = order.getCompany() != null ? order.getCompany().getName() : "PrintFlow";
         String html = buildClientUpdateEmailHtml(
             order.getClient().getContactPerson(),
@@ -448,7 +448,7 @@ public class NotificationService {
         String subject = serbian ? "Potrebno odobrenje dizajna" : "Design Approval Required";
         String link = approvalUrl != null && !approvalUrl.isBlank()
             ? approvalUrl
-            : buildUrl("/public/order/" + order.getPublicToken());
+            : buildPublicOrderUrl(order);
         Map<String, Object> model = buildOrderEmailModel(order, link);
         String html = emailTemplateService.render("design-approval-request", model);
         return new EmailPreview(subject, html);
@@ -460,7 +460,7 @@ public class NotificationService {
         }
         boolean serbian = isSerbianCompany(order.getCompany());
         String subject = serbian ? "Povratna informacija o dizajnu" : "Design Feedback";
-        String link = buildUrl("/public/order/" + order.getPublicToken());
+        String link = buildPublicOrderUrl(order);
         String html = emailTemplateService.render("design-feedback-client", buildDesignFeedbackModel(order, approved, comment, link));
         return new EmailPreview(subject, html);
     }
@@ -499,7 +499,7 @@ public class NotificationService {
             ? (serbian ? "Dizajn je odobren" : "Design approved")
             : (serbian ? "Tražene su izmene dizajna" : "Design changes requested");
         String adminLink = buildUrl("/admin/orders/" + order.getId());
-        String publicLink = buildUrl("/public/order/" + order.getPublicToken());
+        String publicLink = buildPublicOrderUrl(order);
         String internalHtml = emailTemplateService.render("design-feedback-internal", buildDesignFeedbackModel(order, approved, comment, adminLink));
         String clientHtml = emailTemplateService.render("design-feedback-client", buildDesignFeedbackModel(order, approved, comment, publicLink));
 
@@ -785,6 +785,14 @@ public class NotificationService {
         return normalizedBase + normalizedPath;
     }
 
+    private String buildPublicOrderUrl(WorkOrder order) {
+        if (order == null || order.getPublicToken() == null || order.getPublicToken().isBlank()) {
+            return buildUrl("/public/track");
+        }
+        String lang = isSerbianCompany(order.getCompany()) ? "sr" : "en";
+        return buildUrl("/public/order/" + order.getPublicToken() + "?lang=" + lang);
+    }
+
     public static class EmailPreview {
         private final String subject;
         private final String html;
@@ -879,7 +887,7 @@ public class NotificationService {
         if (address == null) {
             return false;
         }
-        String lower = address.toLowerCase();
+        String lower = address.toLowerCase(java.util.Locale.ROOT);
         return lower.contains("srbija") || lower.contains("serbia");
     }
 

@@ -27,6 +27,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Controller
@@ -72,7 +73,8 @@ public class AdminPricingController extends BaseController {
             boolean hasDefault = false;
             for (ProductVariant variant : variants) {
                 List<PricingComponent> components = componentRepository.findAllByVariant_IdAndCompany_Id(variant.getId(), company.getId());
-                if (components.stream().anyMatch(c -> c.getNotes() != null && c.getNotes().toLowerCase().contains("default"))) {
+                if (components.stream().anyMatch(c -> c.getNotes() != null
+                    && c.getNotes().toLowerCase(Locale.ROOT).contains("default"))) {
                     hasDefault = true;
                     break;
                 }
@@ -338,7 +340,7 @@ public class AdminPricingController extends BaseController {
             variantForms.put(variant.getId(), UpdateVariantPricingRequest.fromVariant(variant));
             List<PricingComponent> components = componentRepository.findAllByVariant_IdAndCompany_Id(variant.getId(), company.getId());
             boolean hasDefault = components.stream()
-                .anyMatch(c -> c.getNotes() != null && c.getNotes().toLowerCase().contains("default"));
+                .anyMatch(c -> c.getNotes() != null && c.getNotes().toLowerCase(Locale.ROOT).contains("default"));
             variantHasDefault.put(variant.getId(), Boolean.TRUE.equals(hasDefault));
         }
         model.addAttribute("product", product);

@@ -2,6 +2,7 @@ package com.printflow.entity;
 
 import com.printflow.entity.enums.OrderStatus;
 import com.printflow.entity.enums.PrintType;
+import com.printflow.entity.enums.QuoteStatus;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
@@ -99,6 +100,44 @@ public class WorkOrder {
     
     @Column(name = "delivery_date")
     private java.time.LocalDateTime deliveryDate;
+
+    @Column(name = "delivery_recipient_name")
+    private String deliveryRecipientName;
+
+    @Column(name = "delivery_recipient_phone")
+    private String deliveryRecipientPhone;
+
+    @Column(name = "delivery_city")
+    private String deliveryCity;
+
+    @Column(name = "delivery_postal_code")
+    private String deliveryPostalCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipment_status", length = 30)
+    private ShipmentStatus shipmentStatus = ShipmentStatus.PREPARING;
+
+    @Column(name = "shipment_price")
+    private Double shipmentPrice;
+
+    @Column(name = "shipped_at")
+    private java.time.LocalDateTime shippedAt;
+
+    @Column(name = "delivered_at")
+    private java.time.LocalDateTime deliveredAt;
+
+    @Column(name = "shipping_note", columnDefinition = "TEXT")
+    private String shippingNote;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quote_status", length = 30)
+    private QuoteStatus quoteStatus = QuoteStatus.NONE;
+
+    @Column(name = "quote_sent_at")
+    private java.time.LocalDateTime quoteSentAt;
+
+    @Column(name = "quote_valid_until")
+    private java.time.LocalDateTime quoteValidUntil;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "print_type")
@@ -409,6 +448,30 @@ public class WorkOrder {
 		this.deliveryDate = deliveryDate;
 	}
 
+	public QuoteStatus getQuoteStatus() {
+		return quoteStatus;
+	}
+
+	public void setQuoteStatus(QuoteStatus quoteStatus) {
+		this.quoteStatus = quoteStatus;
+	}
+
+	public java.time.LocalDateTime getQuoteSentAt() {
+		return quoteSentAt;
+	}
+
+	public void setQuoteSentAt(java.time.LocalDateTime quoteSentAt) {
+		this.quoteSentAt = quoteSentAt;
+	}
+
+	public java.time.LocalDateTime getQuoteValidUntil() {
+		return quoteValidUntil;
+	}
+
+	public void setQuoteValidUntil(java.time.LocalDateTime quoteValidUntil) {
+		this.quoteValidUntil = quoteValidUntil;
+	}
+
 	public Client getClient() {
 		return client;
 	}
@@ -478,5 +541,11 @@ public class WorkOrder {
         PICKUP,
         EXPRESS_POST,
         COURIER
+    }
+
+    public enum ShipmentStatus {
+        PREPARING,
+        SHIPPED,
+        DELIVERED
     }
 }

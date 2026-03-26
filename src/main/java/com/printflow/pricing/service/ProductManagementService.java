@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -185,7 +186,7 @@ public class ProductManagementService {
         if (q == null || q.isBlank()) {
             return null;
         }
-        String like = "%" + q.trim().toLowerCase() + "%";
+        String like = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
         return (root, query, cb) -> cb.or(
             cb.like(cb.lower(root.get("name")), like),
             cb.like(cb.lower(cb.coalesce(root.get("sku"), "")), like)

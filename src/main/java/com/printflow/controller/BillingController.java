@@ -32,6 +32,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/billing")
@@ -148,9 +153,28 @@ public class BillingController extends BaseController {
         model.addAttribute("maxMonthlyOrders", maxMonthlyOrders);
         model.addAttribute("maxStorageBytes", maxStorageBytes);
 
-        model.addAttribute("userUsagePercent", percent(activeUsers, maxUsers));
-        model.addAttribute("orderUsagePercent", percent(monthOrders, maxMonthlyOrders));
-        model.addAttribute("storageUsagePercent", percent(storageUsedBytes, maxStorageBytes));
+        int userUsagePercent = percent(activeUsers, maxUsers);
+        int orderUsagePercent = percent(monthOrders, maxMonthlyOrders);
+        int storageUsagePercent = percent(storageUsedBytes, maxStorageBytes);
+
+        boolean userLimitReached = maxUsers > 0 && activeUsers >= maxUsers;
+        boolean orderLimitReached = maxMonthlyOrders > 0 && monthOrders >= maxMonthlyOrders;
+        boolean storageLimitReached = maxStorageBytes > 0 && storageUsedBytes >= maxStorageBytes;
+        boolean anyLimitReached = userLimitReached || orderLimitReached || storageLimitReached;
+        boolean nearAnyLimit = userUsagePercent >= 90 || orderUsagePercent >= 90 || storageUsagePercent >= 90;
+
+        model.addAttribute("userUsagePercent", userUsagePercent);
+        model.addAttribute("orderUsagePercent", orderUsagePercent);
+        model.addAttribute("storageUsagePercent", storageUsagePercent);
+        model.addAttribute("userLimitReached", userLimitReached);
+        model.addAttribute("orderLimitReached", orderLimitReached);
+        model.addAttribute("storageLimitReached", storageLimitReached);
+        model.addAttribute("anyLimitReached", anyLimitReached);
+        model.addAttribute("nearAnyLimit", nearAnyLimit);
+        model.addAttribute("userUsageBarClass", usageBarClass(userUsagePercent));
+        model.addAttribute("orderUsageBarClass", usageBarClass(orderUsagePercent));
+        model.addAttribute("storageUsageBarClass", usageBarClass(storageUsagePercent));
+        model.addAttribute("billingState", resolveBillingState(billingActive, trialActive, trialExpired, subscription));
 
         model.addAttribute("storageUsedLabel", formatBytes(storageUsedBytes));
         model.addAttribute("storageLimitLabel", maxStorageBytes > 0 ? formatBytes(maxStorageBytes) : "∞");
@@ -178,6 +202,23 @@ public class BillingController extends BaseController {
         boolean stripeConfigured = stripeProperties != null && stripeProperties.isConfigured();
         model.addAttribute("stripeConfigured", stripeConfigured);
         model.addAttribute("stripeMode", stripeProperties != null ? stripeProperties.getMode() : "test");
+        boolean subscriptionActive = subscription != null
+            && subscription.getStatus() != null
+            && subscription.getStatus().equalsIgnoreCase("active");
+        Map<String, String> billingNextAction = resolveBillingNextAction(
+            stripeConfigured,
+            missingAnyPaid,
+            anyLimitReached,
+            nearAnyLimit,
+            trialExpired,
+            trialDaysRemaining,
+            subscriptionActive,
+            isSuperAdmin()
+        );
+        model.addAttribute("billingNextActionMessageKey", billingNextAction.get("messageKey"));
+        model.addAttribute("billingNextActionCtaKey", billingNextAction.get("ctaKey"));
+        model.addAttribute("billingNextActionHref", billingNextAction.get("href"));
+        model.addAttribute("billingTimeline", buildBillingTimeline(trialStart, trialEnd, trialExpired, subscription));
         return "admin/billing/index";
     }
 
@@ -203,8 +244,7 @@ public class BillingController extends BaseController {
         }
         try {
             String checkoutUrl = stripeBillingService.createSubscriptionCheckout(company, normalizedPriceId);
-            String description = "Checkout started";
-            description = "Checkout started for plan " + plan;
+            String description = "Checkout started for plan " + plan;
             auditLogService.log(AuditAction.UPDATE, "BillingCheckout", null, null, normalizedPriceId, description);
             RedirectView redirect = new RedirectView(checkoutUrl);
             redirect.setExposeModelAttributes(false);
@@ -280,7 +320,7 @@ public class BillingController extends BaseController {
         if (value == null) {
             return false;
         }
-        String trimmed = value.trim().toLowerCase();
+        String trimmed = value.trim().toLowerCase(Locale.ROOT);
         return trimmed.startsWith("price_test_");
     }
 
@@ -296,6 +336,127 @@ public class BillingController extends BaseController {
             return 100;
         }
         return (int) Math.round(pct);
+    }
+
+    private String usageBarClass(int percent) {
+        if (percent >= 100) {
+            return "bg-red-600";
+        }
+        if (percent >= 90) {
+            return "bg-amber-500";
+        }
+        return "bg-blue-500";
+    }
+
+    private String resolveBillingState(boolean billingActive,
+                                       boolean trialActive,
+                                       boolean trialExpired,
+                                       BillingSubscription subscription) {
+        if (!billingActive && trialExpired) {
+            return "INACTIVE";
+        }
+        if (trialActive) {
+            return "TRIAL";
+        }
+        if (subscription != null && subscription.getStatus() != null && subscription.getStatus().equalsIgnoreCase("active")) {
+            return "ACTIVE";
+        }
+        return billingActive ? "ATTENTION" : "INACTIVE";
+    }
+
+    private Map<String, String> resolveBillingNextAction(boolean stripeConfigured,
+                                                         boolean priceConfigMissing,
+                                                         boolean anyLimitReached,
+                                                         boolean nearAnyLimit,
+                                                         boolean trialExpired,
+                                                         Long trialDaysRemaining,
+                                                         boolean subscriptionActive,
+                                                         boolean superAdmin) {
+        if (!stripeConfigured) {
+            return Map.of(
+                "messageKey", "billing.next_action.stripe_missing",
+                "ctaKey", superAdmin ? "billing.next_action.cta.open_billing" : "billing.next_action.cta.open_company",
+                "href", superAdmin ? "/admin/billing" : "/admin/company"
+            );
+        }
+        if (priceConfigMissing) {
+            return Map.of(
+                "messageKey", superAdmin ? "billing.next_action.price_missing_superadmin" : "billing.next_action.price_missing_admin",
+                "ctaKey", superAdmin ? "billing.next_action.cta.open_billing" : "billing.next_action.cta.open_company",
+                "href", superAdmin ? "/admin/billing" : "/admin/company"
+            );
+        }
+        if (anyLimitReached || (trialExpired && !subscriptionActive)) {
+            return Map.of(
+                "messageKey", "billing.next_action.expired_or_limit",
+                "ctaKey", "billing.next_action.cta.open_checkout",
+                "href", "/admin/billing#checkout"
+            );
+        }
+        if (nearAnyLimit) {
+            return Map.of(
+                "messageKey", "billing.next_action.near_limit",
+                "ctaKey", "billing.next_action.cta.open_checkout",
+                "href", "/admin/billing#checkout"
+            );
+        }
+        if (trialDaysRemaining != null && trialDaysRemaining > 0 && trialDaysRemaining <= 5 && !subscriptionActive) {
+            return Map.of(
+                "messageKey", "billing.next_action.trial_ending",
+                "ctaKey", "billing.next_action.cta.open_checkout",
+                "href", "/admin/billing#checkout"
+            );
+        }
+        return Map.of(
+            "messageKey", "billing.next_action.healthy",
+            "ctaKey", "billing.next_action.cta.open_dashboard",
+            "href", "/admin/dashboard"
+        );
+    }
+
+    private List<Map<String, Object>> buildBillingTimeline(LocalDateTime trialStart,
+                                                           LocalDateTime trialEnd,
+                                                           boolean trialExpired,
+                                                           BillingSubscription subscription) {
+        List<Map<String, Object>> timeline = new ArrayList<>();
+        if (trialStart != null) {
+            timeline.add(Map.of("at", trialStart, "messageKey", "billing.timeline.trial_started", "detail", ""));
+        }
+        if (trialEnd != null) {
+            timeline.add(Map.of(
+                "at", trialEnd,
+                "messageKey", trialExpired ? "billing.timeline.trial_expired" : "billing.timeline.trial_ends",
+                "detail", ""
+            ));
+        }
+        if (subscription != null) {
+            if (subscription.getCreatedAt() != null) {
+                timeline.add(Map.of(
+                    "at", subscription.getCreatedAt(),
+                    "messageKey", "billing.timeline.subscription_created",
+                    "detail", subscription.getStatus() != null ? subscription.getStatus() : ""
+                ));
+            }
+            if (subscription.getUpdatedAt() != null) {
+                timeline.add(Map.of(
+                    "at", subscription.getUpdatedAt(),
+                    "messageKey", "billing.timeline.subscription_updated",
+                    "detail", subscription.getStatus() != null ? subscription.getStatus() : ""
+                ));
+            }
+            if (subscription.getCurrentPeriodEnd() != null) {
+                timeline.add(Map.of(
+                    "at", subscription.getCurrentPeriodEnd(),
+                    "messageKey", "billing.timeline.period_end",
+                    "detail", subscription.getStatus() != null ? subscription.getStatus() : ""
+                ));
+            }
+        }
+        timeline.sort(Comparator.comparing(item -> (LocalDateTime) item.get("at"), Comparator.reverseOrder()));
+        if (timeline.size() > 8) {
+            return timeline.subList(0, 8);
+        }
+        return timeline;
     }
 
     private String formatBytes(long bytes) {

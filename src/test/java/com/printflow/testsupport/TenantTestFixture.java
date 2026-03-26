@@ -23,7 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -158,6 +160,7 @@ public class TenantTestFixture {
                 if (existing.getStatus() == null) {
                     existing.setStatus(OrderStatus.NEW);
                 }
+                ensurePublicToken(existing);
                 return workOrderRepository.save(existing);
             })
             .orElseGet(() -> {
@@ -167,8 +170,16 @@ public class TenantTestFixture {
                 workOrder.setStatus(OrderStatus.NEW);
                 workOrder.setClient(client);
                 workOrder.setCompany(company);
+                ensurePublicToken(workOrder);
                 return workOrderRepository.save(workOrder);
             });
+    }
+
+    private void ensurePublicToken(WorkOrder workOrder) {
+        // Always refresh token in test fixture so regression tests are independent
+        // from previously persisted/expired values.
+        workOrder.setPublicToken(UUID.randomUUID().toString());
+        workOrder.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(30));
     }
 
     private Task getOrCreateTask(WorkOrder workOrder, Company company, String title) {

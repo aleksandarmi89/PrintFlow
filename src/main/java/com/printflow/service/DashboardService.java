@@ -2,7 +2,9 @@ package com.printflow.service;
 
 import com.printflow.dto.DashboardStatsDTO;
 import com.printflow.dto.WorkerDashboardStatsDTO;
+import com.printflow.entity.WorkOrder.DeliveryType;
 import com.printflow.entity.enums.OrderStatus;
+import com.printflow.entity.enums.QuoteStatus;
 import com.printflow.entity.enums.TaskStatus;
 import com.printflow.repository.ClientRepository;
 import com.printflow.repository.UserRepository;
@@ -95,6 +97,31 @@ public class DashboardService {
         stats.setReadyForDeliveryOrders(tenantContextService.isSuperAdmin()
             ? workOrderRepository.countByStatus(OrderStatus.READY_FOR_DELIVERY)
             : workOrderRepository.countByStatusAndCompanyId(companyId, OrderStatus.READY_FOR_DELIVERY));
+
+        long readyForPickup = tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByStatusAndDeliveryType(OrderStatus.READY_FOR_DELIVERY, DeliveryType.PICKUP)
+            : workOrderRepository.countByStatusAndDeliveryTypeAndCompany_Id(OrderStatus.READY_FOR_DELIVERY, DeliveryType.PICKUP, companyId);
+        stats.setReadyForPickupOrders(readyForPickup);
+
+        // Keep this KPI aligned with the "deliveryType=COURIER" list filter used in UI cards.
+        long readyToShip = tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByStatusAndDeliveryType(OrderStatus.READY_FOR_DELIVERY, DeliveryType.COURIER)
+            : workOrderRepository.countByStatusAndDeliveryTypeAndCompany_Id(OrderStatus.READY_FOR_DELIVERY, DeliveryType.COURIER, companyId);
+        stats.setReadyToShipOrders(readyToShip);
+
+        List<DeliveryType> courierTypes = List.of(DeliveryType.COURIER);
+        long blockedCourierReady = tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countCourierReadyWithMissingShipmentData(OrderStatus.READY_FOR_DELIVERY, courierTypes)
+            : workOrderRepository.countCourierReadyWithMissingShipmentDataByCompany(
+                companyId,
+                OrderStatus.READY_FOR_DELIVERY,
+                courierTypes
+            );
+        stats.setBlockedCourierReadyOrders(blockedCourierReady);
+
+        stats.setSentOrders(tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByStatus(OrderStatus.SENT)
+            : workOrderRepository.countByStatusAndCompanyId(companyId, OrderStatus.SENT));
         
         stats.setCompletedOrders(tenantContextService.isSuperAdmin()
             ? workOrderRepository.countByStatus(OrderStatus.COMPLETED)
@@ -110,8 +137,13 @@ public class DashboardService {
         stats.setActiveOrders(activeOrders);
         
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth());
         LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
+
+        stats.setOrdersToday(tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByCreatedAtAfter(startOfDay)
+            : workOrderRepository.countByCompany_IdAndCreatedAtAfter(companyId, startOfDay));
         
         List<OrderStatus> overdueExcludedStatuses = List.of(
             OrderStatus.COMPLETED,
@@ -123,6 +155,17 @@ public class DashboardService {
             ? workOrderRepository.countOverdueOrders(now, overdueExcludedStatuses)
             : workOrderRepository.countOverdueOrdersByCompany(companyId, now, overdueExcludedStatuses);
         stats.setOverdueOrders(overdueOrders);
+
+        List<OrderStatus> quoteExcludedStatuses = List.of(OrderStatus.COMPLETED, OrderStatus.CANCELLED);
+        stats.setQuotePreparingOrders(tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByQuoteStatusAndStatusNotIn(QuoteStatus.PREPARING, quoteExcludedStatuses)
+            : workOrderRepository.countByCompany_IdAndQuoteStatusAndStatusNotIn(companyId, QuoteStatus.PREPARING, quoteExcludedStatuses));
+        stats.setQuoteReadyOrders(tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByQuoteStatusAndStatusNotIn(QuoteStatus.READY, quoteExcludedStatuses)
+            : workOrderRepository.countByCompany_IdAndQuoteStatusAndStatusNotIn(companyId, QuoteStatus.READY, quoteExcludedStatuses));
+        stats.setQuoteSentOrders(tenantContextService.isSuperAdmin()
+            ? workOrderRepository.countByQuoteStatusAndStatusNotIn(QuoteStatus.SENT, quoteExcludedStatuses)
+            : workOrderRepository.countByCompany_IdAndQuoteStatusAndStatusNotIn(companyId, QuoteStatus.SENT, quoteExcludedStatuses));
         
         double monthlyRevenue = tenantContextService.isSuperAdmin()
             ? workOrderRepository.sumPriceByStatusAndDateRange(OrderStatus.COMPLETED, startOfMonth, endOfMonth)

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Locale;
 import java.util.List;
 
 @Service
@@ -154,6 +155,6 @@ public class WorkOrderProfitService {
         if (company == null || company.getCurrency() == null || company.getCurrency().isBlank()) {
             return "RSD";
         }
-        return company.getCurrency().trim().toUpperCase();
+        return company.getCurrency().trim().toUpperCase(Locale.ROOT);
     }
 }

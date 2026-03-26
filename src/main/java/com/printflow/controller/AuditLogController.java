@@ -141,7 +141,7 @@ public class AuditLogController extends BaseController {
             return null;
         }
         try {
-            return AuditAction.valueOf(action.trim().toUpperCase());
+            return AuditAction.valueOf(action.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }

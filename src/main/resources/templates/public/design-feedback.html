@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
     <title th:text="#{public.design_feedback.page_title} + ' - PrintFlow'">Feedback - PrintFlow</title>
 </head>
-<body class="bg-gray-50">
-    <div class="min-h-screen flex flex-col items-center justify-center px-4">
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <main class="flex-1 flex flex-col items-center justify-center px-4 py-10">
         <div class="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-            <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center text-green-700">
-                ✓
+            <div class="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center"
+                 th:classappend="${messageKey == 'public.design_feedback.revision_requested' ? ' bg-amber-100 text-amber-700' : ' bg-green-100 text-green-700'}">
+                <span th:text="${messageKey == 'public.design_feedback.revision_requested' ? '!' : '✓'}">✓</span>
             </div>
             <h1 class="text-2xl font-semibold text-gray-900" th:text="#{public.design_feedback.heading}">
                 Feedback submitted
@@ -38,11 +39,17 @@
                 </ul>
             </div>
             <div class="mt-6">
-                <a id="designFeedbackTrackBtn" th:href="@{/public/track(lang=${langParam})}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                <a th:if="${publicOrderToken != null && !#strings.isEmpty(publicOrderToken)}"
+                   th:href="@{/public/order/{token}(token=${publicOrderToken},lang=${#locale.language})}"
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                   th:text="#{public.design_feedback.view_order}">
+                    View this order
+                </a>
+                <a id="designFeedbackTrackBtn" th:href="@{/public/track(lang=${#locale.language})}" class="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50"
                    th:text="#{order_not_found.track_another}">
                     Track another order
                 </a>
-                <a th:href="@{/public/contact(lang=${langParam})}" class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                <a th:href="@{/public/contact(lang=${#locale.language})}" class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                    th:text="#{order_not_found.contact}">
                     Contact
                 </a>
@@ -54,7 +61,8 @@
                 Clear helper data
             </button>
         </div>
-    </div>
+    </main>
+    <div th:replace="~{layout/footer :: footer}"></div>
     <div id="publicFeedbackCompany"
          class="hidden"
          th:if="${publicCompanyId != null && publicCompanyName != null}"
@@ -70,6 +78,7 @@
             const trackCompanyStorageKey = 'printflow.track.companyId';
             const requesterStorageKey = 'printflow.public.requester';
             const contactIntentStorageKey = 'printflow.public.contactIntent';
+            const currentLang = document.documentElement.getAttribute('lang') || 'sr';
 
             const hasAnyHelperData = function () {
                 try {
@@ -101,7 +110,7 @@
                 if (!btn) return;
                 const parsed = JSON.parse(localStorage.getItem(lastCompanyStorageKey) || '{}');
                 if (!parsed || !parsed.id) return;
-                const currentHref = btn.getAttribute('href') || '/public/track';
+                const currentHref = btn.getAttribute('href') || `/public/track?lang=${encodeURIComponent(currentLang)}`;
                 const hasCompanyParam = /([?&])company=/.test(currentHref);
                 const separator = currentHref.includes('?') ? '&' : '?';
                 const resolvedHref = hasCompanyParam
@@ -123,7 +132,7 @@
                         // ignore localStorage issues
                     }
                     if (btn) {
-                        const currentHref = btn.getAttribute('href') || '/public/track';
+                        const currentHref = btn.getAttribute('href') || `/public/track?lang=${encodeURIComponent(currentLang)}`;
                         btn.setAttribute('href', currentHref.replace(/([?&])company=[^&]*/g, '').replace(/[?&]$/, ''));
                     }
                     updateClearVisibility();

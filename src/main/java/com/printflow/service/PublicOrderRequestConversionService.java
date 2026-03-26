@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -196,7 +197,7 @@ public class PublicOrderRequestConversionService {
         if (productType == null) {
             return PrintType.OTHER;
         }
-        String normalized = productType.trim().toUpperCase();
+        String normalized = productType.trim().toUpperCase(Locale.ROOT);
         for (PrintType type : PrintType.values()) {
             if (type.name().equals(normalized)) {
                 return type;
@@ -263,7 +264,7 @@ public class PublicOrderRequestConversionService {
         if (address == null) {
             return false;
         }
-        String lower = address.toLowerCase();
+        String lower = address.toLowerCase(Locale.ROOT);
         return lower.contains("srbija") || lower.contains("serbia");
     }
 }

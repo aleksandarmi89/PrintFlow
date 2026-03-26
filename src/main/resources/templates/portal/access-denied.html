@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+<head th:replace="~{layout/base :: head}">
+    <title th:text="#{portal.access_denied.title}">Portal access denied</title>
+</head>
+<body>
+<div th:replace="~{layout/header :: header}"></div>
+
+<main class="container mx-auto px-4 py-12">
+    <div class="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
+        <h1 class="text-2xl font-bold text-amber-900" th:text="#{portal.access_denied.heading}">Portal link is not available</h1>
+        <p class="mt-3 text-sm text-amber-800"
+           th:if="${portalAccessDeniedMessageKey != null}"
+           th:text="#{${portalAccessDeniedMessageKey}}">
+            This portal link is invalid or expired.
+        </p>
+        <p class="mt-3 text-sm text-amber-800"
+           th:unless="${portalAccessDeniedMessageKey != null}"
+           th:text="#{portal.access_denied.invalid}">
+            This portal link is invalid or expired.
+        </p>
+
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <a th:href="@{/public/track(lang=${#locale.language})}"
+               class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+               th:text="#{portal.access_denied.cta.track}">
+                Track order
+            </a>
+            <a th:href="@{/public/contact(lang=${#locale.language})}"
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+               th:text="#{portal.access_denied.cta.contact}">
+                Contact support
+            </a>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{layout/footer :: footer}"></div>
+</body>
+</html>

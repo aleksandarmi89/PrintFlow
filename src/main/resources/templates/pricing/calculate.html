@@ -86,6 +86,23 @@
                         <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.companyName}"></option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1" th:text="#{pricing.calculate.display_currency}">Display currency</label>
+                    <div class="flex gap-2">
+                        <select id="displayCurrency" class="w-full border rounded px-3 py-2">
+                            <option value="RSD">RSD</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                        <input id="eurRate"
+                               type="number"
+                               min="1"
+                               step="0.01"
+                               value="117.00"
+                               class="w-36 border rounded px-3 py-2"
+                               th:attr="title=#{pricing.calculate.eur_rate_hint},aria-label=#{pricing.calculate.eur_rate_label}">
+                    </div>
+                    <div class="mt-1 text-xs text-gray-500" th:text="#{pricing.calculate.eur_rate_hint}">1 EUR = 117.00 RSD</div>
+                </div>
                 <div class="md:col-span-3">
                     <button id="calculateBtn" type="button"
                             th:disabled="${billingExpired}"
@@ -208,11 +225,51 @@
         const sidesFieldWrap = document.getElementById('sidesFieldWrap');
         const metersFieldWrap = document.getElementById('metersFieldWrap');
         const minutesFieldWrap = document.getElementById('minutesFieldWrap');
+        const displayCurrencySelect = document.getElementById('displayCurrency');
+        const eurRateInput = document.getElementById('eurRate');
+        const pricingPrefsStorageKey = 'printflow.pricing.displayPrefs.v1';
         const initialVariantOptions = variantSelect ? Array.from(variantSelect.querySelectorAll('option')).map(opt => ({
             value: opt.value,
             text: opt.textContent,
             productId: opt.getAttribute('data-product-id')
         })) : [];
+        let lastPricingResponse = null;
+        const warningTranslations = {
+            "No pricing components configured": /*[[#{pricing.calculate.warning.no_components}]]*/ 'No pricing components configured.',
+            "pricing.calculate.warning.no_components": /*[[#{pricing.calculate.warning.no_components}]]*/ 'No pricing components configured.',
+            "Colors adjusted to 1.": /*[[#{pricing.calculate.warning.colors_adjusted}]]*/ 'Colors value was adjusted to 1.',
+            "pricing.calculate.warning.colors_adjusted": /*[[#{pricing.calculate.warning.colors_adjusted}]]*/ 'Colors value was adjusted to 1.',
+            "Sides adjusted to 1.": /*[[#{pricing.calculate.warning.sides_adjusted}]]*/ 'Sides value was adjusted to 1.',
+            "pricing.calculate.warning.sides_adjusted": /*[[#{pricing.calculate.warning.sides_adjusted}]]*/ 'Sides value was adjusted to 1.',
+            "Dimensions required for area-based pricing.": /*[[#{pricing.calculate.warning.dimensions_required}]]*/ 'Dimensions are required for area-based pricing.',
+            "pricing.calculate.warning.dimensions_required": /*[[#{pricing.calculate.warning.dimensions_required}]]*/ 'Dimensions are required for area-based pricing.',
+            "Meters value missing for per-meter pricing.": /*[[#{pricing.calculate.warning.meters_missing}]]*/ 'Meters value is required for per-meter pricing.',
+            "pricing.calculate.warning.meters_missing": /*[[#{pricing.calculate.warning.meters_missing}]]*/ 'Meters value is required for per-meter pricing.',
+            "Minutes value missing for per-minute pricing.": /*[[#{pricing.calculate.warning.minutes_missing}]]*/ 'Minutes value is required for per-minute pricing.',
+            "pricing.calculate.warning.minutes_missing": /*[[#{pricing.calculate.warning.minutes_missing}]]*/ 'Minutes value is required for per-minute pricing.',
+            "Margin below target.": /*[[#{pricing.calculate.margin_low}]]*/ 'Margin below target.',
+            "pricing.calculate.margin_low": /*[[#{pricing.calculate.margin_low}]]*/ 'Margin below target.',
+            "COST_BREAKDOWN_MISMATCH": /*[[#{pricing.calculate.warning.breakdown_mismatch}]]*/ 'Breakdown does not match total cost.',
+            "pricing.calculate.warning.breakdown_mismatch": /*[[#{pricing.calculate.warning.breakdown_mismatch}]]*/ 'Breakdown does not match total cost.',
+            "Price is more than 20% lower than last time.": /*[[#{pricing.calculate.warning.price_drop_20}]]*/ 'Price is more than 20% lower than last time.',
+            "pricing.calculate.warning.price_drop_20": /*[[#{pricing.calculate.warning.price_drop_20}]]*/ 'Price is more than 20% lower than last time.'
+        };
+        const serverErrorKeys = {
+            "pricing.calculate.error": /*[[#{pricing.calculate.error}]]*/ 'Error calculating price.',
+            "pricing.calculate.error_with_status": /*[[#{pricing.calculate.error_with_status}]]*/ 'Error calculating price (status: {0}).',
+            "pricing.calculate.add_failed": /*[[#{pricing.calculate.add_failed}]]*/ 'Unable to add item to work order right now. Please try again.',
+            "pricing.calculate.billing_required": /*[[#{pricing.calculate.billing_required}]]*/ 'This feature is available only with an active subscription.',
+            "api.error.not_found": /*[[#{api.error.not_found}]]*/ 'Requested resource was not found.',
+            "api.error.server_error": /*[[#{api.error.server_error}]]*/ 'Server error.',
+            "billing.notice.expired": /*[[#{billing.notice.expired}]]*/ 'Your trial has ended. Please upgrade to continue premium features.',
+            "billing.lock.expired": /*[[#{billing.lock.expired}]]*/ 'Premium features are locked. Please upgrade to continue.',
+            "billing.notice.expired_with_date": /*[[#{billing.notice.expired}]]*/ 'Your trial has ended. Please upgrade to continue premium features.',
+            "pricing.calculate.validation.dimensions_required": /*[[#{pricing.calculate.validation.dimensions_required}]]*/ 'Enter width and height for this variant.',
+            "pricing.calculate.validation.meters_required": /*[[#{pricing.calculate.validation.meters_required}]]*/ 'Meters must be greater than 0 for this variant.',
+            "pricing.calculate.validation.minutes_required": /*[[#{pricing.calculate.validation.minutes_required}]]*/ 'Minutes must be greater than 0 for this variant.',
+            "Server error": /*[[#{api.error.server_error}]]*/ 'Server error.',
+            "Internal Server Error": /*[[#{api.error.server_error}]]*/ 'Server error.'
+        };
 
         function csrfHeaders() {
             const metaToken = document.querySelector('meta[name="_csrf"]');
@@ -241,11 +298,194 @@
             if (Number.isNaN(num)) {
                 return '-';
             }
+            const locale = (document.documentElement.getAttribute('lang') || 'sr').toLowerCase() === 'en'
+                ? 'en-US'
+                : 'sr-RS';
             try {
-                return num.toLocaleString('sr-RS', { style: 'currency', currency: currency || 'RSD' });
+                return num.toLocaleString(locale, {
+                    style: 'currency',
+                    currency: currency || 'RSD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             } catch (err) {
                 return num.toFixed(2) + ' ' + (currency || 'RSD');
             }
+        }
+
+        function getEurRate() {
+            const raw = Number(eurRateInput ? eurRateInput.value : 117);
+            return Number.isFinite(raw) && raw > 0 ? raw : 117;
+        }
+
+        function readDisplayPrefs() {
+            try {
+                if (!window.localStorage) {
+                    return null;
+                }
+                const raw = window.localStorage.getItem(pricingPrefsStorageKey);
+                if (!raw) {
+                    return null;
+                }
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed !== 'object') {
+                    return null;
+                }
+                return parsed;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function writeDisplayPrefs() {
+            try {
+                if (!window.localStorage) {
+                    return;
+                }
+                const payload = {
+                    currency: displayCurrencySelect ? String(displayCurrencySelect.value || '').toUpperCase() : null,
+                    eurRate: getEurRate()
+                };
+                window.localStorage.setItem(pricingPrefsStorageKey, JSON.stringify(payload));
+            } catch (err) {
+                // Ignore storage errors.
+            }
+        }
+
+        function applyStoredDisplayPrefs() {
+            const prefs = readDisplayPrefs();
+            if (!prefs) {
+                return;
+            }
+            const storedCurrency = String(prefs.currency || '').toUpperCase();
+            if (displayCurrencySelect && (storedCurrency === 'RSD' || storedCurrency === 'EUR')) {
+                displayCurrencySelect.value = storedCurrency;
+                displayCurrencySelect.dataset.userChanged = 'true';
+            }
+            if (eurRateInput && Number.isFinite(Number(prefs.eurRate)) && Number(prefs.eurRate) > 0) {
+                eurRateInput.value = Number(prefs.eurRate).toFixed(2);
+            }
+        }
+
+        function convertMoney(value, sourceCurrency, targetCurrency) {
+            const num = Number(value);
+            if (Number.isNaN(num)) {
+                return value;
+            }
+            const source = (sourceCurrency || 'RSD').toUpperCase();
+            const target = (targetCurrency || source).toUpperCase();
+            if (source === target) {
+                return num;
+            }
+            const eurRate = getEurRate();
+            if (source === 'RSD' && target === 'EUR') {
+                return num / eurRate;
+            }
+            if (source === 'EUR' && target === 'RSD') {
+                return num * eurRate;
+            }
+            return num;
+        }
+
+        function selectedDisplayCurrency(defaultCurrency) {
+            if (!displayCurrencySelect || !displayCurrencySelect.value) {
+                return defaultCurrency || 'RSD';
+            }
+            return displayCurrencySelect.value.toUpperCase();
+        }
+
+        function renderPricingResult(data) {
+            if (!data) {
+                return;
+            }
+            const sourceCurrency = (data.currency || 'RSD').toUpperCase();
+            const displayCurrency = selectedDisplayCurrency(sourceCurrency);
+            const marginValue = document.getElementById('marginValue');
+            const markupValue = document.getElementById('markupValue');
+
+            document.getElementById('costValue').textContent = formatMoney(convertMoney(data.totalCost, sourceCurrency, displayCurrency), displayCurrency);
+            document.getElementById('priceValue').textContent = formatMoney(convertMoney(data.totalPrice, sourceCurrency, displayCurrency), displayCurrency);
+            if (marginValue) {
+                marginValue.textContent = formatPercent(data.marginPercent);
+                marginValue.classList.remove('text-red-600');
+            }
+            if (markupValue) {
+                markupValue.textContent = formatPercent(data.markupPercent);
+            }
+            document.getElementById('profitValue').textContent = formatMoney(convertMoney(data.profitAmount, sourceCurrency, displayCurrency), displayCurrency);
+            document.getElementById('recommendedValue').textContent = formatMoney(convertMoney(data.recommendedPrice, sourceCurrency, displayCurrency), displayCurrency);
+            document.getElementById('minimumValue').textContent = data.minimumPrice != null
+                ? formatMoney(convertMoney(data.minimumPrice, sourceCurrency, displayCurrency), displayCurrency)
+                : '-';
+            document.getElementById('targetMarginValue').textContent = formatMoney(convertMoney(data.targetMarginPrice, sourceCurrency, displayCurrency), displayCurrency);
+
+            breakdownBody.innerHTML = '';
+            (data.breakdown || []).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                const computedText = row.computedAmount != null ? Number(row.computedAmount).toFixed(2) : '-';
+                tr.innerHTML = `<td class="py-2">${row.componentType ?? '-'}</td>` +
+                    `<td class="py-2">${row.pricingModel ?? '-'}</td>` +
+                    `<td class="py-2">${formatMoney(convertMoney(row.baseAmount, sourceCurrency, displayCurrency), displayCurrency)}</td>` +
+                    `<td class="py-2">${row.multiplierDescription ?? ''}</td>` +
+                    `<td class="py-2">${computedText} ${row.unit ?? ''}</td>` +
+                    `<td class="py-2">${formatMoney(convertMoney(row.lineCost, sourceCurrency, displayCurrency), displayCurrency)}</td>`;
+                breakdownBody.appendChild(tr);
+            });
+
+            const messages = [];
+            const pushUniqueMessage = (value) => {
+                const text = (value || '').trim();
+                if (!text || messages.includes(text)) {
+                    return;
+                }
+                messages.push(text);
+            };
+            if (data.appliedRules && data.appliedRules.length > 0) {
+                pushUniqueMessage(data.appliedRules.join(' '));
+            }
+            if (data.warnings && data.warnings.length > 0) {
+                pushUniqueMessage(data.warnings.map(translateWarning).join(' '));
+            }
+            const discountRow = document.getElementById('clientDiscountValue');
+            const discountLabel = document.getElementById('clientDiscountLabel');
+            const discountLabelText = /*[[#{pricing.calculate.client_discount}]]*/ 'Client discount';
+            if (discountRow && discountLabel) {
+                const discountRule = (data.appliedRules || []).find(r => r.startsWith('CLIENT_DISCOUNT'));
+                if (discountRule) {
+                    discountRow.textContent = discountRule.replace('CLIENT_DISCOUNT', '').replace('(', '').replace(')', '');
+                    discountLabel.classList.remove('hidden');
+                    discountRow.classList.remove('hidden');
+                    const percentMatch = discountRule.match(/([\d.]+)/);
+                    const percent = percentMatch ? Number(percentMatch[1]) : 0;
+                    const totalPrice = Number(data.totalPrice);
+                    if (!Number.isNaN(totalPrice) && totalPrice > 0 && percent > 0) {
+                        const originalPrice = totalPrice / (1 - (percent / 100));
+                        const discountAmount = originalPrice - totalPrice;
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b text-green-700';
+                        tr.innerHTML = `<td class="py-2">${discountLabelText}</td>` +
+                            `<td class="py-2">-</td>` +
+                            `<td class="py-2">${formatMoney(convertMoney(-discountAmount, sourceCurrency, displayCurrency), displayCurrency)}</td>` +
+                            `<td class="py-2">-${percent.toFixed(2)}%</td>` +
+                            `<td class="py-2">${displayCurrency}</td>` +
+                            `<td class="py-2">${formatMoney(convertMoney(-discountAmount, sourceCurrency, displayCurrency), displayCurrency)}</td>`;
+                        breakdownBody.appendChild(tr);
+                    }
+                } else {
+                    discountRow.textContent = '';
+                    discountLabel.classList.add('hidden');
+                    discountRow.classList.add('hidden');
+                }
+            }
+
+            if (data.marginPercent != null && Number(data.marginPercent) < 30 && marginValue) {
+                marginValue.classList.add('text-red-600');
+                pushUniqueMessage(/*[[#{pricing.calculate.margin_low}]]*/ 'Margin below target.');
+            }
+            showWarnings(data.warnings || []);
+            resultMessage.textContent = messages.join(' ');
+            resultCard.classList.remove('hidden');
         }
 
         function formatPercent(value) {
@@ -254,6 +494,38 @@
                 return '-';
             }
             return num.toFixed(2) + '%';
+        }
+
+        function translateWarning(item) {
+            if (!item) {
+                return '';
+            }
+            const raw = String(item).trim();
+            const direct = warningTranslations[raw];
+            if (direct) {
+                return direct;
+            }
+            const prefix = 'Last time you charged this client:';
+            if (raw.startsWith(prefix)) {
+                const value = raw.substring(prefix.length).trim();
+                const translatedPrefix = /*[[#{pricing.calculate.warning.last_price_prefix}]]*/ 'Last time you charged this client:';
+                return `${translatedPrefix} ${value}`.trim();
+            }
+            const keyedPrefix = 'pricing.calculate.warning.last_price:';
+            if (raw.startsWith(keyedPrefix)) {
+                const value = raw.substring(keyedPrefix.length).trim();
+                const translatedPrefix = /*[[#{pricing.calculate.warning.last_price_prefix}]]*/ 'Last time you charged this client:';
+                return `${translatedPrefix} ${value}`.trim();
+            }
+            return raw;
+        }
+
+        function normalizeServerError(item, fallback) {
+            if (!item) {
+                return fallback;
+            }
+            const raw = String(item).trim();
+            return serverErrorKeys[raw] || raw;
         }
 
         function clearWarnings() {
@@ -272,7 +544,7 @@
             }
             warnings.forEach(item => {
                 const li = document.createElement('li');
-                li.textContent = item;
+                li.textContent = translateWarning(item);
                 warningList.appendChild(li);
             });
             warningBox.classList.remove('hidden');
@@ -316,6 +588,30 @@
             }
         }
 
+        function isVisibleField(wrapper) {
+            return !!(wrapper && !wrapper.classList.contains('hidden'));
+        }
+
+        function validateRequiredInputs() {
+            const widthVal = valueOrNull(document.getElementById('widthMm').value);
+            const heightVal = valueOrNull(document.getElementById('heightMm').value);
+            const metersVal = Number(document.getElementById('meters').value || 0);
+            const minutesVal = Number(document.getElementById('minutes').value || 0);
+
+            if (isVisibleField(widthFieldWrap) || isVisibleField(heightFieldWrap)) {
+                if (!widthVal || widthVal <= 0 || !heightVal || heightVal <= 0) {
+                    return /*[[#{pricing.calculate.validation.dimensions_required}]]*/ 'Enter width and height for this variant.';
+                }
+            }
+            if (isVisibleField(metersFieldWrap) && (!Number.isFinite(metersVal) || metersVal <= 0)) {
+                return /*[[#{pricing.calculate.validation.meters_required}]]*/ 'Meters must be greater than 0 for this variant.';
+            }
+            if (isVisibleField(minutesFieldWrap) && (!Number.isFinite(minutesVal) || minutesVal <= 0)) {
+                return /*[[#{pricing.calculate.validation.minutes_required}]]*/ 'Minutes must be greater than 0 for this variant.';
+            }
+            return null;
+        }
+
         async function refreshVariantRequirements() {
             const selectedVariantId = Number(document.getElementById('variantId').value);
             if (!selectedVariantId) {
@@ -335,7 +631,28 @@
                     headers: { Accept: 'application/json' }
                 });
                 if (!response.ok) {
+                    if (response.status === 402 && formError) {
+                        let payload = null;
+                        try {
+                            payload = await response.json();
+                        } catch (err) {
+                            payload = null;
+                        }
+                        const keyed = payload && payload.messageKey
+                            ? normalizeServerError(payload.messageKey, null)
+                            : null;
+                        const fallback = normalizeServerError(
+                            payload && payload.error ? payload.error : "pricing.calculate.billing_required",
+                            /*[[#{pricing.calculate.billing_required}]]*/ 'This feature is available only with an active subscription.'
+                        );
+                        formError.textContent = keyed || fallback;
+                        formError.classList.remove('hidden');
+                    }
                     return;
+                }
+                if (formError && !formError.classList.contains('hidden')) {
+                    formError.textContent = '';
+                    formError.classList.add('hidden');
                 }
                 const req = await response.json();
                 toggleField(widthFieldWrap, !!req.requiresDimensions);
@@ -355,6 +672,9 @@
         async function handleCalculate(e) {
             if (e) {
                 e.preventDefault();
+            }
+            if (calculateBtn && calculateBtn.disabled) {
+                return;
             }
             if (!priceForm) {
                 return;
@@ -395,6 +715,14 @@
                 }
                 return;
             }
+            const requiredFieldsError = validateRequiredInputs();
+            if (requiredFieldsError) {
+                if (formError) {
+                    formError.textContent = requiredFieldsError;
+                    formError.classList.remove('hidden');
+                }
+                return;
+            }
             const payload = {
                 variantId,
                 quantity,
@@ -408,6 +736,12 @@
                     minutes
                 }
             };
+            const originalCalculateText = calculateBtn ? calculateBtn.textContent : null;
+            if (calculateBtn) {
+                calculateBtn.disabled = true;
+                calculateBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                calculateBtn.textContent = /*[[#{pricing.calculate.calculating}]]*/ 'Calculating...';
+            }
             try {
                 const response = await fetch('/api/pricing/calculate', {
                     method: 'POST',
@@ -432,93 +766,36 @@
                 }
                 if (!response.ok) {
                     if (resultMessage) {
-                        resultMessage.textContent = data.error || (`Error calculating price (${response.status}).`);
+                        const statusFallback = (serverErrorKeys["pricing.calculate.error_with_status"] || 'Error calculating price (status: {0}).')
+                            .replace('{0}', String(response.status));
+                        const keyed = (data && data.messageKey) ? normalizeServerError(data.messageKey, null) : null;
+                        let message = keyed || normalizeServerError(data.error, statusFallback);
+                        if (response.status >= 500) {
+                            message = serverErrorKeys["api.error.server_error"] || message;
+                        }
+                        resultMessage.textContent = message;
                     }
                     resultCard.classList.remove('hidden');
                     return;
                 }
-                const currency = data.currency || 'RSD';
-                const marginValue = document.getElementById('marginValue');
-                const markupValue = document.getElementById('markupValue');
-
-                document.getElementById('costValue').textContent = formatMoney(data.totalCost, currency);
-                document.getElementById('priceValue').textContent = formatMoney(data.totalPrice, currency);
-                if (marginValue) {
-                    marginValue.textContent = formatPercent(data.marginPercent);
-                    marginValue.classList.remove('text-red-600');
+                lastPricingResponse = data;
+                if (displayCurrencySelect && !displayCurrencySelect.dataset.userChanged) {
+                    displayCurrencySelect.value = (data.currency || 'RSD').toUpperCase();
                 }
-                if (markupValue) {
-                    markupValue.textContent = formatPercent(data.markupPercent);
-                }
-                document.getElementById('profitValue').textContent = formatMoney(data.profitAmount, currency);
-                document.getElementById('recommendedValue').textContent = formatMoney(data.recommendedPrice, currency);
-                document.getElementById('minimumValue').textContent = data.minimumPrice != null ? formatMoney(data.minimumPrice, currency) : '-';
-                document.getElementById('targetMarginValue').textContent = formatMoney(data.targetMarginPrice, currency);
-
-                breakdownBody.innerHTML = '';
-                (data.breakdown || []).forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'border-b';
-                    const computedText = row.computedAmount != null ? Number(row.computedAmount).toFixed(2) : '-';
-                    tr.innerHTML = `<td class="py-2">${row.componentType ?? '-'}</td>` +
-                        `<td class="py-2">${row.pricingModel ?? '-'}</td>` +
-                        `<td class="py-2">${formatMoney(row.baseAmount, currency)}</td>` +
-                        `<td class="py-2">${row.multiplierDescription ?? ''}</td>` +
-                        `<td class="py-2">${computedText} ${row.unit ?? ''}</td>` +
-                        `<td class="py-2">${formatMoney(row.lineCost, currency)}</td>`;
-                    breakdownBody.appendChild(tr);
-                });
-                resultCard.classList.remove('hidden');
-                const messages = [];
-                if (data.appliedRules && data.appliedRules.length > 0) {
-                    messages.push(data.appliedRules.join(' '));
-                }
-                if (data.warnings && data.warnings.length > 0) {
-                    messages.push(data.warnings.join(' '));
-                }
-                const discountRow = document.getElementById('clientDiscountValue');
-                const discountLabel = document.getElementById('clientDiscountLabel');
-                const discountLabelText = /*[[#{pricing.calculate.client_discount}]]*/ 'Client discount';
-                if (discountRow && discountLabel) {
-                    const discountRule = (data.appliedRules || []).find(r => r.startsWith('CLIENT_DISCOUNT'));
-                    if (discountRule) {
-                        discountRow.textContent = discountRule.replace('CLIENT_DISCOUNT', '').replace('(', '').replace(')', '');
-                        discountLabel.classList.remove('hidden');
-                        discountRow.classList.remove('hidden');
-                        const percentMatch = discountRule.match(/([\d.]+)/);
-                        const percent = percentMatch ? Number(percentMatch[1]) : 0;
-                        const totalPrice = Number(data.totalPrice);
-                        if (!Number.isNaN(totalPrice) && totalPrice > 0 && percent > 0) {
-                            const originalPrice = totalPrice / (1 - (percent / 100));
-                            const discountAmount = originalPrice - totalPrice;
-                            const tr = document.createElement('tr');
-                            tr.className = 'border-b text-green-700';
-                            tr.innerHTML = `<td class="py-2">${discountLabelText}</td>` +
-                                `<td class="py-2">-</td>` +
-                                `<td class="py-2">${formatMoney(-discountAmount, currency)}</td>` +
-                                `<td class="py-2">-${percent.toFixed(2)}%</td>` +
-                                `<td class="py-2">${currency}</td>` +
-                                `<td class="py-2">${formatMoney(-discountAmount, currency)}</td>`;
-                            breakdownBody.appendChild(tr);
-                        }
-                    } else {
-                        discountRow.textContent = '';
-                        discountLabel.classList.add('hidden');
-                        discountRow.classList.add('hidden');
-                    }
-                }
-
-                if (data.marginPercent != null && Number(data.marginPercent) < 30 && marginValue) {
-                    marginValue.classList.add('text-red-600');
-                    messages.push(/*[[#{pricing.calculate.margin_low}]]*/ 'Margin below target.');
-                }
-                showWarnings(data.warnings || []);
-                resultMessage.textContent = messages.join(' ');
+                renderPricingResult(data);
             } catch (err) {
                 if (resultMessage) {
                     resultMessage.textContent = /*[[#{pricing.calculate.error}]]*/ 'Error calculating price.';
                 }
                 resultCard.classList.remove('hidden');
+            } finally {
+                if (calculateBtn) {
+                    calculateBtn.disabled = false;
+                    calculateBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                    if (originalCalculateText != null) {
+                        calculateBtn.textContent = originalCalculateText;
+                    }
+                }
             }
         }
 
@@ -541,20 +818,68 @@
         if (variantSelect) {
             variantSelect.addEventListener('change', refreshVariantRequirements);
         }
+        if (displayCurrencySelect) {
+            displayCurrencySelect.addEventListener('change', () => {
+                displayCurrencySelect.dataset.userChanged = 'true';
+                writeDisplayPrefs();
+                renderPricingResult(lastPricingResponse);
+            });
+        }
+        if (eurRateInput) {
+            eurRateInput.addEventListener('input', () => {
+                writeDisplayPrefs();
+                renderPricingResult(lastPricingResponse);
+            });
+            eurRateInput.addEventListener('blur', () => {
+                const rate = getEurRate();
+                eurRateInput.value = rate.toFixed(2);
+                writeDisplayPrefs();
+                renderPricingResult(lastPricingResponse);
+            });
+        }
+        applyStoredDisplayPrefs();
 
         if (addToOrder) {
             addToOrder.addEventListener('click', async (e) => {
                 e.preventDefault();
+                if (addToOrder.disabled) {
+                    return;
+                }
                 const workOrderId = document.getElementById('workOrderId').value;
-                if (!workOrderId) {
+                const variantId = Number(document.getElementById('variantId').value);
+                const quantity = Number(document.getElementById('quantity').value);
+                if (!variantId || variantId <= 0) {
                     if (resultMessage) {
-                    resultMessage.textContent = /*[[#{pricing.calculate.select_order_first}]]*/ 'Select a work order first.';
+                        resultMessage.textContent = /*[[#{pricing.calculate.select_variant_qty}]]*/ 'Please select a variant and enter quantity.';
                     }
                     return;
                 }
+                if (!quantity || quantity <= 0) {
+                    if (resultMessage) {
+                        resultMessage.textContent = /*[[#{pricing.calculate.invalid_quantity}]]*/ 'Quantity must be greater than 0.';
+                    }
+                    return;
+                }
+                if (!workOrderId) {
+                    if (resultMessage) {
+                        resultMessage.textContent = /*[[#{pricing.calculate.select_order_first}]]*/ 'Select a work order first.';
+                    }
+                    return;
+                }
+                const requiredFieldsError = validateRequiredInputs();
+                if (requiredFieldsError) {
+                    if (resultMessage) {
+                        resultMessage.textContent = requiredFieldsError;
+                    }
+                    return;
+                }
+                const originalBtnText = addToOrder.textContent;
+                addToOrder.disabled = true;
+                addToOrder.classList.add('opacity-70', 'cursor-not-allowed');
+                addToOrder.textContent = /*[[#{pricing.calculate.adding}]]*/ 'Adding...';
                 const payload = {
-                    variantId: Number(document.getElementById('variantId').value),
-                    quantity: Number(document.getElementById('quantity').value),
+                    variantId,
+                    quantity,
                     widthMm: valueOrNull(document.getElementById('widthMm').value),
                     heightMm: valueOrNull(document.getElementById('heightMm').value),
                     clientId: valueOrNull(document.getElementById('clientId').value),
@@ -565,35 +890,69 @@
                         minutes: Number(document.getElementById('minutes').value || 0)
                     }
                 };
-                const response = await fetch(`/api/workorders/${workOrderId}/items`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...csrfHeaders()
-                    },
-                    body: JSON.stringify(payload)
-                });
-                const text = await response.text();
-                const contentType = response.headers.get('content-type') || '';
-                const looksLikeHtml = text && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || contentType.includes('text/html'));
-                let data = null;
-                if (looksLikeHtml) {
-                    data = { error: /*[[#{pricing.calculate.session_expired}]]*/ 'Session expired or access denied. Please refresh the page and try again.' };
-                } else {
-                    try {
-                        data = text ? JSON.parse(text) : {};
-                    } catch (err) {
-                        data = { error: text || /*[[#{pricing.calculate.error}]]*/ 'Error adding item.' };
+                try {
+                    const response = await fetch(`/api/workorders/${workOrderId}/items`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...csrfHeaders()
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const text = await response.text();
+                    const contentType = response.headers.get('content-type') || '';
+                    const looksLikeHtml = text && (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || contentType.includes('text/html'));
+                    let data = null;
+                    if (looksLikeHtml) {
+                        data = { error: /*[[#{pricing.calculate.session_expired}]]*/ 'Session expired or access denied. Please refresh the page and try again.' };
+                    } else {
+                        try {
+                            data = text ? JSON.parse(text) : {};
+                        } catch (err) {
+                            data = { error: text || /*[[#{pricing.calculate.add_failed}]]*/ 'Unable to add item to work order right now. Please try again.' };
+                        }
                     }
-                }
-                if (!response.ok) {
+                    if (!response.ok) {
+                        if (resultMessage) {
+                            const fallbackAddFailed = /*[[#{pricing.calculate.add_failed}]]*/ 'Unable to add item to work order right now. Please try again.';
+                            const keyed = (data && data.messageKey) ? normalizeServerError(data.messageKey, null) : null;
+                            let message = normalizeServerError(keyed || data.error, fallbackAddFailed);
+                            if (response.status === 401 || response.status === 403) {
+                                message = /*[[#{pricing.calculate.session_expired}]]*/ 'Session expired or access denied. Please refresh the page and try again.';
+                            } else if (response.status === 402) {
+                                message = /*[[#{pricing.calculate.billing_required}]]*/ 'This feature is available only with an active subscription.';
+                            } else if (response.status === 404) {
+                                message = /*[[#{api.error.not_found}]]*/ 'Requested resource was not found.';
+                            } else if (response.status >= 500) {
+                                message = /*[[#{api.error.server_error}]]*/ 'Server error.';
+                            }
+                            resultMessage.textContent = message;
+                        }
+                        return;
+                    }
                     if (resultMessage) {
-                        resultMessage.textContent = data.error || (`Error adding item (${response.status}).`);
+                        const baseMsg = /*[[#{pricing.calculate.added}]]*/ 'Item added to work order.';
+                        const sourceCurrency = (data.currency || (lastPricingResponse ? lastPricingResponse.currency : 'RSD') || 'RSD').toUpperCase();
+                        const displayCurrency = selectedDisplayCurrency(sourceCurrency);
+                        if (data.workOrderTotalPrice != null) {
+                            const total = formatMoney(
+                                convertMoney(data.workOrderTotalPrice, sourceCurrency, displayCurrency),
+                                displayCurrency
+                            );
+                            const totalLabel = /*[[#{pricing.calculate.total_after_add}]]*/ 'Updated order total';
+                            resultMessage.textContent = `${baseMsg} ${totalLabel}: ${total}.`;
+                        } else {
+                            resultMessage.textContent = baseMsg;
+                        }
                     }
-                    return;
-                }
-                if (resultMessage) {
-                    resultMessage.textContent = /*[[#{pricing.calculate.added}]]*/ 'Item added to work order.';
+                } catch (err) {
+                    if (resultMessage) {
+                        resultMessage.textContent = /*[[#{pricing.calculate.add_failed}]]*/ 'Unable to add item to work order right now. Please try again.';
+                    }
+                } finally {
+                    addToOrder.disabled = false;
+                    addToOrder.classList.remove('opacity-70', 'cursor-not-allowed');
+                    addToOrder.textContent = originalBtnText;
                 }
             });
         }

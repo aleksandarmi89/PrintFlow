@@ -1,5 +1,9 @@
 package com.printflow.controller;
 
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
+import com.printflow.entity.WorkOrder;
+import com.printflow.entity.WorkOrderItem;
 import com.printflow.repository.ClientRepository;
 import com.printflow.repository.CompanyRepository;
 import com.printflow.repository.AttachmentRepository;
@@ -7,7 +11,14 @@ import com.printflow.repository.TaskRepository;
 import com.printflow.repository.UserRepository;
 import com.printflow.repository.WorkOrderRepository;
 import com.printflow.repository.MailSettingsRepository;
+import com.printflow.repository.WorkOrderItemRepository;
 import com.printflow.entity.User;
+import com.printflow.entity.enums.ProductCategory;
+import com.printflow.entity.enums.UnitType;
+import com.printflow.pricing.entity.Product;
+import com.printflow.pricing.entity.ProductVariant;
+import com.printflow.pricing.repository.ProductRepository;
+import com.printflow.pricing.repository.ProductVariantRepository;
 import com.printflow.testsupport.TenantTestFixture;
 import com.printflow.testsupport.TenantTestFixture.TenantIds;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,11 +28,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -31,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import org.springframework.test.web.servlet.ResultMatcher;
 
 @SpringBootTest
@@ -47,6 +63,9 @@ class TenantAccessIntegrationTest {
     @Autowired private WorkOrderRepository workOrderRepository;
     @Autowired private TaskRepository taskRepository;
     @Autowired private AttachmentRepository attachmentRepository;
+    @Autowired private WorkOrderItemRepository workOrderItemRepository;
+    @Autowired private ProductRepository productRepository;
+    @Autowired private ProductVariantRepository productVariantRepository;
     @Autowired private MailSettingsRepository mailSettingsRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
@@ -78,8 +97,10 @@ class TenantAccessIntegrationTest {
     @Test
     void workOrderAccessRespectsTenant() throws Exception {
         MockHttpSession tenant1Session = fixture.login("tenant1_admin", "password");
+        String publicToken = workOrderRepository.findById(ids.workOrderId()).orElseThrow().getPublicToken();
         mockMvc.perform(get("/admin/orders/{id}", ids.workOrderId()).session(tenant1Session))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("/public/order/" + publicToken + "?lang=")));
 
         MockHttpSession tenant2Session = fixture.login("tenant2_admin", "password");
         mockMvc.perform(get("/admin/orders/{id}", ids.workOrderId()).session(tenant2Session))
@@ -111,6 +132,96 @@ class TenantAccessIntegrationTest {
         MockHttpSession superAdminSession = fixture.login("tenant_super_admin", "password");
         mockMvc.perform(get("/admin/orders/{id}", ids.workOrderId()).session(superAdminSession))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void workOrderPdfDownloadRespectsTenant() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        order.setPrice(315.0d); // stale header value; quote PDF should still follow item totals
+        workOrderRepository.save(order);
+
+        ProductVariant variant = productVariantRepository.findAllByCompany_Id(ids.company1Id())
+            .stream()
+            .findFirst()
+            .orElseGet(() -> {
+                Product product = new Product();
+                product.setCompany(order.getCompany());
+                product.setName("Tenant Access PDF Product");
+                product.setCategory(ProductCategory.OTHER);
+                product.setUnitType(UnitType.PIECE);
+                product.setBasePrice(BigDecimal.ZERO);
+                product.setCurrency("RSD");
+                Product savedProduct = productRepository.save(product);
+
+                ProductVariant fallbackVariant = new ProductVariant();
+                fallbackVariant.setCompany(order.getCompany());
+                fallbackVariant.setProduct(savedProduct);
+                fallbackVariant.setName("Standard");
+                fallbackVariant.setDefaultMarkupPercent(new BigDecimal("20.00"));
+                fallbackVariant.setWastePercent(BigDecimal.ZERO);
+                return productVariantRepository.save(fallbackVariant);
+            });
+        WorkOrderItem item = new WorkOrderItem();
+        item.setCompany(order.getCompany());
+        item.setWorkOrder(order);
+        item.setVariant(variant);
+        item.setQuantity(new BigDecimal("100"));
+        item.setCalculatedCost(new BigDecimal("200000.00"));
+        item.setCalculatedPrice(new BigDecimal("300000.00"));
+        item.setProfitAmount(new BigDecimal("100000.00"));
+        item.setMarginPercent(new BigDecimal("33.33"));
+        item.setCurrency("RSD");
+        item.setBreakdownJson("{\"breakdown\":[]}");
+        item.setPricingSnapshotJson("{}");
+        item.setPriceLocked(true);
+        item.setPriceCalculatedAt(LocalDateTime.now());
+        workOrderItemRepository.save(item);
+
+        MockHttpSession tenant1Session = fixture.login("tenant1_admin", "password");
+        byte[] pdf = mockMvc.perform(get("/admin/orders/{id}/pdf/quote", ids.workOrderId()).param("lang", "en").session(tenant1Session))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
+            .andExpect(header().string("Content-Disposition", containsString("attachment; filename=\"quote-")))
+            .andReturn()
+            .getResponse()
+            .getContentAsByteArray();
+        String text = extractPdfText(pdf);
+        assertThat(text).contains("Quote total");
+        assertThat(text).contains("300,000.00 RSD");
+        assertThat(text).doesNotContain("315.00 RSD");
+
+        MockHttpSession tenant2Session = fixture.login("tenant2_admin", "password");
+        mockMvc.perform(get("/admin/orders/{id}/pdf/quote", ids.workOrderId()).session(tenant2Session))
+            .andExpect(tenantIsolationStatus());
+    }
+
+    @Test
+    void superAdminCanDownloadOrderSummaryPdfAcrossTenants() throws Exception {
+        User superAdmin = userRepository.findByUsername("tenant_super_admin")
+            .orElseGet(() -> {
+                User u = new User();
+                u.setUsername("tenant_super_admin");
+                u.setPassword(passwordEncoder.encode("password"));
+                u.setRole(User.Role.SUPER_ADMIN);
+                u.setCompany(companyRepository.findById(ids.company2Id()).orElseThrow());
+                u.setActive(true);
+                u.setFirstName("Super");
+                u.setLastName("Admin");
+                u.setFullName("Super Admin");
+                return userRepository.save(u);
+            });
+        superAdmin.setRole(User.Role.SUPER_ADMIN);
+        superAdmin.setActive(true);
+        if (superAdmin.getCompany() == null) {
+            superAdmin.setCompany(companyRepository.findById(ids.company2Id()).orElseThrow());
+        }
+        userRepository.save(superAdmin);
+
+        MockHttpSession superAdminSession = fixture.login("tenant_super_admin", "password");
+        mockMvc.perform(get("/admin/orders/{id}/pdf/summary", ids.workOrderId()).session(superAdminSession))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
+            .andExpect(header().string("Content-Disposition", containsString("attachment; filename=\"order-summary-")));
     }
 
     @Test
@@ -311,7 +422,23 @@ class TenantAccessIntegrationTest {
             .andExpect(status().isNotFound());
     }
 
+    private String extractPdfText(byte[] pdf) throws Exception {
+        try (PdfReader reader = new PdfReader(pdf)) {
+            PdfTextExtractor extractor = new PdfTextExtractor(reader);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i <= reader.getNumberOfPages(); i++) {
+                sb.append(extractor.getTextFromPage(i)).append('\n');
+            }
+            return sb.toString();
+        }
+    }
+
     private static ResultMatcher tenantIsolationStatus() {
-        return status().isNotFound();
+        return result -> {
+            int statusCode = result.getResponse().getStatus();
+            assertThat(statusCode)
+                .as("tenant-isolated endpoint should not be accessible")
+                .isIn(302, 403, 404);
+        };
     }
 }

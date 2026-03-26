@@ -21,7 +21,11 @@
                   th:text="${m != null ? m : errorMessage}">Error</span>
         </div>
         <div class="mb-6">
-            <a th:href="@{/admin/orders/{id}(id=${order.id})}"
+            <a th:if="${editBackProvided}"
+               th:href="${backToOrders}"
+               class="text-sm text-blue-600 hover:text-blue-800" th:text="#{orders.edit.back_to_order}">← Back to order</a>
+            <a th:unless="${editBackProvided}"
+               th:href="@{/admin/orders/{id}(id=${order.id})}"
                class="text-sm text-blue-600 hover:text-blue-800" th:text="#{orders.edit.back_to_order}">← Back to order</a>
             <h1 class="text-2xl font-bold text-gray-900 mt-2" th:text="#{orders.edit.title}">Edit Order</h1>
         </div>
@@ -29,11 +33,19 @@
         <form th:action="@{/admin/orders/{id}/edit(id=${order.id})}" th:object="${order}" method="post"
               class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" name="back" th:if="${editBackProvided}" th:value="${backToOrders}"/>
             <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
                 <h2 class="text-sm font-semibold text-blue-900" th:text="#{orders.edit.smart.title}">Smart edit helper</h2>
                 <p id="orderEditSmartHint" class="mt-1 text-xs text-blue-800" th:text="#{orders.edit.smart.initial}">
                     Keep deadline, price, and description updated so production and billing stay aligned.
                 </p>
+                <ul class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    <li id="editCheckDeadline" class="text-gray-700" th:text="#{orders.edit.smart.check.deadline.todo}">○ Deadline set</li>
+                    <li id="editCheckDescription" class="text-gray-700" th:text="#{orders.edit.smart.check.description.todo}">○ Clear description</li>
+                    <li id="editCheckPrice" class="text-gray-700" th:text="#{orders.edit.smart.check.price.todo}">○ Price entered</li>
+                    <li id="editCheckCourier" class="text-gray-700" th:text="#{orders.edit.smart.check.courier.todo}">○ Courier details complete</li>
+                    <li id="editCheckQuoteValidity" class="text-gray-700" th:text="#{orders.edit.smart.check.quote_validity.todo}">○ Sent quote has validity date</li>
+                </ul>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -76,10 +88,26 @@
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.delivery_type}">Delivery Type</label>
+                    <select id="deliveryType" th:field="*{deliveryType}" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="PICKUP" th:text="#{orders.delivery_type.pickup}">Pickup</option>
+                        <option value="COURIER" th:text="#{orders.delivery_type.courier}">Courier</option>
+                        <option value="EXPRESS_POST" th:text="#{orders.delivery_type.express_post}">Express Post</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.quote.status}">Quote Status</label>
+                    <select id="quoteStatus" th:field="*{quoteStatus}" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option th:each="q : ${quoteStatuses}" th:value="${q}"
+                                th:text="#{${q.messageKey}}">NONE</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1"
                            th:text="#{orders.edit.price_label(${companyCurrency})}">Price (RSD)</label>
                     <input id="price" th:field="*{price}" type="number" step="0.01"
                            th:placeholder="#{orders.amount_placeholder(${companyCurrency})}"
+                           th:disabled="${priceManagedByItems}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                     <p class="mt-1 text-xs text-gray-500" th:text="#{orders.amount_hint(${companyCurrency})}">Enter amount in RSD (e.g., 1,200.00)</p>
                 </div>
@@ -88,8 +116,14 @@
                            th:text="#{orders.edit.cost_label(${companyCurrency})}">Cost (RSD)</label>
                     <input id="cost" th:field="*{cost}" type="number" step="0.01"
                            th:placeholder="#{orders.amount_placeholder(${companyCurrency})}"
+                           th:disabled="${priceManagedByItems}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                     <p class="mt-1 text-xs text-gray-500" th:text="#{orders.amount_hint(${companyCurrency})}">Enter amount in RSD (e.g., 1,200.00)</p>
+                </div>
+                <div th:if="${priceManagedByItems}" class="md:col-span-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                    <span th:text="#{orders.edit.price_managed_by_items}">
+                        This order has priced items. Total price/cost is automatically synced from items.
+                    </span>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.edit.paid}">Paid</label>
@@ -97,6 +131,76 @@
                         <option th:value="true" th:text="#{common.yes}">Yes</option>
                         <option th:value="false" th:text="#{common.no}">No</option>
                     </select>
+                </div>
+                <div id="courierNameWrap" class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.courier_name}">Courier Service</label>
+                    <input id="courierName" th:field="*{courierName}" type="text"
+                           th:placeholder="#{orders.courier_name.placeholder}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.tracking_number}">Tracking Number</label>
+                    <input id="trackingNumber" th:field="*{trackingNumber}" type="text"
+                           th:placeholder="#{orders.tracking_number.placeholder}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div id="deliveryAddressWrap">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.delivery_address}">Delivery Address</label>
+                    <textarea id="deliveryAddress" th:field="*{deliveryAddress}" rows="2"
+                              th:placeholder="#{orders.delivery_address.placeholder}"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                </div>
+                <div id="deliveryRecipientNameWrap">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.delivery.recipient_name}">Recipient Name</label>
+                    <input id="deliveryRecipientName" th:field="*{deliveryRecipientName}" type="text"
+                           th:placeholder="#{orders.delivery.recipient_name.placeholder}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div id="deliveryRecipientPhoneWrap">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.delivery.recipient_phone}">Recipient Phone</label>
+                    <input id="deliveryRecipientPhone" th:field="*{deliveryRecipientPhone}" type="text"
+                           th:placeholder="#{orders.delivery.recipient_phone.placeholder}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div id="deliveryCityWrap">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.delivery.city}">City</label>
+                    <input id="deliveryCity" th:field="*{deliveryCity}" type="text"
+                           th:placeholder="#{orders.delivery.city.placeholder}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div id="deliveryPostalCodeWrap">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.delivery.postal_code}">Postal Code</label>
+                    <input id="deliveryPostalCode" th:field="*{deliveryPostalCode}" type="text"
+                           th:placeholder="#{orders.delivery.postal_code.placeholder}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.shipment.status}">Shipment Status</label>
+                    <select id="shipmentStatus" th:field="*{shipmentStatus}" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="PREPARING" th:text="#{orders.shipment.status.preparing}">Preparing</option>
+                        <option value="SHIPPED" th:text="#{orders.shipment.status.shipped}">Shipped</option>
+                        <option value="DELIVERED" th:text="#{orders.shipment.status.delivered}">Delivered</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.shipment.price}">Shipment Price</label>
+                    <input id="shipmentPrice" th:field="*{shipmentPrice}" type="number" step="0.01"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.shipment.shipped_at}">Shipped At</label>
+                    <input id="shippedAt" th:field="*{shippedAt}" type="datetime-local"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.shipment.delivered_at}">Delivered At</label>
+                    <input id="deliveredAt" th:field="*{deliveredAt}" type="datetime-local"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.quote.valid_until}">Quote Valid Until</label>
+                    <input id="quoteValidUntil" th:field="*{quoteValidUntil}" type="datetime-local"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 </div>
             </div>
 
@@ -124,9 +228,18 @@
                 <textarea th:field="*{internalNotes}" rows="3"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" th:text="#{orders.shipment.note}">Shipping Note</label>
+                <textarea th:field="*{shippingNote}" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+            </div>
 
             <div class="flex justify-end gap-3">
-                <a th:href="@{/admin/orders/{id}(id=${order.id})}"
+                <a th:if="${editBackProvided}"
+                   th:href="${backToOrders}"
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50" th:text="#{common.cancel}">Cancel</a>
+                <a th:unless="${editBackProvided}"
+                   th:href="@{/admin/orders/{id}(id=${order.id})}"
                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50" th:text="#{common.cancel}">Cancel</a>
                 <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -144,8 +257,30 @@
             const priceEl = document.getElementById('price');
             const costEl = document.getElementById('cost');
             const paidEl = document.getElementById('paid');
+            const deliveryTypeEl = document.getElementById('deliveryType');
+            const statusEl = document.getElementById('status');
+            const quoteStatusEl = document.getElementById('quoteStatus');
+            const quoteValidUntilEl = document.getElementById('quoteValidUntil');
+            const courierNameEl = document.getElementById('courierName');
+            const courierNameWrap = document.getElementById('courierNameWrap');
+            const deliveryAddressWrap = document.getElementById('deliveryAddressWrap');
+            const deliveryAddressEl = document.getElementById('deliveryAddress');
+            const deliveryRecipientNameWrap = document.getElementById('deliveryRecipientNameWrap');
+            const deliveryRecipientPhoneWrap = document.getElementById('deliveryRecipientPhoneWrap');
+            const deliveryCityWrap = document.getElementById('deliveryCityWrap');
+            const deliveryPostalCodeWrap = document.getElementById('deliveryPostalCodeWrap');
+            const deliveryRecipientNameEl = document.getElementById('deliveryRecipientName');
+            const deliveryRecipientPhoneEl = document.getElementById('deliveryRecipientPhone');
+            const deliveryCityEl = document.getElementById('deliveryCity');
+            const trackingNumberEl = document.getElementById('trackingNumber');
+            const checkDeadlineEl = document.getElementById('editCheckDeadline');
+            const checkDescriptionEl = document.getElementById('editCheckDescription');
+            const checkPriceEl = document.getElementById('editCheckPrice');
+            const checkCourierEl = document.getElementById('editCheckCourier');
+            const checkQuoteValidityEl = document.getElementById('editCheckQuoteValidity');
             const briefHintEl = document.getElementById('orderEditBriefHint');
             const insertBriefBtn = document.getElementById('insertEditBriefTemplate');
+            const priceManagedByItems = /*[[${priceManagedByItems}]]*/ false;
             if (!hintEl) return;
 
             const i18n = {
@@ -155,12 +290,38 @@
                 missingDescription: /*[[#{orders.edit.smart.missing.description}]]*/ 'clear description',
                 warnPriceCost: /*[[#{orders.edit.smart.warn.price_below_cost}]]*/ 'Price is below cost. This order may be unprofitable.',
                 warnPaidNoPrice: /*[[#{orders.edit.smart.warn.paid_without_price}]]*/ 'Order is marked as paid, but price is empty.',
+                warnCourierAddress: /*[[#{orders.edit.smart.warn.courier_address}]]*/ 'Courier delivery requires delivery address.',
+                warnCourierRecipient: /*[[#{orders.edit.smart.warn.courier_recipient}]]*/ 'Courier delivery requires recipient name and phone.',
+                warnCourierCity: /*[[#{orders.edit.smart.warn.courier_city}]]*/ 'Courier delivery requires city.',
+                warnCourierService: /*[[#{orders.edit.smart.warn.courier_service}]]*/ 'Courier delivery requires courier service name.',
+                warnPickupCourierFields: /*[[#{orders.edit.smart.warn.pickup_courier_fields}]]*/ 'Pickup is selected. Courier fields should stay empty.',
+                warnQuoteValidUntil: /*[[#{orders.edit.smart.warn.quote_valid_until}]]*/ 'Quote is sent, but valid-until date is missing.',
+                warnQuoteExpired: /*[[#{orders.edit.smart.warn.quote_expired}]]*/ 'Quote valid-until is in the past. Renew validity before follow-up.',
+                warnQuoteExpiringSoon: /*[[#{orders.edit.smart.warn.quote_expiring_soon}]]*/ 'Quote validity expires within 24 hours. Consider extending before client follow-up.',
+                warnSentTracking: /*[[#{orders.edit.smart.warn.sent_tracking_missing}]]*/ 'Order is sent but tracking number is missing.',
                 briefTemplateCta: /*[[#{orders.edit.smart.brief_template_cta}]]*/ 'Insert brief template',
                 briefTemplate: /*[[#{orders.edit.smart.brief_template}]]*/ 'Product:\nDimensions:\nMaterial:\nFinishing:\nQuantity:\nDeadline:\nDelivery note:',
                 briefHintEmpty: /*[[#{orders.edit.smart.brief_hint_empty}]]*/ 'Use the brief template for consistent production handoff.',
                 briefHintPartial: /*[[#{orders.edit.smart.brief_hint_partial}]]*/ 'Description can be clearer: add dimensions, material, finishing, and deadline.',
                 briefHintReady: /*[[#{orders.edit.smart.brief_hint_ready}]]*/ 'Brief coverage looks good for execution.'
+                ,
+                doneDeadline: /*[[#{orders.edit.smart.check.deadline.done}]]*/ 'Deadline set',
+                todoDeadline: /*[[#{orders.edit.smart.check.deadline.todo}]]*/ '○ Deadline set',
+                doneDescription: /*[[#{orders.edit.smart.check.description.done}]]*/ 'Clear description',
+                todoDescription: /*[[#{orders.edit.smart.check.description.todo}]]*/ '○ Clear description',
+                donePrice: /*[[#{orders.edit.smart.check.price.done}]]*/ 'Price entered',
+                todoPrice: /*[[#{orders.edit.smart.check.price.todo}]]*/ '○ Price entered',
+                doneCourier: /*[[#{orders.edit.smart.check.courier.done}]]*/ 'Courier details complete',
+                todoCourier: /*[[#{orders.edit.smart.check.courier.todo}]]*/ '○ Courier details complete',
+                doneQuoteValidity: /*[[#{orders.edit.smart.check.quote_validity.done}]]*/ 'Sent quote has validity date',
+                todoQuoteValidity: /*[[#{orders.edit.smart.check.quote_validity.todo}]]*/ '○ Sent quote has validity date'
             };
+
+            function setCheck(element, done, doneLabel, todoLabel) {
+                if (!element) return;
+                element.textContent = done ? ('✓ ' + doneLabel) : todoLabel;
+                element.className = done ? 'text-green-700' : 'text-gray-700';
+            }
 
             function updateHint() {
                 const missing = [];
@@ -179,12 +340,74 @@
                 if (!hasDeadline) {
                     missing.push(i18n.missingDeadline);
                 }
-                if (!Number.isNaN(price) && !Number.isNaN(cost) && price > 0 && cost > 0 && price < cost) {
+                if (!priceManagedByItems && !Number.isNaN(price) && !Number.isNaN(cost) && price > 0 && cost > 0 && price < cost) {
                     warnings.push(i18n.warnPriceCost);
                 }
-                if (paid && (Number.isNaN(price) || price <= 0)) {
+                if (!priceManagedByItems && paid && (Number.isNaN(price) || price <= 0)) {
                     warnings.push(i18n.warnPaidNoPrice);
                 }
+                if (deliveryTypeEl && deliveryTypeEl.value !== 'PICKUP' && (!deliveryAddressEl || !deliveryAddressEl.value.trim())) {
+                    warnings.push(i18n.warnCourierAddress);
+                }
+                const hasCourierAddress = !!(deliveryAddressEl && deliveryAddressEl.value.trim());
+                const hasCourierRecipient = !!(deliveryRecipientNameEl && deliveryRecipientNameEl.value.trim().length > 1);
+                const hasCourierPhone = !!(deliveryRecipientPhoneEl && deliveryRecipientPhoneEl.value.trim().length > 4);
+                const hasCourierCity = !!(deliveryCityEl && deliveryCityEl.value.trim().length > 1);
+                const hasCourierService = !!(courierNameEl && courierNameEl.value.trim().length > 1);
+                const isPickup = !deliveryTypeEl || deliveryTypeEl.value === 'PICKUP';
+                if (deliveryTypeEl && deliveryTypeEl.value !== 'PICKUP') {
+                    if (!hasCourierRecipient || !hasCourierPhone) {
+                        warnings.push(i18n.warnCourierRecipient);
+                    }
+                    if (!hasCourierCity) {
+                        warnings.push(i18n.warnCourierCity);
+                    }
+                    if (!hasCourierService) {
+                        warnings.push(i18n.warnCourierService);
+                    }
+                } else {
+                    const hasCourierNoise =
+                        (courierNameEl && courierNameEl.value.trim().length > 0) ||
+                        (trackingNumberEl && trackingNumberEl.value.trim().length > 0) ||
+                        (deliveryAddressEl && deliveryAddressEl.value.trim().length > 0) ||
+                        (deliveryRecipientNameEl && deliveryRecipientNameEl.value.trim().length > 0) ||
+                        (deliveryRecipientPhoneEl && deliveryRecipientPhoneEl.value.trim().length > 0) ||
+                        (deliveryCityEl && deliveryCityEl.value.trim().length > 0);
+                    if (hasCourierNoise) {
+                        warnings.push(i18n.warnPickupCourierFields);
+                    }
+                }
+                if (quoteStatusEl && quoteStatusEl.value === 'SENT' && (!quoteValidUntilEl || !quoteValidUntilEl.value)) {
+                    warnings.push(i18n.warnQuoteValidUntil);
+                }
+                if (quoteStatusEl && quoteStatusEl.value === 'SENT' && quoteValidUntilEl && quoteValidUntilEl.value) {
+                    const validUntilDate = new Date(quoteValidUntilEl.value);
+                    if (!Number.isNaN(validUntilDate.getTime())) {
+                        const diffHours = (validUntilDate.getTime() - Date.now()) / (1000 * 60 * 60);
+                        if (diffHours < 0) {
+                            warnings.push(i18n.warnQuoteExpired);
+                        } else if (diffHours <= 24) {
+                            warnings.push(i18n.warnQuoteExpiringSoon);
+                        }
+                    }
+                }
+                const sentCourier = statusEl && statusEl.value === 'SENT' && deliveryTypeEl && deliveryTypeEl.value !== 'PICKUP';
+                if (sentCourier && (!trackingNumberEl || !trackingNumberEl.value.trim())) {
+                    warnings.push(i18n.warnSentTracking);
+                }
+
+                setCheck(checkDeadlineEl, !!hasDeadline, i18n.doneDeadline, i18n.todoDeadline);
+                setCheck(checkDescriptionEl, description.length >= 20, i18n.doneDescription, i18n.todoDescription);
+                setCheck(checkPriceEl, priceManagedByItems || (!Number.isNaN(price) && price > 0), i18n.donePrice, i18n.todoPrice);
+                setCheck(checkCourierEl, isPickup || (hasCourierAddress && hasCourierRecipient && hasCourierPhone && hasCourierCity && hasCourierService), i18n.doneCourier, i18n.todoCourier);
+                const quoteNeedsValidity = quoteStatusEl && quoteStatusEl.value === 'SENT';
+                const hasQuoteValidity = quoteValidUntilEl && quoteValidUntilEl.value;
+                let hasActiveQuoteValidity = !!hasQuoteValidity;
+                if (quoteNeedsValidity && hasQuoteValidity) {
+                    const validUntilDate = new Date(quoteValidUntilEl.value);
+                    hasActiveQuoteValidity = !Number.isNaN(validUntilDate.getTime()) && validUntilDate.getTime() >= Date.now();
+                }
+                setCheck(checkQuoteValidityEl, !quoteNeedsValidity || hasActiveQuoteValidity, i18n.doneQuoteValidity, i18n.todoQuoteValidity);
 
                 if (missing.length === 0 && warnings.length === 0) {
                     hintEl.textContent = i18n.ready;
@@ -210,11 +433,38 @@
                 }
             }
 
-            [titleEl, descriptionEl, deadlineEl, priceEl, costEl, paidEl].forEach(el => {
+            [titleEl, descriptionEl, deadlineEl, priceEl, costEl, paidEl, statusEl, quoteStatusEl, quoteValidUntilEl, trackingNumberEl].forEach(el => {
                 if (!el) return;
                 el.addEventListener('input', updateHint);
                 el.addEventListener('change', updateHint);
             });
+            function toggleDeliveryFields() {
+                if (!deliveryTypeEl) return;
+                const isPickup = deliveryTypeEl.value === 'PICKUP';
+                if (courierNameWrap) courierNameWrap.classList.toggle('hidden', isPickup);
+                if (deliveryAddressWrap) deliveryAddressWrap.classList.toggle('hidden', isPickup);
+                if (deliveryRecipientNameWrap) deliveryRecipientNameWrap.classList.toggle('hidden', isPickup);
+                if (deliveryRecipientPhoneWrap) deliveryRecipientPhoneWrap.classList.toggle('hidden', isPickup);
+                if (deliveryCityWrap) deliveryCityWrap.classList.toggle('hidden', isPickup);
+                if (deliveryPostalCodeWrap) deliveryPostalCodeWrap.classList.toggle('hidden', isPickup);
+                updateHint();
+            }
+            if (deliveryTypeEl) {
+                deliveryTypeEl.addEventListener('change', toggleDeliveryFields);
+            }
+            if (deliveryAddressEl) {
+                deliveryAddressEl.addEventListener('input', updateHint);
+                deliveryAddressEl.addEventListener('change', updateHint);
+            }
+            [deliveryRecipientNameEl, deliveryRecipientPhoneEl, deliveryCityEl].forEach(el => {
+                if (!el) return;
+                el.addEventListener('input', updateHint);
+                el.addEventListener('change', updateHint);
+            });
+            if (courierNameEl) {
+                courierNameEl.addEventListener('input', updateHint);
+                courierNameEl.addEventListener('change', updateHint);
+            }
             if (insertBriefBtn && descriptionEl) {
                 insertBriefBtn.addEventListener('click', function () {
                     if (descriptionEl.value && descriptionEl.value.trim().length > 0) {
@@ -226,6 +476,7 @@
                     updateHint();
                 });
             }
+            toggleDeliveryFields();
             updateHint();
         })();
     </script>

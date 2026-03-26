@@ -10,6 +10,9 @@ public class WorkOrderItemResponse {
     private BigDecimal calculatedCost;
     private BigDecimal calculatedPrice;
     private BigDecimal marginPercent;
+    private BigDecimal workOrderTotalCost;
+    private BigDecimal workOrderTotalPrice;
+    private String currency;
 
     public Long getId() {
         return id;
@@ -65,5 +68,29 @@ public class WorkOrderItemResponse {
 
     public void setMarginPercent(BigDecimal marginPercent) {
         this.marginPercent = marginPercent;
+    }
+
+    public BigDecimal getWorkOrderTotalCost() {
+        return workOrderTotalCost;
+    }
+
+    public void setWorkOrderTotalCost(BigDecimal workOrderTotalCost) {
+        this.workOrderTotalCost = workOrderTotalCost;
+    }
+
+    public BigDecimal getWorkOrderTotalPrice() {
+        return workOrderTotalPrice;
+    }
+
+    public void setWorkOrderTotalPrice(BigDecimal workOrderTotalPrice) {
+        this.workOrderTotalPrice = workOrderTotalPrice;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 }

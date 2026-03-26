@@ -20,6 +20,14 @@ public class DashboardStatsDTO {
     private long waitingApprovalOrders;
     private long inPrintOrders;
     private long readyForDeliveryOrders;
+    private long readyForPickupOrders;
+    private long readyToShipOrders;
+    private long blockedCourierReadyOrders;
+    private long sentOrders;
+    private long ordersToday;
+    private long quotePreparingOrders;
+    private long quoteReadyOrders;
+    private long quoteSentOrders;
     
     
     
@@ -28,7 +36,9 @@ public class DashboardStatsDTO {
 	}
 	public DashboardStatsDTO(long totalClients, long totalOrders, long activeOrders, long completedOrders,
 			long overdueOrders, long totalUsers, double monthlyRevenue, double pendingRevenue, long newOrders,
-			long inDesignOrders, long waitingApprovalOrders, long inPrintOrders, long readyForDeliveryOrders) {
+			long inDesignOrders, long waitingApprovalOrders, long inPrintOrders, long readyForDeliveryOrders,
+			long readyForPickupOrders, long readyToShipOrders, long sentOrders, long ordersToday,
+			long quotePreparingOrders, long quoteReadyOrders, long quoteSentOrders) {
 		
 		this.totalClients = totalClients;
 		this.totalOrders = totalOrders;
@@ -43,6 +53,13 @@ public class DashboardStatsDTO {
 		this.waitingApprovalOrders = waitingApprovalOrders;
 		this.inPrintOrders = inPrintOrders;
 		this.readyForDeliveryOrders = readyForDeliveryOrders;
+		this.readyForPickupOrders = readyForPickupOrders;
+		this.readyToShipOrders = readyToShipOrders;
+		this.sentOrders = sentOrders;
+		this.ordersToday = ordersToday;
+		this.quotePreparingOrders = quotePreparingOrders;
+		this.quoteReadyOrders = quoteReadyOrders;
+		this.quoteSentOrders = quoteSentOrders;
 	}
 	public long getTotalClients() {
 		return totalClients;
@@ -121,6 +138,54 @@ public class DashboardStatsDTO {
 	}
 	public void setReadyForDeliveryOrders(long readyForDeliveryOrders) {
 		this.readyForDeliveryOrders = readyForDeliveryOrders;
+	}
+	public long getReadyForPickupOrders() {
+		return readyForPickupOrders;
+	}
+	public void setReadyForPickupOrders(long readyForPickupOrders) {
+		this.readyForPickupOrders = readyForPickupOrders;
+	}
+	public long getReadyToShipOrders() {
+		return readyToShipOrders;
+	}
+	public void setReadyToShipOrders(long readyToShipOrders) {
+		this.readyToShipOrders = readyToShipOrders;
+	}
+	public long getBlockedCourierReadyOrders() {
+		return blockedCourierReadyOrders;
+	}
+	public void setBlockedCourierReadyOrders(long blockedCourierReadyOrders) {
+		this.blockedCourierReadyOrders = blockedCourierReadyOrders;
+	}
+	public long getSentOrders() {
+		return sentOrders;
+	}
+	public void setSentOrders(long sentOrders) {
+		this.sentOrders = sentOrders;
+	}
+	public long getOrdersToday() {
+		return ordersToday;
+	}
+	public void setOrdersToday(long ordersToday) {
+		this.ordersToday = ordersToday;
+	}
+	public long getQuotePreparingOrders() {
+		return quotePreparingOrders;
+	}
+	public void setQuotePreparingOrders(long quotePreparingOrders) {
+		this.quotePreparingOrders = quotePreparingOrders;
+	}
+	public long getQuoteReadyOrders() {
+		return quoteReadyOrders;
+	}
+	public void setQuoteReadyOrders(long quoteReadyOrders) {
+		this.quoteReadyOrders = quoteReadyOrders;
+	}
+	public long getQuoteSentOrders() {
+		return quoteSentOrders;
+	}
+	public void setQuoteSentOrders(long quoteSentOrders) {
+		this.quoteSentOrders = quoteSentOrders;
 	}
     
     

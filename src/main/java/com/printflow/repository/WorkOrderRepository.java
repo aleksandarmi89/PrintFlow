@@ -1,8 +1,11 @@
 package com.printflow.repository;
 
 import com.printflow.entity.WorkOrder;
+import com.printflow.entity.WorkOrder.DeliveryType;
+import com.printflow.entity.WorkOrder.ShipmentStatus;
 import com.printflow.pricing.dto.WorkOrderSelectRow;
 import com.printflow.entity.enums.OrderStatus;
+import com.printflow.entity.enums.QuoteStatus;
 import com.printflow.entity.User;
 import com.printflow.entity.Client;
 import org.springframework.data.domain.Page;
@@ -86,6 +89,44 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
 
     @Query("SELECT COUNT(wo) FROM WorkOrder wo WHERE wo.company.id = :companyId AND wo.status = :status")
     long countByStatusAndCompanyId(@Param("companyId") Long companyId, @Param("status") OrderStatus status);
+
+    long countByStatusAndDeliveryType(OrderStatus status, DeliveryType deliveryType);
+    long countByStatusAndDeliveryTypeAndCompany_Id(OrderStatus status, DeliveryType deliveryType, Long companyId);
+    @Query("""
+        SELECT COUNT(wo) FROM WorkOrder wo
+        WHERE wo.status = :status
+          AND wo.deliveryType IN :deliveryTypes
+          AND (
+            wo.courierName IS NULL OR TRIM(wo.courierName) = '' OR
+            wo.trackingNumber IS NULL OR TRIM(wo.trackingNumber) = '' OR
+            wo.deliveryAddress IS NULL OR TRIM(wo.deliveryAddress) = '' OR
+            wo.deliveryRecipientName IS NULL OR TRIM(wo.deliveryRecipientName) = '' OR
+            wo.deliveryRecipientPhone IS NULL OR TRIM(wo.deliveryRecipientPhone) = ''
+          )
+        """)
+    long countCourierReadyWithMissingShipmentData(@Param("status") OrderStatus status,
+                                                  @Param("deliveryTypes") List<DeliveryType> deliveryTypes);
+
+    @Query("""
+        SELECT COUNT(wo) FROM WorkOrder wo
+        WHERE wo.company.id = :companyId
+          AND wo.status = :status
+          AND wo.deliveryType IN :deliveryTypes
+          AND (
+            wo.courierName IS NULL OR TRIM(wo.courierName) = '' OR
+            wo.trackingNumber IS NULL OR TRIM(wo.trackingNumber) = '' OR
+            wo.deliveryAddress IS NULL OR TRIM(wo.deliveryAddress) = '' OR
+            wo.deliveryRecipientName IS NULL OR TRIM(wo.deliveryRecipientName) = '' OR
+            wo.deliveryRecipientPhone IS NULL OR TRIM(wo.deliveryRecipientPhone) = ''
+          )
+        """)
+    long countCourierReadyWithMissingShipmentDataByCompany(@Param("companyId") Long companyId,
+                                                           @Param("status") OrderStatus status,
+                                                           @Param("deliveryTypes") List<DeliveryType> deliveryTypes);
+    long countByQuoteStatus(QuoteStatus quoteStatus);
+    long countByCompany_IdAndQuoteStatus(Long companyId, QuoteStatus quoteStatus);
+    long countByQuoteStatusAndStatusNotIn(QuoteStatus quoteStatus, List<OrderStatus> excludedStatuses);
+    long countByCompany_IdAndQuoteStatusAndStatusNotIn(Long companyId, QuoteStatus quoteStatus, List<OrderStatus> excludedStatuses);
     
     @Query("SELECT wo FROM WorkOrder wo WHERE wo.priority >= :minPriority ORDER BY wo.priority DESC, wo.deadline ASC")
     List<WorkOrder> findHighPriorityOrders(@Param("minPriority") Integer minPriority);
@@ -136,6 +177,90 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     Page<WorkOrder> findByStatusAndCompany_Id(OrderStatus status, Long companyId, Pageable pageable);
     List<WorkOrder> findByStatus(OrderStatus status);
     List<WorkOrder> findByStatusAndCompany_Id(OrderStatus status, Long companyId);
+
+    @EntityGraph(attributePaths = {"client", "assignedTo", "createdBy"})
+    Page<WorkOrder> findByDeliveryType(DeliveryType deliveryType, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"client", "assignedTo", "createdBy"})
+    Page<WorkOrder> findByDeliveryTypeAndCompany_Id(DeliveryType deliveryType, Long companyId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"client", "assignedTo", "createdBy"})
+    @Query("""
+        SELECT wo FROM WorkOrder wo
+        WHERE (:status IS NULL OR wo.status = :status)
+          AND (:quoteStatus IS NULL OR wo.quoteStatus = :quoteStatus)
+          AND (:deliveryType IS NULL OR wo.deliveryType = :deliveryType)
+          AND (:shipmentStatus IS NULL OR wo.shipmentStatus = :shipmentStatus)
+          AND (:clientId IS NULL OR wo.client.id = :clientId)
+          AND (:createdFrom IS NULL OR wo.createdAt >= :createdFrom)
+          AND (:createdTo IS NULL OR wo.createdAt <= :createdTo)
+          AND (
+            :overdueOnly = false OR
+            (
+              wo.deadline IS NOT NULL
+              AND wo.deadline < :now
+              AND wo.status NOT IN :terminalStatuses
+            )
+          )
+          AND (
+            :search IS NULL OR :search = '' OR
+            LOWER(wo.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(wo.title) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(wo.description) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+        """)
+    Page<WorkOrder> findByFilters(@Param("search") String search,
+                                  @Param("status") OrderStatus status,
+                                  @Param("quoteStatus") QuoteStatus quoteStatus,
+                                  @Param("shipmentStatus") ShipmentStatus shipmentStatus,
+                                  @Param("clientId") Long clientId,
+                                  @Param("createdFrom") LocalDateTime createdFrom,
+                                  @Param("createdTo") LocalDateTime createdTo,
+                                  @Param("overdueOnly") boolean overdueOnly,
+                                  @Param("now") LocalDateTime now,
+                                  @Param("terminalStatuses") List<OrderStatus> terminalStatuses,
+                                  @Param("deliveryType") DeliveryType deliveryType,
+                                  Pageable pageable);
+
+    @EntityGraph(attributePaths = {"client", "assignedTo", "createdBy"})
+    @Query("""
+        SELECT wo FROM WorkOrder wo
+        WHERE wo.company.id = :companyId
+          AND (:status IS NULL OR wo.status = :status)
+          AND (:quoteStatus IS NULL OR wo.quoteStatus = :quoteStatus)
+          AND (:deliveryType IS NULL OR wo.deliveryType = :deliveryType)
+          AND (:shipmentStatus IS NULL OR wo.shipmentStatus = :shipmentStatus)
+          AND (:clientId IS NULL OR wo.client.id = :clientId)
+          AND (:createdFrom IS NULL OR wo.createdAt >= :createdFrom)
+          AND (:createdTo IS NULL OR wo.createdAt <= :createdTo)
+          AND (
+            :overdueOnly = false OR
+            (
+              wo.deadline IS NOT NULL
+              AND wo.deadline < :now
+              AND wo.status NOT IN :terminalStatuses
+            )
+          )
+          AND (
+            :search IS NULL OR :search = '' OR
+            LOWER(wo.orderNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(wo.title) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(wo.description) LIKE LOWER(CONCAT('%', :search, '%'))
+          )
+        """)
+    Page<WorkOrder> findByFiltersAndCompany(@Param("companyId") Long companyId,
+                                            @Param("search") String search,
+                                            @Param("status") OrderStatus status,
+                                            @Param("quoteStatus") QuoteStatus quoteStatus,
+                                            @Param("shipmentStatus") ShipmentStatus shipmentStatus,
+                                            @Param("clientId") Long clientId,
+                                            @Param("createdFrom") LocalDateTime createdFrom,
+                                            @Param("createdTo") LocalDateTime createdTo,
+                                            @Param("overdueOnly") boolean overdueOnly,
+                                            @Param("now") LocalDateTime now,
+                                            @Param("terminalStatuses") List<OrderStatus> terminalStatuses,
+                                            @Param("deliveryType") DeliveryType deliveryType,
+                                            Pageable pageable);
 
     @Query("SELECT wo FROM WorkOrder wo " +
            "LEFT JOIN FETCH wo.client " +
@@ -222,6 +347,7 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
                                      @Param("excludedStatuses") List<OrderStatus> excludedStatuses);
 
     long countByCompany_IdAndCreatedAtAfter(Long companyId, LocalDateTime createdAt);
+    long countByCreatedAtAfter(LocalDateTime createdAt);
     
     // Date range
     @Query("SELECT wo FROM WorkOrder wo WHERE wo.createdAt BETWEEN :start AND :end")

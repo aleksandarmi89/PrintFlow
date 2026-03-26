@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head th:replace="~{layout/base :: head}">
     <title th:text="#{public.order.form.title}">Public Order Request</title>
 </head>
-<body class="bg-gray-50">
-<main class="max-w-3xl mx-auto px-4 py-10">
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<main class="max-w-3xl mx-auto px-4 py-10 flex-1">
     <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8">
         <div class="flex justify-end mb-3">
             <div class="flex items-center gap-2 text-xs text-gray-600">
@@ -24,16 +24,22 @@
             <span th:text="#{public.order.form.company}">Kompanija</span>: <strong th:text="${company.name}">PrintFlow</strong>
         </p>
         <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-            <h2 class="text-sm font-semibold text-blue-900" th:text="#{public.order.form.smart.title}">Quick request helper</h2>
+            <div class="flex items-center justify-between gap-2">
+                <h2 class="text-sm font-semibold text-blue-900" th:text="#{public.order.form.smart.title}">Quick request helper</h2>
+                <span id="publicRequestProgress" class="text-xs font-medium text-blue-800" th:text="#{public.order.form.smart.progress_label(0,5)}">0/5 complete</span>
+            </div>
             <p class="mt-1 text-xs text-blue-800" th:text="#{public.order.form.smart.subtitle}">
                 Add dimensions, deadline, and at least one file to get a faster and more accurate quote.
             </p>
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-blue-100">
+                <div id="publicRequestProgressBar" class="h-full rounded-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
             <div id="publicRequestSmartHint" class="mt-2 text-xs text-blue-900"></div>
         </div>
 
         <div th:if="${errorMessage}" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" th:text="${errorMessage}"></div>
 
-        <form th:action="@{/p/{slug}/order(slug=${companySlug})}" th:object="${form}" method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
+        <form th:action="@{/p/{slug}/order(slug=${companySlug},lang=${#locale.language})}" th:object="${form}" method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
             <section>
@@ -60,21 +66,23 @@
                 <div class="grid md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.customer_name}">Ime i prezime *</label>
-                        <input type="text" th:field="*{customerName}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="text" th:field="*{customerName}" maxlength="150" class="w-full rounded-lg border border-gray-300 px-3 py-2">
                         <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('customerName')}" th:errors="*{customerName}"></p>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.customer_company}">Naziv firme</label>
-                        <input type="text" th:field="*{customerCompanyName}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="text" th:field="*{customerCompanyName}" maxlength="190" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('customerCompanyName')}" th:errors="*{customerCompanyName}"></p>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.email}">Email *</label>
-                        <input type="email" th:field="*{customerEmail}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="email" th:field="*{customerEmail}" maxlength="190" class="w-full rounded-lg border border-gray-300 px-3 py-2">
                         <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('customerEmail')}" th:errors="*{customerEmail}"></p>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.phone}">Telefon</label>
-                        <input type="text" th:field="*{customerPhone}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <input type="text" th:field="*{customerPhone}" maxlength="50" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('customerPhone')}" th:errors="*{customerPhone}"></p>
                     </div>
                 </div>
             </section>
@@ -84,7 +92,7 @@
                 <div class="grid md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.product_type}">Tip proizvoda *</label>
-                        <input type="text" th:field="*{productType}" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        <input type="text" th:field="*{productType}" maxlength="150" class="w-full rounded-lg border border-gray-300 px-3 py-2"
                                th:placeholder="#{public.order.form.product_type.placeholder}">
                         <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('productType')}" th:errors="*{productType}"></p>
                     </div>
@@ -95,21 +103,25 @@
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.dimensions}">Dimenzije</label>
-                        <input type="text" th:field="*{dimensions}" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{public.order.form.dimensions.placeholder}">
+                        <input type="text" th:field="*{dimensions}" maxlength="190" class="w-full rounded-lg border border-gray-300 px-3 py-2" th:placeholder="#{public.order.form.dimensions.placeholder}">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('dimensions')}" th:errors="*{dimensions}"></p>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.material}">Materijal</label>
-                        <input type="text" th:field="*{material}" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        <input type="text" th:field="*{material}" maxlength="150" class="w-full rounded-lg border border-gray-300 px-3 py-2"
                                th:placeholder="#{public.order.form.material.placeholder}">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('material')}" th:errors="*{material}"></p>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.finishing}">Dorada</label>
-                        <input type="text" th:field="*{finishing}" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        <input type="text" th:field="*{finishing}" maxlength="150" class="w-full rounded-lg border border-gray-300 px-3 py-2"
                                th:placeholder="#{public.order.form.finishing.placeholder}">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('finishing')}" th:errors="*{finishing}"></p>
                     </div>
                     <div>
                         <label class="block text-sm text-gray-700 mb-1" th:text="#{public.order.form.deadline}">Rok</label>
                         <input type="datetime-local" th:field="*{deadline}" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></p>
                     </div>
                     <div class="md:col-span-2">
                         <div class="mb-1 flex items-center justify-between gap-2">
@@ -121,9 +133,11 @@
                                 Insert brief template
                             </button>
                         </div>
-                        <textarea th:field="*{notes}" rows="4" class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        <textarea th:field="*{notes}" rows="4" maxlength="4000" class="w-full rounded-lg border border-gray-300 px-3 py-2"
                                   th:placeholder="#{public.order.form.notes.placeholder}"></textarea>
                         <p id="publicOrderBriefHint" class="mt-1 text-xs text-gray-500"></p>
+                        <p id="publicOrderNotesCounter" class="mt-1 text-xs text-gray-500"></p>
+                        <p class="text-xs text-red-600 mt-1" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}"></p>
                     </div>
                 </div>
             </section>
@@ -131,22 +145,34 @@
             <section>
                 <h2 class="text-sm font-semibold text-gray-900 mb-3" th:text="#{public.order.form.files}">Fajlovi</h2>
                 <input id="publicOrderFiles" type="file" name="files" multiple class="w-full rounded-lg border border-gray-300 px-3 py-2">
-                <p class="text-xs text-gray-500 mt-1" th:text="#{public.order.form.files.hint}">PDF, JPG, PNG, SVG, AI, PSD. Maksimalno 5 fajlova.</p>
+                <p class="text-xs text-gray-500 mt-1"
+                   th:text="#{public.order.form.files.hint.dynamic(${publicRequestAllowedExt}, ${publicRequestMaxFiles})}">
+                    PDF, JPG, PNG, SVG, AI, PSD. Maksimalno 5 fajlova.
+                </p>
+                <p th:if="${fileErrorMessage}" class="text-xs text-red-600 mt-1" th:text="${fileErrorMessage}">File upload validation error.</p>
                 <p id="publicOrderFilesHint" class="text-xs text-gray-500 mt-1"></p>
             </section>
 
             <div class="pt-2">
-                <button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 text-white px-5 py-2.5 font-medium hover:bg-blue-700">
-                    <span th:text="#{public.order.form.submit}">Send request</span>
+                <button id="publicOrderSubmitBtn" type="submit" class="inline-flex items-center rounded-lg bg-blue-600 text-white px-5 py-2.5 font-medium hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70">
+                    <span id="publicOrderSubmitBtnText" th:text="#{public.order.form.submit}">Send request</span>
                 </button>
             </div>
         </form>
     </div>
 </main>
+<div th:replace="~{layout/footer :: footer}"></div>
 <div id="publicRequestCompany"
      class="hidden"
      th:if="${company != null && company.id != null && company.name != null}"
-     th:attr="data-company-id=${company.id},data-company-name=${company.name}">
+     th:attr="data-company-id=${company.id},
+              data-company-name=${company.name},
+              data-allowed-ext=${publicRequestAllowedExt},
+              data-max-files=${publicRequestMaxFiles},
+              data-max-file-bytes=${publicRequestMaxFileBytes},
+              data-files-too-many=#{public.order.form.smart.files_too_many},
+              data-files-too-large=#{public.order.form.smart.files_too_large},
+              data-files-ext-invalid=#{public.order.form.smart.files_ext_invalid}">
 </div>
 <script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', function () {
@@ -164,7 +190,11 @@
         const notes = document.querySelector('textarea[name="notes"]');
         const files = document.getElementById('publicOrderFiles');
         const smartHint = document.getElementById('publicRequestSmartHint');
+        const progressEl = document.getElementById('publicRequestProgress');
+        const progressBarEl = document.getElementById('publicRequestProgressBar');
         const filesHint = document.getElementById('publicOrderFilesHint');
+        const submitBtn = document.getElementById('publicOrderSubmitBtn');
+        const submitBtnText = document.getElementById('publicOrderSubmitBtnText');
         const i18n = {
             ready: /*[[#{public.order.form.smart.ready}]]*/ 'Request looks good for fast processing.',
             missingPrefix: /*[[#{public.order.form.smart.missing_prefix}]]*/ 'For faster processing, add:',
@@ -179,10 +209,22 @@
             detailsFinishing: /*[[#{public.order.form.smart.details.finishing}]]*/ 'finishing',
             detailsColor: /*[[#{public.order.form.smart.details.color}]]*/ 'color count',
             detailsReady: /*[[#{public.order.form.smart.details_ready}]]*/ 'Great, key production details are already present.',
+            progressLabel: /*[[#{public.order.form.smart.progress_label('__DONE__','__TOTAL__')}]]*/ '__DONE__/__TOTAL__ complete',
+            progressHealthy: /*[[#{public.order.form.smart.progress_healthy}]]*/ 'Request is ready for fast triage.',
+            progressWorking: /*[[#{public.order.form.smart.progress_working}]]*/ 'Add remaining details for faster quote accuracy.',
             briefTemplateCta: /*[[#{public.order.form.smart.brief_template_cta}]]*/ 'Insert brief template',
             briefTemplate: /*[[#{public.order.form.smart.brief_template}]]*/ 'Print type:\nDimensions:\nMaterial:\nColors:\nFinishing:\nDeadline:\nPackaging note:',
             briefHintEmpty: /*[[#{public.order.form.smart.brief_hint_empty}]]*/ 'Use the brief template to speed up accurate quoting.',
-            briefHintFilled: /*[[#{public.order.form.smart.brief_hint_filled}]]*/ 'Good: brief text added. Include exact dimensions and deadline for best estimate.'
+            briefHintFilled: /*[[#{public.order.form.smart.brief_hint_filled}]]*/ 'Good: brief text added. Include exact dimensions and deadline for best estimate.',
+            deadlinePast: /*[[#{public.order.form.smart.deadline_past}]]*/ 'Selected deadline is in the past. Please choose a future date.',
+            deadlineSoon: /*[[#{public.order.form.smart.deadline_soon}]]*/ 'Short deadline detected. Consider adding urgency details in notes.',
+            quantityLarge: /*[[#{public.order.form.smart.quantity_large}]]*/ 'Large quantity detected. Include packaging and delivery notes for faster planning.',
+            submitLoading: /*[[#{public.order.form.smart.submit_loading}]]*/ 'Sending...',
+            notesCounter: /*[[#{public.order.form.smart.notes_counter}]]*/ '__USED__/4000 characters',
+            notesCounterNearLimit: /*[[#{public.order.form.smart.notes_counter_near_limit}]]*/ 'You are close to the note limit.',
+            filesTooMany: companyEl?.getAttribute('data-files-too-many') || 'You can upload up to __MAX__ files.',
+            filesTooLarge: companyEl?.getAttribute('data-files-too-large') || 'File "__NAME__" is larger than allowed limit.',
+            filesExtInvalid: companyEl?.getAttribute('data-files-ext-invalid') || 'File "__NAME__" has unsupported extension. Allowed: __ALLOWED__.'
         };
         const requesterStorageKey = 'printflow.public.requester';
         const lastCompanyStorageKey = 'printflow.public.lastCompany';
@@ -195,6 +237,16 @@
         const quantity = document.querySelector('input[name="quantity"]');
         const briefHint = document.getElementById('publicOrderBriefHint');
         const insertBriefTemplate = document.getElementById('insertBriefTemplate');
+        const notesCounter = document.getElementById('publicOrderNotesCounter');
+        const maxFiles = Number(companyEl?.getAttribute('data-max-files') || 5);
+        const maxFileBytes = Number(companyEl?.getAttribute('data-max-file-bytes') || 15728640);
+        const allowedExtRaw = String(companyEl?.getAttribute('data-allowed-ext') || '');
+        const allowedExtSet = new Set(
+            allowedExtRaw
+                .split(',')
+                .map(part => String(part || '').trim().toLowerCase().replace(/^\./, ''))
+                .filter(Boolean)
+        );
 
         try {
             if (companyEl) {
@@ -304,15 +356,56 @@
 
         function updatePublicSmartHint() {
             const missing = [];
+            let done = 0;
+            const total = 5;
+            if (productType && productType.value.trim()) done += 1;
+            if (!Number.isNaN(Number(quantity?.value || 0)) && Number(quantity?.value || 0) > 0) done += 1;
             if (!dimensions || !dimensions.value.trim()) missing.push(i18n.missingDimensions);
+            else done += 1;
             if (!deadline || !deadline.value.trim()) missing.push(i18n.missingDeadline);
+            else done += 1;
             const fileCount = files && files.files ? files.files.length : 0;
             if (fileCount === 0) missing.push(i18n.missingFiles);
+            else done += 1;
+
+            if (progressEl) {
+                progressEl.textContent = i18n.progressLabel
+                    .replace('__DONE__', String(done))
+                    .replace('__TOTAL__', String(total));
+            }
+            if (progressBarEl) {
+                const pct = Math.round((done / total) * 100);
+                progressBarEl.style.width = pct + '%';
+                progressBarEl.classList.remove('bg-blue-500', 'bg-amber-500', 'bg-emerald-500');
+                if (pct >= 80) {
+                    progressBarEl.classList.add('bg-emerald-500');
+                } else if (pct >= 40) {
+                    progressBarEl.classList.add('bg-blue-500');
+                } else {
+                    progressBarEl.classList.add('bg-amber-500');
+                }
+            }
             if (smartHint) {
                 if (missing.length === 0) {
-                    smartHint.textContent = i18n.ready + ' ' + i18n.noteTip;
+                    smartHint.textContent = i18n.ready + ' ' + i18n.noteTip + ' ' + i18n.progressHealthy;
                 } else {
-                    smartHint.textContent = i18n.missingPrefix + ' ' + missing.join(', ') + '.';
+                    smartHint.textContent = i18n.missingPrefix + ' ' + missing.join(', ') + '. ' + i18n.progressWorking;
+                }
+                if (deadline && deadline.value) {
+                    const deadlineDate = new Date(deadline.value);
+                    if (!Number.isNaN(deadlineDate.getTime())) {
+                        const now = new Date();
+                        const diffMs = deadlineDate.getTime() - now.getTime();
+                        if (diffMs < 0) {
+                            smartHint.textContent += ' ' + i18n.deadlinePast;
+                        } else if (diffMs <= 48 * 60 * 60 * 1000) {
+                            smartHint.textContent += ' ' + i18n.deadlineSoon;
+                        }
+                    }
+                }
+                const qty = Number(quantity?.value || 0);
+                if (!Number.isNaN(qty) && qty >= 10000) {
+                    smartHint.textContent += ' ' + i18n.quantityLarge;
                 }
                 const details = [];
                 const productTypeValue = (productType?.value || '').toLowerCase();
@@ -332,10 +425,53 @@
                 }
             }
             if (filesHint) {
-                filesHint.textContent = fileCount > 0 ? i18n.filesCount.replace('__COUNT__', String(fileCount)) : '';
+                const selected = files && files.files ? Array.from(files.files) : [];
+                const tooMany = fileCount > maxFiles;
+                const tooLarge = selected.find(f => Number(f.size || 0) > maxFileBytes);
+                const invalidExt = selected.find(file => {
+                    if (allowedExtSet.size === 0) return false;
+                    const name = String(file?.name || '');
+                    const dotIndex = name.lastIndexOf('.');
+                    if (dotIndex < 0) return true;
+                    const ext = name.substring(dotIndex + 1).toLowerCase();
+                    return !allowedExtSet.has(ext);
+                });
+                if (tooMany) {
+                    filesHint.classList.remove('text-gray-500');
+                    filesHint.classList.add('text-red-600');
+                    filesHint.textContent = i18n.filesTooMany.replace('__MAX__', String(maxFiles));
+                    if (submitBtn) submitBtn.disabled = true;
+                } else if (tooLarge) {
+                    filesHint.classList.remove('text-gray-500');
+                    filesHint.classList.add('text-red-600');
+                    filesHint.textContent = i18n.filesTooLarge.replace('__NAME__', String(tooLarge.name || 'file'));
+                    if (submitBtn) submitBtn.disabled = true;
+                } else if (invalidExt) {
+                    filesHint.classList.remove('text-gray-500');
+                    filesHint.classList.add('text-red-600');
+                    filesHint.textContent = i18n.filesExtInvalid
+                        .replace('__NAME__', String(invalidExt.name || 'file'))
+                        .replace('__ALLOWED__', allowedExtRaw || 'N/A');
+                    if (submitBtn) submitBtn.disabled = true;
+                } else {
+                    filesHint.classList.remove('text-red-600');
+                    filesHint.classList.add('text-gray-500');
+                    filesHint.textContent = fileCount > 0 ? i18n.filesCount.replace('__COUNT__', String(fileCount)) : '';
+                    if (submitBtn) submitBtn.disabled = false;
+                }
             }
             if (briefHint) {
                 briefHint.textContent = notes && notes.value && notes.value.trim().length > 0 ? i18n.briefHintFilled : i18n.briefHintEmpty;
+            }
+            if (notesCounter && notes) {
+                const used = (notes.value || '').length;
+                notesCounter.textContent = i18n.notesCounter.replace('__USED__', String(used));
+                const nearLimit = used >= 3600;
+                notesCounter.classList.toggle('text-amber-700', nearLimit);
+                notesCounter.classList.toggle('text-gray-500', !nearLimit);
+                if (nearLimit) {
+                    notesCounter.textContent += ' ' + i18n.notesCounterNearLimit;
+                }
             }
         }
 
@@ -373,6 +509,12 @@
                     }
                 } catch (e) {
                     // ignore localStorage issues
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+                if (submitBtnText) {
+                    submitBtnText.textContent = i18n.submitLoading;
                 }
             });
         }

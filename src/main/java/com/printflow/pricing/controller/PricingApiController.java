@@ -53,16 +53,35 @@ public class PricingApiController {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        String message = ex.getMessage() != null ? ex.getMessage().trim() : "";
+        if (message.startsWith("pricing.") || message.startsWith("api.") || message.startsWith("billing.")) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", message,
+                "messageKey", message
+            ));
+        }
+        return ResponseEntity.badRequest().body(Map.of("error", message.isEmpty() ? "Invalid request" : message));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+        String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+            ? ex.getMessage()
+            : "Not Found";
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+            "error", message,
+            "messageKey", "api.error.not_found"
+        ));
     }
 
     @ExceptionHandler(BillingRequiredException.class)
     public ResponseEntity<Map<String, String>> handleBillingRequired(BillingRequiredException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
+        String messageKey = ex.getMessage() != null && !ex.getMessage().isBlank()
+            ? ex.getMessage()
+            : "pricing.calculate.billing_required";
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(Map.of(
+            "error", "pricing.calculate.billing_required",
+            "messageKey", messageKey
+        ));
     }
 }

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Controller
@@ -660,7 +661,7 @@ public class WorkerController extends BaseController {
             return null;
         }
         try {
-            return TaskStatus.valueOf(status.trim().toUpperCase());
+            return TaskStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }

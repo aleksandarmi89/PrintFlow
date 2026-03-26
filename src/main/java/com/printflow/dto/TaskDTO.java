@@ -1,6 +1,7 @@
 package com.printflow.dto;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 public class TaskDTO {
     private Long id;
@@ -131,7 +132,7 @@ public class TaskDTO {
     
     public String getPriorityColor() {
         if (priority == null) return "gray";
-        switch (priority.toUpperCase()) {
+        switch (priority.toUpperCase(Locale.ROOT)) {
             case "HIGH": return "red";
             case "URGENT": return "red";
             case "MEDIUM": return "orange";
@@ -142,7 +143,7 @@ public class TaskDTO {
     
     public String getStatusColor() {
         if (status == null) return "gray";
-        switch (status.toUpperCase()) {
+        switch (status.toUpperCase(Locale.ROOT)) {
             case "NEW": return "blue";
             case "IN_PROGRESS": return "yellow";
             case "COMPLETED": return "green";

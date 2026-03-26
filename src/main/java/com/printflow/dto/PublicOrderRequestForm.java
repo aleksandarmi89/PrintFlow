@@ -4,36 +4,46 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
 public class PublicOrderRequestForm {
 
-    @NotBlank(message = "Ime kontakta je obavezno")
+    @NotBlank(message = "{public.order.validation.customer_name.required}")
+    @Size(max = 150, message = "{public.order.validation.customer_name.max}")
     private String customerName;
 
-    @NotBlank(message = "Email je obavezan")
-    @Email(message = "Email nije ispravan")
+    @NotBlank(message = "{public.order.validation.customer_email.required}")
+    @Email(message = "{public.order.validation.customer_email.invalid}")
+    @Size(max = 190, message = "{public.order.validation.customer_email.max}")
     private String customerEmail;
 
+    @Size(max = 50, message = "{public.order.validation.customer_phone.max}")
     private String customerPhone;
+    @Size(max = 190, message = "{public.order.validation.customer_company.max}")
     private String customerCompanyName;
 
-    @NotBlank(message = "Tip proizvoda je obavezan")
+    @NotBlank(message = "{public.order.validation.product_type.required}")
+    @Size(max = 150, message = "{public.order.validation.product_type.max}")
     private String productType;
 
-    @NotNull(message = "Količina je obavezna")
-    @Min(value = 1, message = "Količina mora biti veća od 0")
+    @NotNull(message = "{public.order.validation.quantity.required}")
+    @Min(value = 1, message = "{public.order.validation.quantity.min}")
     private Integer quantity;
 
+    @Size(max = 190, message = "{public.order.validation.dimensions.max}")
     private String dimensions;
+    @Size(max = 150, message = "{public.order.validation.material.max}")
     private String material;
+    @Size(max = 150, message = "{public.order.validation.finishing.max}")
     private String finishing;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime deadline;
 
+    @Size(max = 4000, message = "{public.order.validation.notes.max}")
     private String notes;
 
     public String getCustomerName() {

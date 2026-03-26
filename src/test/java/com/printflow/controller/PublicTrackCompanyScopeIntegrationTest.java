@@ -123,6 +123,23 @@ class PublicTrackCompanyScopeIntegrationTest {
     }
 
     @Test
+    void trackFormPostSupportsSnakeCaseCompanyParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-company-snake";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("trackingCode", token)
+                .param("company_id", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
     void trackFormRedirectPreservesSupportedLocale() throws Exception {
         WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
         String token = "scope-token-lang";
@@ -195,6 +212,62 @@ class PublicTrackCompanyScopeIntegrationTest {
     }
 
     @Test
+    void trackFormRedirectNormalizesRegionalLocale() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-lang-regional";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("language", "en-US")
+                .param("trackingCode", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
+    }
+
+    @Test
+    void trackFormRedirectFallsBackToLocaleAliasWhenLangIsUnsupported() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-lang-fallback";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("lang", "de")
+                .param("locale", "en_US")
+                .param("trackingCode", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
+    }
+
+    @Test
+    void trackFormRedirectFallsBackToLanguageAliasWhenLangIsUnsupported() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-language-fallback";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("lang", "de")
+                .param("language", "en-US")
+                .param("trackingCode", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
+    }
+
+    @Test
     void trackFormRejectsTooLongTrackingCode() throws Exception {
         String tooLongCode = "x".repeat(200);
 
@@ -207,6 +280,174 @@ class PublicTrackCompanyScopeIntegrationTest {
             .andExpect(model().attribute("errorKey", "track.error.invalid_code"))
             .andExpect(model().attribute("submittedTrackingCode", tooLongCode))
             .andExpect(content().string(containsString("bg-red-50 border border-red-200")));
+    }
+
+    @Test
+    void trackFormRejectsInvalidCharactersInTrackingCode() throws Exception {
+        String invalidCode = "ORD-12$34";
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("trackingCode", invalidCode)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().isOk())
+            .andExpect(view().name("public/track-order"))
+            .andExpect(model().attribute("errorKey", "track.error.invalid_code"))
+            .andExpect(model().attribute("submittedTrackingCode", invalidCode));
+    }
+
+    @Test
+    void trackFormAcceptsUnderscoreInPublicToken() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope_token_ok_01";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("trackingCode", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsLegacyCodeParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-code";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("code", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsLegacyOrderNumberParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-ordernumber";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("orderNumber", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsLegacyPublicTokenParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-publictoken";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("publicToken", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsSnakeCasePublicTokenParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-publictoken-snake";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("public_token", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsLegacyTrackingParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-tracking";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("tracking", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsShortTokenAliasAndLanguageAlias() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-short";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("t", token)
+                .param("language", "en")
+                .param("company_id", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token + "?lang=en"));
+    }
+
+    @Test
+    void trackFormPostSupportsSnakeCaseTrackingCodeParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-trackingcode-snake";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("tracking_code", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
+    }
+
+    @Test
+    void trackFormPostSupportsLegacyOrderParam() throws Exception {
+        WorkOrder order = workOrderRepository.findById(ids.workOrderId()).orElseThrow();
+        String token = "scope-token-legacy-order";
+        order.setPublicToken(token);
+        order.setPublicTokenCreatedAt(LocalDateTime.now().minusMinutes(10));
+        order.setPublicTokenExpiresAt(LocalDateTime.now().plusDays(1));
+        workOrderRepository.save(order);
+
+        mockMvc.perform(post("/public/track")
+                .with(csrf())
+                .param("order", token)
+                .param("company", String.valueOf(ids.company1Id())))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/public/order/" + token));
     }
 
     @Test
@@ -226,7 +467,9 @@ class PublicTrackCompanyScopeIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(view().name("public/track-order"))
             .andExpect(model().attribute("errorKey", "track.error.company_mismatch"))
+            .andExpect(model().attribute("mismatchSuggestedCompanyId", ids.company1Id()))
             .andExpect(content().string(containsString("Selected company does not match this tracking code.")))
+            .andExpect(content().string(containsString("company=" + ids.company1Id())))
             .andExpect(content().string(not(containsString("Izabrana kompanija ne odgovara ovom kodu za praćenje."))));
     }
 }

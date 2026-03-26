@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -72,19 +73,19 @@ public class PricingEngineService {
         PricingCalculateResponse response = new PricingCalculateResponse();
         response.setCurrency(resolveCurrency(company));
         if (components.isEmpty()) {
-            response.getWarnings().add("No pricing components configured");
+            response.getWarnings().add("pricing.calculate.warning.no_components");
         }
 
         Map<String, Object> attributes = req.getAttributes();
         int colorsRaw = getInt(attributes, "colors", 1);
         int colors = Math.max(1, colorsRaw);
         if (colorsRaw < 1) {
-            response.getWarnings().add("Colors adjusted to 1.");
+            response.getWarnings().add("pricing.calculate.warning.colors_adjusted");
         }
         int sidesRaw = getInt(attributes, "sides", 1);
         int sides = Math.max(1, sidesRaw);
         if (sidesRaw < 1) {
-            response.getWarnings().add("Sides adjusted to 1.");
+            response.getWarnings().add("pricing.calculate.warning.sides_adjusted");
         }
         int minutes = Math.max(0, getInt(attributes, "minutes", 0));
         boolean rush = getBoolean(attributes, "rush", false);
@@ -100,7 +101,7 @@ public class PricingEngineService {
         if (requiresArea) {
             if (req.getWidthMm() == null || req.getHeightMm() == null
                 || req.getWidthMm() <= 0 || req.getHeightMm() <= 0) {
-                response.getWarnings().add("Dimensions required for area-based pricing.");
+                response.getWarnings().add("pricing.calculate.warning.dimensions_required");
             } else {
                 BigDecimal widthM = new BigDecimal(req.getWidthMm()).divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
                 BigDecimal heightM = new BigDecimal(req.getHeightMm()).divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
@@ -115,12 +116,12 @@ public class PricingEngineService {
             if (maybeMeters != null && maybeMeters.compareTo(BigDecimal.ZERO) > 0) {
                 meters = maybeMeters;
             } else if (requiresMeters) {
-                response.getWarnings().add("Meters value missing for per-meter pricing.");
+                response.getWarnings().add("pricing.calculate.warning.meters_missing");
             }
         }
         boolean requiresMinutes = components.stream().anyMatch(c -> c.getModel() == PricingModel.PER_MINUTE);
         if (requiresMinutes && minutes <= 0) {
-            response.getWarnings().add("Minutes value missing for per-minute pricing.");
+            response.getWarnings().add("pricing.calculate.warning.minutes_missing");
         }
 
         List<BreakdownRow> breakdown = new ArrayList<>();
@@ -218,7 +219,7 @@ public class PricingEngineService {
 
         if (totalPrice.compareTo(BigDecimal.ZERO) > 0
             && marginPercent.compareTo(TARGET_MARGIN.multiply(ONE_HUNDRED)) < 0) {
-            response.getWarnings().add("Margin below target.");
+            response.getWarnings().add("pricing.calculate.margin_low");
         }
         BigDecimal diff = breakdownSum.subtract(totalCost).abs();
         if (diff.compareTo(new BigDecimal("0.01")) > 0) {
@@ -239,9 +240,9 @@ public class PricingEngineService {
         if (clientId != null) {
             var profile = pricingProfileService.getProfile(clientId, variant.getId(), company.getId());
             if (profile != null && profile.getLastPrice() != null) {
-                response.getWarnings().add("Last time you charged this client: " + profile.getLastPrice());
+                response.getWarnings().add("pricing.calculate.warning.last_price:" + profile.getLastPrice());
                 if (totalPrice.compareTo(profile.getLastPrice().multiply(new BigDecimal("0.8"))) < 0) {
-                    response.getWarnings().add("Price is more than 20% lower than last time.");
+                    response.getWarnings().add("pricing.calculate.warning.price_drop_20");
                 }
             }
         }
@@ -407,6 +408,6 @@ public class PricingEngineService {
         if (currency == null || currency.isBlank()) {
             return DEFAULT_CURRENCY;
         }
-        return currency.trim().toUpperCase();
+        return currency.trim().toUpperCase(Locale.ROOT);
     }
 }
